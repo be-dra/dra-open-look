@@ -9,7 +9,7 @@
 
 .SUFFIXES: .i
 
-# $XConsortium: Imake.cf,v 1.19 95/01/05 19:24:32 kaleb Exp $
+# ueberfluessig: $XConsortium: Imake.cf,v 1.19 95/01/05 19:24:32 kaleb Exp $
 # $XFree86: xc/config/cf/Imake.cf,v 3.15 1995/06/08 06:18:39 dawes Exp $
 
 # -----------------------------------------------------------------------
@@ -54,9 +54,6 @@ XFREE86JAPANESEDOCDIR = $(XFREE86DOCDIR)/Japanese
 # site:  $XFree86: xc/config/cf/site.def,v 3.8 1995/05/27 01:56:50 dawes Exp $
 
 # -----------------------------------------------------------------------
-# Imake rules for building libraries, programs, scripts, and data files
-# rules:  $XConsortium: Imake.rules,v 1.197.1.1 95/06/19 18:01:48 gildea Exp $
-# rules:  $XFree86: xc/config/cf/Imake.rules,v 3.18 1995/07/22 09:39:32 dawes Exp $
 
  _NULLCMD_ = @ echo -n
 
@@ -261,7 +258,6 @@ include ../default.linux
    TRANS_INCLUDES = -I$(TRANSCOMMSRC)
 
 # $XConsortium: lnxLib.tmpl,v 1.5 95/01/11 21:44:44 kaleb Exp $
-# $XFree86: xc/config/cf/lnxLib.tmpl,v 3.7 1995/04/09 13:39:23 dawes Exp $
 
           XLIBSRC = $(LIBSRC)/X11
 
