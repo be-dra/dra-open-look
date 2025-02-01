@@ -2,7 +2,7 @@
 #define accel_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: accel.h,v 4.2 2024/04/12 16:20:18 dra Exp $"
+ * "@(#) $Id: accel.h,v 4.3 2025/02/01 22:37:40 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
