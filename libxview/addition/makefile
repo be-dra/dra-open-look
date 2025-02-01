@@ -9,7 +9,7 @@
 
 .SUFFIXES: .i
 
-# ueberfluessig: $XConsortium: Imake.cf,v 1.19 95/01/05 19:24:32 kaleb Exp $
+# $XConsortium: Imake.cf,v 1.19 95/01/05 19:24:32 kaleb Exp $
 # $XFree86: xc/config/cf/Imake.cf,v 3.15 1995/06/08 06:18:39 dawes Exp $
 
 # -----------------------------------------------------------------------
