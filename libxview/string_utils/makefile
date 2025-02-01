@@ -625,7 +625,7 @@ DEPEND_DEFINES=
 CHECKOUT,v=$(CO) $(COFLAGS) $<
 
 HEADERS= ${HDRSPUBLIC} ${HDRSPRIVATE}
-BUILDINCDIR = ../../../build
+BUILDINCDIR = ../../build
 INCLUDES= -I$(BUILDINCDIR)/include
 INCROOT = /usr/X11R6/include
 TOP_INCLUDES = -I$(INCROOT)
@@ -763,8 +763,8 @@ str_utils.o: str_utils.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/bits/time64.h /usr/include/bits/endian.h \
  /usr/include/bits/endianness.h /usr/include/bits/types/locale_t.h \
- /usr/include/bits/types/__locale_t.h ../../../build/include/xview/sun.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ /usr/include/bits/types/__locale_t.h ../../build/include/xview/sun.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
@@ -775,7 +775,7 @@ str_utils.o: str_utils.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  /usr/include/bits/types/cookie_io_functions_t.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/sys/types.h \
  /usr/include/bits/types/clock_t.h /usr/include/bits/types/clockid_t.h \
@@ -791,10 +791,10 @@ str_utils.o: str_utils.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/str_utils.h
+ ../../build/include/xview/str_utils.h
 whitespace.o: whitespace.c /usr/include/stdc-predef.h \
- ../../../build/include/xview/str_utils.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/base.h \
+ ../../build/include/xview/str_utils.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
@@ -812,7 +812,7 @@ whitespace.o: whitespace.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/cookie_io_functions_t.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/sys/types.h \
  /usr/include/bits/types/clock_t.h /usr/include/bits/types/clockid_t.h \

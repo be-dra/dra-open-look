@@ -629,7 +629,7 @@ DEPEND_DEFINES=
 CHECKOUT,v=$(CO) $(COFLAGS) $<
 
 HEADERS= ${HDRSPUBLIC} ${HDRSPRIVATE}
-BUILDINCDIR = ../../../build
+BUILDINCDIR = ../../build
 INCLUDES= -I$(BUILDINCDIR)/include
 INCROOT = /usr/X11R6/include
 TOP_INCLUDES = -I$(INCROOT)
@@ -787,10 +787,10 @@ ndet_auto.o: ndet_auto.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/libc-header-start.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdio.h \
@@ -803,7 +803,7 @@ ndet_auto.o: ndet_auto.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -822,19 +822,19 @@ ndet_auto.o: ndet_auto.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h /usr/include/errno.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h
 ndet_death.o: ndet_death.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -855,10 +855,10 @@ ndet_death.o: ndet_death.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -884,18 +884,18 @@ ndet_death.o: ndet_death.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndet_die.o: ndet_die.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -916,10 +916,10 @@ ndet_die.o: ndet_die.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -945,17 +945,17 @@ ndet_die.o: ndet_die.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h
 ndet_dodis.o: ndet_dodis.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -976,10 +976,10 @@ ndet_dodis.o: ndet_dodis.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1005,16 +1005,16 @@ ndet_dodis.o: ndet_dodis.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_event.o: ndet_event.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1035,10 +1035,10 @@ ndet_event.o: ndet_event.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1064,16 +1064,16 @@ ndet_event.o: ndet_event.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_fcntl.o: ndet_fcntl.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1094,10 +1094,10 @@ ndet_fcntl.o: ndet_fcntl.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1123,19 +1123,19 @@ ndet_fcntl.o: ndet_fcntl.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h /usr/include/fcntl.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h /usr/include/fcntl.h \
  /usr/include/bits/fcntl.h /usr/include/bits/fcntl-linux.h \
  /usr/include/bits/types/struct_iovec.h /usr/include/linux/falloc.h \
  /usr/include/bits/stat.h /usr/include/bits/struct_stat.h
 ndet_fd.o: ndet_fd.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1156,10 +1156,10 @@ ndet_fd.o: ndet_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1185,16 +1185,16 @@ ndet_fd.o: ndet_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_g_fd.o: ndet_g_fd.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1215,10 +1215,10 @@ ndet_g_fd.o: ndet_g_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1244,16 +1244,16 @@ ndet_g_fd.o: ndet_g_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_g_in.o: ndet_g_in.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1274,10 +1274,10 @@ ndet_g_in.o: ndet_g_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1303,16 +1303,16 @@ ndet_g_in.o: ndet_g_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_g_out.o: ndet_g_out.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1333,10 +1333,10 @@ ndet_g_out.o: ndet_g_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1362,16 +1362,16 @@ ndet_g_out.o: ndet_g_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_g_pri.o: ndet_g_pri.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1392,10 +1392,10 @@ ndet_g_pri.o: ndet_g_pri.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1421,16 +1421,16 @@ ndet_g_pri.o: ndet_g_pri.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_g_sig.o: ndet_g_sig.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1451,10 +1451,10 @@ ndet_g_sig.o: ndet_g_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1480,18 +1480,18 @@ ndet_g_sig.o: ndet_g_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_loop.o: ndet_loop.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -1511,7 +1511,7 @@ ndet_loop.o: ndet_loop.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/libc-header-start.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
@@ -1524,7 +1524,7 @@ ndet_loop.o: ndet_loop.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -1543,14 +1543,14 @@ ndet_loop.o: ndet_loop.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h \
- ../../../build/include/xview_private/ndis.h /usr/include/fcntl.h \
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h \
+ ../../build/include/xview_private/ndis.h /usr/include/fcntl.h \
  /usr/include/bits/fcntl.h /usr/include/bits/fcntl-linux.h \
  /usr/include/bits/types/struct_iovec.h /usr/include/linux/falloc.h \
  /usr/include/bits/stat.h /usr/include/bits/struct_stat.h \
@@ -1588,7 +1588,7 @@ ndet_loop.o: ndet_loop.c /usr/include/stdc-predef.h \
  /usr/include/rpc/rpcb_clnt.h /usr/include/rpc/rpcb_prot.h \
  /usr/include/rpc/svc_mt.h /usr/include/rpc/rpcent.h
 ndet_nodis.o: ndet_nodis.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1609,10 +1609,10 @@ ndet_nodis.o: ndet_nodis.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1638,16 +1638,16 @@ ndet_nodis.o: ndet_nodis.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_read.o: ndet_read.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1668,10 +1668,10 @@ ndet_read.o: ndet_read.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1697,20 +1697,20 @@ ndet_read.o: ndet_read.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h /usr/include/errno.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h
 ndet_s_fd.o: ndet_s_fd.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1731,10 +1731,10 @@ ndet_s_fd.o: ndet_s_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1760,18 +1760,18 @@ ndet_s_fd.o: ndet_s_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndet_s_in.o: ndet_s_in.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1792,10 +1792,10 @@ ndet_s_in.o: ndet_s_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1821,16 +1821,16 @@ ndet_s_in.o: ndet_s_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_s_out.o: ndet_s_out.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1851,10 +1851,10 @@ ndet_s_out.o: ndet_s_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1880,16 +1880,16 @@ ndet_s_out.o: ndet_s_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_s_pri.o: ndet_s_pri.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1910,10 +1910,10 @@ ndet_s_pri.o: ndet_s_pri.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1939,17 +1939,17 @@ ndet_s_pri.o: ndet_s_pri.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h
 ndet_s_sig.o: ndet_s_sig.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -1970,10 +1970,10 @@ ndet_s_sig.o: ndet_s_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -1999,18 +1999,18 @@ ndet_s_sig.o: ndet_s_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndet_sig.o: ndet_sig.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2031,10 +2031,10 @@ ndet_sig.o: ndet_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2060,16 +2060,16 @@ ndet_sig.o: ndet_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_value.o: ndet_value.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2090,10 +2090,10 @@ ndet_value.o: ndet_value.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2119,16 +2119,16 @@ ndet_value.o: ndet_value.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_veto.o: ndet_veto.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2149,10 +2149,10 @@ ndet_veto.o: ndet_veto.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2178,16 +2178,16 @@ ndet_veto.o: ndet_veto.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndet_wait.o: ndet_wait.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2208,10 +2208,10 @@ ndet_wait.o: ndet_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2237,19 +2237,19 @@ ndet_wait.o: ndet_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h /usr/include/errno.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h
 ndetg_wait.o: ndetg_wait.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2270,10 +2270,10 @@ ndetg_wait.o: ndetg_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2299,16 +2299,16 @@ ndetg_wait.o: ndetg_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndetgdeath.o: ndetgdeath.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2329,10 +2329,10 @@ ndetgdeath.o: ndetgdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2358,16 +2358,16 @@ ndetgdeath.o: ndetgdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndetgetfnc.o: ndetgetfnc.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2388,10 +2388,10 @@ ndetgetfnc.o: ndetgetfnc.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2417,17 +2417,17 @@ ndetgetfnc.o: ndetgetfnc.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 ndetgevent.o: ndetgevent.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2448,10 +2448,10 @@ ndetgevent.o: ndetgevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2477,16 +2477,16 @@ ndetgevent.o: ndetgevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndetgexcep.o: ndetgexcep.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2507,10 +2507,10 @@ ndetgexcep.o: ndetgexcep.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2536,16 +2536,16 @@ ndetgexcep.o: ndetgexcep.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndetgitimr.o: ndetgitimr.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2566,10 +2566,10 @@ ndetgitimr.o: ndetgitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2595,18 +2595,18 @@ ndetgitimr.o: ndetgitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndetitimer.o: ndetitimer.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -2626,7 +2626,7 @@ ndetitimer.o: ndetitimer.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/libc-header-start.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
@@ -2639,7 +2639,7 @@ ndetitimer.o: ndetitimer.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -2658,17 +2658,17 @@ ndetitimer.o: ndetitimer.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndetpdeath.o: ndetpdeath.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2689,10 +2689,10 @@ ndetpdeath.o: ndetpdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2718,40 +2718,40 @@ ndetpdeath.o: ndetpdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview/xview.h \
- ../../../build/include/xview/xview_xvin.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview/xview.h \
+ ../../build/include/xview/xview_xvin.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/xv_version.h \
- ../../../build/include/xview/icon.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/drawable.h \
- ../../../build/include/xview/attrol.h \
- ../../../build/include/xview/svrimage.h \
- ../../../build/include/pixrect/pixrect.h \
- ../../../build/include/pixrect/pixfont.h \
- ../../../build/include/xview/frame.h \
- ../../../build/include/xview/openmenu.h
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/xv_version.h \
+ ../../build/include/xview/icon.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/drawable.h \
+ ../../build/include/xview/attrol.h \
+ ../../build/include/xview/svrimage.h \
+ ../../build/include/pixrect/pixrect.h \
+ ../../build/include/pixrect/pixfont.h \
+ ../../build/include/xview/frame.h \
+ ../../build/include/xview/openmenu.h
 ndetpevent.o: ndetpevent.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2772,10 +2772,10 @@ ndetpevent.o: ndetpevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2801,18 +2801,18 @@ ndetpevent.o: ndetpevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndetremove.o: ndetremove.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2833,10 +2833,10 @@ ndetremove.o: ndetremove.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2862,17 +2862,17 @@ ndetremove.o: ndetremove.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h
 ndets_wait.o: ndets_wait.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2893,10 +2893,10 @@ ndets_wait.o: ndets_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2922,18 +2922,18 @@ ndets_wait.o: ndets_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndetsdeath.o: ndetsdeath.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -2954,10 +2954,10 @@ ndetsdeath.o: ndetsdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -2983,16 +2983,16 @@ ndetsdeath.o: ndetsdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndetselect.o: ndetselect.c /usr/include/stdc-predef.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
@@ -3014,11 +3014,11 @@ ndetselect.o: ndetselect.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3044,20 +3044,20 @@ ndetselect.o: ndetselect.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h /usr/include/errno.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h
 ndetsevent.o: ndetsevent.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3078,10 +3078,10 @@ ndetsevent.o: ndetsevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3107,18 +3107,18 @@ ndetsevent.o: ndetsevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndetsexcep.o: ndetsexcep.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3139,10 +3139,10 @@ ndetsexcep.o: ndetsexcep.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3168,16 +3168,16 @@ ndetsexcep.o: ndetsexcep.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 ndetsingle.o: ndetsingle.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3198,10 +3198,10 @@ ndetsingle.o: ndetsingle.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3227,20 +3227,20 @@ ndetsingle.o: ndetsingle.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h /usr/include/errno.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h
 ndetsitimr.o: ndetsitimr.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3261,10 +3261,10 @@ ndetsitimr.o: ndetsitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3290,18 +3290,18 @@ ndetsitimr.o: ndetsitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h
 ndis_d_pri.o: ndis_d_pri.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3322,10 +3322,10 @@ ndis_d_pri.o: ndis_d_pri.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3351,16 +3351,16 @@ ndis_d_pri.o: ndis_d_pri.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h
 ndisd_wait.o: ndisd_wait.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3381,10 +3381,10 @@ ndisd_wait.o: ndisd_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3410,18 +3410,18 @@ ndisd_wait.o: ndisd_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h
 ndisdispch.o: ndisdispch.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -3441,7 +3441,7 @@ ndisdispch.o: ndisdispch.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/libc-header-start.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
@@ -3454,7 +3454,7 @@ ndisdispch.o: ndisdispch.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -3473,16 +3473,16 @@ ndisdispch.o: ndisdispch.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/nint.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/nint.h \
+ ../../build/include/xview_private/ndet.h
 ndisdsched.o: ndisdsched.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3503,10 +3503,10 @@ ndisdsched.o: ndisdsched.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3532,16 +3532,16 @@ ndisdsched.o: ndisdsched.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h
 ndisgsched.o: ndisgsched.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3562,10 +3562,10 @@ ndisgsched.o: ndisgsched.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3591,16 +3591,16 @@ ndisgsched.o: ndisgsched.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h
 ndisssched.o: ndisssched.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3621,10 +3621,10 @@ ndisssched.o: ndisssched.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3650,16 +3650,16 @@ ndisssched.o: ndisssched.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h
 nint_copy.o: nint_copy.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3680,10 +3680,10 @@ nint_copy.o: nint_copy.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3709,19 +3709,19 @@ nint_copy.o: nint_copy.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/attr.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/attr.h
 nint_get.o: nint_get.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3742,10 +3742,10 @@ nint_get.o: nint_get.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3771,17 +3771,17 @@ nint_get.o: nint_get.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_i_fd.o: nint_i_fd.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3802,10 +3802,10 @@ nint_i_fd.o: nint_i_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3831,17 +3831,17 @@ nint_i_fd.o: nint_i_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_i_in.o: nint_i_in.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3862,10 +3862,10 @@ nint_i_in.o: nint_i_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3891,16 +3891,16 @@ nint_i_in.o: nint_i_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/nint.h
 nint_i_out.o: nint_i_out.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3921,10 +3921,10 @@ nint_i_out.o: nint_i_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -3950,16 +3950,16 @@ nint_i_out.o: nint_i_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/nint.h
 nint_i_sig.o: nint_i_sig.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -3980,10 +3980,10 @@ nint_i_sig.o: nint_i_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4009,17 +4009,17 @@ nint_i_sig.o: nint_i_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_inter.o: nint_inter.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4040,10 +4040,10 @@ nint_inter.o: nint_inter.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4069,17 +4069,17 @@ nint_inter.o: nint_inter.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_n_fd.o: nint_n_fd.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4100,10 +4100,10 @@ nint_n_fd.o: nint_n_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4129,17 +4129,17 @@ nint_n_fd.o: nint_n_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_n_in.o: nint_n_in.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4160,10 +4160,10 @@ nint_n_in.o: nint_n_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4189,17 +4189,17 @@ nint_n_in.o: nint_n_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_n_out.o: nint_n_out.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4220,10 +4220,10 @@ nint_n_out.o: nint_n_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4249,17 +4249,17 @@ nint_n_out.o: nint_n_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_n_sig.o: nint_n_sig.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4280,10 +4280,10 @@ nint_n_sig.o: nint_n_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4309,17 +4309,17 @@ nint_n_sig.o: nint_n_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_next.o: nint_next.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4340,10 +4340,10 @@ nint_next.o: nint_next.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4369,17 +4369,17 @@ nint_next.o: nint_next.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_r_fd.o: nint_r_fd.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4400,10 +4400,10 @@ nint_r_fd.o: nint_r_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4429,17 +4429,17 @@ nint_r_fd.o: nint_r_fd.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_r_in.o: nint_r_in.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4460,10 +4460,10 @@ nint_r_in.o: nint_r_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4489,16 +4489,16 @@ nint_r_in.o: nint_r_in.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/nint.h
 nint_r_out.o: nint_r_out.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4519,10 +4519,10 @@ nint_r_out.o: nint_r_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4548,16 +4548,16 @@ nint_r_out.o: nint_r_out.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/nint.h
 nint_r_sig.o: nint_r_sig.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4578,10 +4578,10 @@ nint_r_sig.o: nint_r_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4607,17 +4607,17 @@ nint_r_sig.o: nint_r_sig.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_set.o: nint_set.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4638,10 +4638,10 @@ nint_set.o: nint_set.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4667,17 +4667,17 @@ nint_set.o: nint_set.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nint_stack.o: nint_stack.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4698,10 +4698,10 @@ nint_stack.o: nint_stack.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4727,19 +4727,19 @@ nint_stack.o: nint_stack.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/attr.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/attr.h
 ninti_wait.o: ninti_wait.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4760,10 +4760,10 @@ ninti_wait.o: ninti_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4789,17 +4789,17 @@ ninti_wait.o: ninti_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintideath.o: nintideath.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4820,10 +4820,10 @@ nintideath.o: nintideath.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4849,17 +4849,17 @@ nintideath.o: nintideath.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintievent.o: nintievent.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4880,10 +4880,10 @@ nintievent.o: nintievent.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4909,17 +4909,17 @@ nintievent.o: nintievent.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintiexcpt.o: nintiexcpt.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4940,10 +4940,10 @@ nintiexcpt.o: nintiexcpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -4969,16 +4969,16 @@ nintiexcpt.o: nintiexcpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/nint.h
 nintiitimr.o: nintiitimr.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -4999,10 +4999,10 @@ nintiitimr.o: nintiitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5028,17 +5028,17 @@ nintiitimr.o: nintiitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintn_wait.o: nintn_wait.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5059,10 +5059,10 @@ nintn_wait.o: nintn_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5088,17 +5088,17 @@ nintn_wait.o: nintn_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintndeath.o: nintndeath.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5119,10 +5119,10 @@ nintndeath.o: nintndeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5148,17 +5148,17 @@ nintndeath.o: nintndeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintnevent.o: nintnevent.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5179,10 +5179,10 @@ nintnevent.o: nintnevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5208,17 +5208,17 @@ nintnevent.o: nintnevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintnexcpt.o: nintnexcpt.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5239,10 +5239,10 @@ nintnexcpt.o: nintnexcpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5268,17 +5268,17 @@ nintnexcpt.o: nintnexcpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintnitimr.o: nintnitimr.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5299,10 +5299,10 @@ nintnitimr.o: nintnitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5328,17 +5328,17 @@ nintnitimr.o: nintnitimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintr_wait.o: nintr_wait.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5359,10 +5359,10 @@ nintr_wait.o: nintr_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5388,17 +5388,17 @@ nintr_wait.o: nintr_wait.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintrdeath.o: nintrdeath.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5419,10 +5419,10 @@ nintrdeath.o: nintrdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5448,17 +5448,17 @@ nintrdeath.o: nintrdeath.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintremove.o: nintremove.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5479,10 +5479,10 @@ nintremove.o: nintremove.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5508,17 +5508,17 @@ nintremove.o: nintremove.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintrevent.o: nintrevent.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5539,10 +5539,10 @@ nintrevent.o: nintrevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5568,17 +5568,17 @@ nintrevent.o: nintrevent.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 nintrexcpt.o: nintrexcpt.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5599,10 +5599,10 @@ nintrexcpt.o: nintrexcpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5628,16 +5628,16 @@ nintrexcpt.o: nintrexcpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/nint.h
 nintritimr.o: nintritimr.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5658,10 +5658,10 @@ nintritimr.o: nintritimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5687,17 +5687,17 @@ nintritimr.o: nintritimr.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/nint.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/nint.h
 notifydata.o: notifydata.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5718,10 +5718,10 @@ notifydata.o: notifydata.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5747,15 +5747,15 @@ notifydata.o: notifydata.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview_private/ntfy_ctbl.h
 ntfy_cond.o: ntfy_cond.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5776,10 +5776,10 @@ ntfy_cond.o: ntfy_cond.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5805,15 +5805,15 @@ ntfy_cond.o: ntfy_cond.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview_private/ntfy_ctbl.h
 ntfy_ctbl.o: ntfy_ctbl.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5834,10 +5834,10 @@ ntfy_ctbl.o: ntfy_ctbl.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5863,13 +5863,13 @@ ntfy_ctbl.o: ntfy_ctbl.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview_private/ntfy_ctbl.h
 ntfy_debug.o: ntfy_debug.c /usr/include/stdc-predef.h \
  /usr/include/stdio.h /usr/include/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -5886,9 +5886,9 @@ ntfy_debug.o: ntfy_debug.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/cookie_io_functions_t.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/bits/types/clock_t.h \
  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/time_t.h \
  /usr/include/bits/types/timer_t.h /usr/include/bits/stdint-intn.h \
@@ -5902,13 +5902,13 @@ ntfy_debug.o: ntfy_debug.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -5927,15 +5927,15 @@ ntfy_debug.o: ntfy_debug.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h \
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy_ctbl.h
 ntfy_dump.o: ntfy_dump.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -5956,10 +5956,10 @@ ntfy_dump.o: ntfy_dump.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -5985,15 +5985,15 @@ ntfy_dump.o: ntfy_dump.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/ndis.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/ndis.h
 ntfy_fd_op.o: ntfy_fd_op.c /usr/include/stdc-predef.h \
  /usr/include/sys/time.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
@@ -6016,11 +6016,11 @@ ntfy_fd_op.o: ntfy_fd_op.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h
+ ../../build/include/xview_private/ultrix_cpt.h
 ntfy_list.o: ntfy_list.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -6040,7 +6040,7 @@ ntfy_list.o: ntfy_list.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/libc-header-start.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
@@ -6053,7 +6053,7 @@ ntfy_list.o: ntfy_list.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -6072,15 +6072,15 @@ ntfy_list.o: ntfy_list.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/ndet.h
 ntfy_node.o: ntfy_node.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -6101,10 +6101,10 @@ ntfy_node.o: ntfy_node.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -6130,15 +6130,15 @@ ntfy_node.o: ntfy_node.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview_private/ntfy_ctbl.h
 ntfyclient.o: ntfyclient.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -6159,10 +6159,10 @@ ntfyclient.o: ntfyclient.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -6188,17 +6188,17 @@ ntfyclient.o: ntfyclient.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndis.h \
- ../../../build/include/xview_private/ndet.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/attr.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndis.h \
+ ../../build/include/xview_private/ndet.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/attr.h
 ntfyperror.o: ntfyperror.c /usr/include/stdc-predef.h \
  /usr/include/stdio.h /usr/include/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -6215,9 +6215,9 @@ ntfyperror.o: ntfyperror.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/cookie_io_functions_t.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/bits/types/clock_t.h \
  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/time_t.h \
  /usr/include/bits/types/timer_t.h /usr/include/bits/stdint-intn.h \
@@ -6231,13 +6231,13 @@ ntfyperror.o: ntfyperror.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -6256,15 +6256,15 @@ ntfyperror.o: ntfyperror.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h \
- ../../../build/include/xview_private/ntfy.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h \
+ ../../build/include/xview_private/ntfy.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ntfy_ctbl.h
 ntfyprotec.o: ntfyprotec.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -6285,10 +6285,10 @@ ntfyprotec.o: ntfyprotec.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -6314,14 +6314,14 @@ ntfyprotec.o: ntfyprotec.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h
 sys_fcntl.o: sys_fcntl.c /usr/include/stdc-predef.h /usr/include/errno.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
@@ -6332,7 +6332,7 @@ sys_fcntl.o: sys_fcntl.c /usr/include/stdc-predef.h /usr/include/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h \
  /usr/include/sys/syscall.h /usr/include/asm/unistd.h \
  /usr/include/asm/unistd_64.h /usr/include/bits/syscall.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/bits/time64.h /usr/include/bits/types/clock_t.h \
  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/time_t.h \
@@ -6349,10 +6349,10 @@ sys_fcntl.o: sys_fcntl.c /usr/include/stdc-predef.h /usr/include/errno.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -6378,17 +6378,17 @@ sys_fcntl.o: sys_fcntl.c /usr/include/stdc-predef.h /usr/include/errno.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview_private/ntfy_ctbl.h
 sys_read.o: sys_read.c /usr/include/stdc-predef.h \
  /usr/include/sys/syscall.h /usr/include/asm/unistd.h \
  /usr/include/asm/unistd_64.h /usr/include/bits/syscall.h \
- ../../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
+ ../../build/include/xview_private/ntfy.h /usr/include/sys/types.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
  /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
@@ -6409,10 +6409,10 @@ sys_read.o: sys_read.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -6438,17 +6438,17 @@ sys_read.o: sys_read.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h
+ ../../build/include/xview_private/ntfy_ctbl.h
 sys_select.o: sys_select.c /usr/include/stdc-predef.h \
  /usr/include/syscall.h /usr/include/sys/syscall.h \
  /usr/include/asm/unistd.h /usr/include/asm/unistd_64.h \
- /usr/include/bits/syscall.h ../../../build/include/xview_private/ntfy.h \
+ /usr/include/bits/syscall.h ../../build/include/xview_private/ntfy.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -6469,10 +6469,10 @@ sys_select.o: sys_select.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h \
- ../../../build/include/xview_private/ultrix_cpt.h \
+ ../../build/include/xview_private/ultrix_cpt.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/notify.h /usr/include/stdio.h \
+ ../../build/include/xview/notify.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -6498,14 +6498,14 @@ sys_select.o: sys_select.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/ntfy_ctbl.h \
- ../../../build/include/xview_private/ndet.h /usr/include/errno.h \
+ ../../build/include/xview_private/ntfy_ctbl.h \
+ ../../build/include/xview_private/ndet.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h

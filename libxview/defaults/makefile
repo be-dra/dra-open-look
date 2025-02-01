@@ -625,7 +625,7 @@ DEPEND_DEFINES=
 CHECKOUT,v=$(CO) $(COFLAGS) $<
 
 HEADERS= ${HDRSPUBLIC} ${HDRSPRIVATE}
-BUILDINCDIR = ../../../build
+BUILDINCDIR = ../../build
 INCLUDES= -I$(BUILDINCDIR)/include
 INCROOT = /usr/X11R6/include
 TOP_INCLUDES = -I$(INCROOT)
@@ -794,16 +794,16 @@ defaults.o: defaults.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/asm-generic/posix_types.h /usr/include/bits/statx-generic.h \
  /usr/include/bits/types/struct_statx_timestamp.h \
  /usr/include/bits/types/struct_statx.h \
- ../../../build/include/xview/defaults.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/defaults.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -822,8 +822,8 @@ defaults.o: defaults.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h /usr/include/X11/Xlibint.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h /usr/include/X11/Xlibint.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdint.h \
  /usr/include/stdint.h /usr/include/bits/wchar.h \
  /usr/include/bits/stdint-uintn.h /usr/include/bits/stdint-least.h \
@@ -842,6 +842,6 @@ defaults.o: defaults.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/asm-generic/errno-base.h /usr/include/bits/types/error_t.h \
  /usr/include/X11/Xfuncs.h /usr/include/X11/Xatom.h \
  /usr/include/X11/Xresource.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
  /usr/include/locale.h /usr/include/bits/locale.h

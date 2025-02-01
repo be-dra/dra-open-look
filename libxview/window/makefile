@@ -626,7 +626,7 @@ DEPEND_DEFINES=
 CHECKOUT,v=$(CO) $(COFLAGS) $<
 
 HEADERS= ${HDRSPUBLIC} ${HDRSPRIVATE}
-BUILDINCDIR = ../../../build
+BUILDINCDIR = ../../build
 INCLUDES= -I$(BUILDINCDIR)/include
 INCROOT = /usr/X11R6/include
 TOP_INCLUDES = -I$(INCROOT)
@@ -801,60 +801,60 @@ window.o: window.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/bits/types/clock_t.h \
  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/timer_t.h \
  /usr/include/bits/stdint-intn.h /usr/include/endian.h \
  /usr/include/bits/byteswap.h /usr/include/bits/uintn-identity.h \
  /usr/include/sys/select.h /usr/include/bits/select.h \
  /usr/include/bits/types/struct_timeval.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/bits/types/idtype_t.h /usr/include/sys/time.h \
  /usr/include/sys/resource.h /usr/include/bits/resource.h \
  /usr/include/bits/types/struct_rusage.h /usr/include/sys/signal.h \
- ../../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
+ ../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
  /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/windowimpl.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/win_struct.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/win_struct.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h \
- ../../../build/include/xview_private/font_impl.h \
- ../../../build/include/pixrect/pixrect.h \
- ../../../build/include/pixrect/pixfont.h \
- ../../../build/include/xview/frame.h \
- ../../../build/include/xview/attrol.h \
- ../../../build/include/xview_private/win_info.h
+ ../../build/include/xview_private/font_impl.h \
+ ../../build/include/pixrect/pixrect.h \
+ ../../build/include/pixrect/pixfont.h \
+ ../../build/include/xview/frame.h \
+ ../../build/include/xview/attrol.h \
+ ../../build/include/xview_private/win_info.h
 window_get.o: window_get.c /usr/include/stdc-predef.h \
  /usr/include/stdio.h /usr/include/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -871,7 +871,7 @@ window_get.o: window_get.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/cookie_io_functions_t.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h \
- ../../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview_private/windowimpl.h \
  /usr/include/sys/types.h /usr/include/bits/types/clock_t.h \
  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/time_t.h \
  /usr/include/bits/types/timer_t.h /usr/include/bits/stdint-intn.h \
@@ -886,17 +886,17 @@ window_get.o: window_get.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h /usr/include/sys/time.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -915,43 +915,43 @@ window_get.o: window_get.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/resource.h /usr/include/bits/resource.h \
  /usr/include/bits/types/struct_rusage.h /usr/include/sys/signal.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/win_struct.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/win_struct.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h \
- ../../../build/include/xview_private/win_info.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
+ ../../build/include/xview_private/win_info.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
  /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/font_impl.h \
- ../../../build/include/pixrect/pixrect.h \
- ../../../build/include/pixrect/pixfont.h \
- ../../../build/include/xview/win_screen.h \
- ../../../build/include/xview/xv_xrect.h
+ ../../build/include/xview_private/font_impl.h \
+ ../../build/include/pixrect/pixrect.h \
+ ../../build/include/pixrect/pixfont.h \
+ ../../build/include/xview/win_screen.h \
+ ../../build/include/xview/xv_xrect.h
 window_set.o: window_set.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -971,7 +971,7 @@ window_set.o: window_set.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/libc-header-start.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
@@ -984,7 +984,7 @@ window_set.o: window_set.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -1003,47 +1003,47 @@ window_set.o: window_set.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/windowimpl.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/win_struct.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/win_struct.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h \
- ../../../build/include/xview_private/win_info.h \
- ../../../build/include/xview_private/svr_impl.h \
- ../../../build/include/xview/frame.h \
- ../../../build/include/xview/attrol.h /usr/include/X11/Xresource.h \
- ../../../build/include/xview_private/svr_atom.h /usr/include/sys/file.h \
+ ../../build/include/xview_private/win_info.h \
+ ../../build/include/xview_private/svr_impl.h \
+ ../../build/include/xview/frame.h \
+ ../../build/include/xview/attrol.h /usr/include/X11/Xresource.h \
+ ../../build/include/xview_private/svr_atom.h /usr/include/sys/file.h \
  /usr/include/fcntl.h /usr/include/bits/fcntl.h \
  /usr/include/bits/fcntl-linux.h /usr/include/bits/types/struct_iovec.h \
  /usr/include/linux/falloc.h /usr/include/bits/stat.h \
  /usr/include/bits/struct_stat.h /usr/include/assert.h \
- ../../../build/include/xview/fullscreen.h \
- ../../../build/include/xview/defaults.h
+ ../../build/include/xview/fullscreen.h \
+ ../../build/include/xview/defaults.h
 windowlayt.o: windowlayt.c /usr/include/stdc-predef.h \
  /usr/include/stdio.h /usr/include/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -1060,9 +1060,9 @@ windowlayt.o: windowlayt.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/cookie_io_functions_t.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/bits/types/clock_t.h \
  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/time_t.h \
  /usr/include/bits/types/timer_t.h /usr/include/bits/stdint-intn.h \
@@ -1076,13 +1076,13 @@ windowlayt.o: windowlayt.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -1101,37 +1101,37 @@ windowlayt.o: windowlayt.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview_private/windowimpl.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/win_struct.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/win_struct.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h \
- ../../../build/include/xview_private/win_info.h
+ ../../build/include/xview_private/win_info.h
 windowutil.o: windowutil.c /usr/include/stdc-predef.h \
  /usr/include/stdio.h /usr/include/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -1155,7 +1155,7 @@ windowutil.o: windowutil.c /usr/include/stdc-predef.h \
  /usr/include/bits/fcntl-linux.h /usr/include/bits/types/struct_iovec.h \
  /usr/include/linux/falloc.h /usr/include/bits/types/struct_timespec.h \
  /usr/include/bits/types/time_t.h /usr/include/bits/stat.h \
- /usr/include/bits/struct_stat.h ../../../build/include/xview/notify.h \
+ /usr/include/bits/struct_stat.h ../../build/include/xview/notify.h \
  /usr/include/sys/types.h /usr/include/bits/types/clock_t.h \
  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/timer_t.h \
  /usr/include/bits/stdint-intn.h /usr/include/endian.h \
@@ -1186,55 +1186,55 @@ windowutil.o: windowutil.c /usr/include/stdc-predef.h \
  /usr/include/bits/waitstatus.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/strings.h /usr/include/malloc.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../../build/include/xview_private/windowimpl.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/win_struct.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/win_struct.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h \
- ../../../build/include/xview_private/win_info.h \
- ../../../build/include/xview_private/sel_impl.h \
- ../../../build/include/xview_private/svr_impl.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
+ ../../build/include/xview_private/win_info.h \
+ ../../build/include/xview_private/sel_impl.h \
+ ../../build/include/xview_private/svr_impl.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_i18n.h /usr/include/libintl.h \
  /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview/frame.h \
- ../../../build/include/xview/attrol.h /usr/include/X11/Xresource.h \
- ../../../build/include/xview_private/svr_atom.h \
- ../../../build/include/xview/win_notify.h \
- ../../../build/include/xview/sel_attrs.h
+ ../../build/include/xview/frame.h \
+ ../../build/include/xview/attrol.h /usr/include/X11/Xresource.h \
+ ../../build/include/xview_private/svr_atom.h \
+ ../../build/include/xview/win_notify.h \
+ ../../build/include/xview/sel_attrs.h
 window_cms.o: window_cms.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -1254,7 +1254,7 @@ window_cms.o: window_cms.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../../build/include/xview/base.h \
+ /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/string.h /usr/include/bits/libc-header-start.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
@@ -1267,7 +1267,7 @@ window_cms.o: window_cms.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -1286,39 +1286,39 @@ window_cms.o: window_cms.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview/frame.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview/frame.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/attrol.h ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/windowimpl.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/win_struct.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/attrol.h ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/win_struct.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h
 windowcmpt.o: windowcmpt.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview_private/windowimpl.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -1339,12 +1339,12 @@ windowcmpt.o: windowcmpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h /usr/include/sys/time.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/libc-header-start.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdio.h \
@@ -1357,7 +1357,7 @@ windowcmpt.o: windowcmpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -1376,32 +1376,32 @@ windowcmpt.o: windowcmpt.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/resource.h /usr/include/bits/resource.h \
  /usr/include/bits/types/struct_rusage.h /usr/include/sys/signal.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/win_struct.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/win_struct.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h
 windowdrop.o: windowdrop.c /usr/include/stdc-predef.h \
- ../../../build/include/xview_private/windowimpl.h \
+ ../../build/include/xview_private/windowimpl.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
@@ -1422,12 +1422,12 @@ windowdrop.o: windowdrop.c /usr/include/stdc-predef.h \
  /usr/include/bits/pthreadtypes-arch.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h /usr/include/sys/time.h \
- ../../../build/include/xview/font.h \
- ../../../build/include/xview/generic.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../../build/include/xview/pkg_public.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/base.h /usr/include/string.h \
+ ../../build/include/xview/font.h \
+ ../../build/include/xview/generic.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/pkg_public.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/base.h /usr/include/string.h \
  /usr/include/bits/libc-header-start.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdio.h \
@@ -1440,7 +1440,7 @@ windowdrop.o: windowdrop.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -1459,29 +1459,29 @@ windowdrop.o: windowdrop.c /usr/include/stdc-predef.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/resource.h /usr/include/bits/resource.h \
  /usr/include/bits/types/struct_rusage.h /usr/include/sys/signal.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/rect.h \
- ../../../build/include/xview/rectlist.h \
- ../../../build/include/xview/win_struct.h \
- ../../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/rectlist.h \
+ ../../build/include/xview/win_struct.h \
+ ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
  /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../../build/include/xview/win_event.h \
- ../../../build/include/xview/window.h \
- ../../../build/include/xview/server.h \
- ../../../build/include/xview/screen.h \
- ../../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
+ ../../build/include/xview/win_event.h \
+ ../../build/include/xview/window.h \
+ ../../build/include/xview/server.h \
+ ../../build/include/xview/screen.h \
+ ../../build/include/xview/drawable.h /usr/include/X11/Xutil.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../../build/include/xview/cursor.h \
- ../../../build/include/xview_private/draw_impl.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/cms.h \
- ../../../build/include/xview_private/scrn_vis.h \
- ../../../build/include/xview_private/xv_list.h \
- ../../../build/include/xview/dragdrop.h \
- ../../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
+ ../../build/include/xview/cursor.h \
+ ../../build/include/xview_private/draw_impl.h \
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/cms.h \
+ ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/xv_list.h \
+ ../../build/include/xview/dragdrop.h \
+ ../../build/include/xview/sel_pkg.h /usr/include/X11/Xatom.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h /usr/include/assert.h \
- ../../../build/include/xview_private/dndimpl.h \
- ../../../build/include/xview_private/site_impl.h
+ ../../build/include/xview_private/dndimpl.h \
+ ../../build/include/xview_private/site_impl.h

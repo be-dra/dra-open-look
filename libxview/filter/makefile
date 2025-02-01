@@ -627,7 +627,7 @@ DEPEND_DEFINES=
 CHECKOUT,v=$(CO) $(COFLAGS) $<
 
 HEADERS= ${HDRSPUBLIC} ${HDRSPRIVATE}
-BUILDINCDIR = ../../../build
+BUILDINCDIR = ../../build
 INCLUDES= -I$(BUILDINCDIR)/include
 INCROOT = /usr/X11R6/include
 TOP_INCLUDES = -I$(INCROOT)
@@ -766,8 +766,8 @@ filter.o: filter.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  /usr/include/bits/types/__locale_t.h /usr/include/string.h \
  /usr/include/bits/libc-header-start.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h \
- /usr/include/strings.h ../../../build/include/xview_private/io_stream.h \
- ../../../build/include/xview/sun.h ../../../build/include/xview/base.h \
+ /usr/include/strings.h ../../build/include/xview_private/io_stream.h \
+ ../../build/include/xview/sun.h ../../build/include/xview/base.h \
  /usr/include/malloc.h /usr/include/stdio.h \
  /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
@@ -776,7 +776,7 @@ filter.o: filter.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  /usr/include/bits/types/cookie_io_functions_t.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h \
- ../../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
  /usr/include/stdlib.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/sys/types.h \
  /usr/include/bits/types/clock_t.h /usr/include/bits/types/clockid_t.h \
@@ -792,9 +792,9 @@ filter.o: filter.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
  /usr/include/bits/struct_rwlock.h /usr/include/alloca.h \
  /usr/include/bits/stdlib-float.h \
- ../../../build/include/xview_private/i18n_impl.h \
- ../../../build/include/xview/pkg.h ../../../build/include/xview/attr.h \
- ../../../build/include/xview/notify.h /usr/include/sys/wait.h \
+ ../../build/include/xview_private/i18n_impl.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
+ ../../build/include/xview/notify.h /usr/include/sys/wait.h \
  /usr/include/signal.h /usr/include/bits/signum-generic.h \
  /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
@@ -813,9 +813,9 @@ filter.o: filter.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
  /usr/include/sys/time.h /usr/include/sys/resource.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../../build/include/xview/xv_i18n.h \
+ /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../../build/include/xview_private/portable.h \
- ../../../build/include/xview/str_utils.h \
- ../../../build/include/xview/xv_error.h \
- ../../../build/include/xview_private/filter.h
+ ../../build/include/xview_private/portable.h \
+ ../../build/include/xview/str_utils.h \
+ ../../build/include/xview/xv_error.h \
+ ../../build/include/xview_private/filter.h
