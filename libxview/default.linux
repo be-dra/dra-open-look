@@ -1,0 +1,3 @@
+CDEBUGFLAGS=-O2 -pipe -Wall -Wmissing-prototypes -Wtraditional-conversion -Wstrict-prototypes -D_FILE_OFFSET_BITS=64
+
+# COFLAGS=
