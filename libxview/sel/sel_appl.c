@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_appl.c 20.29 93/06/28 DRA: $Id: sel_appl.c,v 4.4 2025/01/26 22:08:57 dra Exp $";
+static char     sccsid[] = "@(#)sel_appl.c 20.29 93/06/28 DRA: $Id: sel_appl.c,v 4.5 2025/02/02 19:10:47 dra Exp $";
 #endif
 #endif
 
@@ -10,13 +10,7 @@ static char     sccsid[] = "@(#)sel_appl.c 20.29 93/06/28 DRA: $Id: sel_appl.c,v
  *	file for terms of the license.
  */
 
-#include <xview_private/i18n_impl.h>
-#include <xview_private/portable.h>
 #include <xview_private/seln_impl.h>
-#include <xview/attr.h>
-#include <xview/rect.h>
-#include <xview/server.h>
-#include <xview/sel_compat.h>
 
 Xv_public Seln_request * seln_ask(Seln_holder *holder, ...)
 {
