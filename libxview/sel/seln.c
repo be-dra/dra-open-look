@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)seln.c 20.19 93/06/28 DRA: $Id: seln.c,v 4.2 2025/01/26 22:08:57 dra Exp $";
+static char     sccsid[] = "@(#)seln.c 20.19 93/06/28 DRA: $Id: seln.c,v 4.3 2025/02/02 19:10:47 dra Exp $";
 #endif
 #endif
 
@@ -10,15 +10,8 @@ static char     sccsid[] = "@(#)seln.c 20.19 93/06/28 DRA: $Id: seln.c,v 4.2 202
  *	file for terms of the license.
  */
 
-#include <sys/types.h>
-#include <sys/file.h>
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #define xview_other_selection_funcs 1
 #include <xview_private/seln_impl.h>
-#include <xview_private/i18n_impl.h>
 #include <xview/selection.h>
 
 struct selection selnull;
