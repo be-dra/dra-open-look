@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_clnt.c 20.41 93/06/29 DRA: $Id: sel_clnt.c,v 4.4 2025/01/26 22:08:57 dra Exp $";
+static char     sccsid[] = "@(#)sel_clnt.c 20.41 93/06/29 DRA: $Id: sel_clnt.c,v 4.5 2025/02/02 19:10:47 dra Exp $";
 #endif
 #endif
 
@@ -10,17 +10,7 @@ static char     sccsid[] = "@(#)sel_clnt.c 20.41 93/06/29 DRA: $Id: sel_clnt.c,v
  *	file for terms of the license.
  */
 
-#include <xview_private/i18n_impl.h>
-#include <xview_private/portable.h>
-#include <xview/server.h>
 #include <xview_private/seln_impl.h>
-#include <xview_private/svr_impl.h>
-#include <xview_private/sel_impl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <xview/sel_compat.h>
-#include <xview/defaults.h>
 
 int seln_debug;
 
