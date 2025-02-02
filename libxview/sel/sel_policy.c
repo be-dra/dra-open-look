@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_policy.c 20.20 93/06/28 DRA: $Id: sel_policy.c,v 4.4 2025/01/26 22:08:57 dra Exp $";
+static char     sccsid[] = "@(#)sel_policy.c 20.20 93/06/28 DRA: $Id: sel_policy.c,v 4.5 2025/02/02 19:10:47 dra Exp $";
 #endif
 #endif
 
@@ -11,11 +11,6 @@ static char     sccsid[] = "@(#)sel_policy.c 20.20 93/06/28 DRA: $Id: sel_policy
  */
 
 #include <xview_private/seln_impl.h>
-#include <xview/sel_svc.h>
-#include <xview/sel_compat.h>
-#include <xview/rect.h>
-#include <xview/win_input.h>
-#include <xview/server.h>
 
 Xv_public Seln_response selection_figure_response(Xv_Server server, Seln_function_buffer *buffer, Seln_holder **holder)
 {
