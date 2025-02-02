@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_common.c 20.35 93/06/28 DRA: $Id: sel_common.c,v 4.2 2025/01/26 22:08:57 dra Exp $";
+static char     sccsid[] = "@(#)sel_common.c 20.35 93/06/28 DRA: $Id: sel_common.c,v 4.3 2025/02/02 19:10:47 dra Exp $";
 #endif
 #endif
 
@@ -11,11 +11,6 @@ static char     sccsid[] = "@(#)sel_common.c 20.35 93/06/28 DRA: $Id: sel_common
  */
 
 #include <xview_private/seln_impl.h>
-#include <xview/server.h>
-#include <X11/Xlib.h>
-#include <xview/sel_compat.h>
-#include <X11/Xatom.h>
-
 
 Pkg_private void seln_give_up_selection(Xv_Server server, Seln_rank rank);
 
