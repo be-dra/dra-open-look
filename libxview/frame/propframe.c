@@ -34,7 +34,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.12 2025/01/09 22:27:14 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.12 2025/01/09 22:27:14 dra Exp dra $";
 
 #define A0 *attrs
 #define A1 attrs[1]
