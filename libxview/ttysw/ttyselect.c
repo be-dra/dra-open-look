@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.30 2025/01/31 19:47:12 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.31 2025/02/02 10:44:55 dra Exp $";
 #endif
 
 /*
@@ -186,13 +186,28 @@ static void supply_sel_item(Ttysw_private priv)
 		while (index--) {
 			dest[i++] = *src++;
 		}
+		/* so, here is the place where the following bug happens:
+		 * if you have a line that reaches to the right edge of the window
+		 * (ttysw_right) and make a selection that stretches over this spot.
+		 * When you paste this somewhere else, you have
+		 * **lost the NEWLINE**.
+		 * 
+		 * However, if you have a long line that has been wrapped (e.g.in vi),
+		 * this behaviour is correct: it **looks** like a NEWLINE, but 
+		 * there is no NEWLINE.....
+		 *
+		 * My first thought was 'omit the if', but now I think I leave it
+		 * as it is - we have no information here about 
+		 * "NEWLINE or no NEWLINE"
+		 */
 		if (row_len + curr_col != ttysw_right) {
 			if (i + 10 >= priv->bufsize) dest = extend_selbuffer(priv);
 			dest[i++] = '\n';
 		}
 		curr_col = 0;
-		curr_row += 1;
+		++curr_row;
 	}
+	/* now handle the last line */
 	row_len = end_col + 1 - curr_col;
 	if (i + row_len + 10 >= priv->bufsize) dest = extend_selbuffer(priv);
 	index = row_len;
