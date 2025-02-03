@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.16 2025/01/07 18:40:13 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.17 2025/02/02 19:54:36 dra Exp $ ";
 #endif
 #endif
 
@@ -462,6 +462,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 			case ACTION_ADJUST:
 			case ACTION_MENU:
 				lasttime = ev->xbutton.time;
+				server_set_timestamp(srv, NULL, lasttime);
 				if (event_is_up(&event)) {
 					unsigned int state = ev->xbutton.state;
 
@@ -504,12 +505,14 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 				break;
 			case LOC_DRAG:
 				lasttime = ev->xmotion.time;
+				server_set_timestamp(srv, NULL, lasttime);
 				if (dsdm_present) {
 					DndFindSite(dnd, (XButtonEvent *) ev);
 				}
 				break;
 			case ACTION_STOP:
 				lasttime = ev->xkey.time;
+				server_set_timestamp(srv, NULL, lasttime);
 				/* Send LeaveNotify if necessary */
 				if (dsdm_present)
 					(void)DndSendPreviewEvent(dnd, DND_NO_SITE, ev);
