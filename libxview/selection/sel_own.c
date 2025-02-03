@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.23 2025/01/27 19:40:43 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.24 2025/02/02 20:07:35 dra Exp $";
 #endif
 #endif
 
@@ -274,7 +274,20 @@ static int sel_set_ownership(Sel_owner_info *sel_owner)
 	time = (struct timeval *)xv_get(sel_owner_public, SEL_TIME);
 
 	owner->time = xv_sel_cvt_timeval_to_xtime(time);
+#ifdef BEFORE_DRA_CHANGED
+	/* this is a misnomer: it should be called 'fetch_new_server_time'
+	 * instead of 'xv_sel_get_last_event_time' because it actually writes
+	 * a property and waits for the PropertyNotify....
+	 */
 	lastEventTime = xv_sel_get_last_event_time(sel_owner->dpy, sel_owner->xid);
+#else /* BEFORE_DRA_CHANGED */
+	{
+		Xv_window parent = xv_get(sel_owner_public, XV_OWNER);
+		Xv_server srv = XV_SERVER_FROM_WINDOW(parent);
+
+		lastEventTime = server_get_timestamp(srv);
+	}
+#endif /* BEFORE_DRA_CHANGED */
 
 	if (owner->time == (Time) 0 || owner->time < lastEventTime) {
 		struct timeval tv;
