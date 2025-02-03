@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.26 2025/01/26 08:25:05 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.27 2025/02/02 20:08:14 dra Exp $";
 #endif
 #endif
 
@@ -1753,6 +1753,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 		case PropertyNotify:{
 				XPropertyEvent *pne = (XPropertyEvent *) xevent;
 
+				if (srv) server_set_timestamp(srv, NULL, pne->time);
 				if (!xv_sel_handle_property_notify(pne)) {
 					if (process_property_events(window, pne, event)) {
 						*pwindow = 0;
