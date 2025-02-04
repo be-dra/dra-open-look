@@ -20,7 +20,7 @@ T=date +%y%m%d%H%M%S >
 MV=mv
 RM=rm -f
 
-CPPFLAGS=$(SYSDEFINES) -DOW_I18N_L3 -DSHAPE -I$(OPENWINHOME)/include
+CPPFLAGS=$(SYSDEFINES) -DOW_I18N_L3 -DSHAPE -I../build/include
 LDLIBS=$(OLLDFLAGS) -lolgx $(XLDFLAGS) -lXext -lX11 $(SYSLIBS)
 
 COMPILE.c=$(CC) $(CFLAGS) $(CPPFLAGS) -c
