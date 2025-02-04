@@ -56,13 +56,26 @@ static void doUnhilite(int act, MenuTrackMode mode, WinButton *winInfo)
     Graphics_info	*gisNormal = WinGI(winInfo, NORMAL_GINFO);
     long flags;
 
-    if (act != SYNC_CHANGECLICK) flags = OLGX_NORMAL | OLGX_ERASE;
-    else if (mode == MODE_CLICK) flags = OLGX_BUSY | OLGX_ERASE | OLGX_NORMAL;
+    if (act != SYNC_CHANGECLICK) {
+		GC windowGC = WinGC(winInfo, WINDOW_GC);
+
+		flags = OLGX_NORMAL | OLGX_ERASE;
+		/* see the comment in "drawButton" - let us try to
+		 * erase the background first.
+		 * This seems to solve the problem of the abbrev button staying
+		 * even when the menu has been unmapped - at least in 2d case.
+		 */
+		XFillRectangle(gisNormal->dpy, winInfo->core.self, windowGC, 0, 0,
+				Abbrev_MenuButton_Width(gisNormal),
+				Abbrev_MenuButton_Height(gisNormal));
+	}
+    else if (mode == MODE_CLICK) {
+		flags = OLGX_BUSY | OLGX_ERASE | OLGX_NORMAL;
+	}
     else {
 		/* don't do this; it's unsettling to press it in when you drag again */
 		return;
     }
-
     olgx_draw_abbrev_button(gisNormal, winInfo->core.self, 0, 0,
 								OLGX_VERTICAL | flags);
 }
@@ -133,7 +146,7 @@ static int eventButtonRelease(Display *dpy, XEvent *event, WinButton *winInfo)
 	if (!AllButtonsUp(event))
 		return 0;
 
-	XUngrabPointer(dpy, LastEventTime);
+	XUngrabPointer(dpy, event->xbutton.time);
 
 	x = event->xbutton.x;
 	y = event->xbutton.y;
@@ -206,57 +219,56 @@ static int eventClientMessage(Display *dpy, XClientMessageEvent *ce,
 /*
  * drawButton -- draw the window button
  */
-/*ARGSUSED*/
 static int drawButton(Display	*dpy, WinButton *winInfo)
 {
-    Client		*cli = winInfo->core.client;
-    GC 			windowGC = WinGC(winInfo,WINDOW_GC);
-    XGCValues		gcv;
-    Graphics_info	*gisNormal = WinGI(winInfo,NORMAL_GINFO);
-    int			focusLines = (GRV.FocusFollowsMouse ? 1 : 0) ^
-				     (GRV.InvertFocusHighlighting ? 1 : 0);
+	Client *cli = winInfo->core.client;
+	GC  windowGC = WinGC(winInfo, WINDOW_GC);
+	XGCValues gcv;
+	Graphics_info *gisNormal = WinGI(winInfo, NORMAL_GINFO);
+	int focusLines = (GRV.FocusFollowsMouse ? 1 : 0) ^
+			(GRV.InvertFocusHighlighting ? 1 : 0);
 	int is3d = (GRV.ui_style == UIS_3D_COLOR);
 
-    /*
-     * Erase the background first.  Unfortunately, we can't depend on
-     * OLGX_ERASE to do the right thing, because it (a) erases only in BG1,
-     * and (b) erases only in 2D mode.  We need to erase a background color
-     * that depends on the state of the frame.  If we're in click-focus and we
-     * have the focus, draw in BG2; otherwise, draw in BG1.
-     */
+	/*
+	 * Erase the background first.  Unfortunately, we can't depend on
+	 * OLGX_ERASE to do the right thing, because it (a) erases only in BG1,
+	 * and (b) erases only in 2D mode.  We need to erase a background color
+	 * that depends on the state of the frame.  If we're in click-focus and we
+	 * have the focus, draw in BG2; otherwise, draw in BG1.
+	 */
 
-    /* Temporarily set background to BG2 if click-to-type */
-    if (!focusLines && winInfo->core.client->isFocus && is3d) {
-	XGetGCValues(dpy,windowGC,GCBackground,&gcv);
-	XSetBackground(dpy,windowGC,cli->scrInfo->colorInfo.bg2Color);
-    }
+	/* Temporarily set background to BG2 if click-to-type */
+	if (!focusLines && winInfo->core.client->isFocus && is3d) {
+		XGetGCValues(dpy, windowGC, GCBackground, &gcv);
+		XSetBackground(dpy, windowGC, cli->scrInfo->colorInfo.bg2Color);
+	}
 
-    XFillRectangle(dpy, winInfo->core.self, windowGC, 0, 0,
-		   Abbrev_MenuButton_Width(gisNormal),
-		   Abbrev_MenuButton_Height(gisNormal));
+	XFillRectangle(dpy, winInfo->core.self, windowGC, 0, 0,
+			Abbrev_MenuButton_Width(gisNormal),
+			Abbrev_MenuButton_Height(gisNormal));
 
-    /* Restore background back to BG1 */
-    if (!focusLines && winInfo->core.client->isFocus && is3d) {
-	XSetBackground(dpy,windowGC,gcv.background);
-    }
+	/* Restore background back to BG1 */
+	if (!focusLines && winInfo->core.client->isFocus && is3d) {
+		XSetBackground(dpy, windowGC, gcv.background);
+	}
 
-    olgx_draw_abbrev_button(gisNormal, winInfo->core.self,
-			    0, 0, OLGX_VERTICAL | OLGX_NORMAL | OLGX_ERASE);
+	olgx_draw_abbrev_button(gisNormal, winInfo->core.self,
+			0, 0, OLGX_VERTICAL | OLGX_NORMAL | OLGX_ERASE);
 
-    /*
-     * REMIND: hack for working around OLGX deficiency.  OLGX erases the
-     * "ears" at each corner of the window button to the background color.  
-     * They should really be filled in with the foreground color.
-     */
-    if (!focusLines && winInfo->core.client->isFocus && !is3d) {
-	XDrawRectangle(dpy, winInfo->core.self, WinGC(winInfo,FOREGROUND_GC),
-		       0, 0,
-		       Abbrev_MenuButton_Width(gisNormal)-1,
-		       Abbrev_MenuButton_Height(gisNormal)-1);
-	XDrawPoint(dpy, winInfo->core.self, WinGC(winInfo,FOREGROUND_GC),
-		   Abbrev_MenuButton_Width(gisNormal)-1,
-		   Abbrev_MenuButton_Height(gisNormal)-1);
-    }
+	/*
+	 * REMIND: hack for working around OLGX deficiency.  OLGX erases the
+	 * "ears" at each corner of the window button to the background color.  
+	 * They should really be filled in with the foreground color.
+	 */
+	if (!focusLines && winInfo->core.client->isFocus && !is3d) {
+		XDrawRectangle(dpy, winInfo->core.self, WinGC(winInfo, FOREGROUND_GC),
+				0, 0,
+				Abbrev_MenuButton_Width(gisNormal) - 1,
+				Abbrev_MenuButton_Height(gisNormal) - 1);
+		XDrawPoint(dpy, winInfo->core.self, WinGC(winInfo, FOREGROUND_GC),
+				Abbrev_MenuButton_Width(gisNormal) - 1,
+				Abbrev_MenuButton_Height(gisNormal) - 1);
+	}
 	return 0;
 }
 
