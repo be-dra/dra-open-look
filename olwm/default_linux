@@ -1,0 +1,36 @@
+OPENLOOK_BITS=
+RANLIB=ranlib
+SYSDEFINES=-DBSD -Dlinux
+CFLAGS=-O2 -Wno-implicit-function-declaration -pipe $(OPENLOOK_BITS) -Wall 
+# -Wmissing-prototypes -Wtraditional-conversion -Wstrict-prototypes
+# CFLAGS=-O2 -Wmissing-prototypes -Wstrict-prototypes -pipe $(OPENLOOK_BITS)
+LDFLAGS=-L. -L$(OPENWINHOME)/lib64$(OPENLOOK_BITS)  $(OPENLOOK_BITS)
+INSTALL_BIN=$(OPENWINHOME)/bin
+INSTALL_REMOTE=
+CMDS=$(HOME)/bin
+# CMDS=.
+SYSLIBS=-lm
+FORCE=FORCE
+INSTALL_REMOTE=
+KEEP_STATE_TARGET=
+
+SYSPROGS=
+C_I_OPT=-E
+C_I_TAIL=> $@
+
+CC_FOR_LINK=$(CC)
+ADD_ONS=owplaces.$(HOSTMTYPE) toolwait.$(HOSTMTYPE)
+
+DO_LINK_LIBS=false
+NO_COPY_LIB_CMD=true
+DO_COPY_LIBS=false
+INSTALLSODIR=$(HOME)/lib/
+MOFILES=mofiles
+
+DEPENDFLAGS=-w500 -s '\# DO NOT DELETE' -I/usr/lib64/gcc/x86_64-suse-linux/14/include $(CPPFLAGS) -p'libolwm_$$(HOSTMTYPE).a(' -o'.o)'
+
+IGNORE_INCLUDE=/usr/include $(OPENWINHOME)/include /usr/lib/gcc-lib
+CHECKOUT,v=$(CO) $(COFLAGS) $<
+
+
+OLLDFLAGS=-L../libolgx
