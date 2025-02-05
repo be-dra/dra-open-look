@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.29 2025/01/07 20:18:07 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.30 2025/02/04 21:33:35 dra Exp $";
 #endif
 #endif
 
@@ -41,7 +41,6 @@ static void collect_incr_string(Selection_requestor self, Atom target,
 	Xv_window win = xv_get(self, XV_OWNER);
 	Xv_server srv = XV_SERVER_FROM_WINDOW(win);
 
-	SERVERTRACE((390, "%s\n", __FUNCTION__));
 	if (target == XA_STRING
 #ifdef NO_XDND
 #else /* NO_XDND */
@@ -51,11 +50,9 @@ static void collect_incr_string(Selection_requestor self, Atom target,
 		Sel_req_info *selReq = SEL_REQUESTOR_PRIVATE(self);
 
 		if (type == (Atom) xv_get(srv, SERVER_ATOM, "INCR")) {
-			SERVERTRACE((333, "collect_incr_string: INCR\n"));
 			selReq->is_incremental = TRUE;
 		}
 		else if (! selReq->is_incremental) {
-			SERVERTRACE((333, "collect_incr_string non-incr-case\n"));
 			selReq->incr_collector = (char *)value;
 			selReq->incr_size = 0L;
 			selReq->reply_proc = selReq->saved_reply_proc;
@@ -63,7 +60,6 @@ static void collect_incr_string(Selection_requestor self, Atom target,
 		else if (length) {
 			char *string;
 			unsigned long len = selReq->incr_size;
-			SERVERTRACE((333, "collect_incr_string, incr junk\n"));
 			if (! len)
 				string = (char *)xv_malloc((size_t)length);
 			else {
@@ -76,7 +72,6 @@ static void collect_incr_string(Selection_requestor self, Atom target,
 			selReq->incr_size = len + length;
 		}
 		else {
-			SERVERTRACE((333, "collect_incr_string INCR END\n"));
 			selReq->is_incremental = FALSE;
 			selReq->incr_size = 0L;
 			selReq->reply_proc = selReq->saved_reply_proc;
@@ -114,7 +109,6 @@ static int selreq_reply_key = 0;
 static void cleanup_replyinfo(Xv_object obj, int key, char *data)
 {
 	/* I never saw this with data != NULL */
-	SERVERTRACE((344, "in cleanup_replyinfo(%ld, %d, %p)\n", obj, key, data));
 	if (key == selreq_reply_key && data != NULL) {
 		Sel_reply_info *replyInfo = (Sel_reply_info *)data;
 
@@ -356,7 +350,6 @@ static int selection_is_word(Selection_requestor self)
 	if (length == SEL_ERROR) is_word = FALSE;
 	else is_word = *wdp;
 	if (wdp) xv_free(wdp);
-	SERVERTRACE((344, "is_word = %d\n", is_word));
 	return is_word;
 }
 
@@ -398,7 +391,6 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 	Xv_server srv = XV_SERVER_FROM_WINDOW(xvw);
 
 	replyInfo = xv_alloc(Sel_reply_info);
-	SERVERTRACE((399, "%s for %ld = %p\n", __FUNCTION__, req, replyInfo));
 
 	if (selection) selection->req_info = SEL_REQUESTOR_PRIVATE(req);
 
@@ -1232,15 +1224,6 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 		else {
 			data = reply->sri_propdata;
 		}
-		SERVERTRACE((399, "%s: free %p\n", __FUNCTION__, reply));
-#ifdef DRA_BAD_ATTEMPT_TO_AVOID_MLK
-		/* 'double free' aborts happen... */
-		if (reply->sri_seln) {
-			if (reply->sri_seln->xid == None) {
-				xv_free(reply->sri_seln);
-			}
-		}
-#endif
 		xv_free(reply->sri_target);
 		xv_free(reply);
 		return data;
@@ -1438,7 +1421,6 @@ Xv_private int xv_sel_handle_selection_notify(XSelectionEvent *ev)
 	XWindowAttributes winAttr;
 
 	reply = (Sel_reply_info *) xv_sel_get_reply((XEvent *)ev);
-	SERVERTRACE((399, "%s: reply_info = %p\n", __FUNCTION__, reply));
 
 	if (reply == NULL) return FALSE;
 
@@ -1473,7 +1455,6 @@ Xv_private int xv_sel_handle_selection_notify(XSelectionEvent *ev)
 	if (XvGetRequestedValue(selReq,ev,reply,ev->property,*reply->sri_target,0))
 	{
 		if (!reply->sri_during_incr) {
-			SERVERTRACE((399, "%s: before end_request: reply=%p\n", __FUNCTION__, reply));
 			xv_sel_end_request(reply);
 		}
 
@@ -1645,7 +1626,6 @@ int sel_post_req(Selection_requestor sel)
     Time           XTime;
     XID            xid;
 
-	SERVERTRACE((399, "%s\n", __FUNCTION__));
     /* get the requestor's xid, event time, selection and the target */
     selReq = SEL_REQUESTOR_PRIVATE( sel );
     win = (Xv_window) xv_get( sel, XV_OWNER );
