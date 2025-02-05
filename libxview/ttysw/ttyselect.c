@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.31 2025/02/02 10:44:55 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.32 2025/02/05 11:48:55 dra Exp $";
 #endif
 
 /*
@@ -10,7 +10,6 @@ char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttysele
 
 #include <stdio.h>
 #include <ctype.h>
-#include <setjmp.h>
 
 #include <xview/defaults.h>
 #include <xview/rect.h>
@@ -25,24 +24,10 @@ char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttysele
 
 extern char *xv_app_name;
 
-/* global & private procedures	 */
-static void tvsub(struct timeval *, struct timeval *t1, struct timeval *t0);
-static void ttycountchars(int start,int finish, int row, void *xcount, struct ttyselection *u);
 typedef void (*tty_enumeration_t)(int start,int finish, int row, void *count, struct ttyselection *);
-static void ttyenumerateselection(struct ttyselection *ttysel, tty_enumeration_t proc, char *data);
-static void ttyhiliteline(int start, int finish, int row, void *xc, struct ttyselection *ttysel);
-
-static void ttysel_empty(register struct ttyselection *ttysel);
-static void ttysel_resolve(struct textselpos *tb, struct textselpos *te, int level, struct inputevent *event);
 
 #ifdef  OW_I18N
 static void     ttycountbytes();
-#endif
-
-static int ttysel_insel(struct ttyselection *ttysel, struct textselpos *tsp);
-static int ttysel_eq(struct textselpos *t1, struct textselpos *t2);
-
-#ifdef  OW_I18N
 static Seln_result ttysel_copy_out_wchar();
 #endif
 
@@ -80,564 +65,6 @@ Pkg_private void ttysel_destroy(Ttysw_private priv)
 	if (priv->selbuffer) xv_free(priv->selbuffer);
 	for (i = 0; i < NBR_TTY_SELECTIONS; i++) {
     	xv_destroy(priv->sel_owner[i]);
-	}
-}
-
-/*
- * Make a new selection. If multi is set, check for multi-click.
- */
-Pkg_private void ttysel_make(Ttysw_private ttysw, Event *event, int multi)
-{
-	int sel_received;
-	struct ttyselection *ttysel;
-	struct textselpos tspb, tspe;
-	struct timeval td;
-
-	if (event_is_quick_move(event) || event_is_quick_duplicate(event)) {
-		sel_received = TTY_SEL_SECONDARY;
-		ttysw->current_sel = TTY_SEL_SECONDARY;
-		ttysel = ttysw->sels + TTY_SEL_SECONDARY;
-	}
-	else {
-		sel_received = TTY_SEL_PRIMARY;
-		ttysw->current_sel = TTY_SEL_PRIMARY;
-		ttysel = ttysw->sels + TTY_SEL_PRIMARY;
-
-		xv_set(ttysw->sel_owner[TTY_SEL_SECONDARY], SEL_OWN, FALSE, NULL);
-	}
-
-	xv_set(ttysw->sel_owner[ttysw->current_sel],
-				SEL_TIME, &event_time(event),
-				SEL_OWN, TRUE,
-				NULL);
-
-	ttysel_resolve(&tspb, &tspe, SEL_CHAR, event);
-	if (multi && ttysel->sel_made) {
-		tvsub(&td, &event->ie_time, &ttysel->sel_time);
-		if (ttysel_insel(ttysel, &tspe) && timercmp(&td, &maxinterval, <)) {
-			ttysel_adjust(ttysw, event, TRUE, TRUE);
-			return;
-		}
-	}
-	if (ttysel->sel_made)
-		ttysel_deselect(ttysel, sel_received);
-	ttysel->sel_made = TRUE;
-	ttysel->sel_begin = tspb;
-	ttysel->sel_end = tspe;
-	ttysel->sel_time = event->ie_time;
-	ttysel->sel_level = SEL_CHAR;
-	ttysel->is_word = FALSE;
-	ttysel->sel_anchor = 0;
-	ttysel->sel_null = FALSE;
-	ttyhiliteselection(ttysel, (int)sel_received);
-}
-
-static char *extend_selbuffer(Ttysw_private priv)
-{
-	char *newbuf;
-	unsigned newsiz;
-
-	newsiz = priv->bufsize + 1000;
-	newbuf = xv_calloc(newsiz, 1);
-
-	if (priv->selbuffer) {
-		memcpy(newbuf, priv->selbuffer, (size_t)priv->bufsize);
-		xv_free(priv->selbuffer);
-	}
-	priv->selbuffer = newbuf;
-	priv->bufsize = newsiz;
-	return newbuf;
-}
-
-static jmp_buf jenv;
-
-static Notify_value catch_segv(Notify_client cl, int sig, Notify_signal_mode m)
-{
-	longjmp(jenv, 1);
-}
-
-static void supply_sel_item(Ttysw_private priv)
-{
-	int curr_col, curr_row, index, row_len;
-	char *dest;
-	int start_col, end_col, last_row;
-	struct ttyselection *ttysel;
-	char *src;
-	int i;
-
-	ttysel = priv->sels + priv->current_sel;
-	start_col = ttysel->sel_begin.tsp_col;
-	end_col = ttysel->sel_end.tsp_col;
-	last_row = ttysel->sel_end.tsp_row;
-
-	if (! priv->selbuffer) dest = extend_selbuffer(priv);
-	else dest = priv->selbuffer;
-
-	i = 0;
-
-	curr_col = start_col;
-	curr_row = ttysel->sel_begin.tsp_row;
-	while (curr_row < last_row) {
-		/* LINE_LENGHT is (image[curr_row])[-1]   */
-		row_len = (int)LINE_LENGTH(image[curr_row]) - curr_col;
-		if (i + row_len >= priv->bufsize) dest = extend_selbuffer(priv);
-		index = row_len;
-		src = image[curr_row] + curr_col;
-		while (index--) {
-			dest[i++] = *src++;
-		}
-		/* so, here is the place where the following bug happens:
-		 * if you have a line that reaches to the right edge of the window
-		 * (ttysw_right) and make a selection that stretches over this spot.
-		 * When you paste this somewhere else, you have
-		 * **lost the NEWLINE**.
-		 * 
-		 * However, if you have a long line that has been wrapped (e.g.in vi),
-		 * this behaviour is correct: it **looks** like a NEWLINE, but 
-		 * there is no NEWLINE.....
-		 *
-		 * My first thought was 'omit the if', but now I think I leave it
-		 * as it is - we have no information here about 
-		 * "NEWLINE or no NEWLINE"
-		 */
-		if (row_len + curr_col != ttysw_right) {
-			if (i + 10 >= priv->bufsize) dest = extend_selbuffer(priv);
-			dest[i++] = '\n';
-		}
-		curr_col = 0;
-		++curr_row;
-	}
-	/* now handle the last line */
-	row_len = end_col + 1 - curr_col;
-	if (i + row_len + 10 >= priv->bufsize) dest = extend_selbuffer(priv);
-	index = row_len;
-	src = image[curr_row] + curr_col;
-#ifdef BEFORE_DRA_INVESTIGATED
-	while (index--) {
-		dest[i++] = *src++;   /* sometimes crashes here */
-	}
-#else /* BEFORE_DRA_INVESTIGATED */
-	{
-		Notify_signal_func origfunc;
-
-		origfunc = notify_set_signal_func((Notify_client)priv, catch_segv,
-											SIGSEGV,NOTIFY_ASYNC);
-		if (setjmp(jenv) == 0) {
-			while (index--) {
-				dest[i++] = *src++;   /* sometimes crashes here */
-			}
-		}
-		else {
-			fprintf(stderr, "caught SEGV, index = %d\n", index);
-			fprintf(stderr, "i=%d, initial curr_row = %d\n", i,
-										ttysel->sel_begin.tsp_row);
-			/* we came here, but then died here (***) - so, let's see */
-			fprintf(stderr, "end_col=%d, curr_row=%d\n", end_col, curr_row);
-			fprintf(stderr, "line_length=%d, ttysw_right=%d\n", 
-							LINE_LENGTH(image[curr_row]), ttysw_right);
-
-		}
-		notify_set_signal_func((Notify_client)priv, origfunc,
-											SIGSEGV, NOTIFY_ASYNC);
-	}
-#endif /* BEFORE_DRA_INVESTIGATED */
-	/* (***) */
-	if (end_col==LINE_LENGTH(image[curr_row]) && end_col<ttysw_right) {
-		dest[i-1] = '\n';
-	}
-	dest[i] = '\0';
-
-	SERVERTRACE((855, "sel_item[%d] gets '%s'\n", priv->current_sel, dest));
-	xv_set(priv->sel_item[priv->current_sel],
-				SEL_DATA, dest,
-				SEL_LENGTH, i,
-				NULL);
-}
-
-Pkg_private void ttysel_finish(Ttysw_private priv, Event *ev)
-{
-	/* supply priv->sel_item[priv->current_sel] with the selected data */
-	supply_sel_item(priv);
-}
-
-static void highlight(struct ttyselection *ttysel, int rank)
-{
-	if (rank == TTY_SEL_PRIMARY)
-		ttyhiliteselection(ttysel, rank);
-	else {
-		ttysel->dehilite_op = TRUE;
-		ttyhiliteselection(ttysel, rank);
-		ttysel->dehilite_op = FALSE;
-	}
-}
-
-/*
- * Adjust the current selection according to the event. If multi is set,
- * check for multi-click.
- */
-Pkg_private void ttysel_adjust(Ttysw_private priv, Event *event,
-									int multi, int ok_to_extend)
-{
-	register struct textselpos *tb;
-	register struct textselpos *te;
-	int rank;
-	int count;
-	int extend = 0;
-	struct textselpos tspc, tspb, tspe, tt;
-	struct ttyselection *ttysel;
-	struct timeval td;
-
-	/* I think this modifies the 'visible selection',
-	 * not the primary selection
-	 */
-	SERVERTRACE((833, "%s: m=%d, ote=%d\n", __FUNCTION__, multi, ok_to_extend));
-	if (priv->sels[TTY_SEL_SECONDARY].sel_made) {
-		rank = TTY_SEL_SECONDARY;
-		ttysel = priv->sels + TTY_SEL_SECONDARY;
-	}
-	else if (priv->sels[TTY_SEL_PRIMARY].sel_made) {
-		rank = TTY_SEL_PRIMARY;
-		ttysel = priv->sels + TTY_SEL_PRIMARY;
-	}
-	else {
-		return;
-	}
-	tb = &ttysel->sel_begin;
-	te = &ttysel->sel_end;
-	if (!ttysel->sel_made || ttysel->sel_null)
-		return;
-	ttysel_resolve(&tspb, &tspc, SEL_CHAR, event);
-	if (multi) {
-		tvsub(&td, &event->ie_time, &ttysel->sel_time);
-		if (ttysel_insel(ttysel, &tspc) && timercmp(&td, &maxinterval, <) &&
-				ok_to_extend) {
-			extend = 1;
-			if (++ttysel->sel_level > SEL_MAX) {
-				ttysel->sel_level = SEL_CHAR;
-				extend = 0;
-			}
-			ttysel->is_word = (ttysel->sel_level == SEL_WORD);
-		}
-		ttysel->sel_time = event->ie_time;
-		ttysel->sel_anchor = 0;
-	}
-	ttysel_resolve(&tspb, &tspe, ttysel->sel_level, event);
-	/*
-	 * If inside current selection, pull in closest end.
-	 */
-	if (!extend && ttysel_insel(ttysel, &tspc)) {
-		int left_end, right_end;
-
-		if (ttysel->sel_anchor == 0) {
-			/* count chars to left */
-			count = 0;
-			tt = *te;
-			*te = tspc;
-			ttyenumerateselection(ttysel, ttycountchars, (char *)(&count));
-			*te = tt;
-			left_end = count;
-			/* count chars to right */
-			count = 0;
-			tt = *tb;
-			*tb = tspc;
-			ttyenumerateselection(ttysel, ttycountchars, (char *)(&count));
-			*tb = tt;
-			right_end = count;
-			if (right_end <= left_end)
-				ttysel->sel_anchor = -1;
-			else
-				ttysel->sel_anchor = 1;
-		}
-		if (ttysel->sel_anchor == -1) {
-			if (!ttysel_eq(te, &tspe)) {
-				/* pull in right end */
-				tt = *tb;
-				*tb = tspe;
-				tb->tsp_col++;
-				highlight(ttysel, (int)rank);
-				*tb = tt;
-				*te = tspe;
-			}
-		}
-		else {
-			if (!ttysel_eq(tb, &tspb)) {
-				/* pull in left end */
-				tt = *te;
-				*te = tspb;
-				te->tsp_col--;
-				highlight(ttysel, (int)rank);
-				*te = tt;
-				*tb = tspb;
-			}
-		}
-	}
-	else {
-		/*
-		 * Determine which end to extend. Both ends may extend if selection
-		 * level has increased.
-		 */
-		int newanchor = 0;
-
-		if (tspe.tsp_row > te->tsp_row ||
-				(tspe.tsp_row == te->tsp_row && tspe.tsp_col > te->tsp_col)) {
-			if (ttysel->sel_anchor == 1) {
-				/* selection is crossing over anchor point.
-				 *  pull in left end before extending right.
-				 */
-				if (tb->tsp_col != te->tsp_col) {
-					tt = *te;
-					te->tsp_col--;
-					highlight(ttysel, (int)rank);
-					*te = tt;
-					*tb = *te;
-				}
-				ttysel->sel_anchor = -1;
-			}
-			else if (ttysel->sel_anchor == 0)
-				newanchor = -1;
-			/* extend right end */
-			tt = *tb;
-			*tb = *te;
-			tb->tsp_col++;	/* check for overflow? */
-			*te = tspe;
-			ttyhiliteselection(ttysel, (int)rank);
-			*tb = tt;
-		}
-		if (tspb.tsp_row < tb->tsp_row ||
-				(tspb.tsp_row == tb->tsp_row && tspb.tsp_col < tb->tsp_col)) {
-			if (ttysel->sel_anchor == -1) {
-				/* selection is crossing over anchor point.
-				 *  pull in right end before extending left.
-				 */
-				if (tb->tsp_col != te->tsp_col) {
-					tt = *tb;
-					tb->tsp_col++;
-					highlight(ttysel, (int)rank);
-					*tb = tt;
-					*te = *tb;
-				}
-				ttysel->sel_anchor = 1;
-			}
-			else if (ttysel->sel_anchor == 0) {
-				if (newanchor == 0)
-					newanchor = 1;
-				else
-					newanchor = 0;
-			}
-			/* extend left end */
-			tt = *te;
-			*te = *tb;
-			te->tsp_col--;	/* check for underflow? */
-			*tb = tspb;
-			ttyhiliteselection(ttysel, (int)rank);
-			*te = tt;
-		}
-		if (ttysel->sel_anchor == 0)
-			ttysel->sel_anchor = newanchor;
-	}
-
-	supply_sel_item(priv);
-}
-
-/*
- * Clear out the current selection.
- */
-static void ttysel_cancel(struct ttysubwindow *ttysw, int ranki)
-{
-	struct ttyselection *ttysel;
-
-	SERVERTRACE((333, "%s:\n", __FUNCTION__));
-	ttysel = ttysw->sels + ranki;
-	if (!ttysel->sel_made)
-		return;
-	ttysel_deselect(ttysel, ranki); /* INCOMPLETE */
-	ttysel->sel_made = FALSE;
-}
-
-/* XXX - compatibility kludge */
-/* BUG ALERT: No XView prefix */
-Pkg_private void ttynullselection(struct ttysubwindow *ttysw)
-{
-	SERVERTRACE((333, "%s:\n", __FUNCTION__));
-    (void) ttysel_cancel(ttysw, TTY_SEL_PRIMARY);
-}
-
-/*
- * Remove a selection from the screen
- */
-Pkg_private void ttysel_deselect(struct ttyselection *ttysel, int rank)
-{
-	SERVERTRACE((353, "%s:\n", __FUNCTION__));
-	if (!ttysel->sel_made) return;
-	ttysel->dehilite_op = TRUE;
-	ttyhiliteselection(ttysel, rank);
-	ttysel->dehilite_op = FALSE;
-	if (!ttysel->sel_null)
-		ttysel_empty(ttysel);
-}
-
-/*
- * Hilite a selection. Enumerate all the lines of the selection; hilite each
- * one as appropriate.
- */
-Pkg_private void ttyhiliteselection(struct ttyselection *ttysel, int rank)
-{
-    struct pr_size  offsets;
-
-	SERVERTRACE((353, "%s:\n", __FUNCTION__));
-    if (!ttysel->sel_made || ttysel->sel_null) {
-		return;
-    }
-    ttysel->selrank = rank;
-    offsets.x = 0;
-    offsets.y = chrheight;
-
-    ttyenumerateselection(ttysel, ttyhiliteline, (char *) (&offsets));
-}
-
-/* internal (static) routines	 */
-
-/*
- * Make a selection be empty
- */
-static void ttysel_empty(register struct ttyselection *ttysel)
-{
-    ttysel->sel_null = TRUE;
-    ttysel->sel_level = SEL_CHAR;
-	ttysel->is_word = FALSE;
-    ttysel->sel_begin = tse_null_extent;
-    ttysel->sel_end = tse_null_extent;
-}
-
-/*
- * Is the specified position within the current selection?
- */
-static int ttysel_insel(struct ttyselection *ttysel, struct textselpos *tsp)
-{
-    register struct textselpos *tb = &ttysel->sel_begin;
-    register struct textselpos *te = &ttysel->sel_end;
-
-    if (tsp->tsp_row < tb->tsp_row || tsp->tsp_row > te->tsp_row)
-	return (0);
-    if (tb->tsp_row == te->tsp_row)
-	return (tsp->tsp_col >= tb->tsp_col &&
-		tsp->tsp_col <= te->tsp_col);
-    if (tsp->tsp_row == tb->tsp_row)
-	return (tsp->tsp_col >= tb->tsp_col);
-    if (tsp->tsp_row == te->tsp_row)
-	return (tsp->tsp_col <= te->tsp_col);
-    return (1);
-}
-
-static int ttysel_eq(struct textselpos *t1, struct textselpos *t2)
-{
-    return (t1->tsp_row == t2->tsp_row && t1->tsp_col == t2->tsp_col);
-}
-
-static void tvsub(struct timeval *tdiff, struct timeval *t1, struct timeval *t0)
-{
-
-    tdiff->tv_sec = t1->tv_sec - t0->tv_sec;
-    tdiff->tv_usec = t1->tv_usec - t0->tv_usec;
-    if (tdiff->tv_usec < 0)
-	tdiff->tv_sec--, tdiff->tv_usec += 1000000;
-}
-
-static void ttyenumerateselection(struct ttyselection *ttysel, tty_enumeration_t proc, char *data)
-{
-    struct textselpos *xbegin, *xend;
-    struct textselpos *begin, *end;
-    int    row;
-
-    if (!ttysel->sel_made || ttysel->sel_null) return;
-    /*
-     * Sort extents
-     */
-    ttysortextents(ttysel, &xbegin, &xend);
-    begin = xbegin;
-    end = xend;
-    /*
-     * Process a line at a time
-     */
-    for (row = begin->tsp_row; row <= end->tsp_row; row++) {
-	if (row == begin->tsp_row && row == end->tsp_row) {
-	    /*
-	     * Partial line hilite in middle
-	     */
-	    proc(begin->tsp_col, end->tsp_col, row, data, ttysel);
-	} else if (row == begin->tsp_row) {
-	    /*
-	     * Partial line hilite from beginning
-	     */
-#ifdef OW_I18N
-            proc(begin->tsp_col, LINE_LENGTH(image[row]), row, data, ttysel);
-#else
-	    proc(begin->tsp_col, LINE_LENGTH(image[row]), row, data, ttysel);
-#endif
-	} else if (row == end->tsp_row) {
-	    /*
-	     * Partial line hilite not to end
-	     */
-	    proc(0, end->tsp_col, row, data, ttysel);
-	} else {
-	    /*
-	     * Full line hilite
-	     */
-#ifdef OW_I18N
-            proc(0, LINE_LENGTH(image[row]), row, data, ttysel);
-#else
-	    proc(0, LINE_LENGTH(image[row]), row, data, ttysel);
-#endif
-	}
-    }
-}
-
-static void my_write_string(int start,int end,int row)
-{
-	extern char ttysw_boldify;
-	CHAR *str = image[row];
-	CHAR temp_char = (CHAR) '\0';
-
-#ifdef OW_I18N
-	int cwidth;
-	int offset;
-
-	tty_column_wchar_type(start, row, &cwidth, &offset);
-	start -= offset;
-	tty_column_wchar_type(end, row, &cwidth, &offset);
-	end += (cwidth - offset - 1);
-#endif
-
-	if ((end + 1) < (int)STRLEN(str)) {	/* This is a very dirty trick for
-										 * speed */
-		temp_char = str[end + 1];
-		str[end + 1] = (CHAR) '\0';
-		ttysw_pclearline(start, (int)strlen(str), row);
-	}
-	else
-		ttysw_pclearline(start, (int)strlen(str) + 1, row);
-
-	(void)ttysw_pstring((str + start), ttysw_boldify, start, row, PIX_SRC);
-
-	if (temp_char != '\0') str[end + 1] = temp_char;
-}
-
-
-static void ttyhiliteline(int start, int finish, int row, void *xc, struct ttyselection *ttysel)
-{
-	struct pr_size *offsets = (struct pr_size *)xc;
-	struct rect r;
-
-	rect_construct(&r, col_to_x(start), row_to_y(row) + offsets->x,
-			col_to_x(finish + 1) - col_to_x(start), offsets->y);
-	if (r.r_width == 0) return;
-
-	if (ttysel->dehilite_op) (void)my_write_string(start, finish, row);
-	else {
-		if (ttysel->selrank == TTY_SEL_SECONDARY)
-			(void)my_write_string(start, finish, row);
-
-		(void)ttysw_pselectionhilite(&r, ttysel->selrank);
 	}
 }
 
@@ -804,95 +231,322 @@ static void ttysel_resolve(tb, te, level, event)
     }
 }
 #else	/* OW_I18N */
-static void ttysel_resolve(struct textselpos *tb, struct textselpos *te, int level, struct inputevent *event)
+static void ttysel_resolve(struct textselpos *tb, struct textselpos *te,
+						int level, Event *event)
 {
-    register char  *line;
+	char *line;
 
-    tb->tsp_row = y_to_row(event->ie_locy);
-    if (tb->tsp_row >= ttysw_bottom)
-	tb->tsp_row = MAX(0, ttysw_bottom - 1);
-    else
-    if( tb->tsp_row < 0 )
-        tb->tsp_row = 0;
+	tb->tsp_row = y_to_row(event->ie_locy);
+	if (tb->tsp_row >= ttysw_bottom)
+		tb->tsp_row = MAX(0, ttysw_bottom - 1);
+	else if (tb->tsp_row < 0)
+		tb->tsp_row = 0;
 
-    line = image[tb->tsp_row];
-    tb->tsp_col = x_to_col(event->ie_locx);
+	line = image[tb->tsp_row];
+	tb->tsp_col = x_to_col(event->ie_locx);
 
-    if (tb->tsp_col > (int)LINE_LENGTH(line))
-	tb->tsp_col = LINE_LENGTH(line);
+	if (tb->tsp_col > (int)LINE_LENGTH(line))
+		tb->tsp_col = LINE_LENGTH(line);
 
-    *te = *tb;
-    switch (level) {
-      case SEL_CHAR:
-	break;
-      case SEL_WORD:{
-	    register int    col, chr;
-	    register unsigned char match_mode;
+	*te = *tb;
+	switch (level) {
+		case SEL_CHAR:
+			break;
+		case SEL_WORD:
+			{
+				register int col, chr;
+				register unsigned char match_mode;
 
-	    if( delim_init == FALSE )
-		    init_delim_table();
+				if (delim_init == FALSE)
+					init_delim_table();
 
-	    match_mode	= delim_table[(int)line[te->tsp_col]];
+				match_mode = delim_table[(int)line[te->tsp_col]];
 
-	    for (col = te->tsp_col; col < (int)LINE_LENGTH(line); col++) {
-		chr = line[col];
-		if ( delim_table[chr] != match_mode )
-		    break;
-	    }
-	    te->tsp_col = MAX(col - 1, tb->tsp_col);
-	    for (col = tb->tsp_col; col >= 0; col--) {
-		chr = line[col];
-		if ( delim_table[chr] != match_mode )
-		    break;
-	    }
-	    tb->tsp_col = MIN(col + 1, te->tsp_col);
-	    break;
+				for (col = te->tsp_col; col < (int)LINE_LENGTH(line); col++) {
+					chr = line[col];
+					if (delim_table[chr] != match_mode)
+						break;
+				}
+				te->tsp_col = MAX(col - 1, tb->tsp_col);
+				for (col = tb->tsp_col; col >= 0; col--) {
+					chr = line[col];
+					if (delim_table[chr] != match_mode)
+						break;
+				}
+				tb->tsp_col = MIN(col + 1, te->tsp_col);
+				break;
+			}
+		case SEL_LINE:
+			tb->tsp_col = 0;
+			te->tsp_col = LINE_LENGTH(line) - 1;
+			break;
+		case SEL_PARA:
+			{
+				register int row;
+
+				for (row = tb->tsp_row; row >= ttysw_top; row--)
+					if (LINE_LENGTH(image[row]) == 0)
+						break;
+				tb->tsp_row = MIN(tb->tsp_row, row + 1);
+				tb->tsp_col = 0;
+				for (row = te->tsp_row; row < ttysw_bottom; row++)
+					if (LINE_LENGTH(image[row]) == 0)
+						break;
+				te->tsp_row = MAX(te->tsp_row, row - 1);
+				te->tsp_col = LINE_LENGTH(image[te->tsp_row]);
+				break;
+			}
 	}
-      case SEL_LINE:
-	tb->tsp_col = 0;
-	te->tsp_col = LINE_LENGTH(line) - 1;
-	break;
-      case SEL_PARA:{
-	    register int    row;
-
-	    for (row = tb->tsp_row; row >= ttysw_top; row--)
-		if (LINE_LENGTH(image[row]) == 0)
-		    break;
-	    tb->tsp_row = MIN(tb->tsp_row, row + 1);
-	    tb->tsp_col = 0;
-	    for (row = te->tsp_row; row < ttysw_bottom; row++)
-		if (LINE_LENGTH(image[row]) == 0)
-		    break;
-	    te->tsp_row = MAX(te->tsp_row, row - 1);
-	    te->tsp_col = LINE_LENGTH(image[te->tsp_row]);
-	    break;
-	}
-    }
 }
 #endif
 
-Xv_private void ttysortextents(struct ttyselection *ttysel,
-				struct textselpos **begin, struct textselpos **end)
+static void tvsub(struct timeval *tdiff, struct timeval *t1, struct timeval *t0)
 {
 
-	if (ttysel->sel_begin.tsp_row == ttysel->sel_end.tsp_row) {
-		if (ttysel->sel_begin.tsp_col > ttysel->sel_end.tsp_col) {
-			*begin = &ttysel->sel_end;
-			*end = &ttysel->sel_begin;
-		}
-		else {
-			*begin = &ttysel->sel_begin;
-			*end = &ttysel->sel_end;
-		}
-	}
-	else if (ttysel->sel_begin.tsp_row > ttysel->sel_end.tsp_row) {
-		*begin = &ttysel->sel_end;
-		*end = &ttysel->sel_begin;
+    tdiff->tv_sec = t1->tv_sec - t0->tv_sec;
+    tdiff->tv_usec = t1->tv_usec - t0->tv_usec;
+    if (tdiff->tv_usec < 0)
+	tdiff->tv_sec--, tdiff->tv_usec += 1000000;
+}
+
+/*
+ * Is the specified position within the current selection?
+ */
+static int ttysel_insel(struct ttyselection *ttysel, struct textselpos *tsp)
+{
+    register struct textselpos *tb = &ttysel->sel_begin;
+    register struct textselpos *te = &ttysel->sel_end;
+
+    if (tsp->tsp_row < tb->tsp_row || tsp->tsp_row > te->tsp_row)
+	return (0);
+    if (tb->tsp_row == te->tsp_row)
+	return (tsp->tsp_col >= tb->tsp_col &&
+		tsp->tsp_col <= te->tsp_col);
+    if (tsp->tsp_row == tb->tsp_row)
+	return (tsp->tsp_col >= tb->tsp_col);
+    if (tsp->tsp_row == te->tsp_row)
+	return (tsp->tsp_col <= te->tsp_col);
+    return (1);
+}
+
+/*
+ * Make a new selection. If multi is set, check for multi-click.
+ */
+Pkg_private void ttysel_make(Ttysw_private ttysw, Event *event, int multi)
+{
+	int sel_received;
+	struct ttyselection *ttysel;
+	struct textselpos tspb, tspe;
+	struct timeval td;
+
+	if (event_is_quick_move(event) || event_is_quick_duplicate(event)) {
+		sel_received = TTY_SEL_SECONDARY;
+		ttysw->current_sel = TTY_SEL_SECONDARY;
+		ttysel = ttysw->sels + TTY_SEL_SECONDARY;
 	}
 	else {
-		*begin = &ttysel->sel_begin;
-		*end = &ttysel->sel_end;
+		sel_received = TTY_SEL_PRIMARY;
+		ttysw->current_sel = TTY_SEL_PRIMARY;
+		ttysel = ttysw->sels + TTY_SEL_PRIMARY;
+
+		xv_set(ttysw->sel_owner[TTY_SEL_SECONDARY], SEL_OWN, FALSE, NULL);
 	}
+
+	xv_set(ttysw->sel_owner[ttysw->current_sel],
+				SEL_TIME, &event_time(event),
+				SEL_OWN, TRUE,
+				NULL);
+
+	ttysel_resolve(&tspb, &tspe, SEL_CHAR, event);
+	if (multi && ttysel->sel_made) {
+		tvsub(&td, &event->ie_time, &ttysel->sel_time);
+		if (ttysel_insel(ttysel, &tspe) && timercmp(&td, &maxinterval, <)) {
+			ttysel_adjust(ttysw, event, TRUE, TRUE);
+			return;
+		}
+	}
+	if (ttysel->sel_made)
+		ttysel_deselect(ttysel, sel_received);
+	ttysel->sel_made = TRUE;
+	ttysel->sel_begin = tspb;
+	ttysel->sel_end = tspe;
+	ttysel->sel_time = event->ie_time;
+	ttysel->sel_level = SEL_CHAR;
+	ttysel->is_word = FALSE;
+	ttysel->sel_anchor = 0;
+	ttysel->sel_null = FALSE;
+	ttyhiliteselection(ttysel, (int)sel_received);
+}
+
+static char *extend_selbuffer(Ttysw_private priv)
+{
+	char *newbuf;
+	unsigned newsiz;
+
+	newsiz = priv->bufsize + 1000;
+	newbuf = xv_calloc(newsiz, 1);
+
+	if (priv->selbuffer) {
+		memcpy(newbuf, priv->selbuffer, (size_t)priv->bufsize);
+		xv_free(priv->selbuffer);
+	}
+	priv->selbuffer = newbuf;
+	priv->bufsize = newsiz;
+	return newbuf;
+}
+
+static void supply_sel_item(Ttysw_private priv)
+{
+	int curr_col, curr_row, index, row_len;
+	char *dest;
+	int start_col, end_col, last_row;
+	struct ttyselection *ttysel;
+	char *src;
+	int i;
+
+	ttysel = priv->sels + priv->current_sel;
+	start_col = ttysel->sel_begin.tsp_col;
+	end_col = ttysel->sel_end.tsp_col;
+	last_row = ttysel->sel_end.tsp_row;
+
+	if (! priv->selbuffer) dest = extend_selbuffer(priv);
+	else dest = priv->selbuffer;
+
+	i = 0;
+
+	curr_col = start_col;
+	curr_row = ttysel->sel_begin.tsp_row;
+	if (curr_row < 0) {
+		/* investigation showed that 
+		 * priv->current_sel = 0 (= PRIMARY)
+		 * sel_begin = (-1, -1), sel_end = (-1, -1)
+		 * ....
+		 * I didn't find out, **why** we came here but **how** we came here:
+		 *    supply_sel_item      called from
+		 *    ttysel_finish        called from
+		 *    ttysw_process_select called from
+		 *    ttysw_eventstd       ....  
+		 *    
+		 * and the event was a ACTION_SELECT up. ???
+		 */
+
+		/* let us return, otherwise we had a SIGSEGV later.... */
+		return;
+	}
+	while (curr_row < last_row) {
+		/* LINE_LENGHT is (image[curr_row])[-1]   */
+		row_len = (int)LINE_LENGTH(image[curr_row]) - curr_col;
+		if (i + row_len >= priv->bufsize) dest = extend_selbuffer(priv);
+		index = row_len;
+		src = image[curr_row] + curr_col;
+		while (index--) {
+			dest[i++] = *src++;
+		}
+		/* so, here is the place where the following bug happens:
+		 * if you have a line that reaches to the right edge of the window
+		 * (ttysw_right) and make a selection that stretches over this spot.
+		 * When you paste this somewhere else, you have
+		 * **lost the NEWLINE**.
+		 * 
+		 * However, if you have a long line that has been wrapped (e.g.in vi),
+		 * this behaviour is correct: it **looks** like a NEWLINE, but 
+		 * there is no NEWLINE.....
+		 *
+		 * My first thought was 'omit the if', but now I think I leave it
+		 * as it is - we have no information here about 
+		 * "NEWLINE or no NEWLINE"
+		 */
+		if (row_len + curr_col != ttysw_right) {
+			if (i + 10 >= priv->bufsize) dest = extend_selbuffer(priv);
+			dest[i++] = '\n';
+		}
+		curr_col = 0;
+		++curr_row;
+	}
+	/* now handle the last line */
+	row_len = end_col + 1 - curr_col;
+	if (i + row_len + 10 >= priv->bufsize) dest = extend_selbuffer(priv);
+	index = row_len;
+	src = image[curr_row] + curr_col;
+	while (index--) {
+		dest[i++] = *src++;   /* sometimes crashes here */
+	}
+	if (end_col==LINE_LENGTH(image[curr_row]) && end_col<ttysw_right) {
+		dest[i-1] = '\n';
+	}
+	dest[i] = '\0';
+
+	SERVERTRACE((855, "sel_item[%d] gets '%s'\n", priv->current_sel, dest));
+	xv_set(priv->sel_item[priv->current_sel],
+				SEL_DATA, dest,
+				SEL_LENGTH, i,
+				NULL);
+}
+
+Pkg_private void ttysel_finish(Ttysw_private priv, Event *ev)
+{
+	/* supply priv->sel_item[priv->current_sel] with the selected data */
+	supply_sel_item(priv);
+}
+
+static void highlight(struct ttyselection *ttysel, int rank)
+{
+	if (rank == TTY_SEL_PRIMARY)
+		ttyhiliteselection(ttysel, rank);
+	else {
+		ttysel->dehilite_op = TRUE;
+		ttyhiliteselection(ttysel, rank);
+		ttysel->dehilite_op = FALSE;
+	}
+}
+
+static void ttyenumerateselection(struct ttyselection *ttysel, tty_enumeration_t proc, char *data)
+{
+    struct textselpos *xbegin, *xend;
+    struct textselpos *begin, *end;
+    int    row;
+
+    if (!ttysel->sel_made || ttysel->sel_null) return;
+    /*
+     * Sort extents
+     */
+    ttysortextents(ttysel, &xbegin, &xend);
+    begin = xbegin;
+    end = xend;
+    /*
+     * Process a line at a time
+     */
+    for (row = begin->tsp_row; row <= end->tsp_row; row++) {
+	if (row == begin->tsp_row && row == end->tsp_row) {
+	    /*
+	     * Partial line hilite in middle
+	     */
+	    proc(begin->tsp_col, end->tsp_col, row, data, ttysel);
+	} else if (row == begin->tsp_row) {
+	    /*
+	     * Partial line hilite from beginning
+	     */
+#ifdef OW_I18N
+            proc(begin->tsp_col, LINE_LENGTH(image[row]), row, data, ttysel);
+#else
+	    proc(begin->tsp_col, LINE_LENGTH(image[row]), row, data, ttysel);
+#endif
+	} else if (row == end->tsp_row) {
+	    /*
+	     * Partial line hilite not to end
+	     */
+	    proc(0, end->tsp_col, row, data, ttysel);
+	} else {
+	    /*
+	     * Full line hilite
+	     */
+#ifdef OW_I18N
+            proc(0, LINE_LENGTH(image[row]), row, data, ttysel);
+#else
+	    proc(0, LINE_LENGTH(image[row]), row, data, ttysel);
+#endif
+	}
+    }
 }
 
 #ifdef OW_I18N
@@ -966,6 +620,322 @@ static void ttycountchars(int start,int finish, int row,void *xcount, struct tty
     }
 }
 #endif
+
+static int ttysel_eq(struct textselpos *t1, struct textselpos *t2)
+{
+    return (t1->tsp_row == t2->tsp_row && t1->tsp_col == t2->tsp_col);
+}
+
+/*
+ * Adjust the current selection according to the event. If multi is set,
+ * check for multi-click.
+ */
+Pkg_private void ttysel_adjust(Ttysw_private priv, Event *event,
+									int multi, int ok_to_extend)
+{
+	register struct textselpos *tb;
+	register struct textselpos *te;
+	int rank;
+	int count;
+	int extend = 0;
+	struct textselpos tspc, tspb, tspe, tt;
+	struct ttyselection *ttysel;
+	struct timeval td;
+
+	/* I think this modifies the 'visible selection',
+	 * not the primary selection
+	 */
+	SERVERTRACE((833, "%s: m=%d, ote=%d\n", __FUNCTION__, multi, ok_to_extend));
+	if (priv->sels[TTY_SEL_SECONDARY].sel_made) {
+		rank = TTY_SEL_SECONDARY;
+		ttysel = priv->sels + TTY_SEL_SECONDARY;
+	}
+	else if (priv->sels[TTY_SEL_PRIMARY].sel_made) {
+		rank = TTY_SEL_PRIMARY;
+		ttysel = priv->sels + TTY_SEL_PRIMARY;
+	}
+	else {
+		return;
+	}
+	tb = &ttysel->sel_begin;
+	te = &ttysel->sel_end;
+	if (!ttysel->sel_made || ttysel->sel_null) return;
+	ttysel_resolve(&tspb, &tspc, SEL_CHAR, event);
+	if (multi) {
+		tvsub(&td, &event->ie_time, &ttysel->sel_time);
+		if (ttysel_insel(ttysel, &tspc) && timercmp(&td, &maxinterval, <) &&
+				ok_to_extend) {
+			extend = 1;
+			if (++ttysel->sel_level > SEL_MAX) {
+				ttysel->sel_level = SEL_CHAR;
+				extend = 0;
+			}
+			ttysel->is_word = (ttysel->sel_level == SEL_WORD);
+		}
+		ttysel->sel_time = event->ie_time;
+		ttysel->sel_anchor = 0;
+	}
+	ttysel_resolve(&tspb, &tspe, ttysel->sel_level, event);
+	/*
+	 * If inside current selection, pull in closest end.
+	 */
+	if (!extend && ttysel_insel(ttysel, &tspc)) {
+		int left_end, right_end;
+
+		if (ttysel->sel_anchor == 0) {
+			/* count chars to left */
+			count = 0;
+			tt = *te;
+			*te = tspc;
+			ttyenumerateselection(ttysel, ttycountchars, (char *)(&count));
+			*te = tt;
+			left_end = count;
+			/* count chars to right */
+			count = 0;
+			tt = *tb;
+			*tb = tspc;
+			ttyenumerateselection(ttysel, ttycountchars, (char *)(&count));
+			*tb = tt;
+			right_end = count;
+			if (right_end <= left_end)
+				ttysel->sel_anchor = -1;
+			else
+				ttysel->sel_anchor = 1;
+		}
+		if (ttysel->sel_anchor == -1) {
+			if (!ttysel_eq(te, &tspe)) {
+				/* pull in right end */
+				tt = *tb;
+				*tb = tspe;
+				tb->tsp_col++;
+				highlight(ttysel, (int)rank);
+				*tb = tt;
+				*te = tspe;
+			}
+		}
+		else {
+			if (!ttysel_eq(tb, &tspb)) {
+				/* pull in left end */
+				tt = *te;
+				*te = tspb;
+				te->tsp_col--;
+				highlight(ttysel, (int)rank);
+				*te = tt;
+				*tb = tspb;
+			}
+		}
+	}
+	else {
+		/*
+		 * Determine which end to extend. Both ends may extend if selection
+		 * level has increased.
+		 */
+		int newanchor = 0;
+
+		if (tspe.tsp_row > te->tsp_row ||
+				(tspe.tsp_row == te->tsp_row && tspe.tsp_col > te->tsp_col)) {
+			if (ttysel->sel_anchor == 1) {
+				/* selection is crossing over anchor point.
+				 *  pull in left end before extending right.
+				 */
+				if (tb->tsp_col != te->tsp_col) {
+					tt = *te;
+					te->tsp_col--;
+					highlight(ttysel, (int)rank);
+					*te = tt;
+					*tb = *te;
+				}
+				ttysel->sel_anchor = -1;
+			}
+			else if (ttysel->sel_anchor == 0)
+				newanchor = -1;
+			/* extend right end */
+			tt = *tb;
+			*tb = *te;
+			tb->tsp_col++;	/* check for overflow? */
+			*te = tspe;
+			ttyhiliteselection(ttysel, (int)rank);
+			*tb = tt;
+		}
+		if (tspb.tsp_row < tb->tsp_row ||
+				(tspb.tsp_row == tb->tsp_row && tspb.tsp_col < tb->tsp_col)) {
+			if (ttysel->sel_anchor == -1) {
+				/* selection is crossing over anchor point.
+				 *  pull in right end before extending left.
+				 */
+				if (tb->tsp_col != te->tsp_col) {
+					tt = *tb;
+					tb->tsp_col++;
+					highlight(ttysel, (int)rank);
+					*tb = tt;
+					*te = *tb;
+				}
+				ttysel->sel_anchor = 1;
+			}
+			else if (ttysel->sel_anchor == 0) {
+				if (newanchor == 0)
+					newanchor = 1;
+				else
+					newanchor = 0;
+			}
+			/* extend left end */
+			tt = *te;
+			*te = *tb;
+			te->tsp_col--;	/* check for underflow? */
+			*tb = tspb;
+			ttyhiliteselection(ttysel, (int)rank);
+			*te = tt;
+		}
+		if (ttysel->sel_anchor == 0)
+			ttysel->sel_anchor = newanchor;
+	}
+
+	supply_sel_item(priv);
+}
+
+/*
+ * Clear out the current selection.
+ */
+static void ttysel_cancel(struct ttysubwindow *ttysw, int ranki)
+{
+	struct ttyselection *ttysel;
+
+	SERVERTRACE((333, "%s:\n", __FUNCTION__));
+	ttysel = ttysw->sels + ranki;
+	if (!ttysel->sel_made)
+		return;
+	ttysel_deselect(ttysel, ranki); /* INCOMPLETE */
+	ttysel->sel_made = FALSE;
+}
+
+/* XXX - compatibility kludge */
+/* BUG ALERT: No XView prefix */
+Pkg_private void ttynullselection(struct ttysubwindow *ttysw)
+{
+	SERVERTRACE((333, "%s:\n", __FUNCTION__));
+    (void) ttysel_cancel(ttysw, TTY_SEL_PRIMARY);
+}
+
+/*
+ * Make a selection be empty
+ */
+static void ttysel_empty(struct ttyselection *ttysel)
+{
+    ttysel->sel_null = TRUE;
+    ttysel->sel_level = SEL_CHAR;
+	ttysel->is_word = FALSE;
+    ttysel->sel_begin = tse_null_extent;
+    ttysel->sel_end = tse_null_extent;
+}
+
+/*
+ * Remove a selection from the screen
+ */
+Pkg_private void ttysel_deselect(struct ttyselection *ttysel, int rank)
+{
+	SERVERTRACE((353, "%s:\n", __FUNCTION__));
+	if (!ttysel->sel_made) return;
+	ttysel->dehilite_op = TRUE;
+	ttyhiliteselection(ttysel, rank);
+	ttysel->dehilite_op = FALSE;
+	if (!ttysel->sel_null)
+		ttysel_empty(ttysel);
+}
+
+static void my_write_string(int start,int end,int row)
+{
+	extern char ttysw_boldify;
+	CHAR *str = image[row];
+	CHAR temp_char = (CHAR) '\0';
+
+#ifdef OW_I18N
+	int cwidth;
+	int offset;
+
+	tty_column_wchar_type(start, row, &cwidth, &offset);
+	start -= offset;
+	tty_column_wchar_type(end, row, &cwidth, &offset);
+	end += (cwidth - offset - 1);
+#endif
+
+	if ((end + 1) < (int)STRLEN(str)) {	/* This is a very dirty trick for
+										 * speed */
+		temp_char = str[end + 1];
+		str[end + 1] = (CHAR) '\0';
+		ttysw_pclearline(start, (int)strlen(str), row);
+	}
+	else
+		ttysw_pclearline(start, (int)strlen(str) + 1, row);
+
+	(void)ttysw_pstring((str + start), ttysw_boldify, start, row, PIX_SRC);
+
+	if (temp_char != '\0') str[end + 1] = temp_char;
+}
+
+static void ttyhiliteline(int start, int finish, int row, void *xc, struct ttyselection *ttysel)
+{
+	struct pr_size *offsets = (struct pr_size *)xc;
+	struct rect r;
+
+	rect_construct(&r, col_to_x(start), row_to_y(row) + offsets->x,
+			col_to_x(finish + 1) - col_to_x(start), offsets->y);
+	if (r.r_width == 0) return;
+
+	if (ttysel->dehilite_op) (void)my_write_string(start, finish, row);
+	else {
+		if (ttysel->selrank == TTY_SEL_SECONDARY)
+			(void)my_write_string(start, finish, row);
+
+		(void)ttysw_pselectionhilite(&r, ttysel->selrank);
+	}
+}
+
+/*
+ * Hilite a selection. Enumerate all the lines of the selection; hilite each
+ * one as appropriate.
+ */
+Pkg_private void ttyhiliteselection(struct ttyselection *ttysel, int rank)
+{
+    struct pr_size  offsets;
+
+	SERVERTRACE((353, "%s:\n", __FUNCTION__));
+    if (!ttysel->sel_made || ttysel->sel_null) {
+		return;
+    }
+    ttysel->selrank = rank;
+    offsets.x = 0;
+    offsets.y = chrheight;
+
+    ttyenumerateselection(ttysel, ttyhiliteline, (char *) (&offsets));
+}
+
+/* internal (static) routines	 */
+
+
+
+Xv_private void ttysortextents(struct ttyselection *ttysel,
+				struct textselpos **begin, struct textselpos **end)
+{
+
+	if (ttysel->sel_begin.tsp_row == ttysel->sel_end.tsp_row) {
+		if (ttysel->sel_begin.tsp_col > ttysel->sel_end.tsp_col) {
+			*begin = &ttysel->sel_end;
+			*end = &ttysel->sel_begin;
+		}
+		else {
+			*begin = &ttysel->sel_begin;
+			*end = &ttysel->sel_end;
+		}
+	}
+	else if (ttysel->sel_begin.tsp_row > ttysel->sel_end.tsp_row) {
+		*begin = &ttysel->sel_end;
+		*end = &ttysel->sel_begin;
+	}
+	else {
+		*begin = &ttysel->sel_begin;
+		*end = &ttysel->sel_end;
+	}
+}
 
 #ifdef lint
 #undef putc
@@ -1210,7 +1180,7 @@ Pkg_private void ttysw_event_paste_up(Ttysw_private priv, struct timeval *t)
 			if (string) xv_free(string);
 			/* PASTE failed, what do we do now? */
 			xv_error(TTY_PUBLIC(priv),
-					ERROR_PKG, TEXTSW,
+					ERROR_PKG, TTY,
 					ERROR_STRING, "Paste failed",
 					NULL);
 			xv_destroy(sel_req);
