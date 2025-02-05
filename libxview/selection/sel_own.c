@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.25 2025/02/04 21:32:15 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.26 2025/02/05 15:24:50 dra Exp $";
 #endif
 #endif
 
@@ -465,10 +465,6 @@ Xv_private int xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent)
 	(void)XSendEvent(owner->dpy, replyEvent.requestor, False,
 			(unsigned long)NULL, (XEvent *) & replyEvent);
 
-#ifdef SEL_DEBUG1
-	printf("Sending SelectionNotify Event win = %d \n", replyEvent.requestor);
-#endif
-
 	OwnerProcessIncr(owner);
 
 	SelClean(owner);
@@ -645,12 +641,6 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 		if (!(byteLen - 1))
 			multipleIndex = SEL_END_MULTIPLE;
 
-#ifdef SEL_DEBUG
-		printf("HandleMultipleReply: property=%d  target=%d\n",
-				atomPair->property, atomPair->target);
-#endif
-
-
 		ret = DoConversion(seln, atomPair->target, atomPair->property,
 				multipleIndex);
 		if (!ret) {
@@ -808,13 +798,6 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	XChangeProperty(selection->dpy, selection->req->requestor,
 			selection->req->property, selection->req->type,
 			format, PropModeReplace, (unsigned char *)replyBuff, (int)length);
-
-#ifdef SEL_DEBUG
-	printf("DoConversion: win=%d  prop=%d  type=%d  length=%d  format=%d\n",
-			selection->req->requestor, selection->req->property,
-			selection->req->type, length, format);
-#endif
-
 	XFlush(selection->dpy);
 
 	if (selection->done_proc) {
@@ -909,10 +892,6 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
 			selection->req->property, selection->req->type,
 			selection->req->format, PropModeReplace, (unsigned char *)NULL, 0);
 
-#ifdef SEL_DEBUG
-	printf("xv_sel_handle_incr: win=%d  prop=%d  type=%d  length=%d  format=%d\n", selection->req->requestor, selection->req->property, selection->req->type, 0, selection->req->format);
-#endif
-
 	if (selection->done_proc)
 		(*selection->done_proc) (selection->public_self,
 				(Xv_opaque) selection->req->data, req->target);
@@ -949,12 +928,6 @@ static int SendIncr(Sel_owner_info *seln)
 			abort();
 		}
 	}
-
-#ifdef SEL_DEBUG1
-	printf("SendIncr : win=%d  prop=%s  type=%d  length=%d  format=%d\n",
-			req->requestor, XGetAtomName(seln->dpy, req->property), req->type,
-			(size / (req->format >> 3)), req->format);
-#endif
 
 	req->offset += size;
 
@@ -1123,12 +1096,6 @@ static void SendIncrMessage( Sel_owner_info *sel)
 			sel->req->property, sel->atomList->incr,
 			32, PropModeReplace, (unsigned char *)propData, 1);
 
-#ifdef SEL_DEBUG1
-	printf("SendIncrMessage: win=%d  prop=%s  type=%s  length=%d  format=%d\n",
-			sel->req->requestor, XGetAtomName(sel->dpy, sel->req->property),
-			XGetAtomName(sel->dpy, sel->atomList->incr), 1, 32);
-#endif
-
 	sel->req->numIncr++;
 
 
@@ -1173,11 +1140,6 @@ static int ValidatePropertyEvent(Display *display, XEvent *xevent, char *args)
 
 		if (ev->state == PropertyDelete && ev->atom == req.property &&
 				ev->time > req.time) {
-
-#ifdef SEL_DEBUG1
-			printf("ValProp-Okay Recieved PropertyNotify win =%d atom = %s state = %s\n", ev->window, XGetAtomName(ev->display, ev->atom), (ev->state == PropertyNewValue) ? "NewValue" : "Deleted");
-#endif
-
 			return (TRUE);
 		}
 	}
@@ -1195,10 +1157,6 @@ static void RegisterSelClient(Sel_owner_info *owner, int flag)
 
 	if (clientCtx == 0)
 		clientCtx = XUniqueContext();
-
-#ifdef SEL_DEBUG2
-	printf("RegisterSelClient: flag=%s selection=%d  xid=%d own=%d time=%ul dpy=%x\n", (flag) ? "SEL_DELETE_CLIENT" : "SEL_ADD_CLIENT", owner->selection, owner->xid, owner->own, owner->time, owner->dpy);
-#endif
 
 	if (XFindContext(dpy, DefaultRootWindow(dpy), clientCtx,
 					(caddr_t *) & clientInfo)) {
@@ -1237,12 +1195,6 @@ static void RegisterSelClient(Sel_owner_info *owner, int flag)
 			infoPtr->client = NULL;
 			return;
 		}
-
-#ifdef SEL_DEBUG
-		printf("RegisterSelClient: clntSel=%d  clntXid=%d clntOwn=%d dpy=%x\n",
-				infoPtr->client->selection, infoPtr->client->xid,
-				infoPtr->client->own, infoPtr->client->dpy);
-#endif
 
 		/*
 		 * If there is another client in this process that is the selection owner;
