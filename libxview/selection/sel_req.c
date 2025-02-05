@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.30 2025/02/04 21:33:35 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.31 2025/02/05 15:24:50 dra Exp $";
 #endif
 #endif
 
@@ -371,10 +371,6 @@ static void SetExtendedData(Sel_reply_info *reply, Atom property, int typeIndex)
 		XChangeProperty(reply->sri_dpy, reply->sri_requestor, property,
 				exType->type, exType->format, PropModeReplace,
 				(unsigned char *)exType->data, (int)exType->length);
-
-#ifdef SEL_DEBUG
-		printf("SetExtendedData: win=%d  prop=%d  type=%d  length=%d  format=%d\n", reply->requestor, property, exType->type, exType->length, exType->format);
-#endif
 	}
 
 }
@@ -466,10 +462,6 @@ static void SetupMultipleRequest(Sel_reply_info *reply, int numTarget)
 	XChangeProperty(reply->sri_dpy, reply->sri_requestor,
 			reply->sri_property, reply->sri_property, 32, PropModeReplace,
 			(unsigned char *)reply->sri_atomPair, numTarget * 2);
-
-#ifdef SEL_DEBUG
-	printf("SetUpMultipleRequest: win=%d  prop=%d  type=%d  length=%d  format=%d\n", reply->requestor, reply->sri_property, reply->sri_property, numTarget * 2, 32);
-#endif
 
 	reply->sri_multiple_count = numTarget;
 }
@@ -1545,10 +1537,6 @@ static int ProcessReply(Sel_reply_info  *reply, XPropertyEvent  *ev)
 		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, *reply->sri_target);
 		return FALSE;
 	}
-
-#ifdef SEL_DEBUG1
-	printf("GEtting Window Property win = %d prop = %s type = %s length = %d bytesafter = %d\n", ev->window, XGetAtomName(ev->display, ev->atom), XGetAtomName(ev->display, type), length, bytesafter);
-#endif
 
 	if (!type)
 		return TRUE;
