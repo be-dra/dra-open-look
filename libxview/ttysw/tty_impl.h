@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.16 2025/01/16 19:54:28 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.17 2025/02/05 11:47:47 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -363,7 +363,7 @@ Pkg_private void ttysw_readrc(struct ttysubwindow *ttysw);
 Pkg_private void ttysw_display_capslock(struct ttysubwindow *ttysw);
 Pkg_private void ttysw_getp(Ttysw_view_handle ttysw_view);
 Pkg_private void ttysw_doing_pty_insert(Textsw textsw, struct _Termsw_folio_object *commandsw, int toggle);
-Xv_public int ttysw_eventstd(Tty_view ttysw_view_public, struct inputevent *ie);
+Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie);
 
 Pkg_private void
 	ttysw_delete_lines(int where, int n),
