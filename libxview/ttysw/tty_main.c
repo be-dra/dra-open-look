@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.8 2025/01/04 21:19:56 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.9 2025/02/05 11:48:13 dra Exp $";
 #endif
 
 /*
@@ -1343,16 +1343,12 @@ Pkg_private void ttysw_handle_itimer(Ttysw_private ttysw)
 	ttysw_pdisplayscreen(0);
 }
 
-/* BUG ALERT:  This routine should be Pkg_private, not Xv_public */
-Xv_public int
-ttysw_eventstd(ttysw_view_public, ie)
 /* This could be a public ttysw view or termsw view */
-    register Tty_view ttysw_view_public;
-    register struct inputevent *ie;
+Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 {
 	Frame frame_public;
-	register Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_VIEW(ttysw_view_public);
-	register Tty tty_public = TTY_PUBLIC(ttysw);
+	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_VIEW(ttysw_view_public);
+	Tty tty_public = TTY_PUBLIC(ttysw);
 
 	switch (event_action(ie)) {
 		case KBD_USE:
