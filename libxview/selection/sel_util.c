@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.22 2025/02/04 21:33:28 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.23 2025/02/05 15:24:50 dra Exp $";
 #endif
 #endif
 
@@ -414,56 +414,13 @@ Pkg_private Atom xv_sel_str_to_atom(Display *dpy, char *str, XID xid)
     return ( (Atom) xv_get( server, SERVER_ATOM, str ));
 }
 
-/*
- * REMINDER: Go over the erro codes make sure they match the spec!!
-*/
-/*ARGSUSED*/
-Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel, Sel_reply_info *replyInfo, Atom target)
+Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel,
+						Sel_reply_info *replyInfo, Atom target)
 {
     Selection_requestor sel_req;
 
     if ( sel != NULL )
         sel_req = SEL_REQUESTOR_PUBLIC( sel );
-
-    /* REMINDER: Need to remove all the printf!! */
-
-    switch ( errCode )   {
-      case SEL_BAD_PROPERTY :
-#ifdef SEL_DEBUG
-          printf("xv_sel_handle_error: Bad property!\n");
-#endif
-	  break;
-      case SEL_BAD_CONVERSION :
-#ifdef SEL_DEBUG
-          printf("xv_sel_handle_error: Bad conversion!\n");
-#endif
-	  break;
-      case SEL_BAD_TIME:
-#ifdef SEL_DEBUG
-          printf("xv_sel_handle_error: Bad time!\n");
-#endif
-	  break;
-      case SEL_BAD_WIN_ID:
-#ifdef SEL_DEBUG
-          printf("xv_sel_handle_error: Bad window id!\n");
-#endif
-	  break;
-      case SEL_TIMEDOUT:
-#ifdef SEL_DEBUG
-          printf("xv_sel_handle_error: Timed out!\n");
-#endif
-	  break;
-      case SEL_PROPERTY_DELETED:
-#ifdef SEL_DEBUG
-          printf("xv_sel_handle_error: Expected a PropertyNotify event stat==NewValue!\n");
-#endif
-	  break;
-      case SEL_BAD_PROPERTY_EVENT:
-#ifdef SEL_DEBUG
-          printf("xv_sel_handle_error: Owner received a bad PropertyNotify event !\n");
-#endif
-	  break;
-      }
 
     if ( (sel != NULL) && (sel->reply_proc != NULL) )
         (*sel->reply_proc)( sel_req, target, (Atom)0, (Xv_opaque)&errCode,
@@ -511,10 +468,6 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 			((XSelectionEvent *) xevent)->property = None;
 			/* REMINDER: Do we need this ^^^ here? */
 
-#ifdef SEL_DEBUG
-			printf("Selection Timed out!\n");
-#endif
-
 			/* we timed out without getting anything */
 			return FALSE;
 		}
@@ -539,9 +492,6 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 			return False;
 	}
 }
-
-
-
 
 /* compute t2 - t1 and return the time value in diff */
 static void tvdiff(struct timeval *t1, struct timeval *t2, struct timeval *diff)
