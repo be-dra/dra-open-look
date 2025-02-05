@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.21 2025/01/27 19:41:50 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.22 2025/02/04 21:33:28 dra Exp $";
 #endif
 #endif
 
@@ -37,10 +37,6 @@ XContext  selCtx;
 /* instead of including <xview_private/seln_impl.h> */
 Xv_private void selection_agent_selectionrequest(Xv_Server server,
 									XSelectionRequestEvent *req_event);
-
-extern char *xv_app_name;
-/* #define XXATOM(_a_) fprintf(stderr,"%s: %s-%d: %s\n", xv_app_name, __FILE__, __LINE__, (char *)xv_get(xv_default_server, SERVER_ATOM_NAME, _a_)) */
-#define XXATOM(_a_)
 
 Pkg_private void xv_sel_cvt_xtime_to_timeval(Time  XTime, struct timeval *tv)
 {
@@ -106,7 +102,6 @@ Xv_private Time xv_sel_get_last_event_time(Display  *dpy, Window   win)
     int    arg;
     int  status = xv_sel_add_prop_notify_mask( dpy, win, &winAttr );
 
-XXATOM(prop);
     XChangeProperty( dpy, win, prop, XA_STRING, 8, PropModeReplace,
 		    (unsigned char *) NULL, 0 );
 
@@ -245,7 +240,6 @@ Pkg_private Atom xv_sel_get_property(Display  *dpy)
 	cPtr = cPtr->next;
 	sprintf(str, "XV_SELECTION_%d", i);
 	cPtr->prop = XInternAtom(dpy, str, FALSE);
-	SERVERTRACE((666, "using %ld = %s\n", cPtr->prop, str));
 	cPtr->avail = FALSE;
 	cPtr->next = NULL;
 	return (cPtr->prop);
@@ -257,7 +251,6 @@ Pkg_private void xv_sel_free_property(Display *dpy, Atom prop)
 	Sel_prop_list *plPtr;
 
 	plPtr = xv_sel_get_prop_list(dpy);
-	SERVERTRACE((966, "atom %ld now available\n", prop));
 
 	do {
 		if (prop == None) {
@@ -283,7 +276,6 @@ Pkg_private void xv_sel_free_property(Display *dpy, Atom prop)
  * Predicate function for XCheckIfEvent
  *
  */
-/*ARGSUSED*/
 Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
 {
 	int eventType;
@@ -613,7 +605,6 @@ Pkg_private void xv_sel_set_reply(Sel_reply_info  *reply)
 	Display *dpy;
 
 	if (replyCtx == 0) replyCtx = XUniqueContext();
-	SERVERTRACE((399, "%s: %s: replyCtx=%d\n", xv_app_name, __FUNCTION__, replyCtx));
 
 	dpy = reply->sri_dpy;
 
@@ -666,7 +657,6 @@ Pkg_private Sel_reply_info *xv_sel_get_reply(XEvent *event)
 
 	if (replyCtx == 0) {
 		replyCtx = XUniqueContext();
-		SERVERTRACE((399, "%s: %s: replyCtx=%d\n", xv_app_name, __FUNCTION__, replyCtx));
 		return (Sel_reply_info *) NULL;
 	}
 
@@ -726,12 +716,10 @@ static Sel_req_list *SelMatchReqTbl(Sel_reply_info  *reply)
 {
     Sel_req_list  *reqTbl, *rPtr;
 
-	SERVERTRACE((399, "%s: %s: replyCtx=%d\n", xv_app_name, __FUNCTION__, replyCtx));
     if ( replyCtx == 0 ) {
         replyCtx = XUniqueContext();
 		return FALSE;
 	}
-	SERVERTRACE((399, "%s: %s: reply=%p\n", xv_app_name, __FUNCTION__, reply));
 
     if (XFindContext(reply->sri_dpy, DefaultRootWindow(reply->sri_dpy), replyCtx, (caddr_t *)&reqTbl))
 		return FALSE;
@@ -765,7 +753,6 @@ int xv_sel_end_request(Sel_reply_info *reply)
 	XWindowAttributes winAttr;
 	Sel_req_list *reqTbl;
 
-	SERVERTRACE((399, "%s: %s: reply=%p\n", xv_app_name, __FUNCTION__, reply));
 	reqTbl = SelMatchReqTbl(reply);
 
 	if (reqTbl != NULL) {
