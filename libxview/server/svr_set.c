@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.7 2025/01/04 21:22:46 dra Exp $";
+static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.8 2025/02/04 20:08:35 dra Exp $";
 #endif
 #endif
 
@@ -30,6 +30,21 @@ static void update_resources(Server_info *server, char *xdef)
 	server->db = XrmGetStringDatabase(xdef);
 	XrmMergeDatabases(server->db, &defaults_rdb);
 	server->db = defaults_rdb;
+}
+
+static void intern_atoms(Server_info *server, char **names)
+{
+	Atom *atoms;
+	int i, num_names;
+
+	for (num_names = 0; names[num_names]; num_names++);
+	atoms = xv_alloc_n(Atom, (unsigned long)num_names);
+
+	XInternAtoms(server->xdisplay, names, num_names, FALSE, atoms);
+	for (i = 0; i < num_names; i++) {
+		server_intern_atom(server, names[i], atoms[i]);
+	}
+	xv_free(atoms);
 }
 
 Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute *avlist)
@@ -294,6 +309,11 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute 
 
 			case SERVER_REPAINT_APPLICATION:
 				win_repaint_application(server->xdisplay);
+				ATTR_CONSUME(*attrs);
+				break;
+
+			case SERVER_INTERN_ATOMS:
+				intern_atoms(server, (char **)(attrs + 1));
 				ATTR_CONSUME(*attrs);
 				break;
 
