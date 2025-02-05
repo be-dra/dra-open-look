@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.24 2025/01/08 21:21:34 dra Exp $";
+char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.25 2025/02/04 19:35:53 dra Exp $";
 #endif
 
 /*
@@ -380,6 +380,7 @@ textsw_set_selection(Textsw abstract, Textsw_index first,
 	assert(xv_get(abstract, XV_IS_SUBTYPE_OF, OPENWIN));
 	priv = TEXTSW_PRIVATE(abstract);
 
+	SERVERTRACE((345, "%s type=0x%x\n", __FUNCTION__, type));
 	textsw_take_down_caret(priv);
 	type &= EV_SEL_MASK;
 	if ((first == ES_INFINITY) && (last_plus_one == ES_INFINITY)) {
@@ -412,7 +413,7 @@ textsw_set_selection(Textsw abstract, Textsw_index first,
 	
 		server_set_timestamp(XV_SERVER_FROM_WINDOW(abstract), &tv, 0L);
 
-		/* 08.02.2025: do we ever see this ? */
+		/* 08.01.2025: do we ever see this ? */
 		fprintf(stderr, "%s: %s`%s-%d: CARET selection is used!!!\n",
 			xv_app_name, __FILE__, __FUNCTION__, __LINE__);
 		xv_set(priv->sel_owner[TSW_SEL_CARET],
