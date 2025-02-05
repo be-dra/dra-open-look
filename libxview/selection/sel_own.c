@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.24 2025/02/02 20:07:35 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.25 2025/02/04 21:32:15 dra Exp $";
 #endif
 #endif
 
@@ -761,8 +761,6 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	if (replyType == selection->atomList->incr)
 		selection->req->incr = TRUE;
 
-/* #define BYTE_SIZE( len, format ) ( ( len * format ) >> 3 ) */
-	SERVERTRACE((765, "replying %d %dbit instances\n", length, format));
 	selection->req->target = target;
 	selection->req->bytelength = BYTE_SIZE(length, format);
 	selection->req->offset = 0;
