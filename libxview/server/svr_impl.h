@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.9 2024/12/09 17:41:22 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.10 2025/02/05 23:31:32 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -131,10 +131,9 @@ typedef struct {
 					   * Num Lock key is in, between
 					   * Mod1MapIndex -> Mod5MapIndex.
 					   */
-    int			 sel_modmask;     /* Represents the modifier slot the
-					   * selection function keys are in,
-					   * between
-					   * Mod1MapIndex -> Mod5MapIndex.
+    int			 quick_modmask;     /* Represents the modifier slot the
+					   * selection function keys (CUT, PASTE) are in,
+					   * between Mod1MapIndex -> Mod5MapIndex.
 					   */
 	int shiftmask_duplicate;
 	int shiftmask_constrain;
