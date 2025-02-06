@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_x.c 20.57 93/06/28 DRA: $Id: svr_x.c,v 4.7 2025/01/03 22:08:44 dra Exp $";
+static char     sccsid[] = "@(#)svr_x.c 20.57 93/06/28 DRA: $Id: svr_x.c,v 4.8 2025/02/05 23:31:32 dra Exp $";
 #endif
 #endif
 
@@ -211,7 +211,7 @@ static void determine_dynamic_modifier_keysyms(fkey_set_t *keyset)
  * 2) Inserts all the keys in the array default_fkey_keysyms[] into
  * 	the server's modifier map (all under the same modifier; any
  *	of the modifiers Mod2-Mod5 may be used). This function then
- *	sets server->sel_modmask to be the appropriate mask for whatever
+ *	sets server->quick_modmask to be the appropriate mask for whatever
  *      modifier the keys were designated as.
  * 3) If update_map is false, do not try to insert new mappings into the
  *    modifier map.  Get the current mapping and update our internal
@@ -316,15 +316,15 @@ Xv_private void server_refresh_modifiers(Xv_opaque server_public, Bool update_ma
 							XKeysymToKeycode(display, (KeySym)ksyms[i]),
 							func_modifier);
 				}
-				server->sel_modmask = 1 << func_modifier;
+				server->quick_modmask = 1 << func_modifier;
 			}
 		}
 		else {
-			server->sel_modmask = 1 << func_modifier;
+			server->quick_modmask = 1 << func_modifier;
 		}
 
 		if (func_modifier == -1 || func_modifier == 0)	/* no free rows */
-			server->sel_modmask = 0;
+			server->quick_modmask = 0;
 
 		/*
 		 * Attempt to install the modifier mapping.
