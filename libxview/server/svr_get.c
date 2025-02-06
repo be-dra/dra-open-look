@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_get.c 20.69 93/06/28 DRA: $Id: svr_get.c,v 4.8 2024/09/09 11:07:43 dra Exp $";
+static char     sccsid[] = "@(#)svr_get.c 20.69 93/06/28 DRA: $Id: svr_get.c,v 4.9 2025/02/05 23:31:32 dra Exp $";
 #endif
 #endif
 
@@ -421,7 +421,7 @@ Pkg_private Xv_opaque server_get_attr(Xv_Server server_public, int *status, Attr
 			return ((Xv_opaque) server->num_lock_modmask);
 
 		case SERVER_SEL_MOD_MASK:
-			return ((Xv_opaque) server->sel_modmask);
+			return ((Xv_opaque) server->quick_modmask);
 
 		case SERVER_EVENT_HAS_DUPLICATE_MODIFIERS:
 			{
