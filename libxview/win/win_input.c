@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.27 2025/02/02 20:08:14 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.28 2025/02/05 23:34:33 dra Exp $";
 #endif
 #endif
 
@@ -774,7 +774,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 	static int alt_modmask = 0,
 			meta_modmask = 0,
 			num_lock_modmask = 0,
-			sel_modmask = 0,
+			quick_modmask = 0,
 			menu_flag,
 			chording_timeout, quote_next_key = FALSE, suspend_mouseless = FALSE;
 	static u_char *ascii_sem_map, *key_sem_maps[__SEM_INDEX_LAST],
@@ -831,7 +831,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					/* Cache the new modifier masks. */
 					alt_modmask = (int)xv_get(srv, SERVER_ALT_MOD_MASK);
 					meta_modmask = (int)xv_get(srv, SERVER_META_MOD_MASK);
-					sel_modmask = (int)xv_get(srv, SERVER_SEL_MOD_MASK);
+					quick_modmask = (int)xv_get(srv, SERVER_SEL_MOD_MASK);
 					num_lock_modmask =(int)xv_get(srv,SERVER_NUM_LOCK_MOD_MASK);
 				}
 			}
@@ -892,7 +892,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 			/* Cache the modifier masks. */
 			alt_modmask = (int)xv_get(srv, SERVER_ALT_MOD_MASK);
 			meta_modmask = (int)xv_get(srv, SERVER_META_MOD_MASK);
-			sel_modmask = (int)xv_get(srv, SERVER_SEL_MOD_MASK);
+			quick_modmask = (int)xv_get(srv, SERVER_SEL_MOD_MASK);
 			help_keysym = (KeySym)xv_get(srv, SERVER_HELP_KEYSYM);
 			num_lock_modmask = (int)xv_get(srv,
 					SERVER_NUM_LOCK_MOD_MASK);
@@ -1372,7 +1372,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				}
 				server_set_timestamp(srv, &event->ie_time, ek->time);
 				server_set_seln_function_pending(srv,
-						(int)(ek->state & sel_modmask));
+						(int)(ek->state & quick_modmask));
 				event_set_x(event, ek->x);
 				event_set_y(event, ek->y);
 
@@ -1429,7 +1429,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				server_set_timestamp(srv, &event->ie_time, e->time);
 				temp = e->state;
 				server_set_seln_function_pending(srv,
-						(int)(e->state & sel_modmask));
+						(int)(e->state & quick_modmask));
 				event_set_x(event, e->x);
 				event_set_y(event, e->y);
 
@@ -1632,7 +1632,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				temp = e->state;
 				SET_SHIFTS(event, temp, meta_modmask, alt_modmask);
 				server_set_seln_function_pending(srv,
-						(int)(e->state & sel_modmask));
+						(int)(e->state & quick_modmask));
 				event_set_x(event, e->x);
 				event_set_y(event, e->y);
 				if (event_type == EnterNotify) {
