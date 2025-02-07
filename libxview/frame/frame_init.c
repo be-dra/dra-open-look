@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.8 2025/01/10 10:03:23 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.9 2025/02/06 23:53:11 dra Exp $ ";
 #endif
 #endif
 
@@ -386,6 +386,14 @@ Pkg_private Xv_window frame_create_footer(Frame_class_info *frame)
 			WIN_NOTIFY_SAFE_EVENT_PROC, frame_footer_input,
 			WIN_NOTIFY_IMMEDIATE_EVENT_PROC, frame_footer_input,
 			WIN_BIT_GRAVITY, (long)ForgetGravity,
+			/* Originally (XView 3.2), the footer didn't select any events,
+			 * so, mouse events 'fell through' to the window decoration.
+			 * When we implemented quick duplicate on frame footers, we
+			 * had to select for mouse events.
+			 * However, all "non-quick" events are still supposed to
+			 * to fall through to the WM. We use xv_ol_default_background
+			 * for this purpose, see fmcmd_set.c
+			 */
 			WIN_CONSUME_EVENTS,
 				(long)WIN_MOUSE_BUTTONS,
 				(long)LOC_DRAG,
