@@ -36,7 +36,7 @@ Die restlichen Funktionen könnten set- und get-Attribute von SERVER werden.
 
 #endif /* NO_CODE */
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.13 2025/01/29 20:45:00 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.14 2025/02/06 09:03:35 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -1945,7 +1945,7 @@ static void fill_me(Frame prop)
 	int color_columns;
 	Cms cms = xv_get(pan, WIN_CMS);
 	Display *dpy = srvpriv->xdisplay;
-	GC gc, bggc;
+	GC gc = NULL, bggc = NULL;
 	Server_image clip, *images = xv_calloc((unsigned)total_num_colors + 1,
 										(unsigned)sizeof(Server_image));
 
