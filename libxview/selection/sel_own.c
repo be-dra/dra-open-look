@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.26 2025/02/05 15:24:50 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.27 2025/02/07 07:46:21 dra Exp $";
 #endif
 #endif
 
@@ -301,15 +301,28 @@ static int sel_set_ownership(Sel_owner_info *sel_owner)
 		/* Become the selection owner */
 		XSetSelectionOwner(owner->dpy, seln, owner->xid, owner->time);
 		if (XGetSelectionOwner(owner->dpy, seln) != owner->xid) {
+			struct timeval tv;
 
-			xv_error((Xv_opaque) owner,
-					ERROR_STRING, XV_MSG("Selection ownership failed"),
-					ERROR_PKG, SELECTION, NULL);
+			/* this can only mean "owner->time too old" */
+			owner->time = xv_sel_get_last_event_time(sel_owner->dpy,
+														sel_owner->xid);
 
-			XDeleteContext(owner->dpy, seln, selCtx);
-			owner->own = FALSE;
+			xv_sel_cvt_xtime_to_timeval(owner->time, &tv);
+			xv_set(sel_owner_public, SEL_TIME, &tv, NULL);
 
-			return XV_ERROR;
+			/* try again */
+			XSetSelectionOwner(owner->dpy, seln, owner->xid, owner->time);
+			if (XGetSelectionOwner(owner->dpy, seln) != owner->xid) {
+				xv_error((Xv_opaque) owner,
+						ERROR_STRING, XV_MSG("Selection ownership failed"),
+						ERROR_PKG, SELECTION,
+						NULL);
+
+				XDeleteContext(owner->dpy, seln, selCtx);
+				owner->own = FALSE;
+
+				return XV_ERROR;
+			}
 		}
 		owner->own = TRUE;
 
