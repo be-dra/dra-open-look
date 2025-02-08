@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.32 2025/02/05 11:48:55 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.33 2025/02/07 21:32:03 dra Exp $";
 #endif
 
 /*
@@ -1177,12 +1177,15 @@ Pkg_private void ttysw_event_paste_up(Ttysw_private priv, struct timeval *t)
 							length, format, string));
 
 		if (length == SEL_ERROR) {
+			Tty tty = TTY_PUBLIC(priv);
+
 			if (string) xv_free(string);
 			/* PASTE failed, what do we do now? */
-			xv_error(TTY_PUBLIC(priv),
-					ERROR_PKG, TTY,
-					ERROR_STRING, "Paste failed",
-					NULL);
+/* 			xv_error(tty,ERROR_PKG, TTY,ERROR_STRING, "Paste failed",NULL); */
+
+			/* taken from a Xol reference manual: */
+			xv_set(tty, WIN_ALARM, NULL);
+
 			xv_destroy(sel_req);
 			return;
 		}
