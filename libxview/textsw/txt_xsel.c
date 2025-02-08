@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.47 2025/01/26 16:23:32 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.48 2025/02/07 21:32:19 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -678,10 +678,10 @@ Pkg_private int textsw_new_sel_paste(Textsw_view_private vp, Event *ev,
 		if (length == SEL_ERROR) {
 			if (string) xv_free(string);
 			/* PASTE failed, what do we do now? */
-			xv_error(tsw,
-					ERROR_PKG, TEXTSW,
-					ERROR_STRING, "Paste failed",
-					NULL);
+/* 			xv_error(tsw,ERROR_PKG,TEXTSW,ERROR_STRING,"Paste failed",NULL); */
+
+			/* taken from a Xol reference manual: */
+			xv_set(tsw, WIN_ALARM, NULL);
 			return FALSE;
 		}
 
