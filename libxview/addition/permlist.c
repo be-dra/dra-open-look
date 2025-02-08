@@ -28,9 +28,8 @@
  */
 #include <string.h>
 #include <xview/permlist.h>
-#include <xview_private/svr_impl.h>
 
-char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.8 2025/01/23 08:59:21 dra Exp $";
+char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.9 2025/02/07 18:18:06 dra Exp $";
 
 /* this attribute is so private that I don't even want to have it in
  * permlist.h
@@ -675,27 +674,18 @@ static Xv_object permlist_find(Perm_prop_frame owner, Xv_pkg *pkg,
 
 	if (! permlist_key) permlist_key = xv_unique_key();
 	priv = (Permlist_private *)xv_get(owner, XV_KEY_DATA, permlist_key);
-	SERVERTRACE((200, "%s\n", __FUNCTION__));
 	for (; priv; priv = priv->next_in_same_frame) {
 		Permanent_list self = PLPUB(priv);
 
-		SERVERTRACE((220, "  checking %ld\n", self));
-		if (! xv_get(self, XV_IS_SUBTYPE_OF, pkg)) {
-			SERVERTRACE((230, "     not subclass of '%s'\n", pkg->name));
-			continue;
-		}
+		if (! xv_get(self, XV_IS_SUBTYPE_OF, pkg)) continue;
 		if (item_resource_name &&
 			0 != strcmp(item_resource_name,
 							(char *)xv_get(self, PERMLIST_ITEM_RESOURCE_NAME)))
 		{
-			SERVERTRACE((230, "     has resname '%s'\n", 
-							(char *)xv_get(self, PERMLIST_ITEM_RESOURCE_NAME)));
 			continue;
 		}
-		SERVERTRACE((200, "found\n"));
 		return self;
 	}
-	SERVERTRACE((200, "not found\n"));
 	return XV_NULL;
 }
 
