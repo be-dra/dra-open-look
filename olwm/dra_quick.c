@@ -7,7 +7,7 @@
 #include "globals.h"
 #include <X11/Xatom.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.17 2025/01/19 14:31:10 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.18 2025/02/09 16:36:15 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -151,6 +151,18 @@ static void select_word(quick_data_t *qd, char *s, int sx, XFontStruct *fs)
 	}
 }
 
+static Bool answer_true(Client *cli, Time t)
+{
+	FrameAllowEvents(cli, t);
+	return True;
+}
+
+/* now I finally know the reason why non-XView applications lock up
+ * the screen: they usually have a different focusMode and therefore
+ * (see FrameSetupGrabs in winframe.c) have a button grab....
+ *
+ * therefore we need to call FrameAllowEvents whenever we return True here...
+ */
 Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 					WinGenericFrame *frameInfo)
 {
@@ -166,22 +178,26 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 	int is_multiclick;
 
 	if ((event->xbutton.state & ModMaskMap[MOD_QUICKDUPL]) == 0) return False;
-	if (event->type == ButtonRelease) return True;
+
+	cli = frameInfo->core.client;
+
+	if (event->type == ButtonRelease)
+		return answer_true(cli, event->xbutton.time);
 	if (event->type != ButtonPress) return False;
 
 	/* wir sahen auch WIN_ICON... derzeit noch nicht */
 	if (frameInfo->core.kind != WIN_FRAME)
-		return True;
+		return answer_true(cli, event->xbutton.time);
 
 	/* now, a window kann also have a olwm-owned footer
 	 * see _OL_WINMSG_ERROR, _OL_WINMSG_STATE, _OL_DECOR_FOOTER.
 	 * In such a situation we see ButtonPress events with y much bigger than 26
 	 */
 	if (event->xbutton.y > heightTopFrame(frameInfo))
-		return True;
+		return answer_true(cli, event->xbutton.time);
 
-	cli = frameInfo->core.client;
 	scr = cli->scrInfo;
+	FrameAllowEvents(cli, event->xbutton.time);
 
 	data = NULL;
 	if (XGetWindowProperty(dpy, scr->rootid, Atom_SUN_QUICK_SELECTION_KEY_STATE,
@@ -199,14 +215,6 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		return True;
 	}
 	XFree((char *)data);
-
-	/* now I finally know the reason why non-XView applications lock up
-	 * the screen: they usually have a different focusMode and therefore
-	 * (see FrameSetupGrabs in winframe.c) have a button grab....
-	 *
-	 * therefore:
-	 */
-	FrameAllowEvents(cli, event->xbutton.time);
 
 	if (!scr->qc) {
 		scr->qc = supply_quick_data(dpy, scr, cli,
@@ -379,12 +387,13 @@ Bool dra_quick_duplicate_adjust(Display *dpy, XEvent *event,
 
 	if ((event->xbutton.state & ModMaskMap[MOD_QUICKDUPL]) == 0) return False;
 
-	if (event->type == ButtonRelease) return True;
+	cli = frameInfo->core.client;
+	if (event->type == ButtonRelease)
+		return answer_true(cli, event->xbutton.time);
 	if (event->type != ButtonPress) return False;
 	/* now we know that we are in "quick mode" - we always return True
 	 * in order to eat this button event
 	 */
-	cli = frameInfo->core.client;
 	FrameAllowEvents(cli, event->xbutton.time);
 
 	/* wir sahen auch WIN_ICON... derzeit noch nicht */
