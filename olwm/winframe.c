@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.5 2025/01/19 10:17:35 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.6 2025/02/09 16:19:18 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -56,7 +56,7 @@ static ClassPaneFrame classPaneFrame;
 * forward-declared functions
 ***************************************************************************/
 
-void FrameSetupGrabs();
+void FrameSetupGrabs(Client *cli, Window win, Bool activate);
 
 static int headerHeight();
 static void setTitleText(Display *dpy, WinPaneFrame *w, Window panewin);
@@ -288,11 +288,7 @@ WinPaneFrame *win;
 /*
  * eventMapRequest -- the pane is go from iconic to normal states
  */
-static int
-eventMapRequest(dpy, event, frameInfo)
-Display	*dpy;
-XEvent	*event;
-WinPaneFrame *frameInfo;
+static int eventMapRequest(Display *dpy, XEvent *event, WinPaneFrame *frameInfo)
 {
 	Client *cli = frameInfo->core.client;
 
@@ -311,11 +307,7 @@ WinPaneFrame *frameInfo;
 /*
  * eventConfigureRequest -- the pane is trying to change configuration
  */
-static int
-eventConfigureRequest(dpy, event, frameInfo)
-Display	*dpy;
-XEvent	*event;
-WinPaneFrame *frameInfo;
+static int eventConfigureRequest(Display *dpy, XEvent *event, WinPaneFrame *frameInfo)
 {
 	Client *cli = frameInfo->core.client;
 	WinPane		*winPane = (WinPane*)frameInfo->fcore.panewin;
@@ -327,29 +319,20 @@ WinPaneFrame *frameInfo;
 /*
  * selectClickFrame -- the select button has been clicked
  */
-static int
-selectClickFrame(dpy, event, frameInfo)
-Display	*dpy;
-XEvent	*event;
-WinPaneFrame *frameInfo;
+static int selectClickFrame(Display *dpy, XEvent *event, WinPaneFrame *frameInfo)
 {
-	Client 	*cli = frameInfo->core.client;
+	Client *cli = frameInfo->core.client;
 
-        if (!GRV.FocusFollowsMouse)
-        {
-		ClientSetFocus(cli,True,event->xbutton.time);
-        }  
+	if (!GRV.FocusFollowsMouse) {
+		ClientSetFocus(cli, True, event->xbutton.time);
+	}
 	return 0;
 }
 
 /*
  * selectDoubleClickFrame -- the select button has been double-clicked
  */
-static int
-selectDoubleClickFrame(dpy, event, frameInfo)
-Display	*dpy;
-XEvent	*event;
-WinPaneFrame *frameInfo;
+static int selectDoubleClickFrame(Display *dpy, XEvent *event, WinPaneFrame *frameInfo)
 {
     if (GRV.SelectToggleStacking) ClientBack(frameInfo->core.client);
     else ClientFullRestoreSizeToggle(frameInfo->core.client,event->xbutton.time);
@@ -361,12 +344,7 @@ WinPaneFrame *frameInfo;
  * selectDragFrame -- the select button has been pressed and moved enough
  * 	to trigger a drag.
  */
-static int
-selectDragFrame(dpy, event, frameInfo, lastpress)
-Display *dpy;
-XEvent *event;
-WinPaneFrame *frameInfo;
-XButtonEvent *lastpress;
+static int selectDragFrame(Display *dpy, XEvent *event, WinPaneFrame *frameInfo, XButtonEvent *lastpress)
 {
 	ClientMove(frameInfo->core.client,lastpress);
 	return 0;
@@ -375,11 +353,7 @@ XButtonEvent *lastpress;
 /*
  * menuPressFrame -- the menu button has been pressed
  */
-static int
-menuPressFrame(dpy,event,frameInfo)
-Display *dpy;
-XEvent *event;
-WinPaneFrame *frameInfo;
+static int menuPressFrame(Display *dpy, XEvent *event, WinPaneFrame *frameInfo)
 {
 	if (frameInfo->core.client->wmDecors->menu_type != MENU_NONE) {
 		ShowStandardMenu(frameInfo, event, False);
@@ -390,18 +364,14 @@ WinPaneFrame *frameInfo;
 /*
  * selectPressFrame -- the select or adjust button has been pressed
  */
-static int
-selectAdjustPressFrame(dpy, event, frameInfo)
-Display	*dpy;
-XEvent	*event;
-WinPaneFrame *frameInfo;
+static int selectAdjustPressFrame(Display *dpy, XEvent *event, WinPaneFrame *frameInfo)
 {
 	Client *cli = frameInfo->core.client;
 
-        /* If the button press was in the
-         * client, set the input focus.
-         */
-	ClientSetFocus(cli,False,event->xbutton.time);
+	/* If the button press was in the
+	 * client, set the input focus.
+	 */
+	ClientSetFocus(cli, False, event->xbutton.time);
 	return 0;
 }
 
@@ -1591,6 +1561,8 @@ Time	timestamp;
  * of the frame.
  * 
  * REMIND we need to remove explicit reference to Buttons 1 and 2.
+ * NO - in XView4.0 the mouse buttons are remappable (using XSetPointerMapping),
+ * but we do it in a way that SELECT is always Button1 etc.
  */
 void FrameSetupGrabs(Client *cli, Window win, Bool activate)
 {
