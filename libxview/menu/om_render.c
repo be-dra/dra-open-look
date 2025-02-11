@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.6 2025/01/10 17:19:17 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.8 2025/02/10 21:40:02 dra Exp $";
 #endif
 #endif
 
@@ -89,8 +89,6 @@ static Menu_status render_pullright(
 );
 static short compute_show_submenu(Xv_menu_info *m, Event *event,
     Rect *submenu_region_rect, int *submenu_stay_up);
-static int compute_dimensions(register Xv_menu_info *menu,
-    int iwidth, int iheight, register Rect  *rect);
 static void constrainrect(struct rect *rconstrain, struct rect *rbound);
 static void cleanup(register Xv_menu_info *m, Cleanup_mode cleanup_mode);
 static void compute_menu_item_paint_rect(
@@ -161,6 +159,201 @@ static int walkmenu_border_x(Xv_menu_info *menu)
 static int is_set_default_event(Xv_menu_group_info *grp, Event *event)
 {
 	return (int)xv_get(grp->server, SERVER_EVENT_HAS_SET_DEFAULT_MODIFIERS, event);
+}
+
+/*
+ * Compute the dimensions of the menu.
+ * menu->ncols > 0 => MENU_NCOLS has been set by application
+ * menu->nrows > 0 => MENU_NROWS has been set by application
+ * therefore ncols_fixed and nrows_fixed are set
+ */
+static int compute_dimensions(Xv_menu_info *menu, int iwidth, int iheight,
+								Rect  *rect)
+{
+    register int    ncols, nrows;
+    int		    nitems;
+    Xv_object       root_window;
+    Rect           *fs_screenrect;
+    int             max_height, max_width;
+    int             old_ncols, old_nrows;
+
+    root_window = xv_get(menu->group_info->client_window, XV_ROOT);
+    fs_screenrect = (Rect *) xv_get(root_window, XV_RECT);
+
+    /* BR# 1092662 */
+    ncols = menu->ncols_fixed;
+    nrows = menu->nrows_fixed;
+    /* BR# 1092662 */
+ 
+                                /* since the title isn't included */
+                                /* in calc for rows and cols, */
+                                /* ignore it */
+
+    if (menu->item_list[0]->title)
+        nitems = menu->nitems - 1;
+    else
+        nitems = menu->nitems;
+ 
+ 
+    if (menu->ncols_fixed)      /* cols specified by app */
+    {
+        if (nitems < ncols)
+            ncols = nitems;
+        nrows = ((nitems - 1) / ncols) + 1;
+    }
+    else if (menu->nrows_fixed) /* rows specified by app */
+    {
+        if (nitems < nrows)
+            nrows = nitems;
+        ncols = ((nitems - 1) / nrows) + 1;
+    }
+    else                        /* neither cols or rows have been */
+    {                           /* set by app, so fit with maximum */
+                                /* no. of rows and minimum no. cols */
+        ncols = 1;
+        nrows = nitems;
+    }
+
+	if (menu->class == MENU_MIXED) {
+		int i, h = 0;
+		int first_toggle = -1;
+		int have_choice = FALSE;
+
+		for (i = 0; i < menu->nitems; i++) {
+			Xv_menu_item_info *mi = menu->item_list[i];
+
+			h += Button_Height(menu->ginfo);
+			if (mi->class == MENU_CHOICE) {
+				h += 6 + 1;
+				have_choice = TRUE;
+			}
+			else if (mi->class == MENU_TOGGLE) {
+				h += 6;
+				if (first_toggle >= 0) h += TOGGLE_Y_GAP;
+				else first_toggle = i;
+			}
+		}
+		if (have_choice) h += TOGGLE_Y_GAP;
+
+		/* strange: all mixed menus with a toggle item are to high -
+		 * try to shorten...
+		 * but then I found a mixed menu where the **first** item 
+		 * was a toggle item - and this menu was not too high - sigh
+		 */
+		if (first_toggle > 0) h -= 16;
+
+    	rect->r_height = h + 2 * WALKMENU_BORDER_Y(menu);
+	}
+	else {
+		/* a homogenious menu: iheight is the same for each item */
+    	rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
+	}
+
+    rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
+    if (menu->item_list[0]->title)
+        rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
+ 
+    max_height = fs_screenrect->r_height - SCREEN_MARGIN;
+    max_width = fs_screenrect->r_width - SCREEN_MARGIN;
+ 
+    if (menu->ncols_fixed || menu->nrows_fixed) {
+        while ((rect->r_height > max_height) ||
+               (rect->r_width > max_width))
+        {
+            if (menu->ncols_fixed) {
+                old_ncols=ncols;
+                if (rect->r_width > max_width)
+                    ncols--;
+                else
+                    ncols++;
+                nrows = ((nitems - 1) / ncols) + 1;
+ 
+                rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
+                rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
+                if (menu->item_list[0]->title)
+        			rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
+ 
+                /*
+                 * if number of cols has decreased and menu width
+                 * is less than max width, but it still to tall,
+                 * then menu won't fit on screen.
+                 */
+                if ((ncols < old_ncols) &&
+                    (rect->r_width < max_width) &&
+                    (rect->r_height > max_height))
+                {
+                    xv_error(XV_NULL,
+                        ERROR_STRING, XV_MSG("Menu too large for screen"),
+                        ERROR_PKG, MENU,
+                        NULL);
+                    return FALSE;
+                }
+            }
+            else {
+				/* case 1: menu didn't fit cause */
+				/* number of row exceeded max */
+				/* number of rows allowed */
+				/* */
+				/* case 2: menu didn't fit cause */
+				/* number of col exceeded width */
+				/* of screen (ie too many cols */
+                old_nrows=nrows;
+                if (rect->r_height > max_height)
+                    nrows--;
+                else
+                    nrows++;
+                ncols = ((nitems - 1) / nrows) + 1;
+ 
+                rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
+                rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
+                if (menu->item_list[0]->title)
+        			rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
+ 
+                /*
+                 * if number of rows has decreased and menu height
+                 * is less then max height, but it's still too wide,
+                 * then menu won't fit on screen.
+                 */
+                if ((nrows < old_nrows) &&
+                    (rect->r_height < max_height) &&
+                    (rect->r_width > max_width))
+                {
+                    xv_error(XV_NULL,
+                       ERROR_STRING, XV_MSG("Menu too large for screen"),
+                       ERROR_PKG, MENU,
+                       NULL);
+                    return FALSE;
+                }
+            }
+        }
+    }
+    else {
+        while ((rect->r_height > max_height) || (rect->r_width > max_width)) {
+            ncols++;
+            nrows = ((nitems - 1) / ncols) + 1;
+ 
+            rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
+            rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
+            if (menu->item_list[0]->title)
+        		rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
+ 
+            if (rect->r_width > max_width) {
+                xv_error(XV_NULL,
+                    ERROR_STRING, XV_MSG("Menu too large for screen"),
+                    ERROR_PKG, MENU,
+                    NULL);
+                return FALSE;
+            }
+        }
+    }
+ 
+    if (menu->item_list[0]->title)
+        nrows++;
+ 
+    menu->ncols = ncols;
+    menu->nrows = nrows;
+ 
+    return TRUE;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -623,14 +816,6 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 	if (!compute_dimensions(m, item_width, item_height, &m->fs_menurect)) {
 		cleanup(m, CLEANUP_ABORT);
 		return;
-	}
-
-	/* nur Raetselraten ueber die Hoehe von MENU_MIXED */
-	if (m->fs_menurect.r_height - heightsum > 20) {
-		/* das trat beim Popup-Menu im cmdtool auf: lauter CMD und ein TOGGLE
-		 * - und es war viel zu hoch
-		 */
-		m->fs_menurect.r_height = heightsum ;
 	}
 
 	/*
@@ -1870,10 +2055,10 @@ Pkg_private int menu_compute_max_item_size(Xv_menu_info *menu,
 			case MENU_TOGGLE: heightsum += 29; break;
 			case MENU_MIXED: /* was nun ? */
 				/* nur Raetselraten.... */
-				if (mixtogg > 0 && (mixcmd + mixchc > 0)) {
+/* 				if (mixtogg > 0 && (mixcmd + mixchc > 0)) { */
 					/* mindestens ein Toggle und noch was anderes */
-					heightsum += 20;
-				}
+/* 					heightsum += 20; */
+/* 				} */
 				break;
 		}
 		*height_sum = heightsum;
@@ -1883,167 +2068,6 @@ Pkg_private int menu_compute_max_item_size(Xv_menu_info *menu,
 	return gen_items;
 }
 
-
-/*
- * Compute the dimensions of the menu.
- * menu->ncols > 0 => MENU_NCOLS has been set by application
- * menu->nrows > 0 => MENU_NROWS has been set by application
- * therefore ncols_fixed and nrows_fixed are set
- */
-static int compute_dimensions(register Xv_menu_info *menu,
-    int iwidth, int iheight, register Rect  *rect)
-{
-    register int    ncols, nrows;
-    int		    nitems;
-    Xv_object       root_window;
-    Rect           *fs_screenrect;
-    int             max_height, max_width;
-    int             old_ncols, old_nrows;
-
-    root_window = xv_get(menu->group_info->client_window, XV_ROOT);
-    fs_screenrect = (Rect *) xv_get(root_window, XV_RECT);
-
-    /* BR# 1092662 */
-    ncols = menu->ncols_fixed;
-    nrows = menu->nrows_fixed;
-    /* BR# 1092662 */
- 
-                                /* since the title isn't included */
-                                /* in calc for rows and cols, */
-                                /* ignore it */
-    if (menu->item_list[0]->title)
-        nitems = menu->nitems - 1;
-    else
-        nitems = menu->nitems;
- 
- 
-    if (menu->ncols_fixed)      /* cols specified by app */
-    {
-        if (nitems < ncols)
-            ncols = nitems;
-        nrows = ((nitems - 1) / ncols) + 1;
-    }
-    else if (menu->nrows_fixed) /* rows specified by app */
-    {
-        if (nitems < nrows)
-            nrows = nitems;
-        ncols = ((nitems - 1) / nrows) + 1;
-    }
-    else                        /* neither cols or rows have been */
-    {                           /* set by app, so fit with maximum */
-                                /* no. of rows and minimum no. cols */
-        ncols = 1;
-        nrows = nitems;
-    }
-
-
-    rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
-    rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
-    if (menu->item_list[0]->title)
-        rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
- 
-    max_height = fs_screenrect->r_height - SCREEN_MARGIN;
-    max_width = fs_screenrect->r_width - SCREEN_MARGIN;
- 
-    if (menu->ncols_fixed || menu->nrows_fixed) {
-        while ((rect->r_height > max_height) ||
-               (rect->r_width > max_width))
-        {
-            if (menu->ncols_fixed) {
-                old_ncols=ncols;
-                if (rect->r_width > max_width)
-                    ncols--;
-                else
-                    ncols++;
-                nrows = ((nitems - 1) / ncols) + 1;
- 
-                rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
-                rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
-                if (menu->item_list[0]->title)
-        			rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
- 
-                /*
-                 * if number of cols has decreased and menu width
-                 * is less than max width, but it still to tall,
-                 * then menu won't fit on screen.
-                 */
-                if ((ncols < old_ncols) &&
-                    (rect->r_width < max_width) &&
-                    (rect->r_height > max_height))
-                {
-                    xv_error(XV_NULL,
-                        ERROR_STRING, XV_MSG("Menu too large for screen"),
-                        ERROR_PKG, MENU,
-                        NULL);
-                    return FALSE;
-                }
-            }
-            else {
-				/* case 1: menu didn't fit cause */
-				/* number of row exceeded max */
-				/* number of rows allowed */
-				/* */
-				/* case 2: menu didn't fit cause */
-				/* number of col exceeded width */
-				/* of screen (ie too many cols */
-                old_nrows=nrows;
-                if (rect->r_height > max_height)
-                    nrows--;
-                else
-                    nrows++;
-                ncols = ((nitems - 1) / nrows) + 1;
- 
-                rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
-                rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
-                if (menu->item_list[0]->title)
-        			rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
- 
-                /*
-                 * if number of rows has decreased and menu height
-                 * is less then max height, but it's still too wide,
-                 * then menu won't fit on screen.
-                 */
-                if ((nrows < old_nrows) &&
-                    (rect->r_height < max_height) &&
-                    (rect->r_width > max_width))
-                {
-                    xv_error(XV_NULL,
-                       ERROR_STRING, XV_MSG("Menu too large for screen"),
-                       ERROR_PKG, MENU,
-                       NULL);
-                    return FALSE;
-                }
-            }
-        }
-    }
-    else {
-        while ((rect->r_height > max_height) || (rect->r_width > max_width)) {
-            ncols++;
-            nrows = ((nitems - 1) / ncols) + 1;
- 
-            rect->r_height = (nrows * iheight) + 2 * WALKMENU_BORDER_Y(menu);
-            rect->r_width = (ncols * iwidth) + 2 * WALKMENU_BORDER_X(menu);
-            if (menu->item_list[0]->title)
-        		rect->r_height += iheight + DRA_CHANGED_TITLE_ADD;
- 
-            if (rect->r_width > max_width) {
-                xv_error(XV_NULL,
-                    ERROR_STRING, XV_MSG("Menu too large for screen"),
-                    ERROR_PKG, MENU,
-                    NULL);
-                return FALSE;
-            }
-        }
-    }
- 
-    if (menu->item_list[0]->title)
-        nrows++;
- 
-    menu->ncols = ncols;
-    menu->nrows = nrows;
- 
-    return TRUE;
-}
 
 static void compute_item_row_column(Xv_menu_info *menu, int item_nbr,
 	int	*row, int *column)
@@ -2326,7 +2350,7 @@ static void submenu_done(register Xv_menu_info *m)
 			cleanup(parent_menu, CLEANUP_EXIT);
 			break;
 		case MENU_STATUS_BUSY:
-			fprintf(stderr, "is there something to do ? probably not, this case has been included 20.01.2008\n");
+			break;
 	}
 }
 
