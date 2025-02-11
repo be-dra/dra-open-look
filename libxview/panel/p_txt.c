@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.35 2025/01/20 19:26:55 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.36 2025/02/11 08:17:18 dra Exp $";
 #endif
 #endif
 
@@ -5303,14 +5303,6 @@ static void update_value(Item_info *ip, Bool is_wc, int action,
 						{
 							dp->flags |= SELECTION_REQUEST_FAILED;
 							if (rank != PANEL_SEL_PRIMARY) {
-								char buf[64];
-
-								sprintf(buf,
-										XV_MSG
-										("Unable to get contents of %s selection"),
-										(char *)xv_get(panel->sel_req, SEL_RANK_NAME));
-								xv_error(XV_NULL, ERROR_STRING, buf, ERROR_PKG,
-										PANEL, NULL);
 								text_alarm(ip);
 							}
 							else {
