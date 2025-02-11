@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.31 2025/02/05 15:24:50 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.32 2025/02/10 21:54:31 dra Exp $";
 #endif
 #endif
 
@@ -544,7 +544,7 @@ static int HandleLocalIncr(Sel_req_info *selReq, char *replyBuf, Sel_reply_info 
 						&replyType, (Xv_opaque *) & replyBuf,
 						&reply->sri_length, &reply->sri_format))
 		{
-			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target);
+			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,TRUE);
 			reply->sri_format = 0;
 			reply->sri_length = 0;
 			XFree((char *)(reply->sri_propdata));
@@ -591,7 +591,8 @@ static int HandleLocalIncr(Sel_req_info *selReq, char *replyBuf, Sel_reply_info 
 							&replyType, (Xv_opaque *) & replyBuf,
 							&reply->sri_length, &reply->sri_format))
 			{
-				xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target);
+				xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+														target, TRUE);
 				reply->sri_format = 0;
 				reply->sri_length = 0;
 				XFree((char *)(reply->sri_propdata));
@@ -663,7 +664,7 @@ static int TransferLocalData(Sel_req_info *selReq, Sel_reply_info *reply,
 					&reply->sri_format)) {
 
 		if (selReq->reply_proc != NULL)
-			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target);
+			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,TRUE);
 
 		xv_sel_free_property(reply->sri_dpy, reply->sri_property);
 		return FALSE;
@@ -735,7 +736,7 @@ static int LocalMultipleTrans(Sel_reply_info *reply, Sel_req_info *selReq,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION, NULL);
 		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
-				reply->sri_local_owner->atomList->multiple);
+				reply->sri_local_owner->atomList->multiple, TRUE);
 	}
 
 	byteLen = BYTE_SIZE(length, format) / sizeof(atom_pair);
@@ -784,12 +785,12 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 {
 	if (ev->time != replyInfo->sri_time) {
 		xv_sel_handle_error(SEL_BAD_TIME, selReq, replyInfo,
-				*replyInfo->sri_target);
+				*replyInfo->sri_target, ev->send_event);
 		return (FALSE);
 	}
 	if (ev->requestor != replyInfo->sri_requestor) {
 		xv_sel_handle_error(SEL_BAD_WIN_ID, selReq, replyInfo,
-				*replyInfo->sri_target);
+				*replyInfo->sri_target, ev->send_event);
 		return (FALSE);
 	}
 	/*
@@ -800,7 +801,7 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 	 */
 	if (ev->property == None) {
 		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo,
-				*replyInfo->sri_target);
+				*replyInfo->sri_target, ev->send_event);
 		if (!blocking && !replyInfo->sri_multiple_count)
 			xv_sel_end_request(replyInfo);
 		return (FALSE);
@@ -839,7 +840,8 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION,
 				NULL);
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target);
+		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,
+									ev->send_event);
 		return FALSE;
 	}
 
@@ -858,7 +860,8 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 				XSelectInput(ev->display, reply->sri_requestor,
 						winAttr.your_event_mask);
 
-			xv_sel_handle_error(SEL_TIMEDOUT, selReq, reply, target);
+			xv_sel_handle_error(SEL_TIMEDOUT, selReq, reply, target,
+										ev->send_event);
 			return FALSE;
 		}
 
@@ -874,7 +877,8 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 					ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 					ERROR_PKG, SELECTION,
 					NULL);
-			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target);
+			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,
+									ev->send_event);
 
 			if (status)
 				XSelectInput(ev->display, reply->sri_requestor,
@@ -932,7 +936,8 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 				ERROR_PKG, SELECTION,
 				NULL);
 
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target);
+		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
+										ev->send_event);
 		return FALSE;
 	}
 
@@ -944,7 +949,8 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	 */
 	if (type == 0 && format == 0) {
 		XFree(propValue);
-        xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target);
+        xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
+										ev->send_event);
 		return FALSE;
 	}
 
@@ -1008,54 +1014,55 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 * the selection data on the requestor window. The target is MULTIPLE so
 * the passed in user proc is call "numTarget" of times.
 */
-static int ProcessMultiple(Sel_req_info *selReq, Sel_reply_info *reply, XSelectionEvent *ev, int blocking)
+static int ProcessMultiple(Sel_req_info *selReq, Sel_reply_info *reply,
+								XSelectionEvent *ev, int blocking)
 {
-    atom_pair      *pPtr;
-    int            format;
-    Atom           type;
-    unsigned char  *pair;
-    unsigned long  length;
-    unsigned long  bytesafter;
-    int            byteLen;
-
-    /*
-     * Get the atom pair data that we set on our window. We can delete
-     * now since the owners has already read this.
-     */
-
-    if ( XGetWindowProperty( ev->display, ev->requestor,
-			    reply->sri_property, 0L,  1000000L, False,
-			    (Atom)AnyPropertyType,  &type, &format,
-			    &length, &bytesafter,
-			    (unsigned char **) &pair ) != Success ) {
-	xv_error( selReq->public_self,
-		  ERROR_STRING,XV_MSG("XGetWindowProperty Failed"),
-                  ERROR_PKG,SELECTION,
-		  NULL );
-	 xv_sel_handle_error( SEL_BAD_CONVERSION, selReq, reply,
-		     reply->sri_local_owner->atomList->multiple );
-	 return FALSE;
-    }
-
-    byteLen = BYTE_SIZE( length, format ) / sizeof( atom_pair );
-
-    for ( pPtr = (atom_pair *) pair; byteLen;  byteLen--, pPtr++ ) {
-	/*
-	 * The owner replace the property to None, if it failes to convert .
-	 */
-	if ( pPtr->property == None )
-            xv_sel_handle_error( SEL_BAD_CONVERSION, selReq, reply, pPtr->target );
-	else
-	    XvGetRequestedValue( selReq, ev, reply, pPtr->property,
-				     pPtr->target, blocking );
+	atom_pair *pPtr;
+	int format;
+	Atom type;
+	unsigned char *pair;
+	unsigned long length;
+	unsigned long bytesafter;
+	int byteLen;
 
 	/*
-	 * The properties used for multiple request are freed in
-	 * xv_sel_end_request proc.
+	 * Get the atom pair data that we set on our window. We can delete
+	 * now since the owners has already read this.
 	 */
-    }  /* for loop */
-    XFree( (char *)pair );
-    return TRUE;
+
+	if (XGetWindowProperty(ev->display, ev->requestor,
+					reply->sri_property, 0L, 1000000L, False,
+					(Atom) AnyPropertyType, &type, &format,
+					&length, &bytesafter, (unsigned char **)&pair) != Success) {
+		xv_error(selReq->public_self,
+				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
+				ERROR_PKG, SELECTION,
+				NULL);
+		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+				reply->sri_local_owner->atomList->multiple, ev->send_event);
+		return FALSE;
+	}
+
+	byteLen = BYTE_SIZE(length, format) / sizeof(atom_pair);
+
+	for (pPtr = (atom_pair *) pair; byteLen; byteLen--, pPtr++) {
+		/*
+		 * The owner replace the property to None, if it failes to convert .
+		 */
+		if (pPtr->property == None)
+			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+					pPtr->target, ev->send_event);
+		else
+			XvGetRequestedValue(selReq, ev, reply, pPtr->property,
+					pPtr->target, blocking);
+
+		/*
+		 * The properties used for multiple request are freed in
+		 * xv_sel_end_request proc.
+		 */
+	}  /* for loop */
+	XFree((char *)pair);
+	return TRUE;
 }
 
 
@@ -1115,7 +1122,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	if (!xv_sel_block_for_event(dpy, &event, replyInfo->sri_timeout,
 					xv_sel_check_selnotify, (char *)replyInfo)) {
 		xv_sel_handle_error(SEL_TIMEDOUT, selReq, replyInfo,
-				*replyInfo->sri_target);
+				*replyInfo->sri_target, FALSE);
 		xv_sel_free_property(dpy, replyInfo->sri_property);
 		return FALSE;
 	}
@@ -1334,7 +1341,8 @@ static int ProcessNonBlkIncr(Sel_req_info *selReq, Sel_reply_info *reply, XSelec
 		  ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
                   ERROR_PKG,SELECTION,
 		  NULL );
-	xv_sel_handle_error( SEL_BAD_CONVERSION, selReq, reply, *reply->sri_target );
+	xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, *reply->sri_target,
+									ev->send_event);
 	return FALSE;
     }
 
@@ -1534,7 +1542,8 @@ static int ProcessReply(Sel_reply_info  *reply, XPropertyEvent  *ev)
 		xv_error(selReq->public_self,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION, NULL);
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, *reply->sri_target);
+		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+									*reply->sri_target, TRUE);
 		return FALSE;
 	}
 
