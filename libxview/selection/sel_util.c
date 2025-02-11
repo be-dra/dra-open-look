@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.23 2025/02/05 15:24:50 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.24 2025/02/10 21:54:27 dra Exp $";
 #endif
 #endif
 
@@ -322,8 +322,8 @@ Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
  * Predicate function for XCheckIfEvent
  *
  */
-/*ARGSUSED*/
-Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent, char *args)
+Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent,
+										char *args)
 {
 	Sel_reply_info reply;
 
@@ -415,7 +415,7 @@ Pkg_private Atom xv_sel_str_to_atom(Display *dpy, char *str, XID xid)
 }
 
 Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel,
-						Sel_reply_info *replyInfo, Atom target)
+						Sel_reply_info *replyInfo, Atom target, int sendEv)
 {
     Selection_requestor sel_req;
 
@@ -424,7 +424,7 @@ Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel,
 
     if ( (sel != NULL) && (sel->reply_proc != NULL) )
         (*sel->reply_proc)( sel_req, target, (Atom)0, (Xv_opaque)&errCode,
-								(unsigned long)(SEL_ERROR), 0 );
+								(unsigned long)(SEL_ERROR), sendEv );
 }
 
 
@@ -636,29 +636,27 @@ Pkg_private Sel_reply_info *xv_sel_get_reply(XEvent *event)
 }
 
 
-
-
-/*ARGSUSED*/
-Pkg_private Notify_value xv_sel_handle_sel_timeout(Notify_client client, int which)
+Pkg_private Notify_value xv_sel_handle_sel_timeout(Notify_client client,
+									int which)
 {
-    Sel_reply_info  *reply = (Sel_reply_info *) client;
-    Sel_req_list  *reqTbl;
+	Sel_reply_info *reply = (Sel_reply_info *) client;
+	Sel_req_list *reqTbl;
 
 
-    notify_set_itimer_func(client, NOTIFY_TIMER_FUNC_NULL,
-               ITIMER_REAL, (struct itimerval *)0, (struct itimerval *)0);
-    reqTbl = (Sel_req_list *) SelMatchReqTbl( reply);
+	notify_set_itimer_func(client, NOTIFY_TIMER_FUNC_NULL,
+			ITIMER_REAL, (struct itimerval *)0, (struct itimerval *)0);
+	reqTbl = (Sel_req_list *) SelMatchReqTbl(reply);
 
-    if ( reqTbl != NULL )  {
+	if (reqTbl != NULL) {
 
-        if ( !reqTbl->done  )  {
-	    xv_sel_handle_error( SEL_TIMEDOUT, reply->sri_req_info, reply,
-			*reply->sri_target );
-	    xv_sel_end_request( reply);
+		if (!reqTbl->done) {
+			xv_sel_handle_error(SEL_TIMEDOUT, reply->sri_req_info, reply,
+					*reply->sri_target, FALSE);
+			xv_sel_end_request(reply);
+		}
 	}
-    }
 
-    return NOTIFY_DONE;
+	return NOTIFY_DONE;
 }
 
 
