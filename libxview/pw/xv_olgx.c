@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.4 2025/01/10 09:31:31 dra Exp $";
+static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.5 2025/02/12 16:55:05 dra Exp $";
 #endif
 #endif
 
@@ -88,6 +88,7 @@ Xv_private Cms xv_set_control_cms(Xv_Window window_public,
 Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 									Xv_Font text_font)
 {
+	static Attr_attribute screen_ginfo = 0;
 	Cms cms;
 	unsigned long cms_size;
 	int cms_status = 0;
@@ -113,6 +114,8 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 #endif /* OW_I18N */
 
 	int three_d_state;
+
+	if (screen_ginfo == 0) screen_ginfo = xv_unique_key();
 
 	/*
 	 * Initialize the OPEN LOOK Graphics Library
@@ -197,7 +200,7 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 #endif /* OW_I18N */
 
 	screen = xv_screen(info);
-	first = (Ginfo_list *) xv_get(screen, XV_KEY_DATA, SCREEN_GINFO);
+	first = (Ginfo_list *) xv_get(screen, XV_KEY_DATA, screen_ginfo);
 	last = first;
 	for (ginfo_list = first; ginfo_list; ginfo_list = ginfo_list->next) {
 		if (ginfo_list->cms == cms && ginfo_list->depth == xv_depth(info) &&
@@ -228,7 +231,7 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	if (last)
 		last->next = ginfo_list;
 	else
-		xv_set(screen, XV_KEY_DATA, SCREEN_GINFO, ginfo_list, NULL);
+		xv_set(screen, XV_KEY_DATA, screen_ginfo, ginfo_list, NULL);
 
 	display = xv_display(info);
 	screen_number = (int)xv_get(screen, SCREEN_NUMBER);
