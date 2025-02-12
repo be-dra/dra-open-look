@@ -1,4 +1,4 @@
-/*	@(#)scrn_vis.h 20.17 93/06/28 SMI     DRA: RCS: $Id: scrn_vis.h,v 4.1 2024/03/28 18:27:44 dra Exp $	*/
+/*	@(#)scrn_vis.h 20.17 93/06/28 SMI     DRA: RCS: $Id: scrn_vis.h,v 4.3 2025/02/12 20:42:39 dra Exp $	*/
 
 /****************************************************************************/
 /*	
@@ -32,9 +32,5 @@ typedef struct screen_visual {
 
 struct _screen_info;
 
-/* Functions defined in scrn_vis.c */
-Pkg_private Screen_visual * screen_get_visual(Display *display, struct _screen_info *screen, XVisualInfo *visual_info);
-Pkg_private Screen_visual * screen_get_image_visual(Display *display, struct _screen_info *screen, XID xid, unsigned int depth);
-Pkg_private Screen_visual * screen_new_visual(Display *display, struct _screen_info *screen, XID xid, unsigned int depth, XVisualInfo *visual_info);
 
 #endif
