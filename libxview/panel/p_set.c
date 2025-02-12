@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.4 2024/11/14 20:14:53 dra Exp $";
+static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.5 2025/02/11 21:07:13 dra Exp $";
 #endif
 #endif
 
@@ -19,6 +19,7 @@ static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.4 2
 #include <xview_private/draw_impl.h>
 #include <xview_private/font_impl.h>
 #include <xview_private/win_info.h>
+#include <xview_private/svr_impl.h>
 
 #define ADONE ATTR_CONSUME(*attrs);break
 
@@ -557,180 +558,308 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
     panel->inactive_caret_width = inactive_caret_info.width;
 }
 
-static int column_from_absolute_x(int x_position, int col_gap, int left_margin, Xv_Font font);
-static int row_from_absolute_y(int y_position, int row_gap, int top_margin, Xv_Font font);
 
-Pkg_private void panel_refont(Panel_info *panel, int arg)
+#ifdef BEFORE_DRA_CHANGED_IT
+static int column_from_absolute_x(int x_position, int col_gap, int left_margin,
+    							int	chrwth)
 {
-    register Panel_item item;
-    register Panel  panel_public = PANEL_PUBLIC(panel);
-    register Item_info *ip;
-    register Panel_image *label;
-    Xv_Font         panel_font, old_win_font, old_bold_font, new_win_font,
-                    new_bold_font;
-    int             label_bold, item_x, item_y, row_gap,
-                    col_gap, left_margin, top_margin, item_row, item_col;
-
-    old_win_font = xv_get(panel_public, XV_FONT);
-    new_win_font = (old_win_font) ?
-	xv_find(panel_public, FONT,
-		FONT_RESCALE_OF, old_win_font, (int) arg,
-		NULL)
-	: (Xv_Font) 0;
-    if (new_win_font) {
-	(void) xv_set(old_win_font, XV_INCREMENT_REF_COUNT, NULL);
-	(void) xv_set(panel_public, XV_FONT, new_win_font, NULL);
-	panel_font = new_win_font;
-    } else
-	panel_font = old_win_font;
-
-    old_bold_font = panel->bold_font;
-    new_bold_font = (old_bold_font) ?
-	xv_find(panel_public, FONT,
-		FONT_RESCALE_OF, old_bold_font, (int) arg,
-		NULL)
-	: (Xv_Font) 0;
-    if (new_bold_font) {
-	(void) xv_set(panel_public, PANEL_BOLD_FONT, new_bold_font, NULL);
-    }
-
-    if ((!new_win_font) && (!new_bold_font))
-	return;
-
-    row_gap = (int) xv_get(panel_public, WIN_ROW_GAP);
-    col_gap = (int) xv_get(panel_public, WIN_COLUMN_GAP);
-    left_margin = (int) xv_get(panel_public, WIN_LEFT_MARGIN);
-    top_margin = (int) xv_get(panel_public, WIN_TOP_MARGIN);
-
-    PANEL_EACH_ITEM(panel_public, item)
-	ip = ITEM_PRIVATE(item);
-    if (new_win_font) {
-	item_x = (int) xv_get(ITEM_PUBLIC(ip), PANEL_ITEM_X);
-	item_y = (int) xv_get(ITEM_PUBLIC(ip), PANEL_ITEM_Y);
-	item_col = column_from_absolute_x(item_x, col_gap, top_margin,
-					  new_win_font);
-	item_row = row_from_absolute_y(item_y, row_gap, left_margin,
-				       new_win_font);
-	(void) xv_set(ITEM_PUBLIC(ip),
-		      PANEL_ITEM_X, xv_col(panel_public, item_col),
-		      PANEL_ITEM_Y, xv_row(panel_public, item_row),
-		      PANEL_PAINT, PANEL_NONE,
-		      NULL);
-    }
-    label = &ip->label;
-    if (is_string(label)) {
-
-	label_bold = (int) xv_get(
-				  ITEM_PUBLIC(ip), PANEL_LABEL_BOLD);
-
-#ifdef OW_I18N
-	xv_set(ITEM_PUBLIC(ip),
-	       PANEL_PAINT, PANEL_NONE,
-	       PANEL_LABEL_FONT, panel_font,
-	       PANEL_LABEL_STRING_WCS, image_string_wc(label),
-	       NULL);
-#else
-	xv_set(ITEM_PUBLIC(ip),
-	       PANEL_PAINT, PANEL_NONE,
-	       PANEL_LABEL_FONT, panel_font,
-	       PANEL_LABEL_STRING, image_string(label),
-	       NULL);
-#endif /* OW_I18N */
-
-	if (label_bold) {
-	    xv_set(ITEM_PUBLIC(ip),
-		   PANEL_PAINT, PANEL_NONE,
-		   PANEL_LABEL_BOLD, label_bold,
-		   NULL);
-	}
-    }
-    xv_set(ITEM_PUBLIC(ip),
-	   PANEL_PAINT, PANEL_NONE,
-	   PANEL_LABEL_FONT, panel_font,
-	   NULL);
-    switch (ip->item_type) {
-
-      case PANEL_MESSAGE_ITEM:
-	break;
-
-#ifdef OW_I18N
-      case PANEL_BUTTON_ITEM:{
-	    wchar_t        *label = (wchar_t *) xv_get(
-				       ITEM_PUBLIC(ip), PANEL_LABEL_STRING_WCS);
-	    if (label)		/* don't scale image buttons */
-		xv_set(ITEM_PUBLIC(ip),
-		       PANEL_PAINT, PANEL_NONE,
-		       PANEL_LABEL_STRING_WCS, label,
-		       NULL);
-	    break;
-	}
-#else
-      case PANEL_BUTTON_ITEM:{
-	    char           *label = (char *) xv_get(
-				       ITEM_PUBLIC(ip), PANEL_LABEL_STRING);
-	    if (label)		/* don't scale image buttons */
-		xv_set(ITEM_PUBLIC(ip),
-		       PANEL_PAINT, PANEL_NONE,
-		       PANEL_LABEL_STRING, label,
-		       NULL);
-	    break;
-	}
-#endif /* OW_I18N */
-
-      case PANEL_TOGGLE_ITEM:
-	xv_set(ITEM_PUBLIC(ip),
-	       PANEL_PAINT, PANEL_NONE,
-	       PANEL_CHOICE_FONTS, panel_font, 0,
-	       NULL);
-	break;
-
-      case PANEL_CHOICE_ITEM:
-	xv_set(ITEM_PUBLIC(ip),
-	       PANEL_PAINT, PANEL_NONE,
-	       PANEL_CHOICE_FONTS, panel_font, 0,
-	       NULL);
-	break;
-
-      case PANEL_TEXT_ITEM:
-      case PANEL_SLIDER_ITEM:
-	xv_set(ITEM_PUBLIC(ip),
-	       PANEL_PAINT, PANEL_NONE,
-	       PANEL_VALUE_FONT, panel_font,
-	       NULL);
-	break;
-
-
-      default:
-	break;
-    }
-    /*
-     * undecided if we should paint it.  Damage will do it for free when it
-     * is resized.
-     */
-    panel_paint(ITEM_PUBLIC(ip), PANEL_CLEAR);
-    PANEL_END_EACH
-	if (new_win_font) {
-	(void) xv_set(panel_public, XV_FONT, old_win_font, NULL);
-	(void) xv_set(old_win_font, XV_DECREMENT_REF_COUNT, NULL);
-    }
-}
-
-
-static int column_from_absolute_x(int x_position, int col_gap, int left_margin, Xv_Font font)
-{
-    int		chrwth;
-
     x_position -= left_margin;
-    chrwth = xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
     return (x_position / (chrwth + col_gap));
 }
 
 
-static int row_from_absolute_y(int y_position, int row_gap, int top_margin, Xv_Font font)
+static int row_from_absolute_y(int y_position, int row_gap, int top_margin,
+    								int	chrht)
 {
-    int		chrht;
-
     y_position -= top_margin;
-    chrht = xv_get(font, FONT_DEFAULT_CHAR_HEIGHT);
     return (y_position / (chrht + row_gap));
+}
+#endif /* BEFORE_DRA_CHANGED_IT */
+
+Pkg_private void panel_refont(Panel_info *panel, int arg)
+{
+	register Panel_item item;
+	register Panel panel_public = PANEL_PUBLIC(panel);
+	register Item_info *ip;
+	register Panel_image *label;
+	Xv_Font panel_font, old_win_font, old_bold_font, new_win_font,
+			new_bold_font;
+	int label_bold = FALSE, item_x, item_y, left_margin, top_margin;
+#ifdef BEFORE_DRA_CHANGED_IT
+	int item_row, item_col;
+#endif /* BEFORE_DRA_CHANGED_IT */
+    int ochrwth, nchrwth, ochrht, nchrht, y_gap, x_gap;
+	int i, xrel, yrel;
+
+	SERVERTRACE((790, "%s: scale=%d\n", __FUNCTION__, arg));
+	old_win_font = xv_get(panel_public, XV_FONT);
+	new_win_font = (old_win_font) ?
+			xv_find(panel_public, FONT,
+			FONT_RESCALE_OF, old_win_font, (int)arg, NULL)
+			: (Xv_Font) 0;
+	if (new_win_font) {
+		(void)xv_set(old_win_font, XV_INCREMENT_REF_COUNT, NULL);
+		(void)xv_set(panel_public, XV_FONT, new_win_font, NULL);
+		panel_font = new_win_font;
+	}
+	else
+		panel_font = old_win_font;
+
+	old_bold_font = panel->bold_font;
+	new_bold_font = (old_bold_font) ?
+			xv_find(panel_public, FONT,
+			FONT_RESCALE_OF, old_bold_font, (int)arg, NULL)
+			: (Xv_Font) 0;
+	if (new_bold_font) {
+		panel->bold_font = new_bold_font;
+	}
+
+	if ((!new_win_font) && (!new_bold_font))
+		return;
+
+    ochrht = xv_get(old_win_font, FONT_DEFAULT_CHAR_HEIGHT);
+    nchrht = xv_get(new_win_font, FONT_DEFAULT_CHAR_HEIGHT);
+	ochrwth = xv_get(old_win_font, FONT_DEFAULT_CHAR_WIDTH);
+	nchrwth = xv_get(new_win_font, FONT_DEFAULT_CHAR_WIDTH);
+
+	xrel = (nchrwth * 100) / ochrwth;
+	yrel = (nchrht * 100) /ochrht;
+
+	y_gap = (int)xv_get(panel_public, PANEL_ITEM_Y_GAP);
+	x_gap = (int)xv_get(panel_public, PANEL_ITEM_X_GAP);
+	if (x_gap < 4) x_gap = 4;
+
+	left_margin = (int)xv_get(panel_public, WIN_LEFT_MARGIN);
+	top_margin = (int)xv_get(panel_public, WIN_TOP_MARGIN);
+
+	PANEL_EACH_ITEM(panel_public, item)
+		ip = ITEM_PRIVATE(item);
+		if (new_win_font) {
+#ifdef BEFORE_DRA_CHANGED_IT
+			/* probably this would have worked if the positioning of all
+			 * panel items were with the help of xv_col() and xv_row().
+			 * The question is: who does that?
+			 */
+			item_x = (int)xv_get(item, PANEL_ITEM_X);
+			item_y = (int)xv_get(item, PANEL_ITEM_Y);
+			item_col = column_from_absolute_x(item_x, x_gap, top_margin,
+    						ochrwth);
+			item_row = row_from_absolute_y(item_y, y_gap, left_margin,
+    						ochrht);
+			xv_set(item,
+					PANEL_ITEM_X, xv_col(panel_public, item_col),
+					PANEL_ITEM_Y, xv_row(panel_public, item_row),
+					PANEL_PAINT, PANEL_NONE,
+					NULL);
+#else /* BEFORE_DRA_CHANGED_IT */
+			item_x = (int)xv_get(item, XV_X) - left_margin;
+			item_y = (int)xv_get(item, XV_Y) - top_margin;
+			item_x = (item_x * xrel) / 100 + left_margin;
+			item_y = (item_y * yrel) / 100 + top_margin;
+			xv_set(item,
+					XV_X, item_x,
+					XV_Y, item_y,
+					NULL);
+#endif /* BEFORE_DRA_CHANGED_IT */
+		}
+		label = &ip->label;
+		if (is_string(label)) {
+			char *label_to_be_freed;
+
+			label_bold = (int)xv_get(item, PANEL_LABEL_BOLD);
+#ifdef OW_I18N
+			xv_set(item,
+					PANEL_PAINT, PANEL_NONE,
+					PANEL_LABEL_FONT, panel_font,
+					PANEL_LABEL_STRING_WCS, image_string_wc(label),
+					NULL);
+#else
+			/* REF (hklesbrfhklbserf) */
+			label_to_be_freed = panel_strsave(image_string(label));
+			xv_set(item,
+					PANEL_PAINT, PANEL_NONE,
+					PANEL_LABEL_FONT, label_bold ? new_bold_font : panel_font,
+					PANEL_LABEL_STRING, label_to_be_freed,
+					NULL);
+			xv_free(label_to_be_freed);
+#endif /* OW_I18N */
+
+		}
+		switch (ip->item_type) {
+
+			case PANEL_MESSAGE_ITEM:
+				break;
+
+#ifdef OW_I18N
+			case PANEL_BUTTON_ITEM:{
+					wchar_t *label = (wchar_t *)xv_get(item,
+							PANEL_LABEL_STRING_WCS);
+
+					if (label)	/* don't scale image buttons */
+						xv_set(item,
+								PANEL_PAINT, PANEL_NONE,
+								PANEL_LABEL_STRING_WCS, label,
+								NULL);
+					break;
+				}
+#else
+			case PANEL_BUTTON_ITEM:
+				{
+					char *label_to_be_freed;
+					char *label = (char *)xv_get(item, PANEL_LABEL_STRING);
+					if (label) { /* don't scale image buttons */
+						/* REF (hklesbrfhklbserf) */
+						label_to_be_freed = panel_strsave(label);
+						xv_set(item,
+								PANEL_PAINT, PANEL_NONE,
+								PANEL_LABEL_STRING, label_to_be_freed,
+								NULL);
+
+						xv_free(label_to_be_freed);
+					}
+				}
+				break;
+#endif /* OW_I18N */
+
+			case PANEL_TOGGLE_ITEM:
+				xv_set(item,
+						PANEL_PAINT, PANEL_NONE,
+						PANEL_VALUE_FONT, panel_font,
+						NULL);
+				break;
+
+			case PANEL_CHOICE_ITEM:
+				xv_set(item,
+						PANEL_PAINT, PANEL_NONE,
+						PANEL_VALUE_FONT, panel_font,
+						NULL);
+				break;
+
+			case PANEL_TEXT_ITEM:
+			case PANEL_SLIDER_ITEM:
+				xv_set(item,
+						PANEL_PAINT, PANEL_NONE,
+						PANEL_VALUE_FONT, panel_font,
+						NULL);
+				break;
+
+			case PANEL_LIST_ITEM:
+				item_x = (int)xv_get(item, PANEL_LIST_WIDTH);
+				item_x = (item_x * xrel) / 100;
+				item_y = (int)xv_get(item, PANEL_LIST_ROW_HEIGHT);
+/* 				fprintf(stderr, "rh=%d, yrel=%d -> ", item_y, yrel); */
+				item_y = (item_y * yrel) / 100;
+/* 				fprintf(stderr, "rh=%d\n", item_y); */
+				xv_set(item,
+						PANEL_LIST_WIDTH, item_x,
+						PANEL_LIST_ROW_HEIGHT, item_y,
+						NULL);
+				for (i = (int)xv_get(item, PANEL_LIST_NROWS); i >= 0; i--) {
+					xv_set(item, PANEL_LIST_FONT, i, panel_font, NULL);
+				}
+				break;
+
+			default:
+				break;
+		}
+		/*
+		 * undecided if we should paint it.  Damage will do it for free when it
+		 * is resized.
+		 */
+		panel_paint(item, PANEL_CLEAR);
+	PANEL_END_EACH
+
+	/* PANEL_EACH_ITEM omits the 'subitems' */
+	for (item = xv_get(panel_public, PANEL_FIRST_ITEM);
+		item;
+		item = xv_get(item, PANEL_NEXT_ITEM))
+	{
+		if (xv_get(item, PANEL_ITEM_OWNER)) {
+			ip = ITEM_PRIVATE(item);
+
+			switch (ip->item_type) {
+				case PANEL_TEXT_ITEM: /* e.g. the textfield in a slider */
+					xv_set(item,
+							PANEL_PAINT, PANEL_CLEAR,
+							PANEL_VALUE_FONT, panel_font,
+							NULL);
+					break;
+
+				default:
+					break;
+			}
+		}
+	}
+
+	/* now avoid overlappings */
+	PANEL_EACH_ITEM(panel_public, item)
+		Rect item_r;
+		Panel_item it;
+
+		/* see propframe.c for this funny construction */
+		if (xv_get(item, XV_KEY_DATA, PANEL_DEFAULT_ITEM)) continue;
+
+		item_r = *((Rect *)xv_get(item, XV_RECT));
+		/* add a little to the right */
+		item_r.r_width += 4;
+
+		for (it = xv_get(item, PANEL_NEXT_ITEM);
+			it;
+			it = xv_get(it, PANEL_NEXT_ITEM))
+		{
+			Rect it_r;
+
+			if (xv_get(item, PANEL_ITEM_OWNER)) continue;
+			if (xv_get(item, XV_KEY_DATA, PANEL_DEFAULT_ITEM)) continue;
+
+			it_r = *((Rect *)xv_get(it, XV_RECT));
+			/* add a little to the right */
+			it_r.r_width += 4;
+
+			if (rect_intersectsrect(&item_r, &it_r)) {
+/* 				fprintf(stderr, "\noverlapping '%s' and '%s'\n", */
+/* 						(char *)xv_get(item, PANEL_LABEL_STRING), */
+/* 						(char *)xv_get(it, PANEL_LABEL_STRING)); */
+/* 				rect_print(&item_r); */
+/* 				rect_print(&it_r); */
+
+				/* handle common cases: */
+				if (item_r.r_top == it_r.r_top
+					&& rect_right(&item_r) >= it_r.r_left)
+				{
+					xv_set(it, XV_X, rect_right(&item_r) + x_gap, NULL);
+				}
+				else if (rect_bottom(&item_r) >= it_r.r_top) {
+					int y = (int)xv_get(it, XV_Y);
+					Panel_item ity;
+
+					/* are there additional items with the same y ?
+					 * Let's collect them and move them all down
+					 */
+					for (ity = xv_get(it, PANEL_NEXT_ITEM);
+						ity;
+						ity = xv_get(ity, PANEL_NEXT_ITEM))
+					{
+						if (xv_get(ity, PANEL_ITEM_OWNER))
+							continue;
+						if (xv_get(item, XV_KEY_DATA, PANEL_DEFAULT_ITEM))
+							continue;
+					
+						if (y == (int)xv_get(ity, XV_Y)) {
+							xv_set(ity, XV_Y, rect_bottom(&item_r)+y_gap, NULL);
+						}
+					}
+					xv_set(it, XV_Y, rect_bottom(&item_r) + y_gap, NULL);
+				}
+			}
+		}
+	PANEL_END_EACH
+
+
+	if (new_win_font) {
+		(void)xv_set(panel_public, XV_FONT, old_win_font, NULL);
+		(void)xv_set(old_win_font, XV_DECREMENT_REF_COUNT, NULL);
+	}
+
+	window_fit(panel_public);
 }
