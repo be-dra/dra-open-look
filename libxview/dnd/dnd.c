@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.17 2025/02/02 19:54:36 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.18 2025/02/12 11:41:12 dra Exp $ ";
 #endif
 #endif
 
@@ -276,23 +276,6 @@ static void send_preview_leave(Display *dpy, Dnd_info *dnd, Time t)
 
 #endif /* NO_XDND */
 
-#ifdef INVESTIGATION_OF_STRANGE_LOG_DRAG
-typedef struct {
-	Window window;
-} dndctxt_t;
-
-static Bool check_dnd_drag(Display *dpy, XEvent *ev, char *arg)
-{
-	dndctxt_t *ctxt = (dndctxt_t *)arg;
-
-	if (ev->type != MotionNotify) return False;
-	if (ev->xmotion.window != ctxt->window) return False;
-	if ((ev->xmotion.state & Button1Mask) == 0) return False;
-
-	return True;
-}
-#endif /* INVESTIGATION_OF_STRANGE_LOG_DRAG */
-
 extern Xv_object xview_x_input_readevent(Display *display, Event *event,
 								Xv_object req_window, int block, int type,
 								unsigned int xevent_mask, XEvent *rep);
@@ -474,32 +457,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 					if (!(state & (Button1Mask | Button2Mask | Button3Mask |
 											Button4Mask | Button5Mask)))
 					{
-#ifdef INVESTIGATION_OF_STRANGE_LOG_DRAG
-	 					/* Compare in txt_xsel.c Reference (jg45tiyfgmbdrgfh) */
-						int cnt = 0;
-						XEvent olddrag;
-						dndctxt_t dndcontext;
-
 						button_released = True;
-						/* are there still drag events with SELECT pressed
-						 * in the queue?
-						 */
-						dndcontext.window = xv_xid(info);
-
-						/* when this was active, DnD from PANEL_TEXTs
-						 * made problems...
-						 */
-						while (XCheckIfEvent(dpy, &olddrag, check_dnd_drag,
-													(char *)&dndcontext))
-							++cnt;
-
-						SERVERTRACE((363,
-								"===== removed %d SELECT-DRAG\n", cnt));
-#else /* INVESTIGATION_OF_STRANGE_LOG_DRAG */
-
-						button_released = True;
-
-#endif /* INVESTIGATION_OF_STRANGE_LOG_DRAG */
 					}
 				}
 				break;
