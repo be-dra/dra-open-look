@@ -1,4 +1,4 @@
- /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.5 2025/01/09 16:54:26 dra Exp $     */
+ /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.7 2025/02/12 20:41:12 dra Exp $     */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -78,12 +78,9 @@ typedef enum {
 	SCREEN_BG1_PIXMAP		= SCREEN_ATTR(ATTR_OPAQUE,	50),
 	SCREEN_BG2_PIXMAP		= SCREEN_ATTR(ATTR_OPAQUE,	55),
 	SCREEN_BG3_PIXMAP		= SCREEN_ATTR(ATTR_OPAQUE,	60),
-	SCREEN_GINFO			= SCREEN_ATTR(ATTR_OPAQUE,	65),
 	SCREEN_OLGC_LIST		= SCREEN_ATTR(ATTR_OPAQUE,      70),  /* G-- */
 	SCREEN_SUN_WINDOW_STATE		= SCREEN_ATTR(ATTR_BOOLEAN,     90),
-	SCREEN_SELECTION_STATE		= SCREEN_ATTR(ATTR_LONG,        95),
 	SCREEN_INPUT_PIXEL		= SCREEN_ATTR(ATTR_OPAQUE,        96)
-
 } Screen_attr;
 
 typedef enum {
