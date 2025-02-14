@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.5 2025/02/11 21:07:13 dra Exp $";
+static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.6 2025/02/13 17:19:39 dra Exp $";
 #endif
 #endif
 
@@ -411,57 +411,56 @@ Pkg_private Xv_opaque panel_set_avlist(Panel panel_public, Attr_avlist avlist)
 static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 {
 	extern char *xv_font_regular_cmdline(void);
-    XCharStruct	    active_caret_info;
-    XFontStruct	   *font_info;
-    int		    font_size;
-    XCharStruct	    inactive_caret_info;
-    Font	    glyph_font;
-    char	    *bold_name;
-    char	    *save_bold_name;
+	XCharStruct active_caret_info;
+	XFontStruct *font_info;
+	int font_size;
+	XCharStruct inactive_caret_info;
+	Font glyph_font;
+	char *bold_name;
+	char *save_bold_name;
 
 #ifdef OW_I18N
-    panel->std_fontset_id = (XFontSet) 
-	xv_get(panel->std_font, FONT_SET_ID);
+	panel->std_fontset_id = (XFontSet)
+			xv_get(panel->std_font, FONT_SET_ID);
 #else
-    panel->std_font_xid = (Font) xv_get(panel->std_font, XV_XID);
+	panel->std_font_xid = (Font) xv_get(panel->std_font, XV_XID);
 #endif /* OW_I18N */
 
-    font_size = (int) xv_get(panel->std_font, FONT_SIZE);
+	font_size = (int)xv_get(panel->std_font, FONT_SIZE);
 
-    glyph_font = xv_find_olglyph_font(panel->std_font);
+	glyph_font = xv_find_olglyph_font(panel->std_font);
 
-    if (!glyph_font)
-	xv_error(XV_NULL,
-		 ERROR_STRING, 
-		    XV_MSG("Unable to find OPEN LOOK glyph font"),
-		 ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
-		 ERROR_PKG, PANEL,
-		 NULL);
-    xv_set(panel_public, WIN_GLYPH_FONT, glyph_font, NULL); 
+	if (!glyph_font)
+		xv_error(XV_NULL,
+				ERROR_STRING, XV_MSG("Unable to find OPEN LOOK glyph font"),
+				ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
+				ERROR_PKG, PANEL,
+				NULL);
+	xv_set(panel_public, WIN_GLYPH_FONT, glyph_font, NULL);
 
-    /* 
-     * Change the way of obtaining font_size, we used to hard code the sizes
-     * here. Now, that logic is in the FONT pkg.
-     * The glyph font obtained via xv_find_olglyph_font() will have the size 
-     * that we want.
-     */
+	/* 
+	 * Change the way of obtaining font_size, we used to hard code the sizes
+	 * here. Now, that logic is in the FONT pkg.
+	 * The glyph font obtained via xv_find_olglyph_font() will have the size 
+	 * that we want.
+	 */
 
-    if (font_size == FONT_NO_SIZE)
- 	font_size = (int) xv_get(glyph_font, FONT_SIZE);
-
+	if (font_size == FONT_NO_SIZE)
+		font_size = (int)xv_get(glyph_font, FONT_SIZE);
 
 #ifdef OW_I18N
-    /* locale information font.name.<locale> */
-    defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
+	/* locale information font.name.<locale> */
+	defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
 #endif
-    /* 
-     * When creating a font via FONT_NAME, all other attributes are
-     * ignored.  Therefore, if the user specifies a fontname that's
-     * 28 point, then that's what they'll get.  No font size checking
-     * is done to determine if the bold font size is about the same
-     * as the other fonts that are used.
-     */  
-    panel->bold_font = XV_NULL;
+
+	/* 
+	 * When creating a font via FONT_NAME, all other attributes are
+	 * ignored.  Therefore, if the user specifies a fontname that's
+	 * 28 point, then that's what they'll get.  No font size checking
+	 * is done to determine if the bold font size is about the same
+	 * as the other fonts that are used.
+	 */
+	panel->bold_font = XV_NULL;
 
 	/* the xv_font_bold function return non-NULL even if there was 
 	 * no command line option: it queries (amongst others) the
@@ -471,91 +470,90 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 	 * popup window scale.....
 	 */
 	if ((save_bold_name = (bold_name = defaults_get_string("font.name.cmdline",
-											"Font.Name.Cmdline", NULL))))
-	{
-        /*
-         * cache string obtained from defaults pkg, as it's
-         * contents might change
-         */
-        if (bold_name && strlen( bold_name ))
-            bold_name = xv_strsave( save_bold_name );
-        else
-            bold_name = (char *)NULL;
- 
-        if (bold_name && !xv_font_regular_cmdline())
-        {
-#ifdef OW_I18N
-            panel->bold_font = xv_find( panel_public,
-                FONT, FONT_SET_SPECIFIER, bold_name,
-                NULL );
-#else
-            panel->bold_font = xv_find( panel_public,
-                FONT, FONT_NAME, bold_name,
-                NULL );
-#endif
-        }
-        else
-        {
-            panel->bold_font = xv_find(panel_public, FONT,
-                FONT_FAMILY, xv_get(panel->std_font, FONT_FAMILY),
-                FONT_STYLE, FONT_STYLE_BOLD,
-                FONT_SIZE, font_size,
-                NULL);
-        }
+									"Font.Name.Cmdline", NULL)))) {
+		/*
+		 * cache string obtained from defaults pkg, as it's
+		 * contents might change
+		 */
+		if (bold_name && strlen(bold_name))
+			bold_name = xv_strsave(save_bold_name);
+		else
+			bold_name = (char *)NULL;
 
-        if (panel->bold_font == XV_NULL)
-            xv_error(XV_NULL,
-                 ERROR_STRING,
-		     XV_MSG("Unable to find bold font"),
-                 ERROR_PKG, PANEL,
-                 NULL);
-        if (bold_name)
-            xv_free( bold_name );
-    }
-    
-    if (panel->bold_font == XV_NULL) {
-        panel->bold_font = xv_find(panel_public, FONT,
-            FONT_FAMILY, xv_get(panel->std_font, FONT_FAMILY),
-            FONT_STYLE, FONT_STYLE_BOLD,
-            FONT_SIZE, font_size,
-            NULL);
-    }
- 
+		if (bold_name && !xv_font_regular_cmdline()) {
+
 #ifdef OW_I18N
-    defaults_set_locale(NULL, NULL);
+			panel->bold_font = xv_find(panel_public, FONT,
+					FONT_SET_SPECIFIER, bold_name,
+					NULL);
+#else
+			panel->bold_font = xv_find(panel_public, FONT,
+					FONT_NAME, bold_name,
+					NULL);
+#endif
+		}
+		else {
+			panel->bold_font = xv_find(panel_public, FONT,
+					FONT_FAMILY, xv_get(panel->std_font, FONT_FAMILY),
+					FONT_STYLE, FONT_STYLE_BOLD,
+					FONT_SIZE, font_size,
+					NULL);
+		}
+
+		if (panel->bold_font == XV_NULL)
+			xv_error(XV_NULL,
+					ERROR_STRING, XV_MSG("Unable to find bold font"),
+					ERROR_PKG, PANEL,
+					NULL);
+		if (bold_name)
+			xv_free(bold_name);
+	}
+
+	if (panel->bold_font == XV_NULL) {
+		panel->bold_font = xv_find(panel_public, FONT,
+				FONT_FAMILY, xv_get(panel->std_font, FONT_FAMILY),
+				FONT_STYLE, FONT_STYLE_BOLD,
+				FONT_SIZE, font_size,
+				NULL);
+	}
+
+#ifdef OW_I18N
+	defaults_set_locale(NULL, NULL);
 #endif
 
-    if (panel->bold_font == XV_NULL) {
-        xv_error(XV_NULL,
-                 ERROR_STRING,
-		     XV_MSG("Unable to find bold font; using standard font"),
-                 ERROR_PKG, PANEL,
-                 NULL);
-        panel->bold_font = panel->std_font;
-    }  
+	if (panel->bold_font == XV_NULL) {
+		xv_error(XV_NULL,
+				ERROR_STRING,
+					XV_MSG("Unable to find bold font; using standard font"),
+				ERROR_PKG, PANEL,
+				NULL);
+		panel->bold_font = panel->std_font;
+	}
+
 #ifdef OW_I18N
-    panel->bold_fontset_id = (XFontSet) 
-	xv_get(panel->bold_font, FONT_SET_ID);
+	panel->bold_fontset_id = (XFontSet)
+			xv_get(panel->bold_font, FONT_SET_ID);
 #else
-    panel->bold_font_xid = (Font) xv_get(panel->bold_font, XV_XID);
+	panel->bold_font_xid = (Font) xv_get(panel->bold_font, XV_XID);
 #endif /* OW_I18N */
 
-    font_info = (XFontStruct *) xv_get(glyph_font, FONT_INFO);
-    if (font_info->per_char) {
-	active_caret_info = font_info->per_char[OLGX_ACTIVE_CARET];
-	inactive_caret_info = font_info->per_char[OLGX_INACTIVE_CARET];
-    } else {
-	active_caret_info = font_info->min_bounds;
-	inactive_caret_info = font_info->min_bounds;
-    }
-    panel->active_caret_ascent = active_caret_info.ascent;
-    panel->active_caret_height = active_caret_info.ascent +
-	active_caret_info.descent;
-    panel->active_caret_width = active_caret_info.width;
-    panel->inactive_caret_ascent = inactive_caret_info.ascent;
-    panel->inactive_caret_height = inactive_caret_info.ascent +
-	inactive_caret_info.descent;
-    panel->inactive_caret_width = inactive_caret_info.width;
+	font_info = (XFontStruct *) xv_get(glyph_font, FONT_INFO);
+	if (font_info->per_char) {
+		active_caret_info = font_info->per_char[OLGX_ACTIVE_CARET];
+		inactive_caret_info = font_info->per_char[OLGX_INACTIVE_CARET];
+	}
+	else {
+		active_caret_info = font_info->min_bounds;
+		inactive_caret_info = font_info->min_bounds;
+	}
+	panel->active_caret_ascent = active_caret_info.ascent;
+	panel->active_caret_height = active_caret_info.ascent +
+			active_caret_info.descent;
+	panel->active_caret_width = active_caret_info.width;
+	panel->inactive_caret_ascent = inactive_caret_info.ascent;
+	panel->inactive_caret_height = inactive_caret_info.ascent +
+			inactive_caret_info.descent;
+	panel->inactive_caret_width = inactive_caret_info.width;
 }
 
 
