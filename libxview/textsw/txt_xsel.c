@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.48 2025/02/07 21:32:19 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.49 2025/02/14 09:49:57 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -247,6 +247,19 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
 		return TRUE;
 	}
 
+	if (xv_get(sel_own, SEL_RANK) == XA_SECONDARY 
+		&& *type == priv->atoms.seln_yield)
+	{
+		static long answer;
+		/* Lose the Selection - we support this only for SECONDARY */
+		xv_set(sel_own, SEL_OWN, FALSE, NULL);
+		answer = 1L;
+        *data = (Xv_opaque)&answer;
+        *length = 1;
+        *format = 32;
+		return TRUE;
+	}
+
 	if (*type == priv->atoms.length) {
 		/* This is only used by SunView1 selection clients for
 		 * clipboard and secondary selections.
@@ -328,12 +341,20 @@ static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
 		}
 		SERVERTRACE((333, "SEL_ERROR on %ld for target %ld: %s\n",
 					xv_get(sr, SEL_RANK), target, p));
+		if (target == priv->atoms.selection_end) {
+			/* old selection owner? */
+			xv_set(sr, SEL_TYPE, priv->atoms.seln_yield, NULL);
+			sel_post_req(sr);
+		}
 		return;
 	}
  
 	SERVERTRACE((345, "note_sel_reply: target = %s\n",
 				(char *)xv_get(server, SERVER_ATOM_NAME, target)));
 	if (target == priv->atoms.selection_end) {
+		if (value) xv_free(value);
+	}
+	if (target == priv->atoms.seln_yield) {
 		if (value) xv_free(value);
 	}
 }
@@ -865,6 +886,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 	priv->atoms.dragdrop_ack = xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_ACK");
 	priv->atoms.dragdrop_done = xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_DONE");
 	priv->atoms.selection_end = xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END");
+	priv->atoms.seln_yield = xv_get(srv, SERVER_ATOM, "_SUN_SELN_YIELD");
 	priv->atoms.seln_is_readonly = xv_get(srv, SERVER_ATOM, "_SUN_SELN_IS_READONLY");
 	priv->atoms.plain = xv_get(srv, SERVER_ATOM, "text/plain");
 	priv->atoms.XVIEW_CLASS_TARGET  = xv_get(srv, SERVER_ATOM, "_DRA_XVIEW_CLASS");
