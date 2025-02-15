@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.36 2025/02/11 08:17:18 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.37 2025/02/14 09:50:37 dra Exp $";
 #endif
 #endif
 
@@ -3830,6 +3830,16 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
         *format = 32;
 		return TRUE;
 	}
+	else if (*type == panel->atom.seln_yield && rank_atom==XA_SECONDARY) {
+		static long answer;
+		/* Lose the Selection - we support this only for SECONDARY */
+		xv_set(sel_own, SEL_OWN, FALSE, NULL);
+		answer = 1L;
+        *data = (Xv_opaque)&answer;
+        *length = 1;
+        *format = 32;
+		return TRUE;
+	}
 	else if (*type == panel->atom.length) {
 		/* This is only used by SunView1 selection clients for
 		 * clipboard and secondary selections.
@@ -4393,10 +4403,18 @@ static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
 	Panel_info *priv = PANEL_PRIVATE(w);
 
 	if (length == SEL_ERROR) {
+		if (target == priv->atom.selection_end) {
+			/* do we talk to an old sel owner??? */
+			xv_set(sr, SEL_TYPE, priv->atom.seln_yield, NULL);
+			sel_post_req(sr);
+		}
 		return;
 	}
 
 	if (target == priv->atom.selection_end) {
+		if (value) xv_free(value);
+	}
+	if (target == priv->atom.seln_yield) {
 		if (value) xv_free(value);
 	}
 }
