@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.6 2025/02/13 17:19:39 dra Exp $";
+static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.7 2025/02/14 09:08:37 dra Exp $";
 #endif
 #endif
 
@@ -321,13 +321,24 @@ Pkg_private Xv_opaque panel_set_avlist(Panel panel_public, Attr_avlist avlist)
 			break;
 
 		case XV_FONT:
-			panel->std_font = attrs[1];
-			panel_set_fonts(panel_public, panel);
-			ADONE;
+			if (attrs[1] && panel->std_font != (Xv_font)attrs[1]) {
+				if (panel->std_font)
+					xv_set(panel->std_font, XV_DECREMENT_REF_COUNT, NULL);
+				panel->std_font = (Xv_font) attrs[1];
+				xv_set(panel->std_font, XV_INCREMENT_REF_COUNT, NULL);
+				panel_set_fonts(panel_public, panel);
+			}
+			ADONE; /* in XView3.2, this was not consumed */
 
 		case XV_END_CREATE:
 			/* Set up the fonts */
-			panel->std_font = xv_get(panel_public, XV_FONT);
+			if (! panel->std_font) {
+				/* if there was no XV_FONT in xv_create, we start with the
+				 * font inherited from the parent
+				 */
+				panel->std_font = xv_get(panel_public, XV_FONT);
+				xv_set(panel->std_font, XV_INCREMENT_REF_COUNT, NULL);
+			}
 			panel_set_fonts(panel_public, panel);
 
 			/* Set up the Colormap Segment and OLGX */
