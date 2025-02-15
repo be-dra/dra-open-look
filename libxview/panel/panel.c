@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.13 2025/01/09 19:38:20 dra Exp $";
+static char     sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.14 2025/02/14 09:50:27 dra Exp $";
 #endif
 #endif
 
@@ -112,6 +112,8 @@ static int panel_init(Xv_Window parent, Xv_window panel_public, Attr_avlist     
     panel->atom.null = (Atom) xv_get(server, SERVER_ATOM, "NULL");
     panel->atom.selection_end = (Atom) xv_get(server, SERVER_ATOM,
 												"_SUN_SELECTION_END");
+    panel->atom.seln_yield = (Atom) xv_get(server, SERVER_ATOM,
+												"_SUN_SELN_YIELD");
     panel->caret = XV_NULL;
     panel->caret_on = FALSE;
     panel->current_col_x = scalesizes[scal].x_start;
