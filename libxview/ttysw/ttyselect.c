@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.33 2025/02/07 21:32:03 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.34 2025/02/14 09:49:40 dra Exp $";
 #endif
 
 /*
@@ -1032,6 +1032,16 @@ static int tty_convert_proc(Selection_owner sel_own, Atom *type,
         *format = 32;
 		return TRUE;
 	}
+	if (*type == priv->seln_yield && rank_atom == XA_SECONDARY) {
+		static long answer;
+		/* Lose the Selection - we support this only for SECONDARY */
+		xv_set(sel_own, SEL_OWN, FALSE, NULL);
+		answer = 1L;
+        *data = (Xv_opaque)&answer;
+        *length = 1;
+        *format = 32;
+		return TRUE;
+	}
 	if (*type == (Atom) xv_get(server, SERVER_ATOM, "LENGTH")) {
 		/* This is only used by SunView1 selection clients for
 		 * clipboard and secondary selections.
@@ -1115,17 +1125,27 @@ static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
 	/* DANGEROUS: TERMSW ??? Tty tty = xv_get(sr, XV_OWNER); */
 	Ttysw_private priv = (Ttysw_private)xv_get(sr, XV_KEY_DATA, ttysel_key);
 
-	if (target == priv->selection_end) {
-		/* target should be set even in error cases */
-		xv_destroy_safe(sr);
-	}
-
 	if (length == SEL_ERROR) {
 		SERVERTRACE((333, "note_sel_reply SEL_ERROR\n"));
-		return;
+		if (target == priv->selection_end) {
+			/* old selection owner? */
+			xv_set(sr, SEL_TYPE, priv->seln_yield, NULL);
+			sel_post_req(sr);
+			return;
+		}
+		if (target == priv->seln_yield) {
+			/* target should be set even in error cases */
+			xv_destroy_safe(sr);
+			return;
+		}
 	}
 
 	if (target == priv->selection_end) {
+		xv_destroy_safe(sr);
+		if (value) xv_free(value);
+	}
+	if (target == priv->seln_yield) {
+		xv_destroy_safe(sr);
 		if (value) xv_free(value);
 	}
 }
@@ -1302,6 +1322,7 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 	if (! ttysel_key) ttysel_key = xv_unique_key();
 
 	priv->selection_end = (Atom)xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END");
+	priv->seln_yield = (Atom)xv_get(srv, SERVER_ATOM, "_SUN_SELN_YIELD");
 
 	priv->sel_owner[TTY_SEL_PRIMARY] = xv_create(tty, SELECTION_OWNER,
 							SEL_RANK, XA_PRIMARY,
@@ -1345,5 +1366,4 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 				xv_create(priv->sel_owner[TTY_SEL_CLIPBOARD], SELECTION_ITEM,
 							SEL_COPY, SEL_COPY_BLOCKED,
 							NULL);
-	additional_items(priv->sel_owner[TTY_SEL_CLIPBOARD], priv->selection_end);
 }
