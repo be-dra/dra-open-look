@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.9 2025/02/05 11:48:13 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.10 2025/02/15 13:24:26 dra Exp $";
 #endif
 
 /*
@@ -1523,21 +1523,21 @@ static int ttysw_process_motion(Ttysw_private ttysw, struct inputevent *ie)
 	return TTY_DONE;
 }
 
-static int ttysw_process_keyboard(Ttysw_private ttysw, struct inputevent *ie)
+static int ttysw_process_keyboard(Ttysw_private ttysw, Event *ev)
 {
-	register int id = event_id(ie);
+	register int id = event_id(ev);
 
-	switch (event_action(ie)) {
+	switch (event_action(ev)) {
 		case ACTION_HELP:
 		case ACTION_MORE_HELP:
 		case ACTION_TEXT_HELP:
 		case ACTION_MORE_TEXT_HELP:
 		case ACTION_INPUT_FOCUS_HELP:
-			return (ttysw_domap(ttysw, ie));
+			return (ttysw_domap(ttysw, ev));
 	}
 
 #ifdef  OW_I18N
-	if (event_is_string(ie) && event_is_down(ie)) {
+	if (event_is_string(ev) && event_is_down(ev)) {
 		/*
 		 *    This is a committed string or a string generated from a non-English
 		 *    keyboard.  For example, a kana string from the Nihongo keyboard.
@@ -1545,7 +1545,7 @@ static int ttysw_process_keyboard(Ttysw_private ttysw, struct inputevent *ie)
 		 */
 		wchar_t *ws_char;
 
-		ws_char = _xv_mbstowcsdup(ie->ie_string);
+		ws_char = _xv_mbstowcsdup(ev->ie_string);
 		committed_left = wslen(ws_char);
 		(void)ttysw_input_it_wcs(ttysw, ws_char, committed_left);
 		free(ws_char);
@@ -1553,7 +1553,7 @@ static int ttysw_process_keyboard(Ttysw_private ttysw, struct inputevent *ie)
 	}
 #endif
 
-	if ((id >= ASCII_FIRST && id <= ISO_LAST) && (event_is_down(ie))) {
+	if ((id >= ASCII_FIRST && id <= ISO_LAST) && (event_is_down(ev))) {
 		char c = (char)id;
 
 		/*
@@ -1578,12 +1578,18 @@ static int ttysw_process_keyboard(Ttysw_private ttysw, struct inputevent *ie)
 					ttysw->ttysw_capslocked |= TTYSW_CAPSSAWESC;
 			}
 		}
-		ttysw_input_it(ttysw, &c, 1);
+		if (event_is_string(ev)) {
+			ttysw_input_it(ttysw, event_string(ev),
+								(int)strlen(event_string(ev)));
+		}
+		else {
+			ttysw_input_it(ttysw, &c, 1);
+		}
 
 		return TTY_DONE;
 	}
 	if (id > ISO_LAST) {
-		return ttysw_domap(ttysw, ie);
+		return ttysw_domap(ttysw, ev);
 	}
 	return TTY_OK;
 }
