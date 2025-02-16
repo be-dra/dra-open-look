@@ -34,6 +34,8 @@
 
 # $XConsortium: xfree86.cf /main/17 1996/01/03 14:50:55 kaleb $
 
+include default.linux
+
 LINKKITDIR = $(USRLIBDIR)/Server
 
        XF86SRC = $(SERVERSRC)/hw/xfree86
@@ -90,7 +92,7 @@ XFREE86JAPANESEDOCDIR = $(XFREE86DOCDIR)/Japanese
           PATHSEP = /
             SHELL = /bin/sh
 
-              TOP = /home/cyflym/dra/private/aco/x/xview40
+              TOP = /home/cyflym/dra/tmp/gittest
       CURRENT_DIR = .
 
             IMAKE = imake
@@ -203,7 +205,7 @@ CXXEXTRA_INCLUDES =
         CCOPTIONS =
 
       ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(TOP_INCLUDES) $(STD_INCLUDES)
-       ALLDEFINES = $(ALLINCLUDES) $(STD_DEFINES) $(EXTRA_DEFINES) $(PROTO_DEFINES) $(THREADS_DEFINES) $(DEFINES)
+       ALLDEFINES = $(ALLINCLUDES) $(STD_DEFINES) $(EXTRA_DEFINES) $(PROTO_DEFINES) $(THREADS_DEFINES) $(DEFINES) $(DEFAULTS)
            CFLAGS = $(CDEBUGFLAGS) $(CCOPTIONS) $(THREADS_CFLAGS) $(ALLDEFINES)
         LINTFLAGS = $(LINTOPTS) -DLINT $(ALLDEFINES) $(DEPEND_DEFINES)
          LDPRELIB = -L$(USRLIBDIR)
@@ -657,12 +659,10 @@ HEADERS= ${HDRSPUBLIC} ${HDRSPRIVATE}
 INCLUDES= -I$(BUILDINCDIR)$(INCDIR)
 OBJS = $(TEXT_OBJS) $(DATA_OBJS) $(SPECIAL_OBJS)
 
-all::
-	-@if [ ! -d shared ]; then mkdir shared; else exit 0; fi
-	-@if [ ! -f $(XSTR_STRINGS_FILE) ]; then \
-	touch $(XSTR_STRINGS_FILE);  else exit 0; fi
-	-@if [ ! -f strings ]; then \
-	$(LN) $(XSTR_STRINGS_FILE) strings; else exit 0; fi
+all: lib${LIBTARGET}.so.${SOREV} lib${LIBTARGET}.a
+
+$(ALLSOURCES): %: RCS/%,v
+	$(GET) $(GETFLAGS) $@
 
 .c.o:
 	$(RM) $@ shared/$@
@@ -674,14 +674,10 @@ clean::
 	-@if [ -d shared ]; then echo "	$(RM) shared/?*.o"; \
 	$(RM) shared/?*.o; else exit 0; fi
 
-all:: lib${LIBTARGET}.so.${SOREV}
-
 lib${LIBTARGET}.so.${SOREV}::  $(TEXT_OBJS) $(SPECIAL_OBJS)
 	-@if [ ! -d $(SHARED_DIR) ]; then mkdir $(SHARED_DIR); else exit 0; fi
 	@case '${MFLAGS}' in *[i]*) set +e;; esac; \
-	for i in $(TEXT_OBJS) $(SPECIAL_OBJS); do (set -x; $(CP) shared/$$i $(SHARED_DIR); $(CP) shared/$$i .); done
-
-all:: lib${LIBTARGET}.a
+	for i in $(TEXT_OBJS) $(SPECIAL_OBJS); do ( $(CP) shared/$$i $(SHARED_DIR); $(CP) shared/$$i .); done
 
 lib${LIBTARGET}.a:: $(OBJS)
 	$(AR) $(TARGETDIR)$@ $(OBJS)
@@ -762,8 +758,6 @@ old_install::
 #endif
 old_install::
 	$(MKDIRHIER) $(LIBRARY_DEST)
-
-all:: lib${LIBTARGET}.so.${SOREV}
 
 lib${LIBTARGET}.so.${SOREV}:: $(TEXT_OBJS) $(SPECIAL_OBJS)
 	$(RM) $@~ $(SHARED_DIR)/lib${LIBTARGET}.so.xs.o
