@@ -34,7 +34,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.12 2025/01/09 22:27:14 dra Exp dra $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.14 2025/02/11 21:35:54 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -934,7 +934,7 @@ static void finish_panel(Propframe_private *priv, one_panel_t p)
 				ERROR_PKG, FRAME_PROPS,
 				ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
 				ERROR_LAYER, ERROR_PROGRAM,
-				ERROR_STRING, "any property window needs an apply button",
+				ERROR_STRING, "Any property window needs an apply button",
 				NULL);
 	}
 
@@ -1096,12 +1096,23 @@ static void finish_panel(Propframe_private *priv, one_panel_t p)
 							rect->r_left, rect->r_top,
 							&button_x, &button_y);
 
+		/* we are in a multi category property window and already have
+		 * an Apply button in the current panel and we have also set this
+		 * button as PANEL_DEFAULT_ITEM in the current panel (so that it
+		 * will be displayed with the default ring).
+		 * However, pointer warping (via the _OL_DFLT_BIN property) works
+		 * only for the default button in the FRAME_PROPS_PANEL.
+		 * Therefore, for each category, we create an invisible inactive
+		 * Apply button with the 'correct' position.
+		 * And we mark it with "XV_KEY_DATA, PANEL_DEFAULT_ITEM, TRUE"
+		 */
 		p->pseudo_default = xv_create(pp, PANEL_BUTTON,
 							PANEL_LABEL_STRING, XV_MSG("Apply"),
 							PANEL_INACTIVE, TRUE,
 							XV_SHOW, TRUE,
 							XV_X, button_x,
 							XV_Y, button_y,
+							XV_KEY_DATA, PANEL_DEFAULT_ITEM, TRUE,
 							NULL);
 
 	}
@@ -1187,27 +1198,6 @@ static int set_new_current_panel(Propframe_private *priv, one_panel_t p)
 	call_switch(priv);
 	if (p == oldp) return FALSE;
 
-	/* we have to do this because of a bug in XView */
-
-	/* What was this bug? I don't remember.
-	 * Could be the fact that PANEL_MULTILINE_TEXT don't have a reasonable
-	 * mltxt_remove and NO mltxt_restore ops......
-	 *
-	 * However, this code looks
-	 * like the Textsw of a PANEL_MULTILINE_TEXT was created as the child
-	 * of the frame??????!!!!!???? Maybe in older versions? Maybe this WAS
-	 * the reason why a PANEL_SUBWINDOW operates like this? (2020-04-12 - 
-	 * probably I'll change this)
-	 *
-	 * Nowadays, the Textsw will be created as a child of the panel.
-	 */
-#ifdef HOPEFULLY_NO_LONGER_NEEDED
-	PANEL_EACH_ITEM(oldp->panel, it)
-		if (xv_get(it, XV_IS_SUBTYPE_OF, PANEL_MULTILINE_TEXT))
-			xv_set(it, WIN_BACK, NULL);
-	PANEL_END_EACH
-#endif /* HOPEFULLY_NO_LONGER_NEEDED */
-
 	xv_set(oldp->panel, XV_SHOW, FALSE, NULL);
 
 	delta = (xv_get(proppan, WIN_BORDER) ? (2 * BORDER_WIDTH) : 0);
@@ -1230,13 +1220,6 @@ static int set_new_current_panel(Propframe_private *priv, one_panel_t p)
 	xv_set(p->panel, XV_SHOW, TRUE, NULL);
 	xv_set(XV_SERVER_FROM_WINDOW(self), SERVER_SYNC_AND_PROCESS_EVENTS, NULL);
 
-#ifdef HOPEFULLY_NO_LONGER_NEEDED
-	/* we have to do this because of a bug in XView */
-	PANEL_EACH_ITEM(p->panel, it)
-		if (xv_get(it, XV_IS_SUBTYPE_OF, PANEL_MULTILINE_TEXT))
-			xv_set(it, WIN_FRONT, NULL);
-	PANEL_END_EACH
-#else /* HOPEFULLY_NO_LONGER_NEEDED */
 	/* many PANEL_MULTILINE_TEXTs do not repaint poperly when
 	 * switching categories
 	 */
@@ -1273,7 +1256,6 @@ static int set_new_current_panel(Propframe_private *priv, one_panel_t p)
 			win_post_event(view, &event, NOTIFY_IMMEDIATE);
 		}
 	PANEL_END_EACH
-#endif /* HOPEFULLY_NO_LONGER_NEEDED */
 
 	/* that seems to be the case when the panel border is not repainted
 	 * on the right side: when the next category is not so wide as the old
