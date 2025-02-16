@@ -18,11 +18,16 @@
  * I18N_Portability: May need to change the following #include to
  * pickup the wchar_t and X11R5(-ish) Xlib functions definitions.
  */
-#include <widec.h>
-#include <X11/Xlib.h>
+#ifdef sun
+#  include <widec.h>
 #if XlibSpecificationRelease != 5
 #include <X11/XlibR5.h>
 #endif /* XlibSpecificationRelease != 5 */
+#endif
+#ifdef linux
+#  include <wchar.h>
+#endif
+#include <X11/Xlib.h>
 
 
 #endif
