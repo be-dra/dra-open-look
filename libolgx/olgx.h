@@ -569,7 +569,10 @@ extern Graphics_info *olgx_main_initialize(Display *dpy, int screen,
     					XFontStruct *textfont_struct,
     					unsigned long *pixvals, Pixmap *stipple_pixmaps);
 #ifdef OW_I18N
-extern Graphics_info *   olgx_i18n_initialize(void);
+extern Graphics_info *olgx_i18n_initialize(Display *dpy, int screen,
+					unsigned int depth, int d_flag,
+					XFontStruct *glyphfont_struct, XFontSet textfont_set,
+					unsigned long pixvals[], Pixmap stipple_pixmaps[]);
 #endif
 extern Graphics_info *olgx_initialize(Display *dpy, int screen, int d_flag,
     XFontStruct *glyphfont_struct, XFontStruct *textfont_struct,
@@ -584,7 +587,7 @@ extern void olgx_destroy(Graphics_info *info);
 
 extern void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag);
 #ifdef OW_I18N
-extern void olgx_set_text_fontset();
+extern void olgx_set_text_fontset(Graphics_info *info, XFontSet font_set, int flag);
 #endif
 extern void olgx_set_glyph_font(Graphics_info *info, XFontStruct *font_info, int flag);
 extern void olgx_set_single_color(Graphics_info *info, int index,
