@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.40 2025/01/30 08:50:45 dra Exp $";
+char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.41 2025/02/15 13:16:37 dra Exp $";
 #endif
 
 /*
@@ -178,15 +178,15 @@ textsw_gprofed_routine(view, ie)
 
 #endif
 
-Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_arg arg)
+Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_arg arg)
 {
 
 /* 	int caret_was_up; */
 	int result = TEXTSW_PE_USED;
 	register Textsw_view_private view = VIEW_PRIVATE(view_public);
 	register Textsw_private textsw = TSWPRIV_FOR_VIEWPRIV(view);
-	int action = event_action(ie);
-	register int down_event = event_is_down(ie);
+	int action = event_action(ev);
+	register int down_event = event_is_down(ev);
 
 #ifdef OW_I18N
 	char byte;
@@ -201,12 +201,12 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 	else {
 		textsw_take_down_caret(textsw);
 	}
-	textsw_note_event_shifts(textsw, ie);
+	textsw_note_event_shifts(textsw, ev);
 
 #ifdef OW_I18N
-	if (event_is_string(ie) && down_event && textsw->ic) {
+	if (event_is_string(ev) && down_event && textsw->ic) {
 		int num_of_char =
-				mbstowcs(textsw->to_insert_next_free, event_string(ie),
+				mbstowcs(textsw->to_insert_next_free, event_string(ev),
 				((TXTSW_UI_BUFLEN - (textsw->to_insert_next_free -
 										textsw->to_insert)) - 1));
 
@@ -256,29 +256,29 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 			action == ACTION_INPUT_FOCUS_HELP) {
 		if (down_event)
 			xv_help_show(XV_PUBLIC(view),
-					(char *)xv_get(view_public, XV_HELP_DATA), ie);
+					(char *)xv_get(view_public, XV_HELP_DATA), ev);
 	}
-	else if (event_action(ie) == WIN_RESIZE) {
+	else if (event_action(ev) == WIN_RESIZE) {
 		textsw_resize(view);
 		ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, TRUE, NULL);
 		textsw_display_view(VIEW_PUBLIC(view), (Rect *) 0);
 		ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, FALSE, NULL);
 	}
-	else if (textsw_mouseless_scroll_event(view, ie, arg)) {
+	else if (textsw_mouseless_scroll_event(view, ev, arg)) {
 		/* taken care of -- new mouseless function  jcb 12/21/90 */
 	}
-	else if (textsw_mouseless_select_event(view, ie, arg)) {
+	else if (textsw_mouseless_select_event(view, ev, arg)) {
 		/* taken care of -- new mouseless function  jcb 1/2/91 */
 	}
-	else if (textsw_mouseless_misc_event(view, ie)) {
+	else if (textsw_mouseless_misc_event(view, ev)) {
 		/* taken care of -- new mouseless function  jcb 1/2/91 */
 	}
-	else if (textsw_scroll_event(view, ie, arg)) {
+	else if (textsw_scroll_event(view, ev, arg)) {
 		/* Its already taken care by the procedure */
 	}
 	else if ((textsw->track_state &
 					(TXTSW_TRACK_ADJUST | TXTSW_TRACK_POINT | TXTSW_TRACK_WIPE))
-			&& textsw_track_selection(view, ie)) {
+			&& textsw_track_selection(view, ev)) {
 		/*
 		 * Selection tracking and function keys. textsw_track_selection() always
 		 * called if tracking.  It consumes the event unless function key up
@@ -286,20 +286,19 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 		 * does function.
 		 */
 	}
-	else if (textsw_function_key_event(view, ie, &result)) {
+	else if (textsw_function_key_event(view, ev, &result)) {
 		/* Its already taken care by the procedure */
 
 	}
-	else if (textsw_mouse_event(view, ie)) {
+	else if (textsw_mouse_event(view, ev)) {
 		/* Its already taken care by the procedure */
-
 	}
-	else if (textsw_edit_function_key_event(view, ie, &result)) {
+	else if (textsw_edit_function_key_event(view, ev, &result)) {
 		if (result & TEXTSW_PE_READ_ONLY)
 			goto Read_Only;
 
 	}
-	else if (textsw_caret_motion_event(view, ie)) {
+	else if (textsw_caret_motion_event(view, ev)) {
 		/* Its already taken care by the procedure */
 
 	}
@@ -318,19 +317,19 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 	else if (textsw->track_state & TXTSW_TRACK_SECONDARY) {
 		/* No type-in processing during secondary (function) selections */
 	}
-	else if (textsw_field_event(view, ie)) {
+	else if (textsw_field_event(view, ev)) {
 		/* Its already taken care by the procedure */
 	}
 	else if ((action == ACTION_EMPTY) && down_event) {
-		textsw_empty_document(xv_get(view_public, XV_OWNER), ie);
+		textsw_empty_document(xv_get(view_public, XV_OWNER), ev);
 		goto Done;
 	}
-	else if (textsw_file_operation(xv_get(view_public, XV_OWNER), ie)) {
+	else if (textsw_file_operation(xv_get(view_public, XV_OWNER), ev)) {
 		if (action == ACTION_LOAD)
 			goto Done;
 
 	}
-	else if (textsw_erase_action(view_public, ie)) {
+	else if (textsw_erase_action(view_public, ev)) {
 		if (TXTSW_IS_READ_ONLY(textsw))
 			goto Read_Only;
 		else if ((textsw->state & TXTSW_EDITED) == 0)
@@ -376,7 +375,7 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 						break;
 					if (textsw->state & TXTSW_CAPS_LOCK_ON) {
 						if ((char)action >= 'a' && (char)action <= 'z')
-							ie->ie_code += 'A' - 'a';
+							ev->ie_code += 'A' - 'a';
 						/* BUG ALERT: above may need to set event_id */
 					}
 
@@ -388,7 +387,7 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 					 */
 					if (action == NULL)
 						break;
-					byte = event_action(ie);
+					byte = event_action(ev);
 
 #ifdef sun
 					if (isascii(byte))
@@ -402,7 +401,17 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 
 						mbtowc(textsw->to_insert_next_free++, &byte, 1);
 #else /* OW_I18N */
-					*textsw->to_insert_next_free++ = (char)event_action(ie);
+					if (event_is_string(ev)) {
+						char *p = event_string(ev);
+						while (*p) {
+							*textsw->to_insert_next_free++ = *p++;
+						}
+						SERVERTRACE((505, "ins '%s'\n", event_string(ev)));
+					}
+					else {
+						SERVERTRACE((505, "ins '%c'\n", event_action(ev)));
+						*textsw->to_insert_next_free++ = (char)event_action(ev);
+					}
 #endif /* OW_I18N */
 
 					if (textsw->to_insert_next_free ==
@@ -416,7 +425,7 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ie, Notify_
 		 * User filters
 		 */
 	}
-	else if (textsw_do_filter(view, ie)) {
+	else if (textsw_do_filter(view, ev)) {
 		/*
 		 * Miscellaneous
 		 */
