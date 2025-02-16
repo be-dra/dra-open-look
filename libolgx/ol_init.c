@@ -23,19 +23,10 @@
 
 /* ARGSUSED */
 #ifdef OW_I18N
-static Graphics_info  *
-olgx_real_main_initialize(fs_or_not, dpy, screen, depth, d_flag,
-			  glyphfont_struct, utextfont, pixvals,
-			  stipple_pixmaps)
-    Bool            fs_or_not;
-    Display        *dpy;
-    int             screen;
-    unsigned int    depth;
-    int             d_flag;
-    XFontStruct    *glyphfont_struct;
-    Olgx_font_or_fs utextfont;
-    unsigned long   pixvals[];
-    Pixmap          stipple_pixmaps[];
+static Graphics_info *olgx_real_main_initialize(Bool fs_or_not, Display *dpy,
+    int screen, unsigned int depth, int d_flag, XFontStruct *glyphfont_struct,
+    Olgx_font_or_fs utextfont, unsigned long pixvals[],
+    Pixmap stipple_pixmaps[])
 #else
 Graphics_info *olgx_main_initialize(Display *dpy, int screen,
 						unsigned int depth, int d_flag,
@@ -326,17 +317,10 @@ Graphics_info *olgx_initialize(Display *dpy, int screen, int d_flag,
 
 
 #ifdef OW_I18N
-Graphics_info *
-olgx_i18n_initialize(dpy, screen, depth, d_flag, glyphfont_struct,
-		     textfont_set, pixvals, stipple_pixmaps)
-    Display        *dpy;
-    int             screen;
-    unsigned int    depth;
-    int             d_flag;
-    XFontStruct    *glyphfont_struct;
-    XFontSet        textfont_set;
-    unsigned long   pixvals[];
-    Pixmap          stipple_pixmaps[];
+Graphics_info *olgx_i18n_initialize(Display *dpy, int screen,
+					unsigned int depth, int d_flag,
+					XFontStruct *glyphfont_struct, XFontSet textfont_set,
+					unsigned long pixvals[], Pixmap stipple_pixmaps[])
 {
     Olgx_font_or_fs utextfont;
 
@@ -346,18 +330,10 @@ olgx_i18n_initialize(dpy, screen, depth, d_flag, glyphfont_struct,
 				     stipple_pixmaps);
 }
 
-    
-Graphics_info *
-olgx_main_initialize(dpy, screen, depth, d_flag, glyphfont_struct,
-		     textfont_struct, pixvals, stipple_pixmaps)
-    Display        *dpy;
-    int             screen;
-    unsigned int    depth;
-    int             d_flag;
-    XFontStruct    *glyphfont_struct;
-    XFontStruct    *textfont_struct;
-    unsigned long   pixvals[];
-    Pixmap          stipple_pixmaps[];
+Graphics_info *olgx_main_initialize(Display *dpy, int screen,
+				unsigned int depth, int d_flag, XFontStruct *glyphfont_struct,
+				XFontStruct *textfont_struct, unsigned long pixvals[],
+				Pixmap stipple_pixmaps[])
 {
     Olgx_font_or_fs utextfont;
 
@@ -623,11 +599,15 @@ void olgx_set_glyph_font(Graphics_info *info, XFontStruct *font_info, int flag)
  */
 
 #ifdef OW_I18N
-static void
-olgx_real_set_text_font(info, ufont_info, flag)
-    Graphics_info  *info;
-    Olgx_font_or_fs ufont_info;
-    int             flag;
+static int olgx_cmp_fontsets(XFontSet *fontset_info1, XFontSet *fontset_info2)
+{
+    if (fontset_info1 == fontset_info2)
+	return True;
+    else
+	return False;
+}
+
+static void olgx_real_set_text_font(Graphics_info *info, Olgx_font_or_fs ufont_info, int flag)
 #else
 void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag)
 #endif
@@ -651,7 +631,7 @@ void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag)
 
 #ifdef OW_I18N
     if (Olgx_Flags(info) & OLGX_FONTSET) {
-        if (olgx_cmp_fontsets(ufont_info.fontset, info->textfontset))
+        if (olgx_cmp_fontsets((XFontSet *)ufont_info.fontset, (XFontSet *)info->textfontset))
 	    return;
 
 	info->textfontset = ufont_info.fontset;
@@ -736,15 +716,14 @@ void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag)
 	    if (Olgx_Flags(info) & OLGX_FONTSET) {
 		info->gc_rec[OLGX_TEXTGC]
 			= olgx_get_gcrec(perdispl_res_ptr, 
-				info->drawable[0],info->depth,
+				info->drawable[0], (int)info->depth,
 				info->gc_rec[OLGX_TEXTGC]->valuemask & ~GCFont,
 				&values);
 	    } else {
 		values.font = info->textfont->fid;
 		info->gc_rec[OLGX_TEXTGC]
 			= olgx_get_gcrec(perdispl_res_ptr,
-				info->drawable[0], 
-                                info->depth,
+				info->drawable[0], (int)info->depth,
 				info->gc_rec[OLGX_TEXTGC]->valuemask,
 				&values);
 	    }
@@ -831,16 +810,14 @@ void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag)
                 if (Olgx_Flags(info) & OLGX_FONTSET) {
                     info->gc_rec[OLGX_TEXTGC_REV]
                         = olgx_get_gcrec(perdispl_res_ptr,
-                            info->drawable[0],
-                            info->depth,
+                            info->drawable[0], (int)info->depth,
                             info->gc_rec[OLGX_TEXTGC_REV]->valuemask & ~GCFont,
                             &values);
                 } else {
                     values.font = info->textfont->fid;
                     info->gc_rec[OLGX_TEXTGC_REV]
                         = olgx_get_gcrec(perdispl_res_ptr,
-                            info->drawable[0],
-                            info->depth,
+                            info->drawable[0], (int)info->depth,
                             info->gc_rec[OLGX_TEXTGC_REV]->valuemask,
                             &values);
                 }
@@ -942,11 +919,7 @@ void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag)
 
 
 #ifdef OW_I18N
-void
-olgx_set_text_fontset(info, font_set, flag)
-    Graphics_info  *info;
-    XFontSet        font_set;
-    int             flag;
+void olgx_set_text_fontset(Graphics_info *info, XFontSet font_set, int flag)
 {
     Olgx_font_or_fs ufont;
 
@@ -955,11 +928,7 @@ olgx_set_text_fontset(info, font_set, flag)
 }
 
 
-void
-olgx_set_text_font(info, font_info, flag)
-    Graphics_info  *info;
-    XFontStruct    *font_info;
-    int             flag;
+void olgx_set_text_font(Graphics_info *info, XFontStruct *font_info, int flag)
 {
     Olgx_font_or_fs ufont;
 
@@ -1735,13 +1704,13 @@ void olgx_initialise_gcrec(Graphics_info  *info, int index)
 	    if (Olgx_Flags(info) & OLGX_FONTSET) {
 		info->gc_rec[OLGX_TEXTGC_REV]
 			= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-					 info->depth, valuemask & ~GCFont,
+					 (int)info->depth, valuemask & ~GCFont,
 					 &values);
 	    } else {
 		values.font = info->textfont->fid;
 		info->gc_rec[OLGX_TEXTGC_REV]
 			= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-					 info->depth, valuemask,
+					 (int)info->depth, valuemask,
 					 &values);
 	    }
 #else /* OW_I18N */
@@ -1787,12 +1756,12 @@ void olgx_initialise_gcrec(Graphics_info  *info, int index)
 	if (Olgx_Flags(info) & OLGX_FONTSET) {
 	    info->gc_rec[OLGX_TEXTGC]
 		= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-				 info->depth, valuemask & ~GCFont, &values);
+				 (int)info->depth, valuemask & ~GCFont, &values);
 	} else {
 	    values.font = info->textfont->fid;
 	    info->gc_rec[OLGX_TEXTGC]
 		= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-				 info->depth, valuemask, &values);
+				 (int)info->depth, valuemask, &values);
 	}
 #else /* OW_I18N */
 	values.font = info->textfont->fid;
@@ -1896,19 +1865,6 @@ int olgx_cmp_fonts(XFontStruct    *font_info1, XFontStruct    *font_info2)
      */
 }
 
-
-#ifdef OW_I18N
-int
-olgx_cmp_fontsets(fontset_info1, fontset_info2)
-    XFontSet	*fontset_info1;
-    XFontSet	*fontset_info2;
-{
-    if (fontset_info1 == fontset_info2)
-	return True;
-    else
-	return False;
-}
-#endif /* OW_I18N */
 
 
 /*
