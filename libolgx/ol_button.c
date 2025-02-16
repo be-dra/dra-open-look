@@ -547,7 +547,7 @@ void olgx_draw_menu_mark(Graphics_info *info, Window win, int x, int y,
 static void draw_window_mark(Graphics_info *info, Window win, int x, int y,
 									int state)
 {
-	const char *dots = "...";
+	char *dots = "...";
 	int width = XTextWidth(TextFont_Struct(info), dots, 3);
 
 	olgx_draw_text(info, win, dots,
@@ -720,8 +720,8 @@ void olgx_draw_text(Graphics_info *info, Window win,
 #ifdef OW_I18N
 	int len;
 	int mb_len;
-	char *mbs;
-	wchar_t *wcs;
+	char *mbs = NULL;
+	wchar_t *wcs = NULL;
 #else
 	unsigned int len;
 #endif /* OW_I18N */
@@ -735,7 +735,7 @@ void olgx_draw_text(Graphics_info *info, Window win,
 #ifdef OW_I18N
 	if ((Olgx_Flags(info) & OLGX_FONTSET) && (state & OLGX_LABEL_IS_WCS)) {
 		wcs = (wchar_t *) string;
-		len = wslen(wcs);
+		len = wcslen(wcs);
 	}
 	else {
 		mbs = (char *)string;
@@ -782,7 +782,7 @@ void olgx_draw_text(Graphics_info *info, Window win,
 			width = XmbTextEscapement(info->textfontset, mbs, len);
 			if (max_width && width > max_width) {
 				for (i = 0; (i < len && current_width <= max_width);) {
-					mb_len = mblen(&mbs[i], len);
+					mb_len = mblen(&mbs[i], (size_t)len);
 					current_width +=
 							XmbTextEscapement(info->textfontset,
 							&mbs[i], mb_len);
@@ -1227,8 +1227,15 @@ static void olgx_draw_diamond_mark(Graphics_info *info, Window win, int x, int y
     }
 }
 
-static void olgx_draw_accel_label_internal(Graphics_info *info, Window win, int texty, int x, int y, int width, int height, void *main_label, int m_pos, void *qualifier_label, int	q_pos, int	mark_type, int	mark_pos, void *key_label, int	key_pos, int state, int centerflag)
+static void olgx_draw_accel_label_internal(Graphics_info *info, Window win,
+				int texty, int x, int y, int width, int height,
+				void *main_label, int m_pos, void *qualifier_label, int	q_pos,
+				int	mark_type, int	mark_pos, void *key_label, int	key_pos,
+				int state, int centerflag)
 {
+#ifdef OW_I18N
+	char *highlight_char = NULL;
+#endif
     int text_width;     /* temporary var. for figuring max_width to pass to
 			   olgx_draw_text() */
     if (main_label) {
