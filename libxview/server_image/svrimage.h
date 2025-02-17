@@ -1,4 +1,4 @@
-/*	@(#)svrimage.h 20.30 93/06/28 SMI DRA: RCS $Id: svrimage.h,v 2.2 2024/02/08 21:32:55 dra Exp $ 	*/
+/*	@(#)svrimage.h 20.30 93/06/28 SMI DRA: RCS $Id: svrimage.h,v 2.3 2025/02/16 20:23:09 dra Exp $ 	*/
 
 #ifndef xview_server_image_DEFINED
 #define xview_server_image_DEFINED
@@ -22,7 +22,11 @@
 #include <pixrect/pixrect.h>
 #include <pixrect/pixfont.h>
 #ifdef OW_I18N
-#include <widec.h>
+#ifdef sun
+#  include <widec.h>
+#else
+#  include <wchar.h>
+#endif
 #endif
 
 
