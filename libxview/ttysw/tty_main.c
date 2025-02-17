@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.10 2025/02/15 13:24:26 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.11 2025/02/16 20:25:22 dra Exp $";
 #endif
 
 /*
@@ -60,7 +60,11 @@ char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v
 #include <xview_private/draw_impl.h>
 
 #ifdef OW_I18N
-#include <widec.h>
+#ifdef sun
+#  include <widec.h>
+#else
+#  include <wchar.h>
+#endif
 #include <wctype.h>
 #include <stdlib.h>
 #include <xview_private/charimage.h>
