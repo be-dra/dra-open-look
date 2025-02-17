@@ -1,4 +1,4 @@
-/*      @(#)xv_i18n.h 1.11 93/06/28; SMI DRA: RCS: $Id: xv_i18n.h,v 4.3 2024/05/03 11:34:17 dra Exp $ */
+/*      @(#)xv_i18n.h 1.11 93/06/28; SMI DRA: RCS: $Id: xv_i18n.h,v 4.5 2025/02/16 20:31:41 dra Exp $ */
 /*
  *      (c) Copyright 1991 Sun Microsystems, Inc. Sun design patents 
  *      pending in the U.S. and foreign countries. See LEGAL_NOTICE 
@@ -42,7 +42,11 @@
 
 #include <stdlib.h>		/* #2 (MB_CUR_MAX) */
 #include <limits.h>		/* #2 (MB_LEN_MAX) */
-#include <widec.h>		/* #1, #4 */
+#ifdef sun
+#  include <widec.h>		/* #1, #4 */
+#else
+#  include <wchar.h>
+#endif
 #include <locale.h>		/* #3 */
 #include <wctype.h>		/* #5 */
 
@@ -55,7 +59,9 @@
  */
 #include <X11/XlibR5.h>		/* #6 */
 #endif /* XlibSpecificationRelease <= 5 */
-#include <X11/XSunExt.h>	/* #7 */
+#ifdef sun
+#  include <X11/XSunExt.h>	/* #7 */
+#endif
 
 #endif /* OW_I18N */
 
