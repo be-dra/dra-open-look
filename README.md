@@ -1,14 +1,30 @@
 This project contains what I call XView4.0.
-It consists of (directories)
+
+It is based on the sources that have been released by Sun Microsystems some thirty years ago.
+
+
+Features:
+
+· This is a 64-bit version of XView
+
+· It implements all the features of a Level 2 Open Look toolkit.
+
+
+
+==============================================
+
+This It consists of (directories)
 
 +++ libolgx
+
 +++ libxview
+
 +++ olwm
 
-This is working in linux and is (in my opinion) a Level 2 Open Look toolkit.
 
+==============================================
 
-Main changes since the XView sources were released...
+Main changes since the XView sources were released:
 
 
 attr:
