@@ -35,7 +35,7 @@ cursor:
 	creation of a text drag cursor based on the ol cursor font
 
 dnd:
-	+ Integration of that Xdnd misfit
+	+ Integration of Xdnd
 	+ Preview-Events modified - they contain the drag source's window id
 	  in order to establish a communication
 
