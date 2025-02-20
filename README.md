@@ -13,7 +13,7 @@ Features:
 
 ==============================================
 
-This It consists of (directories)
+It consists of (directories)
 
 +++ libolgx
 
