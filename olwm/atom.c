@@ -1,5 +1,5 @@
 /* #ident	"@(#)atom.c	26.24	93/06/28 SMI" */
-char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.12 2025/01/05 10:55:25 dra Exp $";
+char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.14 2025/02/19 16:52:58 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -97,7 +97,6 @@ void InitAtoms(Display *dpy)
 		"CLASS",
 		"DELETE",
 		"MULTIPLE",
-		"LENGTH",
 		"LIST_LENGTH",
 		"NAME",
 		"TARGETS",
@@ -184,6 +183,7 @@ void InitAtoms(Display *dpy)
 		"VERSION",
 		"SHUTDOWN",
 		"REBOOT"
+		, "_OL_SELECTION_IS_WORD"
 #ifdef ALWAYS_IN_JOURNALLING_MODE_QUESTION
 		, "JOURNAL_SYNC"    /* just to keep this silent */
 #endif
