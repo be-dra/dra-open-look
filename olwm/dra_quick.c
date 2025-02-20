@@ -7,7 +7,7 @@
 #include "globals.h"
 #include <X11/Xatom.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.18 2025/02/09 16:36:15 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.20 2025/02/19 16:52:58 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -525,19 +525,15 @@ int dra_quick_handle_selection(Display *dpy, XEvent *xev,
 			/* Lose the Secondary Selection */
 			unsigned long l = 0L;
 			reply.property = scr->property;
-			reply.target = AtomNULL;
-    		XChangeProperty(dpy, reply.requestor, reply.property, reply.target,
+    		XChangeProperty(dpy, reply.requestor, reply.property, AtomNULL,
 						32, PropModeReplace, (unsigned char *)&l, 0);
 			XSetSelectionOwner(dpy, XA_SECONDARY, None, scr->time);
 			qd->startindex = qd->endindex = 0;
 		}
-		else if (scr->target == AtomLength) {
-			/* This is only used by SunView1 selection clients for
-			 * clipboard and secondary selections.
-			 */
-			unsigned long l = strlen(qd->seltext);
+		else if (scr->target == Atom_OL_SELECTION_IS_WORD) {
+			unsigned long l = (qd->select_click_cnt == 2);
 			reply.property = scr->property;
-    		XChangeProperty(dpy, reply.requestor, reply.property, reply.target,
+    		XChangeProperty(dpy, reply.requestor, reply.property, XA_INTEGER,
 						32, PropModeReplace, (unsigned char *)&l, 1);
 		}
 		else if (scr->target == XA_STRING) {
@@ -546,7 +542,18 @@ int dra_quick_handle_selection(Display *dpy, XEvent *xev,
 						8, PropModeReplace,
 		    			(unsigned char *)qd->seltext, strlen(qd->seltext));
 		}
+		else if (scr->target == AtomTargets) {
+			int i = 0;
+			Atom tgts[10];
 
+			tgts[i++] = AtomTargets;
+			tgts[i++] = XA_STRING;
+			tgts[i++] = Atom_SUN_SELECTION_END;
+			tgts[i++] = Atom_OL_SELECTION_IS_WORD;
+			reply.property = scr->property;
+    		XChangeProperty(dpy, reply.requestor, reply.property, XA_ATOM,
+						32, PropModeReplace, (unsigned char *)tgts, i);
+		}
 		dra_olwm_trace(300, "send selection notify for %ld\n", scr->target);
 		XSendEvent(dpy, reply.requestor, False, NoEventMask, (XEvent *)&reply);
 		XFlush(dpy);
