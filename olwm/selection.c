@@ -1,5 +1,5 @@
 /* #ident	"@(#)selection.c	26.19	93/06/28 SMI" */
-char selection_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: selection.c,v 2.2 2024/12/17 23:22:04 dra Exp $";
+char selection_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: selection.c,v 2.3 2025/02/19 16:27:08 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -76,16 +76,16 @@ processPrimaryTarget(dpy, requestor, target, property)
     Window *wp;
 
     if (target == AtomTargets) {
+		i = 0;
 		dra_olwm_trace(300, "in processPrimaryTarget, TARGETS\n");
-		data[0] = AtomTargets;
-		data[1] = AtomTimestamp;
-		data[2] = AtomListLength;
-		data[3] = XA_DRAWABLE;
-		data[4] = AtomLength;
-		data[5] = AtomMultiple;
-		data[6] = AtomName;
-		data[7] = AtomClientWindow;
-		nelements = 8;
+		data[i++] = AtomTargets;
+		data[i++] = AtomTimestamp;
+		data[i++] = AtomListLength;
+		data[i++] = XA_DRAWABLE;
+		data[i++] = AtomMultiple;
+		data[i++] = AtomName;
+		data[i++] = AtomClientWindow;
+		nelements = i;
 		type = XA_ATOM;
 		format = 32;
     }
@@ -99,13 +99,6 @@ processPrimaryTarget(dpy, requestor, target, property)
 	else if (target == AtomListLength) {
 		dra_olwm_trace(300, "in processPrimaryTarget, LIST_LENGTH\n");
 		data[0] = ListCount(selectList);
-		nelements = 1;
-		type = XA_INTEGER;
-		format = 32;
-	}
-	else if (target == AtomLength) {
-		dra_olwm_trace(300, "in processPrimaryTarget, LENGTH\n");
-		data[0] = ListCount(selectList)*sizeof(long);
 		nelements = 1;
 		type = XA_INTEGER;
 		format = 32;
