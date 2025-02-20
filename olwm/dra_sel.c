@@ -7,7 +7,7 @@
 #include "selection.h"
 #include "atom.h"
 
-char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.18 2024/12/17 23:22:14 dra Exp $";
+char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.19 2025/02/19 16:26:58 dra Exp $";
 
 extern Window NoFocusWin;
 
@@ -124,24 +124,6 @@ static Bool convertClip(Display *dpy, Window requestor, Atom target,
 		type = XA_ATOM;
 		format = 32;
     	propdata = (unsigned char *) data;
-	}
-	else if (target == AtomLength) {
-		if (clip_data) {
-			data[0] = (unsigned long)strlen((char *)clip_data);
-			propdata = clip_data;
-		}
-		else {
-			str[0] = '\0';
-			nelements = 1;
-			propdata = str;
-		}
-		nelements = 1;
-		type = XA_INTEGER;
-		format = 32;
-    	propdata = (unsigned char *) data;
-		dra_olwm_trace(710,
-				"answering LENGTH for CLIPBOARD on property '%s'\n", 
-				XGetAtomName(dpy, property));
 	}
 	else {
 		dra_olwm_trace(710,
