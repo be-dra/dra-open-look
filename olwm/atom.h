@@ -1,7 +1,7 @@
 #ifndef _OLWM_ATOM_H
 #define _OLWM_ATOM_H
 
-/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.11 2025/01/05 10:55:25 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.13 2025/02/19 16:52:58 dra Exp $ */
 enum atom_index_t {
 	OL_AtomColorMapWindows,
 	OL_AtomWMState,
@@ -46,7 +46,6 @@ enum atom_index_t {
 	OL_AtomClass,
 	OL_AtomDelete,
 	OL_AtomMultiple,
-	OL_AtomLength,
 	OL_AtomListLength,
 	OL_AtomName,
 	OL_AtomTargets,
@@ -106,6 +105,7 @@ enum atom_index_t {
 	OL_AtomVersion,
 	OL_AtomShutdown,
 	OL_AtomReboot,
+	_OL_SELECTION_IS_WORD,
 #ifdef ALWAYS_IN_JOURNALLING_MODE_QUESTION
 	OL_AtomJOURNAL_SYNC,
 #endif
@@ -157,7 +157,6 @@ extern Atom atoms[];
 #define AtomClass atoms[OL_AtomClass]
 #define AtomDelete atoms[OL_AtomDelete]
 #define AtomMultiple atoms[OL_AtomMultiple]
-#define AtomLength atoms[OL_AtomLength]
 #define AtomListLength atoms[OL_AtomListLength]
 #define AtomName atoms[OL_AtomName]
 #define AtomTargets atoms[OL_AtomTargets]
@@ -217,6 +216,7 @@ extern Atom atoms[];
 #define AtomVersion atoms[OL_AtomVersion]
 #define AtomShutdown atoms[OL_AtomShutdown]
 #define AtomReboot atoms[OL_AtomReboot]
+#define Atom_OL_SELECTION_IS_WORD atoms[_OL_SELECTION_IS_WORD]
 #ifdef ALWAYS_IN_JOURNALLING_MODE_QUESTION
 #define AtomJOURNAL_SYNC atoms[OL_AtomJOURNAL_SYNC]
 #endif
