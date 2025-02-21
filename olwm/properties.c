@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.2 2025/01/04 21:51:02 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.4 2025/02/20 20:57:15 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -248,8 +248,6 @@ PropGetWMName(dpy,win,winName)
 	Window	win;
 	Text	**winName;		/* RETURN */
 {
-	Text	*name;
-
 	if (!PropAvailable(win,WMNameAvail))
 		return False;
 
@@ -326,13 +324,16 @@ PropGetWMHints(dpy,win,wmHints)
 	if ((prop = XGetWMHints(dpy,win)) == (XWMHints *)NULL)
 		return False;
 
-	if (prop->flags == 0) {
-		/* ein lustiger client....   */
-		fprintf(stderr, "olwm: client %lx has WM_HINTS with flags = 0\n", win);
-
-		prop->flags = StateHint | InputHint;
-		prop->input = 1;
+	/* what I want to know from EACH client (except idiots):
+	 * input and initial_state
+	 */
+	if ((prop->flags & StateHint) == 0) {
+		prop->flags |= StateHint;
 		prop->initial_state = NormalState;
+	}
+	if ((prop->flags & InputHint) == 0) {
+		prop->flags |= InputHint;
+		prop->input = 1;
 	}
 
 	*wmHints = *prop;
@@ -758,39 +759,9 @@ PropGetOLDecorDel(dpy,win,decorFlags)
 }
 
 /*
- * propGetOLFooter - get either left/right footer strings
- */
-static Bool
-propGetOLFooter(dpy,win,atom,footer)
-	Display	*dpy;
-	Window	win;
-	Atom	atom;
-	char	**footer;			/* RETURN */
-{
-	char	*value;
-	unsigned long nItems,remain;
-
-	value = (char *)GetWindowProperty(dpy,win,atom,
-			0L,ENTIRE_CONTENTS,XA_STRING,0,&nItems,&remain);
-
-	if (value == NULL)
-		return False;
-
-	*footer = MemNewString(value);
-
-	XFree(value);
-
-	return True;
-}
-
-/*
  * PropGetOLLeftFooter - gets the left footer string
  */
-Bool
-PropGetOLLeftFooter(dpy,win,footer)
-	Display	*dpy;
-	Window	win;
-	Text	**footer;			/* RETURN */
+Bool PropGetOLLeftFooter(Display *dpy, Window win, Text **footer)
 {
 	if (!PropAvailable(win,OLLeftFooterAvail))
 		return False;
@@ -804,11 +775,7 @@ PropGetOLLeftFooter(dpy,win,footer)
 /*
  * PropGetOLRightFooter - gets the right footer string
  */
-Bool
-PropGetOLRightFooter(dpy,win,footer)
-	Display	*dpy;
-	Window	win;
-	Text	**footer;			/* RETURN */
+Bool PropGetOLRightFooter(Display *dpy, Window win, Text **footer)
 {
 	if (!PropAvailable(win,OLRightFooterAvail))
 		return False;
