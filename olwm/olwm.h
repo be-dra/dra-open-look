@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.1 2024/09/20 19:59:01 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.2 2025/02/20 18:53:45 dra Exp $ */
 /* #ident	"@(#)olwm.h	26.27	93/06/28 SMI" */
 
 /*
@@ -180,7 +180,6 @@ extern struct _winpane *MakePane();
 extern struct _winmenu *MakeMenu();
 
 /* colormap functions */
-extern struct _wingeneric *MakeColormap();
 extern void TrackSubwindows();
 extern void UnTrackSubwindows();
 extern void ColormapInhibit();
