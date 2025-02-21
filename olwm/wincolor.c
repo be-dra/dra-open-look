@@ -1,5 +1,5 @@
 /* #ident	"@(#)wincolor.c	26.24	93/06/28 SMI" */
-char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.5 2024/08/04 17:37:16 dra Exp $";
+char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.6 2025/02/20 18:53:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -74,11 +74,7 @@ static ClassColormap classColormap;
 /* 
  * eventDestroy - handle destroy events on the colormap window 
  */
-static int
-eventDestroy(dpy, event, winInfo)
-Display	*dpy;
-XEvent	*event;
-WinColormap *winInfo;
+static int eventDestroy(Display	*dpy, XEvent	*event, WinColormap *winInfo)
 {
     Client *cli;
     List *cli_list = winInfo->core.colormapClients;
@@ -112,31 +108,26 @@ WinColormap *winInfo;
     ListDestroy(winInfo->core.colormapClients);
     winInfo->core.colormapClients = NULL_LIST;
     (WinFunc(winInfo,core.destroyfunc))(dpy, winInfo);
+
+	return 0;
 }
 
 
 /* 
  * eventEnterLeaveNotify - handle enter/leave notify events on the colormap window 
  */
-static int
-eventEnterLeaveNotify(dpy, event, winInfo)
-Display	*dpy;
-XEvent	*event;
-WinColormap *winInfo;
+static int eventEnterLeaveNotify(Display	*dpy, XEvent	*event, WinColormap *winInfo)
 {
-    if (event->xany.type == EnterNotify)
-	ColorWindowCrossing(dpy, event, winInfo);
+    if (event->xany.type == EnterNotify) ColorWindowCrossing(dpy,event,winInfo);
+
+	return 0;
 }
 
 
 /*
  * eventUnmapNotify - handle the unmapping of a colormap window
  */
-static int
-eventUnmapNotify(dpy, event, winInfo)
-Display	*dpy;
-XEvent	*event;
-WinColormap *winInfo;
+static int eventUnmapNotify(Display	*dpy, XEvent *event, WinColormap *winInfo)
 {
     /*
      * If this is the window with the color focus, and the color focus is not 
@@ -149,6 +140,8 @@ WinColormap *winInfo;
 	!ColorFocusLocked(winInfo) ) {
 	InstallPointerColormap(dpy, None, 0, 0, False);
     }
+
+	return 0;
 }
 
 
@@ -165,17 +158,14 @@ eventColormapNotify(dpy, event, winInfo)
     WinColormap *winInfo;
 {
     ColormapChange(dpy, event, (WinGeneric *)winInfo);
+	return 0;
 }
-	    
 
 /*
  * destroyColormap -- destroy the colormap window resources and 
  *	              free any allocated data.
  */
-static int
-destroyColormap(dpy, winInfo)
-Display	*dpy;
-WinGeneric *winInfo;
+static int destroyColormap(Display	*dpy, WinGeneric *winInfo)
 {
 #ifdef DEBUG
 	if (winInfo->core.colormapClients != NULL_LIST)
@@ -189,6 +179,8 @@ WinGeneric *winInfo;
 	if (WIGetInfo(winInfo->core.self) == winInfo)
 	    WIUninstallInfo(winInfo->core.self);
 	MemFree(winInfo);
+
+	return 0;
 }
 
 
@@ -498,16 +490,17 @@ ColorWindowCrossing(dpy, event, winInfo)
 #define TAG_OLDLIST 1
 #define TAG_NEWLIST 2
 
+static WinColormap *MakeColormap(Client *cli, Window win);
+
 /*
  * TrackSubwindows      -- check for the WM_COLORMAP_WINDOWS prop
  *                      on a pane, if it exists, track the subwindows.
  */
-void TrackSubwindows(cli)
-    Client *cli;
+void TrackSubwindows(Client *cli)
 {
 	Display *dpy = cli->dpy;
 	Window pane = PANEWINOFCLIENT(cli);
-	unsigned long nItems, remain;
+	unsigned long nItems;
 	Window *cmapwindata;
 	List **last;
 	List *oldlist;
@@ -695,25 +688,21 @@ ColorUpdateColorMapWindows(cli,event)
 /*
  * MakeColormap  -- create the colormap window. Return a WinGeneric structure.
  */
-WinColormap *
-MakeColormap(cli,win)
-Client *cli;
-Window win;
+static WinColormap *MakeColormap(Client *cli, Window win)
 {
 	WinColormap *w;
-        XWindowAttributes winAttr;
+	XWindowAttributes winAttr;
 
 	/*
 	 * Select input before getting window attributes in order to avoid 
 	 * race conditions with destruction and colormap changes.
 	 */
 
-        XSelectInput(cli->dpy, win,
-		     EnterWindowMask | ColormapChangeMask |
-		     StructureNotifyMask);
+	XSelectInput(cli->dpy, win,
+			EnterWindowMask | ColormapChangeMask | StructureNotifyMask);
 
-        if (XGetWindowAttributes(cli->dpy, win, &winAttr) == 0)
-	    return NULL;
+	if (XGetWindowAttributes(cli->dpy, win, &winAttr) == 0)
+		return NULL;
 
 	/* create the associated structure */
 	w = MemNew(WinColormap);
@@ -721,9 +710,9 @@ Window win;
 	w->core.self = win;
 	w->core.kind = WIN_COLORMAP;
 	w->core.client = cli;
-        w->core.colormap = winAttr.colormap;
+	w->core.colormap = winAttr.colormap;
 	w->core.colormapClients = NULL_LIST;
-	w->core.helpstring = (char *)NULL;  /* no help for colormaps */
+	w->core.helpstring = (char *)NULL;	/* no help for colormaps */
 
 	/* register the window */
 	WIInstallInfo(w);
