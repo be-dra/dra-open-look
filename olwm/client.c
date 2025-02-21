@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.2 2025/01/03 15:07:55 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.3 2025/02/20 17:04:46 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -1303,7 +1303,7 @@ ClientInBox(cli, close)
 Client *cli;
 ClientInBoxClosure *close;
 {
-	int x, y, w, h;
+	int x=0, y=0, w=0, h=0;
 
 	if (cli->screen != close->screen)
 		return NULL;
