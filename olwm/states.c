@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.6 2025/01/03 23:42:08 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.7 2025/02/21 22:22:00 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -742,32 +742,27 @@ static void * promoteDependentFollowers(window, groupid)
  *			will be its WinMenu structure; this window must
  *			be a subclass of Pane
  */
-Client *
-StateNew(dpy, rootWin, window, fexisting, ourWinInfo)
-Display *dpy;
-Window rootWin;
-Window window;
-Bool fexisting;
-WinPane *ourWinInfo;
+Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
+					WinPane *ourWinInfo)
 {
-	Client 		*cli;
-	WinGeneric	*winGeneric;
-	WinPane		*winPane;
-	WinIconFrame	*winIcon;
-	WinPaneFrame	*winFrame;
-	WinIconPane	*winIconPane;
-	XSizeHints	*normHints;
-	Bool		preICCCM;
-	Bool		transient = False;
-	int		status;
-	int		initstate;
+	Client *cli;
+	WinGeneric *winGeneric;
+	WinPane *winPane;
+	WinIconFrame *winIcon;
+	WinPaneFrame *winFrame;
+	WinIconPane *winIconPane;
+	XSizeHints *normHints;
+	Bool preICCCM;
+	Bool transient = False;
+	int status;
+	int initstate;
 	XWindowAttributes paneAttr;
-	int 		screen;
-	int		tmpx, tmpy;
-	ScreenInfo 	*scrInfo;
-	int		winState;
-	Window		iconWin;
-	Client *wanted_a_subgroup = (Client *)0;
+	int screen;
+	int tmpx, tmpy;
+	ScreenInfo *scrInfo;
+	int winState;
+	Window iconWin;
+	Client *wanted_a_subgroup = (Client *) 0;
 
 	/*
 	 * If the window is thought to be new (i.e. if ourWinInfo is null, as
@@ -781,8 +776,8 @@ WinPane *ourWinInfo;
 	 * popup menus.
 	 */
 	if (!ourWinInfo &&
-	   (winGeneric = WIGetInfo(window)) != NULL &&
-	    winGeneric->core.kind != WIN_COLORMAP) {
+			(winGeneric = WIGetInfo(window)) != NULL &&
+			winGeneric->core.kind != WIN_COLORMAP) {
 		return NULL;
 	}
 
@@ -793,20 +788,21 @@ WinPane *ourWinInfo;
 	 */
 	if (ourWinInfo) {
 		scrInfo = ourWinInfo->core.client->scrInfo;
-	} else if (rootWin != None) {
-		if ((scrInfo = GetScrInfoOfRoot(rootWin)) == NULL) 
+	}
+	else if (rootWin != None) {
+		if ((scrInfo = GetScrInfoOfRoot(rootWin)) == NULL)
 			return NULL;
-	} else {
-		Window	root, parent, *children;
-		unsigned int	nChild;
-		Status	result;
-		
-		result  = XQueryTree(dpy, window, &root, &parent, 
-				&children, &nChild);
+	}
+	else {
+		Window root, parent, *children;
+		unsigned int nChild;
+		Status result;
+
+		result = XQueryTree(dpy, window, &root, &parent, &children, &nChild);
 
 		if (result == 0 || parent != root)
 			return NULL;
-		if ((scrInfo = GetScrInfoOfRoot(root)) == NULL) 
+		if ((scrInfo = GetScrInfoOfRoot(root)) == NULL)
 			return NULL;
 	}
 	screen = scrInfo->screen;
@@ -818,13 +814,13 @@ WinPane *ourWinInfo;
 	 * XGetWindowAttributes below will tell us without race conditions.
 	 */
 	if (!ourWinInfo)
-	    XSelectInput(dpy, window,
-			 PropertyChangeMask | StructureNotifyMask |
-			 ColormapChangeMask | EnterWindowMask);
+		XSelectInput(dpy, window,
+				PropertyChangeMask | StructureNotifyMask |
+				ColormapChangeMask | EnterWindowMask);
 
 	/* get all the info about the new pane */
 	status = XGetWindowAttributes(dpy, window, &paneAttr);
-	if ( status == 0 ) {
+	if (status == 0) {
 		return NULL;
 	}
 
@@ -834,10 +830,10 @@ WinPane *ourWinInfo;
 	 * interest.
 	 */
 	if (paneAttr.override_redirect ||
-		(fexisting && paneAttr.map_state != IsViewable)) {
-	    if (!ourWinInfo)
-		XSelectInput(dpy, window, NoEventMask);
-	    return NULL;
+			(fexisting && paneAttr.map_state != IsViewable)) {
+		if (!ourWinInfo)
+			XSelectInput(dpy, window, NoEventMask);
+		return NULL;
 	}
 
 	if (paneAttr.win_gravity == StaticGravity) {
@@ -852,34 +848,32 @@ WinPane *ourWinInfo;
 	}
 
 	/* Create the client structure so we can start hooking things to it */
-	if ((cli = ClientCreate(dpy,screen)) == NULL)
-	{
-	    return NULL;
+	if ((cli = ClientCreate(dpy, screen)) == NULL) {
+		return NULL;
 	}
 
 #ifdef SHAPE
 	{
-	    Bool bshaped, cshaped;
-	    int bx, by, cx, cy;
-	    unsigned int bw, bh, cw, ch;
+		Bool bshaped, cshaped;
+		int bx, by, cx, cy;
+		unsigned int bw, bh, cw, ch;
 
-	    if (ShapeSupported &&
-		0 != XShapeQueryExtents(dpy, window, &bshaped, &bx, &by,
-					&bw, &bh, &cshaped, &cx, &cy,
-					&cw, &ch))
-	    {
-		XShapeSelectInput(dpy, window, ShapeNotifyMask);
-		cli->isShaped = bshaped;
-	    } else {
-		cli->isShaped = False;
-	    }
+		if (ShapeSupported &&
+				0 != XShapeQueryExtents(dpy, window, &bshaped, &bx, &by,
+						&bw, &bh, &cshaped, &cx, &cy, &cw, &ch)) {
+			XShapeSelectInput(dpy, window, ShapeNotifyMask);
+			cli->isShaped = bshaped;
+		}
+		else {
+			cli->isShaped = False;
+		}
 	}
 #endif /* SHAPE */
 
 	/*
- 	 * Turn on prop read filtering with set of available properties
- 	 */
-	PropSetAvailable(dpy,window);
+	 * Turn on prop read filtering with set of available properties
+	 */
+	PropSetAvailable(dpy, window);
 
 	/*
 	 * Get the WM_TRANSIENT_FOR hint.  If the property exists but has a
@@ -888,18 +882,19 @@ WinPane *ourWinInfo;
 	 * zero in the WM_TRANSIENT_FOR property, and we want to give them
 	 * transient window behavior.
 	 */
-	if (!PropGetWMTransientFor(dpy,window,cli->scrInfo->rootid,
+	if (!PropGetWMTransientFor(dpy, window, cli->scrInfo->rootid,
 					&(cli->transientFor))) {
 		cli->transientFor = 0;
 		transient = False;
-	} else {
+	}
+	else {
 		transient = True;
 	}
 
 	/* 
 	 * Get the window class and instance strings
 	 */
-	if (!PropGetWMClass(dpy,window,&(cli->wmClass),&(cli->wmInstance))) {
+	if (!PropGetWMClass(dpy, window, &(cli->wmClass), &(cli->wmInstance))) {
 		cli->wmClass = cli->wmInstance = NULL;
 		cli->wmClassQ = cli->wmInstanceQ = NULLQUARK;
 	}
@@ -914,17 +909,17 @@ WinPane *ourWinInfo;
 	 */
 	normHints = MemNew(XSizeHints);
 
-	if (!PropGetWMNormalHints(dpy,window,normHints,&preICCCM)) {
+	if (!PropGetWMNormalHints(dpy, window, normHints, &preICCCM)) {
 		normHints->win_gravity = NorthWestGravity;
 		normHints->flags = PWinGravity;
 	}
 
 	dra_olwm_trace(555,
 			"stateNew: ux=%d, uy=%d, px=%d, py=%d\n",
-		    	((normHints->flags & USPosition) != 0 ? normHints->x : -123),
-		    	((normHints->flags & USPosition) != 0 ? normHints->y : -123),
-		    	((normHints->flags & PPosition) != 0 ? normHints->x : -123),
-		    	((normHints->flags & PPosition) != 0 ? normHints->y : -123));
+			((normHints->flags & USPosition) != 0 ? normHints->x : -123),
+			((normHints->flags & USPosition) != 0 ? normHints->y : -123),
+			((normHints->flags & PPosition) != 0 ? normHints->x : -123),
+			((normHints->flags & PPosition) != 0 ? normHints->y : -123));
 	{
 		minimalclosure mc;
 
@@ -975,8 +970,10 @@ WinPane *ourWinInfo;
 			}
 		}
 
-		if (paneAttr.width <= 0) paneAttr.width = 1;
-		if (paneAttr.height <= 0) paneAttr.height = 1;
+		if (paneAttr.width <= 0)
+			paneAttr.width = 1;
+		if (paneAttr.height <= 0)
+			paneAttr.height = 1;
 
 		if (normHints->flags & PBaseSize) {
 			/* manche Versionen von lowriter machen sowas */
@@ -985,7 +982,7 @@ WinPane *ourWinInfo;
 				unsigned long nitems;
 				unsigned long bytes_after;
 				Atom *prop = GetWindowProperty(dpy, window, Atom_NET_WM_STATE,
-								0L, 200L, XA_ATOM, 32, &nitems, &bytes_after);
+						0L, 200L, XA_ATOM, 32, &nitems, &bytes_after);
 
 				if (prop) {
 					unsigned long i;
@@ -1001,10 +998,11 @@ WinPane *ourWinInfo;
 					for (i = 0; i < nitems; i++) {
 						if (prop[i] == mv) {
 							paneAttr.height = sh
-							- MAX(Abbrev_MenuButton_Height(gi),
-							Ascent_of_TextFont(gi) + Descent_of_TextFont(gi)+2)
-							- 3 * ResizeArm_Height(gi)
-							- 77;   /* nix da, Knalltuete */
+									- MAX(Abbrev_MenuButton_Height(gi),
+									Ascent_of_TextFont(gi) +
+									Descent_of_TextFont(gi) + 2)
+									- 3 * ResizeArm_Height(gi)
+									- 77;	/* nix da, Knalltuete */
 							needresize = True;
 						}
 						if (prop[i] == mh) {
@@ -1022,11 +1020,11 @@ WinPane *ourWinInfo;
 		if (GRV.screenSizeRestrictsWindowSize) {
 			Graphics_info *gi = scrInfo->gi[NORMAL_GINFO];
 			int sw = DisplayWidth(dpy, scrInfo->screen)
-						- 2 * ResizeArm_Width(gi);
+					- 2 * ResizeArm_Width(gi);
 			int sh = DisplayHeight(dpy, scrInfo->screen)
-						- MAX(Abbrev_MenuButton_Height(gi),
-							Ascent_of_TextFont(gi) + Descent_of_TextFont(gi)+2)
-						- 3 * ResizeArm_Height(gi);
+					- MAX(Abbrev_MenuButton_Height(gi),
+					Ascent_of_TextFont(gi) + Descent_of_TextFont(gi) + 2)
+					- 3 * ResizeArm_Height(gi);
 
 			if (paneAttr.width >= sw) {
 				needresize = True;
@@ -1056,27 +1054,25 @@ WinPane *ourWinInfo;
 	 * at the values in the hint.
 	 */
 	if (preICCCM) {
-		int	 maxDpyWidth = 2*DisplayWidth(dpy,screen);
-		int	 maxDpyHeight = 2*DisplayHeight(dpy,screen);
+		int maxDpyWidth = 2 * DisplayWidth(dpy, screen);
+		int maxDpyHeight = 2 * DisplayHeight(dpy, screen);
 
-		if (!fexisting
-		    && (normHints->flags & (USPosition|PPosition))
-		    && IsInt16(normHints->x) 
-		    && IsInt16(normHints->y)
-		    && normHints->x > -maxDpyWidth
-		    && normHints->y > -maxDpyHeight
-		    && normHints->x < maxDpyWidth
-		    && normHints->y < maxDpyHeight) {
+		if (!fexisting && (normHints->flags & (USPosition | PPosition))
+				&& IsInt16(normHints->x)
+				&& IsInt16(normHints->y)
+				&& normHints->x > -maxDpyWidth
+				&& normHints->y > -maxDpyHeight
+				&& normHints->x < maxDpyWidth && normHints->y < maxDpyHeight) {
 			paneAttr.x = normHints->x;
 			paneAttr.y = normHints->y;
 		}
-		if ((normHints->flags & (USSize|PSize)) 
-		    && IsCard16(normHints->width) 
-		    && IsCard16(normHints->height)
-		    && normHints->width >= MINSIZE
-		    && normHints->height >= MINSIZE
-		    && normHints->width < maxDpyWidth
-		    && normHints->height < maxDpyHeight) {
+		if ((normHints->flags & (USSize | PSize))
+				&& IsCard16(normHints->width)
+				&& IsCard16(normHints->height)
+				&& normHints->width >= MINSIZE
+				&& normHints->height >= MINSIZE
+				&& normHints->width < maxDpyWidth
+				&& normHints->height < maxDpyHeight) {
 			paneAttr.width = normHints->width;
 			paneAttr.height = normHints->height;
 		}
@@ -1089,22 +1085,21 @@ WinPane *ourWinInfo;
 	 */
 	cli->wmHints = MemNew(XWMHints);
 
-	if (!PropGetWMHints(dpy,window,cli->wmHints)) {
+	if (!PropGetWMHints(dpy, window, cli->wmHints)) {
 		cli->wmHints->flags = 0L;
 	}
 
 	/* 
 	 * Get the protocols in which the client will participate
 	 */
-	if (!PropGetWMProtocols(dpy,window,&(cli->protocols))) {
+	if (!PropGetWMProtocols(dpy, window, &(cli->protocols))) {
 		cli->protocols = 0;
 	}
 
-        /* 
+	/* 
 	 * Figure out what focus mode this window intends
 	 */
-	cli->focusMode = focusModeFromHintsProtocols(cli->wmHints,
-						     cli->protocols);
+	cli->focusMode = focusModeFromHintsProtocols(cli->wmHints, cli->protocols);
 
 	ClientSetInstanceVars(cli);
 
@@ -1122,31 +1117,29 @@ WinPane *ourWinInfo;
 	 * window to be the leader of its own group.
 	 */
 	if (transient) {
-	    winGeneric = WIGetInfo(cli->transientFor);
-	    if (winGeneric != NULL &&
-	    	winGeneric->core.client->groupmask == GROUP_DEPENDENT)
+		winGeneric = WIGetInfo(cli->transientFor);
+		if (winGeneric != NULL &&
+				winGeneric->core.client->groupmask == GROUP_DEPENDENT)
 			cli->groupid = winGeneric->core.client->groupid;
-	    else
+		else
 			cli->groupid = cli->transientFor;
 	}
 	else if ((cli->wmHints) && (cli->wmHints->flags & WindowGroupHint)) {
-	    winGeneric = WIGetInfo(cli->wmHints->window_group);
-	    if (winGeneric != NULL &&
-			winGeneric->core.client->groupmask == GROUP_DEPENDENT)
-		{
+		winGeneric = WIGetInfo(cli->wmHints->window_group);
+		if (winGeneric != NULL &&
+				winGeneric->core.client->groupmask == GROUP_DEPENDENT) {
 			cli->groupid = winGeneric->core.client->groupid;
 
 			dra_olwm_trace(115, "req window_group %x set to %x (DEPENDENT)\n",
-	    				cli->wmHints->window_group,
-						cli->groupid);
+					cli->wmHints->window_group, cli->groupid);
 			wanted_a_subgroup = winGeneric->core.client;
 		}
-	    else {
+		else {
 			cli->groupid = cli->wmHints->window_group;
 		}
 	}
 	else {
-	    cli->groupid = window;
+		cli->groupid = window;
 	}
 
 	/*
@@ -1171,51 +1164,53 @@ WinPane *ourWinInfo;
 	 * criteria, it's considered an independent follower.
 	 */
 
-	if (cli->groupid == window) cli->groupmask = GROUP_LEADER;
+	if (cli->groupid == window)
+		cli->groupmask = GROUP_LEADER;
 	else {
 
 		/* I inhibit subgroups */
-		if (! GroupLookup(cli->groupid)) {
+		if (!GroupLookup(cli->groupid)) {
 			dra_olwm_trace(115, "\nno group for requested group id %x\n",
 					cli->groupid);
 			/* there is no group for cli->groupid */
-	    	if ((winGeneric = WIGetInfo(cli->groupid))) {
+			if ((winGeneric = WIGetInfo(cli->groupid))) {
 				wanted_a_subgroup = winGeneric->core.client;
 				dra_olwm_trace(115, "but a WinGeneric (client=%x)\n",
-									wanted_a_subgroup);
+						wanted_a_subgroup);
 				cli->groupid = winGeneric->core.client->groupid;
 			}
 		}
 
-	    if (transient || ClientIsPopup(cli)) {
+		if (transient || ClientIsPopup(cli)) {
 			cli->groupmask = GROUP_DEPENDENT;
 			promoteDependentFollowers(window, cli->groupid);
-	    }
+		}
 		else {
 			cli->groupmask = GROUP_INDEPENDENT;
-	    }
+		}
 	}
-	GroupAdd(cli->groupid,cli,cli->groupmask);
+	GroupAdd(cli->groupid, cli, cli->groupmask);
 
 	/* 
 	 * Officially set up the frame
 	 */
-	winFrame = MakeFrame(cli,window,&paneAttr);
+	winFrame = MakeFrame(cli, window, &paneAttr);
 
 	/*
 	 * If a client-created window then create the pane for it.  Otherwise,
 	 * call the creation callback function; this is used for pinned menus.
 	 */
 	if (ourWinInfo == NULL) {
-		winPane = MakePane(cli,winFrame,window,&paneAttr);
-	} else {
+		winPane = MakePane(cli, winFrame, window, &paneAttr);
+	}
+	else {
 		/* wieso wurde das beim Umstieg auf 64 Bit noetig ???? */
 		normHints->flags |= USPosition;
 		normHints->x = ourWinInfo->core.x;
 		normHints->y = ourWinInfo->core.y;
 
 		winPane = ourWinInfo;
-		(WinClass(winPane)->core.createcallback)(ourWinInfo,cli, winFrame);
+		(WinClass(winPane)->core.createcallback) (ourWinInfo, cli, winFrame);
 	}
 
 	/*
@@ -1228,18 +1223,18 @@ WinPane *ourWinInfo;
 	 * Otherwise, we calculate a position for the window and place it 
 	 * there.
 	 */
-	if (! (fexisting ||
-	       (clientSpecifiedPosition(normHints, &paneAttr) &&
-	       frameOnScreen(winFrame, scrInfo, paneAttr.x, paneAttr.y))))
-	{
-	    calcPosition(dpy, screen, &paneAttr, winFrame);
+	if (!(fexisting ||
+					(clientSpecifiedPosition(normHints, &paneAttr) &&
+							frameOnScreen(winFrame, scrInfo, paneAttr.x,
+									paneAttr.y)))) {
+		calcPosition(dpy, screen, &paneAttr, winFrame);
 	}
 
 	/* 
 	 * Officially set up the icon
 	 */
-	winIcon = MakeIcon(cli,window,&paneAttr);
-	winIconPane = MakeIconPane(cli,winIcon,cli->wmHints,fexisting);
+	winIcon = MakeIcon(cli, window, &paneAttr);
+	winIconPane = MakeIconPane(cli, winIcon, cli->wmHints, fexisting);
 
 	/* 
 	 * Keep track of any subwindows that need colormap installation
@@ -1249,7 +1244,7 @@ WinPane *ourWinInfo;
 	/* 
 	 * Size and generally configure the frame window tree
 	 */
-	FrameSetPosFromPane(winFrame,paneAttr.x,paneAttr.y);
+	FrameSetPosFromPane(winFrame, paneAttr.x, paneAttr.y);
 	WinCallConfig(dpy, winPane, NULL);
 
 	/* 
@@ -1257,17 +1252,17 @@ WinPane *ourWinInfo;
 	 */
 	WinCallConfig(dpy, winIconPane, NULL);
 	if (cli->wmHints != NULL)
-	    IconSetPos(winIcon,cli->wmHints->icon_x,cli->wmHints->icon_y);
+		IconSetPos(winIcon, cli->wmHints->icon_x, cli->wmHints->icon_y);
 	else
-	    IconSetPos(winIcon,0,0);
+		IconSetPos(winIcon, 0, 0);
 	WinCallConfig(dpy, winIcon, NULL);
 
-        /*
+	/*
 	 * We manually move the icon pane window, since all the configuration
 	 * has been done with the icon pane parented to root.
 	 */
-        WinRootPos(winIconPane, &tmpx, &tmpy);
-        XMoveWindow(dpy, winIconPane->core.self, tmpx, tmpy);
+	WinRootPos(winIconPane, &tmpx, &tmpy);
+	XMoveWindow(dpy, winIconPane->core.self, tmpx, tmpy);
 
 	/* 
 	 * Determine the proper initial state of the window. 
@@ -1276,22 +1271,22 @@ WinPane *ourWinInfo;
 	 * otherwise use WM_HINTS.
 	 */
 	if (fexisting &&
-	    PropGetWMState(dpy,winPane->core.self,&winState,&iconWin)) {
-	    if (winState == IconicState) {
+			PropGetWMState(dpy, winPane->core.self, &winState, &iconWin)) {
+		if (winState == IconicState) {
 			initstate = IconicState;
 		}
-	    else {
+		else {
 			initstate = NormalState;
 		}
 	}
 	else {
-	    /* For new windows, check the initial_state field of WM_HINTS. */
-	    if (cli->wmHints && (cli->wmHints->flags & StateHint)
-		&& (cli->wmHints->initial_state == IconicState)) {
-		    initstate = IconicState;
+		/* For new windows, check the initial_state field of WM_HINTS. */
+		if (cli->wmHints && (cli->wmHints->flags & StateHint)
+				&& (cli->wmHints->initial_state == IconicState)) {
+			initstate = IconicState;
 		}
-	    else {
-		    initstate = NormalState;
+		else {
+			initstate = NormalState;
 		}
 	}
 
@@ -1300,8 +1295,9 @@ WinPane *ourWinInfo;
 	 * state OR if the leader is unknown....
 	 */
 	if (cli->groupmask == GROUP_DEPENDENT && initstate == IconicState) {
-	    Client *leader = GroupLeader(cli->groupid);
-	    if (leader != NULL) {
+		Client *leader = GroupLeader(cli->groupid);
+
+		if (leader != NULL) {
 			if (leader->wmState == NormalState) {
 				initstate = NormalState;
 			}
@@ -1329,28 +1325,28 @@ WinPane *ourWinInfo;
 	 */
 	cli->wmState = initstate;
 
-	switch ( initstate ) {
-	case NormalState:
-	    XMapRaised(dpy, winFrame->core.self);
-	    XMapRaised(dpy, winPane->core.self);
-	    if (!fexisting) {
-		FrameWarpPointer(cli);
-		if (GRV.AutoInputFocus || (cli->protocols & SECONDARY_BASE))
-		    ClientSetFocus(cli, True, LastEventTime);
-		if (GRV.AutoColorFocus)
-		    LockColormap(dpy, cli, winPane);
-	    }
-	    break;
-	case IconicState:
-	    /* unmap the window in case it was mapped originally */
-	    XUnmapWindow(dpy, winPane->core.self);
-	    winPane->pcore.pendingUnmaps++;
-	    /* dependent group followers don't get their own icons */
-	    if (cli->groupmask != GROUP_DEPENDENT)
-		IconShow(cli, winIcon);
-	    break;
+	switch (initstate) {
+		case NormalState:
+			XMapRaised(dpy, winFrame->core.self);
+			XMapRaised(dpy, winPane->core.self);
+			if (!fexisting) {
+				FrameWarpPointer(cli);
+				if (GRV.AutoInputFocus || (cli->protocols & SECONDARY_BASE))
+					ClientSetFocus(cli, True, LastEventTime);
+				if (GRV.AutoColorFocus)
+					LockColormap(dpy, cli, winPane);
+			}
+			break;
+		case IconicState:
+			/* unmap the window in case it was mapped originally */
+			XUnmapWindow(dpy, winPane->core.self);
+			winPane->pcore.pendingUnmaps++;
+			/* dependent group followers don't get their own icons */
+			if (cli->groupmask != GROUP_DEPENDENT)
+				IconShow(cli, winIcon);
+			break;
 	}
-	ClientSetWMState(cli,initstate);
+	ClientSetWMState(cli, initstate);
 
 	/* 
 	 * Get the window state
@@ -1358,8 +1354,8 @@ WinPane *ourWinInfo;
 	ClientGetWindowState(cli);
 
 	/*
- 	 * Turn off prop read filtering
- 	 */
+	 * Turn off prop read filtering
+	 */
 	PropClearAvailable();
 
 	dra_colors_new_state(cli, dpy, window, wanted_a_subgroup, winFrame);
