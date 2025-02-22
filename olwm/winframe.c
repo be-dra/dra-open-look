@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.6 2025/02/09 16:19:18 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.7 2025/02/21 17:28:41 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -1621,17 +1621,14 @@ void FrameAllowEvents(Client *cli, Time time)
  *	Note that unlike most Make functions, frames are not mapped right
  *	away.
  */
-WinPaneFrame *
-MakeFrame(cli,panewin,paneattrs)
-Client *cli;
-Window panewin;		
-XWindowAttributes *paneattrs;
+WinPaneFrame *MakeFrame(Client *cli, Window panewin,
+						XWindowAttributes *paneattrs)
 {
 	Display *dpy = cli->dpy;
 	WinPaneFrame *w;
 	Window win;
-        XSetWindowAttributes attributes;
-        unsigned long   valuemask;
+	XSetWindowAttributes attributes;
+	unsigned long valuemask;
 	int wid, high;
 
 	/* create the frame window */
@@ -1641,20 +1638,20 @@ XWindowAttributes *paneattrs;
 	attributes.colormap = cli->scrInfo->colormap;
 	attributes.cursor = GRV.TargetPointer;
 
-        attributes.event_mask = ButtonPressMask | ButtonReleaseMask | 
-	    ExposureMask | ButtonMotionMask | EnterWindowMask |
-	    LeaveWindowMask | SubstructureRedirectMask | 
-	    FocusChangeMask | PropertyChangeMask;
+	attributes.event_mask = ButtonPressMask | ButtonReleaseMask |
+			ExposureMask | ButtonMotionMask | EnterWindowMask |
+			LeaveWindowMask | SubstructureRedirectMask |
+			FocusChangeMask | PropertyChangeMask;
 
-        attributes.save_under =
-	    paneattrs->save_under ||
-	    (cli->transientFor != 0 && GRV.TransientsSaveUnder);
+	attributes.save_under =
+			paneattrs->save_under ||
+			(cli->transientFor != 0 && GRV.TransientsSaveUnder);
 
-        valuemask = CWEventMask | CWSaveUnder | CWBackPixmap | CWCursor |
-	    CWBorderPixel | CWColormap;
+	valuemask = CWEventMask | CWSaveUnder | CWBackPixmap | CWCursor |
+			CWBorderPixel | CWColormap;
 
 	win = ScreenCreateWindow(cli->scrInfo, cli->scrInfo->rootid,
-				 0, 0, 1, 1, valuemask, &attributes);
+			0, 0, 1, 1, valuemask, &attributes);
 
 	/* create the associated structure */
 	w = MemNew(WinPaneFrame);
@@ -1684,24 +1681,24 @@ XWindowAttributes *paneattrs;
 	WIInstallInfo(w);
 
 	/* if there's any special marks, make them */
-	makeSpecials(cli,dpy,w,panewin,wid,high);
+	makeSpecials(cli, dpy, w, panewin, wid, high);
 
 	/* set up the titlebar */
 	if (cli->wmDecors->flags & WMDecorationHeader)
-		setTitleText(dpy,w,panewin);
+		setTitleText(dpy, w, panewin);
 
 	/* set up the footer */
 	if (cli->wmDecors->flags & WMDecorationFooter)
-		setFooterText(dpy,w,panewin);
+		setFooterText(dpy, w, panewin);
 
 #ifdef OW_I18N_L4
 	/* set up the status */
 	if (cli->wmDecors->flags & WMDecorationIMStatus)
-		setIMStatusText(dpy,w,panewin);
+		setIMStatusText(dpy, w, panewin);
 #endif /* OW_I18N_L4 */
 
-        /* Determine which menu should come up when menus are requested
-         * for this frame. */
+	/* Determine which menu should come up when menus are requested
+	 * for this frame. */
 
 	FrameSetupGrabs(cli, win, True);
 
