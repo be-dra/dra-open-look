@@ -45,7 +45,7 @@ $(KEEP_STATE_TARGET)
 
 .po.mo_$(HOSTMTYPE):
 	msgfmt --no-convert $<
-	cp $*.mo $(OPENWINHOME)/lib/locale/de/LC_MESSAGES
+	#cp $*.mo $(OPENWINHOME)/lib/locale/de/LC_MESSAGES
 	mv $*.mo $@
 
 .c.i:
