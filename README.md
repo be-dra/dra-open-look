@@ -24,6 +24,24 @@ It consists of (directories)
 
 ==============================================
 
+Apart from the sources there are also files ow_noarch.tar.xz, ow_aarch64.tar.xz and ow_x86_64.tar.xz.
+
+They contain pretty much everything from my /usr/openwin: especially the libraries and quite a few applications like
+
+fileman
+calman
+mailtool
+olws_props
+texted
+vkbd
+
+etc.
+
+Depending on your machine type, you need 
+ow_noarch.tar.xz and either ow_x86_64.tar.xz or ow_aarch64.tar.xz.
+
+==============================================
+
 Main changes since the XView sources were released:
 
 
