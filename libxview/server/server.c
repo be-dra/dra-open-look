@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.22 2025/02/05 23:09:35 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.23 2025/02/23 16:40:26 dra Exp $";
 #endif
 #endif
 
@@ -79,7 +79,6 @@ static void server_setlocale_to_c(Ollc_item *ollc);
 static void server_warning(char *msg);
 static void server_setlocale_to_default(Server_info	*server);
 #ifdef OW_I18N
-static char *server_get_locale_from_str(Ollc_from	from);
 static void server_effect_locale(Server_info *server, char	*character_set);
 #ifdef FULL_R5
 Xv_private XIMStyle	 xv_determine_im_style();
@@ -623,7 +622,6 @@ __attribute__((constructor)) static void xview_ctor(void)
 	}
 }
 
-/*ARGSUSED*/
 static int server_init(Xv_opaque parent, Xv_server server_public,
 								Attr_avlist avlist, int *unused)
 {
@@ -1286,6 +1284,45 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 
 
 #ifdef OS_HAS_LOCALE
+/*
+ * server_get_locale_from_str: Get the translated version of the
+ * Ollc_from.  Table driven will not work with xgettext(1) command,
+ * therefor have to be function instead.
+ */
+static char *server_get_locale_from_str(Ollc_from	from)
+{
+    char	*msg;
+
+    switch (from) {
+	/*
+	 * STRING_EXTRACTION - Following five (include "Unknown")
+	 * messages are short description of the how or where locale
+	 * has been sets.
+	 */
+	case OLLC_FROM_ATTR:
+	    msg = XV_MSG_CONST("application (attributes)");
+	    break;
+
+	case OLLC_FROM_CMDLINE:
+	case OLLC_FROM_RESOURCE:
+	    msg = XV_MSG_CONST("command line option or X resources");
+	    break;
+
+	case OLLC_FROM_POSIX:
+	    msg = XV_MSG_CONST("environment variable(s)");
+	    break;
+
+	case OLLC_FROM_C:
+	    msg = XV_MSG_CONST("system default (C)");
+	    break;
+
+	default:
+	    msg = XV_MSG_CONST("Unknown");
+	    break;
+    }
+    return XV_MSG_VAR(msg);
+}
+
 static void server_set_locale(Server_info  *server)
 {
 	int i;
@@ -1321,12 +1358,14 @@ static void server_set_locale(Server_info  *server)
 			oi->locale = strdup((char *)xrm_value.addr);
 			oi->from = OLLC_FROM_RESOURCE;
 
+/* 			fprintf(stderr, "%s-%d: '%s'\n", __FUNCTION__, __LINE__, oi->locale); */
 			/* das war, als ich auf das ECHTE dgettext, und das ECHTE msgfmt
 			 * umgestiegen bin
 			 */
 			if (Ollc_const[i].posix >= 0) {
 				char *result = setlocale(Ollc_const[i].posix, oi->locale);
 
+/* 				fprintf(stderr, "%s-%d: setlocale(%d, %s)\n", __FUNCTION__, __LINE__, Ollc_const[i].posix,oi->locale); */
 				if (!result) {
 					fprintf(stderr, "unsuccessfully tried to set %s to %s\n", 
 									Ollc_const[i].env , oi->locale);
@@ -1335,6 +1374,7 @@ static void server_set_locale(Server_info  *server)
 			continue;
 		}
 
+/* 		fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__); */
 		/*
 		 * For 3.1 backwards compatibility of *numeric resource, need to
 		 * check if the old resource is being used.
@@ -1351,6 +1391,7 @@ static void server_set_locale(Server_info  *server)
 			}
 		}
 
+/* 		fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__); */
 		/*
 		 * fallback to setlocale(3).
 		 */
@@ -1358,6 +1399,7 @@ static void server_set_locale(Server_info  *server)
 				&& (locale = setlocale(Ollc_const[i].posix, NULL)) != NULL) {
 			oi->locale = strdup(locale);
 			oi->from = OLLC_FROM_POSIX;
+/* 		fprintf(stderr, "%s-%d: locale=%s\n", __FUNCTION__, __LINE__, oi->locale); */
 			continue;
 		}
 
@@ -1369,6 +1411,7 @@ static void server_set_locale(Server_info  *server)
 					("Could not obtain the Basic Locale settings! - Defaulting to \"C\""));
 			oi->locale = strdup("C");
 			oi->from = OLLC_FROM_C;
+/* 		fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__); */
 			continue;
 		}
 
@@ -1379,13 +1422,11 @@ static void server_set_locale(Server_info  *server)
 		oi->from = server->ollc[OLLC_BASICLOCALE].from;
 	}
 
-#ifdef DRA_LINUX_DEBUG
-	fprintf(stderr, "in server_set_locale:\n");
-	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-		fprintf(stderr, "\t%d. locale = '%s', set from %s\n",
-				i, oi->locale, server_get_locale_from_str(oi->from));
-	}
-#endif /* DRA_LINUX_DEBUG */
+/* 	fprintf(stderr, "in server_set_locale:\n"); */
+/* 	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) { */
+/* 		fprintf(stderr, "\t%d. locale = '%s', set from %s\n", */
+/* 				i, oi->locale, server_get_locale_from_str(oi->from)); */
+/* 	} */
 }
 
 
@@ -1554,47 +1595,6 @@ static void server_effect_locale(Server_info *server, char	*character_set)
 }
 #endif /* OW_I18N */
 
-
-/*
- * server_get_locale_from_str: Get the translated version of the
- * Ollc_from.  Table driven will not work with xgettext(1) command,
- * therefor have to be function instead.
- */
-#ifdef SEEMS_UNUSED
-static char *server_get_locale_from_str(Ollc_from	from)
-{
-    char	*msg;
-
-    switch (from) {
-	/*
-	 * STRING_EXTRACTION - Following five (include "Unknown")
-	 * messages are short description of the how or where locale
-	 * has been sets.
-	 */
-	case OLLC_FROM_ATTR:
-	    msg = XV_MSG_CONST("application (attributes)");
-	    break;
-
-	case OLLC_FROM_CMDLINE:
-	case OLLC_FROM_RESOURCE:
-	    msg = XV_MSG_CONST("command line option or X resources");
-	    break;
-
-	case OLLC_FROM_POSIX:
-	    msg = XV_MSG_CONST("environment variable(s)");
-	    break;
-
-	case OLLC_FROM_C:
-	    msg = XV_MSG_CONST("system default (C)");
-	    break;
-
-	default:
-	    msg = XV_MSG_CONST("Unknown");
-	    break;
-    }
-    return XV_MSG_VAR(msg);
-}
-#endif /* SEEMS_UNUSED */
 
 
 
@@ -2283,17 +2283,20 @@ Xv_private void server_trace_set_file_line(const char *file, int line)
 Xv_private void server_trace(int level, const char *format, ...)
 {
 	Xv_server srv = xv_default_server; /* das sollte fuer alle Zwecke reichen */
-    Server_info *server = SERVER_PRIVATE(srv);
 
-	if (server->trace_proc) {
-		char buf[4000];
-		va_list pvar;
+	if (srv) {
+    	Server_info *server = SERVER_PRIVATE(srv);
 
-		va_start(pvar, format);
-		vsnprintf(buf, sizeof(buf) - 1, format, pvar);
-		va_end(pvar);
-		(server->trace_proc)(srv, level, stackptr->cur_file,
-								stackptr->cur_line, buf);
+		if (server->trace_proc) {
+			char buf[4000];
+			va_list pvar;
+
+			va_start(pvar, format);
+			vsnprintf(buf, sizeof(buf) - 1, format, pvar);
+			va_end(pvar);
+			(server->trace_proc)(srv, level, stackptr->cur_file,
+									stackptr->cur_line, buf);
+		}
 	}
 	--stackptr;
 }
