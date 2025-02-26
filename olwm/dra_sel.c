@@ -7,7 +7,7 @@
 #include "selection.h"
 #include "atom.h"
 
-char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.19 2025/02/19 16:26:58 dra Exp $";
+char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.20 2025/02/25 12:09:27 dra Exp $";
 
 extern Window NoFocusWin;
 
@@ -309,12 +309,23 @@ void dra_sel_init(Display *dpy, Window win, Time ts)
 	 * on 'PRIMARY, STRING'. If it gets something, saves this and becomes
 	 * selection owner for CLIPBOARD. If anybody asks for (CLIPBOARD, STRING),
 	 * they will get the saved string.
+	 *
+	 * I know: it would have looked much simpler and easier to provide a
+	 * translation of the form
+	 *    <KeyPress>F16: select-end(CLIPBOARD)
+	 * or, for those people who think Ctrl-c is a reasonable shortcut 
+	 * for COPY:
+	 *    c<KeyPress>c: select-end(CLIPBOARD)
+	 *
+	 * however, the inventors of xterm want the 'select-end' action to be
+	 * invoked with a mouse button event.... 
 	 */
     SelectionRegister(AtomClipBoard, handleClipboard);
     SelectionRegister(AtomPseudoClipBoard, handlePseudoSelections);
 	XSetSelectionOwner(dpy, AtomPseudoClipBoard, win, ts);
+
 	/* Now, an additional idea came into my mind: I wanted xterm to be able
-	 * to perform quick duplicate, This could be easily done by a translation
+	 * to perform quick duplicate. This could be easily done by a translation
 	 * <KeyRelease>F18: insert-selection(SECONDARY,CLIPBOARD,NIX1,NIX2,NIX3)
 	 * This will first attempt to get the SECONDARY selection, and if that
 	 * fails, the CLIPBOARD will be queried.
