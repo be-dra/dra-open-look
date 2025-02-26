@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.55 2025/02/14 09:29:31 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.57 2025/02/25 17:14:50 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -197,6 +197,8 @@ typedef void (*split_init_proc_t)(Xv_opaque, Xv_opaque, int);
 
 typedef int (*textsw_research_proc_t)(Textsw pub, struct textsw_object *priv,
 							Event *ev, Xv_opaque something);
+typedef int (*textsw_convert_proc_t)(Textsw pub, Atom rank, Atom *type,
+					Xv_opaque *data, unsigned long *length, int *format);
 
 typedef struct textsw_object {
 	long unsigned	  magic;
@@ -290,6 +292,7 @@ typedef struct textsw_object {
     Selection_owner	sel_owner[NBR_TSW_SELECTIONS];
 	int select_is_word[NBR_TSW_SELECTIONS];
     Selection_requestor	sel_req;
+	textsw_convert_proc_t convert_proc;
 
 	/* formerly static variables */
 	int point_down_within_selection;
