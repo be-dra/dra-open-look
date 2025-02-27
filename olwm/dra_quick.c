@@ -7,7 +7,7 @@
 #include "globals.h"
 #include <X11/Xatom.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.20 2025/02/19 16:52:58 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.23 2025/02/26 22:40:53 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -24,16 +24,27 @@ typedef struct _quick_dupl {
 } quick_data_t;
 
 	
-static quick_data_t *supply_quick_data(Display *dpy, ScreenInfo *scr,
-								Client *cli, Graphics_info *gi)
+static quick_data_t *supply_quick_data(Display *dpy, quick_data_t *qd,
+						Window root, Client *cli, Graphics_info *gi)
 {
 	int i;
-	quick_data_t *qd;
 	XGCValues   gcv;
 	char *delims, delim_chars[256]; /* delimiter characters */
 
-	qd = calloc(1, sizeof(quick_data_t));
-	gcv.function = GXxor;
+	if (! qd) {
+		qd = calloc(1, sizeof(quick_data_t));
+
+		/* Print the string into an array to parse the potential
+		 * octal/special characters.
+		 */
+		strcpy(delim_chars, GRV.TextDelimiterChars);
+		/* Mark off the delimiters specified */
+		for (i = 0; i < sizeof(qd->delimtab); i++) qd->delimtab[i] = False;
+		for (delims = delim_chars; *delims; delims++) {
+			qd->delimtab[(int)*delims] = True;
+		}
+	}
+
 	if (Dimension(gi) == OLGX_2D) {
 		gcv.foreground =(gi->pixvals[OLGX_BLACK] ^ gi->pixvals[OLGX_WHITE]);
 	}
@@ -41,16 +52,12 @@ static quick_data_t *supply_quick_data(Display *dpy, ScreenInfo *scr,
 		gcv.foreground = (gi->pixvals[OLGX_BLACK] ^ gi->pixvals[OLGX_BG1]);
 	}
 	qd->fs = gi->textfont;
-	qd->gc = XCreateGC(dpy, scr->rootid, GCForeground | GCFunction, &gcv);
-
-	/* Print the string into an array to parse the potential
-	 * octal/special characters.
-	 */
-	strcpy(delim_chars, GRV.TextDelimiterChars);
-	/* Mark off the delimiters specified */
-	for (i = 0; i < sizeof(qd->delimtab); i++) qd->delimtab[i] = False;
-	for (delims = delim_chars; *delims; delims++) {
-		qd->delimtab[(int)*delims] = True;
+	if (! qd->gc) {
+		gcv.function = GXxor;
+		qd->gc = XCreateGC(dpy, root, GCForeground | GCFunction, &gcv);
+	}
+	else {
+		XChangeGC(dpy, qd->gc, GCForeground, &gcv);
 	}
 
 	qd->baseline = cli->framewin->titley + 2;
@@ -176,6 +183,7 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 	char *s;
 	int sx;
 	int is_multiclick;
+	Window oldowner;
 
 	if ((event->xbutton.state & ModMaskMap[MOD_QUICKDUPL]) == 0) return False;
 
@@ -216,10 +224,8 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 	}
 	XFree((char *)data);
 
-	if (!scr->qc) {
-		scr->qc = supply_quick_data(dpy, scr, cli,
+	scr->qc = supply_quick_data(dpy, scr->qc, scr->rootid, cli,
 								WinGI(frameInfo, NORMAL_GINFO));
-	}
 	qd = scr->qc;
 
 	is_multiclick = ((event->xbutton.time - qd->last_click_time)
@@ -233,6 +239,8 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 
 	qd->xpos[0] = 0;
 	if (s) {
+		int save_startx = qd->startx, save_endx = qd->endx;
+
 		qd->startx = sx;
 		mouse_to_charpos(qd, qd->fs, event->xbutton.x, s,
 				&qd->startx, &qd->startindex);
@@ -244,12 +252,21 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 				/* really sx here ? Or rather qd->startx ???? */
 				select_word(qd, s, sx, qd->fs);
 			}
-			else if (qd->select_click_cnt > 2) {
+			else if (qd->select_click_cnt == 3) {
+				int u;
+				XCharStruct tit;
+
+				/* clean the "word underlining" */
+				XDrawLine(dpy, event->xbutton.window, qd->gc,
+					save_startx, qd->baseline, save_endx, qd->baseline);
+				
 				/* whole text */
 				qd->startindex = 0;
-				qd->startx = 0;	/* ???? INCOMPLETE */
+				qd->startx = cli->framewin->titlex;
 				qd->endindex = strlen(s) - 1;
-				qd->endx = 200;	/* ???? INCOMPLETE */
+				XTextExtents(qd->fs, frameInfo->fcore.name,
+					strlen(frameInfo->fcore.name), &u, &u, &u, &tit);
+				qd->endx = qd->startx + tit.width;
 			}
 
 			XDrawLine(dpy, event->xbutton.window, qd->gc,
@@ -265,10 +282,20 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		qd->endx = qd->startx;
 	}
 
-
 	qd->seltext[0] = '\0';
+
+	oldowner = XGetSelectionOwner(dpy, XA_SECONDARY);
+	if (oldowner != None && oldowner != frameInfo->core.self) {
+		/* without this we didn't see a SelectionClear event if
+		 * the user selected something in frame1 and then in frame2:
+		 * the underline in frame1 was not cleared.
+		 */
+		XSetSelectionOwner(dpy, XA_SECONDARY, None, event->xbutton.time);
+	}
+
 	XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self,
-			event->xbutton.time);
+									event->xbutton.time);
+
 	dra_olwm_trace(300, "own SECONDARY selection\n");
 
 	return True;
@@ -559,15 +586,13 @@ int dra_quick_handle_selection(Display *dpy, XEvent *xev,
 		XFlush(dpy);
 	}
 	else if (xev->type == SelectionClear) {
-		extern void DrawHeaderAfterQuickDuplicate(Display *dpy,
-								WinPaneFrame *frameInfo, Client *cli);
 		XSelectionClearEvent *scl = &xev->xselectionclear;
 
     	if (scl->selection != XA_SECONDARY) return 0;
 
 		qd->startindex = qd->endindex = 0;
 		qd->seltext[0] = '\0';
-		DrawHeaderAfterQuickDuplicate(dpy, frameInfo, cli);
+		XClearArea(dpy, frameInfo->core.self, 0, 0, 0, 0, True);
 	}
 	return 0;
 }
