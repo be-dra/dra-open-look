@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.7 2025/02/21 17:28:41 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.8 2025/02/26 22:39:52 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -961,13 +961,6 @@ static void drawHeader(Display *dpy,WinPaneFrame *winInfo,Client *cli, Bool sel)
     }
 
     (*func)(dpy, winInfo, cli, sel);
-}
-
-
-void DrawHeaderAfterQuickDuplicate(Display *dpy,WinPaneFrame *frameInfo,
-									Client *cli)
-{
-	drawHeader(dpy, frameInfo, cli, cli->isSelected);
 }
 
 /*
