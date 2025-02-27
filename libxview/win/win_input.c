@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.28 2025/02/05 23:34:33 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.30 2025/02/26 18:29:05 dra Exp $";
 #endif
 #endif
 
@@ -499,7 +499,7 @@ Xv_object xv_input_readevent(Xv_object window, Event *event, int block,
 
 static void prepare_drag_preview_from_xdnd(Window_info *framepriv,
 			Xv_Drawable_info *info, Xv_object window, Xv_opaque dropsite, 
-			XClientMessageEvent *clientmessage, Event *event)
+			XClientMessageEvent *clientmessage, Event *event, int evid)
 {
 	int actual_x, actual_y;
 	Xv_window realdropwin;
@@ -510,6 +510,8 @@ static void prepare_drag_preview_from_xdnd(Window_info *framepriv,
 
 	/* now we know what the 'real' target window is */
 	event_set_window(event, realdropwin);
+	event_set_action(event, ACTION_DRAG_PREVIEW);
+	event_set_id(event, evid);
 
 	(void)win_translate_xy_internal(xv_display(info),
 						xv_xid(info), dxid,
@@ -558,6 +560,84 @@ static Bool xdnd_predicate(Display *dpy, XEvent *ev, char *arg)
 		if (ev->type == KeyRelease) return TRUE;
 	}
 	return FALSE;
+}
+
+static void xdnd_drop_received(Xv_window window, Xv_server srv,
+			Xv_Drawable_info *info, XClientMessageEvent *clm, Event *event)
+{
+	Window_info *framepriv = WIN_PRIVATE(window);
+	Xv_window realdropwin;
+	int actual_x, actual_y;
+	Window dxid;
+	XClientMessageEvent origxcl;
+
+	SERVERTRACE((TLXDND, "XdndDrop from %lx to %lx\n", clm->data.l[0],
+												clm->window));
+
+	/* we need that later ...
+	 * This is one of the misdesigns of the Xdnd protocol:
+	 * ++ first phase: client messages (preview and drop)
+	 * ++ second phase: selection requests, no need to remember the drag source
+	 * ++ third phase: this is the misfit: need to send a XdndFinished
+	 *    message to the drag source... a selection request
+	 *    for the target, say, XdndFinished would have served the same
+	 *    purpose...
+	 *    In XView, we use the target _SUN_DRAGDROP_DONE or
+	 *    _SUN_SELECTION_END for that purpose.
+	 */
+	framepriv->xdnd_sender = clm->data.l[0];
+
+	/* I want to dress this as if it were a real XView-Drop */
+
+	/* first, we save the original client message */
+	origxcl = *clm;
+
+	/* here, we must provide (at least) everything that is
+	 * inspected in dnd_decode_drop()
+	 */
+	clm->message_type = xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_TRIGGER");
+	clm->data.l[0] = xv_get(srv,
+							SERVER_ATOM, "XdndSelection");
+	clm->data.l[1] = origxcl.data.l[2];
+	clm->data.l[2] = framepriv->droppos;
+	clm->data.l[3] = (long)xv_get(framepriv->dropped_site,
+													DROP_SITE_ID);
+	clm->data.l[4] = DND_TRANSIENT_FLAG; /* no DND_ACK_FLAG !! */
+
+	realdropwin = xv_get(framepriv->dropped_site, XV_OWNER);
+	dxid = (Window)xv_get(realdropwin, XV_XID);
+
+	/* now we know what the 'real' target window is */
+	event_set_window(event, realdropwin);
+
+	win_translate_xy_internal(xv_display(info),
+							xv_xid(info), dxid,
+							framepriv->drop_x, framepriv->drop_y,
+							&actual_x, &actual_y);
+
+	event_set_x(event, actual_x);
+	event_set_y(event, actual_y);
+
+	/* we still want to be able to recognize it... */
+	event_set_flags(event, DND_IS_XDND);
+
+	/* save off the clientmessage info into the window struct */
+	window_set_client_message(realdropwin, clm);
+
+	/* Set the time of the drop event */
+	event->ie_time.tv_sec =
+						((unsigned long)clm->data.l[1]) /
+						1000;
+	event->ie_time.tv_usec =
+						(((unsigned long)clm->data.l[1]) %
+						 1000) * 1000;
+
+	if (framepriv->dropaction == XDND_ACTION_MOVE) {
+		event_set_action(event, ACTION_DRAG_MOVE);
+	}
+	else {
+		event_set_action(event, ACTION_DRAG_COPY);
+	}
 }
 #endif /* NO_XDND */
 
@@ -622,22 +702,22 @@ Xv_object xview_x_input_readevent(Display *display, Event *event,
 #ifdef NO_XDND
 				XWindowEvent(display, xv_xid(info), xevent_mask, rep);
 #else /* NO_XDND */
-				/* hier muss man auch eingehende ClientMessages bekommmen
-				 * (XdndStatus) - das geht aber mit XWindowEvent nicht
+				/* here we want to receive ClientMessages (XdndStatus) -
+				 * this doesn't work with XWindowEvent
 				 */
 
-				/* im DnD-Fall kommen wir hier mit 
+				/* In the DnD-case we come here with
 				 * ButtonMotionMask | ButtonReleaseMask | KeyReleaseMask
-				 * daher - allerdings koennte es auch andere Aufrufe geben,
-				 * die eventuell MEHR Events wollen. Wir sind mal vorsichtig
-				 * (wegen xdnd_predicate !) und machen hier eine Pruefung
+				 * - however, there might be other calls that want MORE
+				 * events. We are careful (because of xdnd_predicate !)
+				 * and perform a check here.
 				 */
 				unsigned int testmask =
 						~(ButtonMotionMask | ButtonReleaseMask |
 						KeyReleaseMask);
 
 				if ((testmask & xevent_mask) != 0) {
-					/* not the call from dnd.c, we do in the old
+					/* this is not the call from dnd.c, we do in the old
 					 * way, using XWindowEvent
 					 */
 					XWindowEvent(display, xv_xid(info), (long)xevent_mask, rep);
@@ -2485,6 +2565,16 @@ static int process_clientmessage_events(Xv_object window,
 		default:
 #ifdef NO_XDND
 #else /* NO_XDND */
+			/* The general idea of integration of Xdnd into our XView
+			 * Drag&Drop word is to disguise Xdnd client messages as
+			 * XView events (ACTION_DRAG_PREVIEW and ACTION_DRAG_COPY or
+			 * ACTION_DRAG_MOVE) according to the registered drop sites
+			 * and dispatch those events. So, for our applications 
+			 * everything looks like a normal XView dnd operation.
+			 * We have to remember that Xdnd events are always sent to
+			 * top level windows = frames in XView - so, the parameter
+			 * "window" we have here is always a frame.
+			 */
 			if (clientmessage->message_type ==
 					xv_get(server_public, SERVER_ATOM, "XdndPosition")) {
 				int site_hit = FALSE;
@@ -2562,6 +2652,7 @@ static int process_clientmessage_events(Xv_object window,
 
 					if (found) {
 						framepriv->dropped_site = winDropInterest->drop_item;
+						/* we have found a matching drop site */
 						site_hit = TRUE;
 						break;
 					}
@@ -2571,8 +2662,8 @@ static int process_clientmessage_events(Xv_object window,
 				cM.type = ClientMessage;
 				cM.display = clientmessage->display;
 				cM.format = 32;
-				cM.message_type = xv_get(server_public,
-										SERVER_ATOM, "XdndStatus");
+				cM.message_type = xv_get(server_public, SERVER_ATOM,
+															"XdndStatus");
 				cM.window = clientmessage->data.l[0];
 				cM.data.l[0] = clientmessage->window;
 				cM.data.l[1] = (site_hit ? 1 : 0);
@@ -2592,13 +2683,12 @@ static int process_clientmessage_events(Xv_object window,
 					 * framepriv->dropped_site:
 					 */
 					if (last_dropped_site == framepriv->dropped_site) {
-						/* + if they are equal, we can dispatch this as a
-						 *   LOC_DRAG - preview event.
+						/* if they are equal, we can dispatch this as a
+						 * LOC_DRAG - preview event.
 						 */
 						prepare_drag_preview_from_xdnd(framepriv, info, window,
-								framepriv->dropped_site, clientmessage, event);
-						event_set_id(event, LOC_DRAG);
-						event_set_action(event, ACTION_DRAG_PREVIEW);
+								framepriv->dropped_site, clientmessage, event,
+								LOC_DRAG);
 					}
 					else {
 						if (last_dropped_site) {
@@ -2606,18 +2696,14 @@ static int process_clientmessage_events(Xv_object window,
 							event_set_xevent(&art_ev, (XEvent *)clientmessage);
 							prepare_drag_preview_from_xdnd(framepriv, info,
 									window, last_dropped_site, clientmessage,
-									&art_ev);
-
-							event_set_id(&art_ev, LOC_WINEXIT);
-							event_set_action(&art_ev, ACTION_DRAG_PREVIEW);
+									&art_ev, LOC_WINEXIT);
 							/* we don't want to remember for the next time */
 		    				win_post_event(event_window(&art_ev), &art_ev,
 												NOTIFY_IMMEDIATE);
 						}
 						prepare_drag_preview_from_xdnd(framepriv, info, window,
-							framepriv->dropped_site, clientmessage, event);
-						event_set_id(event, LOC_WINENTER);
-						event_set_action(event, ACTION_DRAG_PREVIEW);
+							framepriv->dropped_site, clientmessage, event,
+							LOC_WINENTER);
 					}
 				}
 				else {
@@ -2627,10 +2713,8 @@ static int process_clientmessage_events(Xv_object window,
 					 */
 					if (last_dropped_site != XV_NULL) {
 						prepare_drag_preview_from_xdnd(framepriv, info, window,
-								last_dropped_site, clientmessage, event);
-
-						event_set_id(event, LOC_WINEXIT);
-						event_set_action(event, ACTION_DRAG_PREVIEW);
+								last_dropped_site, clientmessage, event,
+								LOC_WINEXIT);
 					}
 					else {
 						/* no hit, we want no further actions */
@@ -2645,9 +2729,9 @@ static int process_clientmessage_events(Xv_object window,
 					xv_get(server_public, SERVER_ATOM, "XdndEnter"))
 			{
 		    	Window_info *framepriv = WIN_PRIVATE(window);
-				/* XdndEnter is pretty useless because it doesn't contain
-				 * a position, so, we can't assign it to a drop site (window)
-				 * it only means 'the frame has been entered'.
+				/* XdndEnter is pretty useless (for us) because it doesn't
+				 * contain a position, so, we can't assign it to a drop site
+				 * (window). It only means 'the frame has been entered'.
 				 * [[[ For future use:
 				 *    data.l[0]         source window
 				 *    data.l[1]         bit0 = 'more than 3' high byte: version
@@ -2667,8 +2751,7 @@ static int process_clientmessage_events(Xv_object window,
 				 */
 				framepriv->dropped_site = XV_NULL;
 
-				if ((clientmessage->data.l[1] & 1) != 0)
-				{
+				if ((clientmessage->data.l[1] & 1) != 0) {
 					Atom type;
 					int format;
 					unsigned long i, nitems;
@@ -2699,8 +2782,8 @@ static int process_clientmessage_events(Xv_object window,
 			{
 		    	Window_info *framepriv = WIN_PRIVATE(window);
 				/* XdndLeave is pretty useless because it doesn't contain
-				 * a position, so, we can't assign it to a drop site (window)
-				 * it only means 'the frame has been left'.
+				 * a position, so, we can't assign it to a drop site (window).
+				 * It only means 'the frame has been left'.
 				 * [[[ For future use:
 				 *    data.l[0]         source window  ]]]
 				 */
@@ -2709,10 +2792,8 @@ static int process_clientmessage_events(Xv_object window,
 							clientmessage->data.l[0], clientmessage->window));
 				if (framepriv->dropped_site) {
 					prepare_drag_preview_from_xdnd(framepriv, info, window, 
-							framepriv->dropped_site, clientmessage, event);
-
-					event_set_id(event, LOC_WINEXIT);
-					event_set_action(event, ACTION_DRAG_PREVIEW);
+							framepriv->dropped_site, clientmessage, event,
+							LOC_WINEXIT);
 				}
 				/* but we can at least forget anything */
 				framepriv->dropped_site = XV_NULL;
@@ -2721,79 +2802,12 @@ static int process_clientmessage_events(Xv_object window,
 					xv_get(server_public, SERVER_ATOM, "XdndDrop"))
 			{
 		    	Window_info *framepriv = WIN_PRIVATE(window);
-				Xv_window realdropwin;
-				int actual_x, actual_y;
-				Window dxid;
-    			XClientMessageEvent origxcl;
 
 				SERVERTRACE((TLXDND, "XdndDrop from %lx to %lx\n",
 							clientmessage->data.l[0], clientmessage->window));
 				if (! framepriv->dropped_site) return TRUE;
-
-    			/* we need that later ...
-				 * This is one of the misdesigns of the Xdnd protocol:
-				 * ++ first client messages (preview and drop)
-				 * ++ second selection requests, no need to remember
-				 *    the drag source
-				 * ++ third: this is the misfit: need to send a XdndFinished
-				 *    message to the drag source... a selection request
-				 *    for, say, XdndDone would have served the same function...
-				 *    In XView, we use _SUN_DRAGDROP_DONE for that purpose.
-				 */
-				framepriv->xdnd_sender = clientmessage->data.l[0];
-
-				/* I want to dress this as if it were a real XView-Drop */
-		
-				/* first, we save the original client message */
-				origxcl = *clientmessage;
-		
-				/* here, we must provide (at least) everything that is
-				 * inspected in dnd_decode_drop()
-				 */
-				clientmessage->message_type = xv_get(server_public,
-										SERVER_ATOM, "_SUN_DRAGDROP_TRIGGER");
-				clientmessage->data.l[0] = xv_get(server_public,
-										SERVER_ATOM, "XdndSelection");
-				clientmessage->data.l[1] = origxcl.data.l[2];
-				clientmessage->data.l[2] = framepriv->droppos;
-				clientmessage->data.l[3] = (long)xv_get(framepriv->dropped_site,
-																DROP_SITE_ID);
-				clientmessage->data.l[4] = DND_TRANSIENT_FLAG; /* no DND_ACK_FLAG !! */
-
-				realdropwin = xv_get(framepriv->dropped_site, XV_OWNER);
-				dxid = (Window)xv_get(realdropwin, XV_XID);
-
-   				/* now we know what the 'real' target window is */
-				event_set_window(event, realdropwin);
-
-				(void)win_translate_xy_internal(xv_display(info),
-										xv_xid(info), dxid,
-										framepriv->drop_x, framepriv->drop_y,
-										&actual_x, &actual_y);
-
-				event_set_x(event, actual_x);
-				event_set_y(event, actual_y);
-
-				/* we still want to be able to recognize it... */
-				event_set_flags(event, DND_IS_XDND);
-
-				/* save off the clientmessage info into the window struct */
-				window_set_client_message(realdropwin, clientmessage);
-
-				/* Set the time of the drop event */
-				event->ie_time.tv_sec =
-									((unsigned long)clientmessage->data.l[1]) /
-									1000;
-				event->ie_time.tv_usec =
-									(((unsigned long)clientmessage->data.l[1]) %
-									 1000) * 1000;
-
-				if (framepriv->dropaction == XDND_ACTION_MOVE) {
-					event_set_action(event, ACTION_DRAG_MOVE);
-				}
-				else {
-					event_set_action(event, ACTION_DRAG_COPY);
-				}
+				xdnd_drop_received(window, server_public, info,
+										clientmessage, event);
 			}
 			else if (clientmessage->message_type ==
 					xv_get(server_public, SERVER_ATOM, "XdndFinished"))
