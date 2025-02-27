@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.18 2025/02/12 11:41:12 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.19 2025/02/26 18:53:04 dra Exp $ ";
 #endif
 #endif
 
@@ -374,7 +374,6 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	 * if the applications ask the dragger to convert 'text/plain'
 	 * konqueror will send a newline separated list of all
 	 * dragged filenames.
-	 * (This example might show you that they are blind idiots...)
 	 * So, our idea here is to record a notion of a 'file drag'
 	 * (probably from fileman or similar) and evaluate this
 	 * later (in delegate_convert_selection) in case the 
