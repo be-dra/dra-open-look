@@ -603,7 +603,7 @@ OFILES.panel.3	= ${CFILES.panel.3:%.c=%.o}
 OFILES.panel.4	= ${CFILES.panel.4:%.c=%.o}
 
 HDRSPUBLIC=     panel.h
-HDRSPRIVATE=    panel_impl.h item_impl.h p_lst_impl.h
+HDRSPRIVATE=    panel_impl.h item_impl.h
 
 SRCS=p_utl.c panel.c p_set.c p_get.c p_event.c p_scroll.c p_select.c p_paint.c p_image.c p_public.c p_compat.c p_view.c item.c item_set.c item_get.c p_txt.c p_choice.c p_btn.c p_msg.c p_slider.c p_list.c p_num_txt.c p_gauge.c p_ambtn.c p_drop.c p_mlinetxt.c panabwb.c pansw.c ${CFILES.panel.3}
 OBJS=$(SRCS:.c=.o)
@@ -760,7 +760,6 @@ depend::
 retrieve: $(HEADERS)
 
 item_impl.h: RCS/item_impl.h,v
-p_lst_impl.h: RCS/p_lst_impl.h,v
 panel.h: RCS/panel.h,v
 panel_impl.h: RCS/panel_impl.h,v
 
@@ -2772,7 +2771,6 @@ p_list.o: p_list.c /usr/include/stdc-predef.h /usr/include/ctype.h \
  ../../build/include/xview_private/xv_list.h \
  /usr/include/X11/Xresource.h \
  ../../build/include/xview_private/svr_atom.h \
- ../../build/include/xview_private/p_lst_impl.h \
  ../../build/include/xview/openmenu.h \
  ../../build/include/xview_private/draw_impl.h \
  ../../build/include/xview/cms.h \
