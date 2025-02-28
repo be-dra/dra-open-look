@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.5 2025/01/07 19:20:22 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.6 2025/02/27 13:24:42 dra Exp $ ";
 #endif
 #endif
 
@@ -20,11 +20,15 @@ static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.
 #include <xview_private/dndimpl.h>
 #include <xview_private/xv_list.h>
 #include <xview_private/sel_impl.h>
+#include <xview_private/svr_impl.h>
 #ifdef NO_XDND
 #else /* NO_XDND */
 #  include <xview_private/windowimpl.h>
 extern int DndSendEvent(Display *dpy, XEvent *, const char *);
 #endif /* NO_XDND */
+
+/* trace level: */
+#define TLXDND 411
 
 static int SendACK(Selection_requestor sel_req, Event *ev);
 
@@ -214,6 +218,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 									SERVER_ATOM, "XdndActionCopy");
 				cM.data.l[3] = 0;
 				cM.data.l[4] = 0;
+				SERVERTRACE((TLXDND, "sending XdndFinished\n"));
 				DndSendEvent(cM.display, (XEvent *)&cM, "XdndFinished");
 			}
 		}
