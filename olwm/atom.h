@@ -1,7 +1,7 @@
 #ifndef _OLWM_ATOM_H
 #define _OLWM_ATOM_H
 
-/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.13 2025/02/19 16:52:58 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.14 2025/03/01 12:25:26 dra Exp $ */
 enum atom_index_t {
 	OL_AtomColorMapWindows,
 	OL_AtomWMState,
@@ -109,6 +109,7 @@ enum atom_index_t {
 #ifdef ALWAYS_IN_JOURNALLING_MODE_QUESTION
 	OL_AtomJOURNAL_SYNC,
 #endif
+	_NET_WM_ICON,
 	_OL_LAST_ATOM
 };
 
@@ -220,5 +221,6 @@ extern Atom atoms[];
 #ifdef ALWAYS_IN_JOURNALLING_MODE_QUESTION
 #define AtomJOURNAL_SYNC atoms[OL_AtomJOURNAL_SYNC]
 #endif
+#define Atom_NET_WM_ICON atoms[_NET_WM_ICON]
 
 #endif /* _OLWM_ATOM_H */
