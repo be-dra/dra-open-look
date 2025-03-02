@@ -12,6 +12,7 @@ char winipane_c_sccsid[] = "@(#) winipane.c V1.1 94/11/02 21:13:46";
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <X11/Xos.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -64,13 +65,11 @@ Display	*dpy;
 WinIconPane *winInfo;
 {
 	Window pane = winInfo->core.self;
-	Client *cli = winInfo->core.client;
 	GC  gc;
-	XGCValues gcv;
 
 #ifdef BUSY_ICONS_DID_NOT_WORK
 	My attempt to implement busy icons did not work, because all the
-	XView client create their own icon windows - and we have no control
+	XView clients create their own icon windows - and we have no control
 	here about **when** the clients repaint their icons.
 #endif /* BUSY_ICONS_DID_NOT_WORK */
 
@@ -119,6 +118,7 @@ WinGeneric *winInfo;
 Bool focus;
 {
 	/* REMIND: change background pixel of pane window */
+	return 0;
 }
 
 /*
@@ -139,6 +139,7 @@ WinIconPane *winInfo;
 				  winInfo->core.self);
 	}
 	MemFree(winInfo);
+	return 0;
 }
 
 /*
@@ -162,6 +163,7 @@ WinIconPane *winInfo;
                         winInfo->core.dirtyconfig&(CWX|CWY|CWWidth|CWHeight), &xwc);
                 winInfo->core.dirtyconfig &= ~(CWX|CWY|CWWidth|CWHeight);
         }
+	return 0;
 }
 
 
@@ -260,18 +262,57 @@ int w, h;
 		win->core.height = h;
 		win->core.dirtyconfig |= CWHeight;
 	}
+	return 0;
 }
 
-static int
-eventEnterNotify(dpy, event, winInfo)
-Display		*dpy;
-XEvent		*event;
-WinIconPane	*winInfo;
+static int eventEnterNotify(Display *dpy, XEvent *event, WinIconPane *winInfo)
 {
-    if (event->xany.type == EnterNotify)
+    if (event->xany.type == EnterNotify) {
         ColorWindowCrossing(dpy, event, winInfo);
+	}
+
+	return 0;
 }
 
+static Pixmap createNetPixmap(Display *dpy, ScreenInfo *scr,
+							unsigned long *netIcon, int netIconLength,
+							int preferredsize)
+{
+	XImage *xima;
+	Pixmap pix;
+	int siz, r, c;
+	char *pixdata;
+
+	siz = (int)netIcon[0];
+	while (siz != preferredsize) {
+		netIcon += (siz * siz + 2);
+		netIconLength -= (siz * siz + 2);
+		if (netIconLength <= 0) {
+			/* preferredsize not found */
+			return None;
+		}
+		siz = (int)netIcon[0];
+	}
+
+	pix = XCreatePixmap(dpy, scr->rootid, siz, siz,
+							DefaultDepth(dpy, scr->screen));      
+
+	pixdata = calloc(sizeof(unsigned long), siz * siz);
+	xima = XCreateImage(dpy, scr->visual, DefaultDepth(dpy, scr->screen),
+    				ZPixmap, 0, pixdata, siz, siz, BitmapPad(dpy), 0);
+
+	netIcon += 2;
+	for (r = 0; r < siz; r++) {
+		for (c = 0; c < siz; c++) {
+			XPutPixel(xima, r, c, *netIcon++);
+		}
+	}
+	XPutImage(dpy, pix, scr->gc[ROOT_GC], xima, 0, 0, 0, 0, siz, siz);
+	XDestroyImage(xima);
+	/* we die here:                   free(pixdata); */
+
+	return pix;
+}
 
 /***************************************************************************
 * global functions
@@ -280,15 +321,11 @@ WinIconPane	*winInfo;
 /*
  * MakeIconPane  -- create the pane window. Return a WinGeneric structure.
  */
-WinIconPane *
-MakeIconPane(cli,par,wmHints,fexisting)
-Client *cli;
-WinGeneric *par;
-XWMHints *wmHints;
-Bool fexisting;
+WinIconPane * MakeIconPane(Client *cli, WinGeneric *par, XWMHints *wmHints,
+							Bool fexisting, Window clwin)
 {
 	WinIconPane *w;
-	WinIconFrame	*frame = (WinIconFrame *)par;
+	WinIconFrame *frame = (WinIconFrame *) par;
 	XSetWindowAttributes xswa;
 	XWindowAttributes attr;
 	long valuemask;
@@ -296,9 +333,9 @@ Bool fexisting;
 	Window winRoot;
 	unsigned int borderWidth, depthReturn;
 	Display *dpy = cli->dpy;
-	int screen = cli->screen;
 	Status status;
 	WinGeneric *info;
+	unsigned long *netIcon, netIconLength;
 
 	/* this event mask is used for wm-created icon panes */
 #define ICON_PANE_EVENT_MASK						\
@@ -309,13 +346,13 @@ Bool fexisting;
 	w = MemNew(WinIconPane);
 	w->class = &classIconPane;
 	w->core.kind = WIN_ICONPANE;
-	WinAddChild(par,w);
+	WinAddChild(par, w);
 	w->core.children = NULL;
 	w->core.client = cli;
 	w->core.x = 0;
 	w->core.y = 0;
 	w->core.colormap = cli->scrInfo->colormap;
-	w->core.dirtyconfig = CWX|CWY|CWWidth|CWHeight;
+	w->core.dirtyconfig = CWX | CWY | CWWidth | CWHeight;
 	w->core.exposures = NULL;
 	w->core.helpstring = "olwm:Icon";
 	w->iconClientWindow = False;
@@ -323,112 +360,141 @@ Bool fexisting;
 	w->iconPixmapDepth = 1;
 	w->iconMask = None;
 
-	frame->fcore.panewin = (WinGenericPane *)w;
+	frame->fcore.panewin = (WinGenericPane *) w;
 
 	/* first try the client's icon window hint */
 
 	if (wmHints && (wmHints->flags & IconWindowHint)) {
-	    iconPane = wmHints->icon_window;
-	    info = WIGetInfo(iconPane);
-	    if (info != NULL && info->core.kind != WIN_PANE) {
-		ErrorWarning(GetString(
-		    "An existing window was named as an icon window."));
-	    } else {
-		if (info != NULL)
-		    StateWithdrawn(info->core.client,TimeFresh());
-
-		status = XGetWindowAttributes(dpy, iconPane, &attr);
-
-		if (status) {
-		    w->core.x = attr.x;
-		    w->core.y = attr.y;
-		    /* constrain to max icon size */
-			if (cli->protocols & ALLOW_ICON_SIZE) {
-				w->core.width = MIN(attr.width,ICON_MAX_WIDTH);
-				w->core.height = MIN(attr.height,ICON_MAX_HEIGHT);
-			}
-			else {
-		    	w->core.width = MIN(attr.width,GRV.MaximumIconSize);
-		    	w->core.height = MIN(attr.height,GRV.MaximumIconSize);
-			}
-		    w->core.colormap = attr.colormap;
-
-		    w->iconClientWindow = True;
-		    XSelectInput(dpy, iconPane,
-			ButtonPressMask | ButtonReleaseMask |
-			ButtonMotionMask | EnterWindowMask);
-
-		    if (attr.border_width != NORMAL_BORDERWIDTH)
-			XSetWindowBorderWidth(dpy, iconPane,
-					      NORMAL_BORDERWIDTH);
-		    goto goodicon;
+		iconPane = wmHints->icon_window;
+		info = WIGetInfo(iconPane);
+		if (info != NULL && info->core.kind != WIN_PANE) {
+			ErrorWarning(GetString
+					("An existing window was named as an icon window."));
 		}
-		ErrorWarning(GetString(
-		    "An invalid window was named as an icon window."));
-	    }
+		else {
+			if (info != NULL)
+				StateWithdrawn(info->core.client, TimeFresh());
+
+			status = XGetWindowAttributes(dpy, iconPane, &attr);
+
+			if (status) {
+				w->core.x = attr.x;
+				w->core.y = attr.y;
+				/* constrain to max icon size */
+				if (cli->protocols & ALLOW_ICON_SIZE) {
+					w->core.width = MIN(attr.width, ICON_MAX_WIDTH);
+					w->core.height = MIN(attr.height, ICON_MAX_HEIGHT);
+				}
+				else {
+					w->core.width = MIN(attr.width, GRV.MaximumIconSize);
+					w->core.height = MIN(attr.height, GRV.MaximumIconSize);
+				}
+				w->core.colormap = attr.colormap;
+
+				w->iconClientWindow = True;
+				XSelectInput(dpy, iconPane,
+						ButtonPressMask | ButtonReleaseMask |
+						ButtonMotionMask | EnterWindowMask);
+
+				if (attr.border_width != NORMAL_BORDERWIDTH) {
+					XSetWindowBorderWidth(dpy, iconPane, NORMAL_BORDERWIDTH);
+				}
+				goto goodicon;
+			}
+			ErrorWarning(GetString
+					("An invalid window was named as an icon window."));
+		}
+	}
+
+	/* do we have that monster _NET_WM_ICON ? */
+	if (PropGetNetWMIcon(dpy, clwin, &netIcon, &netIconLength)) {
+		Pixmap netpix = createNetPixmap(dpy, cli->scrInfo,
+								netIcon, netIconLength, 64);
+
+		if (netpix != None) {
+			w->core.x = 0;
+			w->core.y = 0;
+			w->core.width = w->core.height = 64;
+			borderWidth = 0;
+			depthReturn = DefaultDepth(dpy, cli->scrInfo->screen);      
+
+			/* build icon pixmap window */
+			xswa.border_pixel = 0;
+			xswa.colormap = cli->scrInfo->colormap;
+			xswa.event_mask = ICON_PANE_EVENT_MASK;
+			valuemask = CWBorderPixel | CWColormap | CWEventMask;
+
+			iconPane = ScreenCreateWindow(cli->scrInfo, WinRootID(par),
+					0, 0, w->core.width, w->core.height, valuemask, &xswa);
+
+			w->iconPixmap = netpix;
+			w->iconPixmapDepth = depthReturn;
+			w->ignoreWMHintsIcon = True;
+
+			goto goodicon;
+		}
 	}
 
 	/* try the client's icon pixmap hint */
-
 	if (wmHints && (wmHints->flags & IconPixmapHint)) {
-	    status = XGetGeometry(dpy, wmHints->icon_pixmap, &winRoot,
-		&(w->core.x), &(w->core.y),
-		&(w->core.width), &(w->core.height),
-		&borderWidth, &depthReturn);
+		status = XGetGeometry(dpy, wmHints->icon_pixmap, &winRoot,
+				&(w->core.x), &(w->core.y),
+				&(w->core.width), &(w->core.height),
+				&borderWidth, &depthReturn);
 
-	    if (status) {
-		/* build icon pixmap window */
-		xswa.border_pixel = 0;
-		xswa.colormap = cli->scrInfo->colormap;
-		xswa.event_mask = ICON_PANE_EVENT_MASK;
-		valuemask = CWBorderPixel | CWColormap | CWEventMask;
+		if (status) {
+			/* build icon pixmap window */
+			xswa.border_pixel = 0;
+			xswa.colormap = cli->scrInfo->colormap;
+			xswa.event_mask = ICON_PANE_EVENT_MASK;
+			valuemask = CWBorderPixel | CWColormap | CWEventMask;
 
-		/* constrain to max icon size */
-		if (cli->protocols & ALLOW_ICON_SIZE) {
-			w->core.width = MIN(w->core.width,ICON_MAX_WIDTH);
-			w->core.height = MIN(w->core.height,ICON_MAX_HEIGHT);
+			/* constrain to max icon size */
+			if (cli->protocols & ALLOW_ICON_SIZE) {
+				w->core.width = MIN(w->core.width, ICON_MAX_WIDTH);
+				w->core.height = MIN(w->core.height, ICON_MAX_HEIGHT);
+			}
+			else {
+				w->core.width = MIN(w->core.width, GRV.MaximumIconSize);
+				w->core.height = MIN(w->core.height, GRV.MaximumIconSize);
+			}
+
+			iconPane = ScreenCreateWindow(cli->scrInfo, WinRootID(par),
+					0, 0, w->core.width, w->core.height, valuemask, &xswa);
+
+			w->iconPixmap = wmHints->icon_pixmap;
+			w->iconPixmapDepth = depthReturn;
+
+			/* check for the icon mask */
+
+			if (wmHints->flags & IconMaskHint) {
+				int junkx, junky;
+				unsigned int junkw, junkh;
+
+				status = XGetGeometry(dpy, wmHints->icon_mask, &winRoot,
+						&junkx, &junky, &junkw, &junkh,
+						&borderWidth, &depthReturn);
+
+				if (status && depthReturn == 1)
+					w->iconMask = wmHints->icon_mask;
+				else
+					ErrorWarning(GetString
+							("An invalid pixmap was named as an icon mask"));
+			}
+			goto goodicon;
+
 		}
 		else {
-			w->core.width = MIN(w->core.width,GRV.MaximumIconSize);
-			w->core.height = MIN(w->core.height,GRV.MaximumIconSize);
+			ErrorWarning(GetString
+					("An invalid pixmap was named as an icon pixmap"));
 		}
-
-		iconPane = ScreenCreateWindow(cli->scrInfo, WinRootID(par),
-		    0, 0, w->core.width, w->core.height,
-		    valuemask, &xswa);
-		    
-		w->iconPixmap = wmHints->icon_pixmap;
-		w->iconPixmapDepth = depthReturn;
-
-		/* check for the icon mask */
-
-		if (wmHints->flags & IconMaskHint) {
-		    int junkx, junky;
-		    unsigned int junkw, junkh;
-
-		    status = XGetGeometry(dpy, wmHints->icon_mask, &winRoot,
-			&junkx, &junky, &junkw, &junkh,
-			&borderWidth, &depthReturn);
-
-		    if (status && depthReturn == 1)
-			w->iconMask = wmHints->icon_mask;
-		    else
-			ErrorWarning(GetString(
-			    "An invalid pixmap was named as an icon mask"));
-		}
-		goto goodicon;
-
-	    } else {
-		ErrorWarning(GetString(
-		    "An invalid pixmap was named as an icon pixmap"));
-	    }
 	}
 
 	/* use the default icon */
 
 	w->iconClientWindow = False;
 	w->iconPixmap = IPANE_DEFAULT_PIXMAP(w);
-	w->iconMask   = IPANE_DEFAULT_MASK(w);
+	w->iconMask = IPANE_DEFAULT_MASK(w);
 
 	w->core.x = w->core.y = 0;
 	w->core.width = cli->scrInfo->dfltIconWidth;
@@ -438,12 +504,11 @@ Bool fexisting;
 	xswa.colormap = cli->scrInfo->colormap;
 	xswa.event_mask = ICON_PANE_EVENT_MASK;
 	valuemask = CWBorderPixel | CWColormap | CWEventMask;
-	
-	iconPane = ScreenCreateWindow(cli->scrInfo, WinRootID(par),
-	    0, 0, w->core.width, w->core.height,
-	    valuemask, &xswa);
 
-goodicon:
+	iconPane = ScreenCreateWindow(cli->scrInfo, WinRootID(par),
+			0, 0, w->core.width, w->core.height, valuemask, &xswa);
+
+  goodicon:
 
 	w->core.self = iconPane;
 
@@ -485,11 +550,7 @@ Display *dpy;
 /*
  * Set the icon pane's pixmap.
  */
-void
-IconPaneSetPixmap(dpy,winInfo,pixmap)
-	Display		*dpy;
-	WinIconPane	*winInfo;
-	Pixmap		pixmap;
+void IconPaneSetPixmap(Display *dpy, WinIconPane	*winInfo, Pixmap pixmap)
 {
 	if (winInfo->iconClientWindow)
 		return;
@@ -497,9 +558,11 @@ IconPaneSetPixmap(dpy,winInfo,pixmap)
 	if (pixmap == None || pixmap == winInfo->iconPixmap)
 		return;
 
+	if (winInfo->ignoreWMHintsIcon) return;
+
 	if (winInfo->iconMask == IPANE_DEFAULT_MASK(winInfo))
 		winInfo->iconMask = None;
-
+ 
 	winInfo->iconPixmap = pixmap;
 	winInfo->iconPixmapDepth = 1;
 }
@@ -518,6 +581,8 @@ IconPaneSetMask(dpy,winInfo,mask)
 
 	if (mask == None || mask == winInfo->iconMask)
 		return;
+
+	if (winInfo->ignoreWMHintsIcon) return;
 
 	if (winInfo->iconPixmap == IPANE_DEFAULT_PIXMAP(winInfo))
 		winInfo->iconPixmap = None;
