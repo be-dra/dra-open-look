@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.7 2025/02/21 22:22:00 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.8 2025/03/01 15:01:26 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -1234,7 +1234,8 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
 	 * Officially set up the icon
 	 */
 	winIcon = MakeIcon(cli, window, &paneAttr);
-	winIconPane = MakeIconPane(cli, winIcon, cli->wmHints, fexisting);
+	winIconPane = MakeIconPane(cli, (WinGeneric *)winIcon, cli->wmHints,
+									fexisting, window);
 
 	/* 
 	 * Keep track of any subwindows that need colormap installation
