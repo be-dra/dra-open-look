@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.2 2025/02/20 18:53:45 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.3 2025/03/01 15:00:41 dra Exp $ */
 /* #ident	"@(#)olwm.h	26.27	93/06/28 SMI" */
 
 /*
@@ -12,6 +12,8 @@
 
 #ifndef _OLWM_OLWM_H
 #define _OLWM_OLWM_H
+
+#include <X11/Xutil.h>
 
 #ifndef ABS
 #define ABS(a)		(((a) < 0) ? -(a) : (a))
@@ -171,7 +173,9 @@ extern void IconHide();
 extern void IconSetPos();
 
 /* icon pane functions */
-extern struct _winiconpane *MakeIconPane();
+extern struct _winiconpane *MakeIconPane(struct _client *cli,
+						struct _wingeneric *par, XWMHints *wmHints,
+						Bool fexisting, Window clwin);
 
 /* pane functions */
 extern struct _winpane *MakePane();
