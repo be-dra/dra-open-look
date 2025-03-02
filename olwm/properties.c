@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.4 2025/02/20 20:57:15 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.6 2025/03/01 15:00:17 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -193,6 +193,10 @@ PropListAvailable(dpy,win)
 		else if (atomList[i] == AtomRightIMStatus)
 			retFlags |= OLRightIMStatusAvail;
 #endif
+		else if (atomList[i] == Atom_NET_WM_ICON)
+			retFlags |= NetWMIconAvail;
+		else if (atomList[i] == AtomWinColors)
+			retFlags |= OLWinColorsAvail;
 	}
 
 	XFree((char *)atomList);
@@ -310,11 +314,7 @@ PropGetWMClass(dpy,win,class,instance)
 /*
  * PropGetWMHints - get the WM_HINTS property
  */
-Bool
-PropGetWMHints(dpy,win,wmHints)
-	Display		*dpy;
-	Window		win;
-	XWMHints	*wmHints;
+Bool PropGetWMHints(Display *dpy, Window win, XWMHints	*wmHints)
 {
 	XWMHints *prop;
 
@@ -559,15 +559,27 @@ PropSetWMState(dpy,win,state,iconwin)
 		PropModeReplace,(unsigned char *)data,2);
 }
 
+Bool PropGetNetWMIcon(Display *dpy, Window win, unsigned long **much,
+									unsigned long *length)
+{
+	unsigned long *data, rest;
+
+	if (!PropAvailable(win, NetWMIconAvail)) return False;
+	data = GetWindowProperty(dpy, win, Atom_NET_WM_ICON, 0L, ENTIRE_CONTENTS,
+						XA_CARDINAL, 32, length, &rest);
+
+	if (! data) return False;
+
+	*much = data;
+
+	return True;
+}
+
 #define OL_WINDOW_STATE_LENGTH (sizeof(OLWindowState)/sizeof(unsigned long))
 /*
  * PropGetOLWindowState - reads the _SUN_WINDOW_STATE property
  */
-Bool
-PropGetOLWindowState(dpy,win,winState)
-	Display		*dpy;
-	Window		win;
-	OLWindowState	*winState;		/* RETURN */
+Bool PropGetOLWindowState(Display *dpy, Window win, OLWindowState	*winState) /* RETURN */
 {
 	OLWindowState	*newState;
 	unsigned int	nItems,remain;
