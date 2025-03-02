@@ -1,5 +1,5 @@
 /* #ident	"@(#)atom.c	26.24	93/06/28 SMI" */
-char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.14 2025/02/19 16:52:58 dra Exp $";
+char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.15 2025/03/01 12:25:28 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -187,6 +187,7 @@ void InitAtoms(Display *dpy)
 #ifdef ALWAYS_IN_JOURNALLING_MODE_QUESTION
 		, "JOURNAL_SYNC"    /* just to keep this silent */
 #endif
+		, "_NET_WM_ICON"
 	};
 
 	XInternAtoms(dpy, ans, sizeof(ans)/sizeof(ans[0]), False, atoms);
