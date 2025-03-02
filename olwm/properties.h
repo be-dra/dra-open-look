@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.4 2025/03/01 14:59:59 dra Exp $ */
 /* #ident	"@(#)properties.h	26.8	93/06/28 SMI" */
 
 /*
@@ -55,6 +55,8 @@ typedef struct {
 #define OLLeftIMStatusAvail	(1<<15)
 #define OLRightIMStatusAvail	(1<<16)
 #endif
+#define NetWMIconAvail     	(1<<17)
+#define OLWinColorsAvail		(1<<18)
 
 #define ENTIRE_CONTENTS		(10000000L)
 
