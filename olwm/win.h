@@ -1,4 +1,4 @@
-/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.4 2025/03/01 21:54:15 dra Exp $ */
+/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.5 2025/03/02 17:58:27 dra Exp $ */
 /* #ident	"@(#)win.h	26.43	93/06/28 SMI" */
 
 /*
@@ -488,11 +488,6 @@ typedef struct _winmenu {
 	struct _menuInfo *menuInfo;
 	Bool		ignoreNextExpose;
 	Window shadow;                   /* used only for the real menu */
-#ifdef REMAP_SHADOW_DID_NOT_WORK
-	Bool        ignoreNextUnobscure; /* only for menu shadows */
-	struct _winmenu *shadowInfo;     /* used only for the real menu */
-	struct _winmenu *realInfo;       /* used only for the shadow */
-#endif /* REMAP_SHADOW_DID_NOT_WORK */
 } WinMenu;
 
 typedef struct _winpinmenu {	/* pinned menus are a subclass of panes */
