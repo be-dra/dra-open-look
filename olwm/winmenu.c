@@ -1,4 +1,4 @@
-char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.3 2025/03/01 22:00:51 dra Exp $";
+char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.4 2025/03/02 17:58:52 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -128,15 +128,12 @@ destroyMenu(dpy, winInfo)
  * MakeMenu  -- create the WinMenu structure and windows but does not
  *		map them.
  */
-WinMenu *
-MakeMenu(dpy, winInfo)
-	Display		*dpy;
-	WinGeneric 	*winInfo;
+WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 {
 	WinMenu 	*w;
 	Window 		win;
-        unsigned long 	valuemask;
-        XSetWindowAttributes attributes;
+    unsigned long 	valuemask;
+    XSetWindowAttributes attributes;
 	Client		*cli = winInfo->core.client;
 
 	/* create the associated structure */
@@ -198,11 +195,7 @@ MakeMenu(dpy, winInfo)
 
 		attributes.background_pixmap = None; /* transparent */
 		attributes.save_under = True;
-		attributes.event_mask = ExposureMask
-#ifdef REMAP_SHADOW_DID_NOT_WORK
-								| VisibilityChangeMask
-#endif /* REMAP_SHADOW_DID_NOT_WORK */
-								;
+		attributes.event_mask = ExposureMask;
 		valuemask = CWEventMask | CWBackPixmap |  CWSaveUnder;
 		w->shadow = XCreateWindow(dpy, WinRootID(winInfo),
 				0, 0, 8, 8,
@@ -215,10 +208,6 @@ MakeMenu(dpy, winInfo)
 		sh->core.self = w->shadow;
 
 		WIInstallInfo(sh);
-#ifdef REMAP_SHADOW_DID_NOT_WORK
-		w->shadowInfo = sh;
-		sh->realInfo = w;
-#endif /* REMAP_SHADOW_DID_NOT_WORK */
 	}
 
 	XDefineCursor( dpy, win, GRV.MenuPointer );
@@ -230,15 +219,8 @@ static void draw_menu_shadow(Display *dpy, WinMenu *winInfo)
 {
 	if (winInfo->shadow) {
 		XFillRectangle(dpy, winInfo->shadow,
-			winInfo->core.client->scrInfo->gc[MENU_SHADOW_GC],
-			winInfo->core.width - MENU_SHADOW_OFFSET, 0,
-			MENU_SHADOW_OFFSET + 1,
-			winInfo->core.height - MENU_SHADOW_OFFSET + 1);
-		XFillRectangle(dpy, winInfo->shadow,
-			winInfo->core.client->scrInfo->gc[MENU_SHADOW_GC],
-			0, winInfo->core.height - MENU_SHADOW_OFFSET,
-			winInfo->core.width + 1,
-			MENU_SHADOW_OFFSET + 1);
+				winInfo->core.client->scrInfo->gc[MENU_SHADOW_GC],
+				0, 0, winInfo->core.width + 1, winInfo->core.height + 1);
 	}
 }
 
@@ -317,55 +299,6 @@ int MenuEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
 	return 0;
 }
 
-#ifdef REMAP_SHADOW_DID_NOT_WORK
-/* this was an attempt to cleanup "dirt effects" on menu shadows
- * when you fiddle around with submenus.
- * However, the "unmap and remap" sequence didn't solve this...
- * Apart from not working, we saw cases where (for some reason) menus 
- * had no shadow at all ....
- */
-static int menuEventVisibility(Display *dpy, XEvent *event, WinGeneric *winInfo)
-{
-	WinMenu *wm;
-
-	if (winInfo->core.kind != WIN_MENU) return 0;
-	wm = (WinMenu *)winInfo;
-
-	if (wm->shadow) {
-		/* we never come here, because we didn't select VisibilityChangeMask */
-		return 0; /* this is the 'real' menu */
-	}
-
-	switch (event->xvisibility.state) {
-		case VisibilityUnobscured:
-			fprintf(stderr, "shadow %lx: unobscured\n", event->xvisibility.window);
-			if (wm->ignoreNextUnobscure) {
-				wm->ignoreNextUnobscure = False;
-			}
-			else {
-				Window sh = event->xvisibility.window;
-				XWindowChanges	changes;
-
-				fprintf(stderr, "shadow %lx: REMAP\n", event->xvisibility.window);
-				XUnmapWindow(dpy, sh);
-				changes.sibling = wm->realInfo->core.self;
-				changes.stack_mode = Below;
-				XConfigureWindow(dpy, sh, CWSibling|CWStackMode, &changes);
-				wm->ignoreNextUnobscure = True;
-				XMapWindow(dpy, sh);
-			}
-			break;
-		case VisibilityPartiallyObscured:
-			fprintf(stderr, "shadow %lx: partobscured\n", event->xvisibility.window);
-			break;
-		case VisibilityFullyObscured:
-			fprintf(stderr, "shadow %lx: fullobscured\n", event->xvisibility.window);
-			break;
-	}
-	return 0;
-}
-#endif /* REMAP_SHADOW_DID_NOT_WORK */
-
 /*
  * drawMenu -- draw the menu window
  */
@@ -402,9 +335,6 @@ void MenuInit(Display *dpy)
 	classMenu.core.xevents[KeyPress] = eventKeyPress;
 	classMenu.core.xevents[KeyRelease] = eventKeyRelease;
 	classMenu.core.xevents[Expose] = MenuEventExpose;
-#ifdef REMAP_SHADOW_DID_NOT_WORK
-	classMenu.core.xevents[VisibilityNotify] = menuEventVisibility;
-#endif /* REMAP_SHADOW_DID_NOT_WORK */
 	classMenu.core.drawfunc = MenuEventDrawMenu;
 	classMenu.core.destroyfunc = destroyMenu;
 	classMenu.core.heightfunc = NULL;
