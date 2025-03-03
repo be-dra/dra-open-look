@@ -302,9 +302,10 @@ static Pixmap createNetPixmap(Display *dpy, ScreenInfo *scr,
     				ZPixmap, 0, pixdata, siz, siz, BitmapPad(dpy), 0);
 
 	netIcon += 2;
-	for (r = 0; r < siz; r++) {
-		for (c = 0; c < siz; c++) {
-			XPutPixel(xima, r, c, *netIcon++);
+	for (c = 0; c < siz; c++) {
+		for (r = 0; r < siz; r++) {
+			/* ignore the alpha channel */
+			XPutPixel(xima, r, c, 0xffffff & *netIcon++);
 		}
 	}
 	XPutImage(dpy, pix, scr->gc[ROOT_GC], xima, 0, 0, 0, 0, siz, siz);
@@ -408,13 +409,22 @@ WinIconPane * MakeIconPane(Client *cli, WinGeneric *par, XWMHints *wmHints,
 
 	/* do we have that monster _NET_WM_ICON ? */
 	if (PropGetNetWMIcon(dpy, clwin, &netIcon, &netIconLength)) {
-		Pixmap netpix = createNetPixmap(dpy, cli->scrInfo,
-								netIcon, netIconLength, 64);
+		int size = 64;
+		Pixmap netpix;
+
+		netpix = createNetPixmap(dpy, cli->scrInfo,
+								netIcon, netIconLength, size);
+
+		if (netpix == None) {
+			size = 48;
+			netpix = createNetPixmap(dpy, cli->scrInfo,
+								netIcon, netIconLength, size);
+		}
 
 		if (netpix != None) {
 			w->core.x = 0;
 			w->core.y = 0;
-			w->core.width = w->core.height = 64;
+			w->core.width = w->core.height = size;
 			borderWidth = 0;
 			depthReturn = DefaultDepth(dpy, cli->scrInfo->screen);      
 
