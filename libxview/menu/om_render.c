@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.8 2025/02/10 21:40:02 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.9 2025/03/03 20:01:55 dra Exp $";
 #endif
 #endif
 
@@ -109,7 +109,6 @@ static void feedback(Xv_menu_info *m,
     int             n,		/* index of current menu item */
     Menu_feedback   state);
 static void menu_window_paint(Xv_menu_info *m, Xv_Window window);
-static void menu_shadow_paint(Xv_Window window);
 static void paint_menu_item(Xv_menu_info *m,
     int             n,		/* current menu item number */
     Menu_feedback   feedback_state
@@ -357,6 +356,59 @@ static int compute_dimensions(Xv_menu_info *menu, int iwidth, int iheight,
 }
 
 /* ------------------------------------------------------------------------- */
+
+static void menu_shadow_paint(Xv_Window shadowwin)
+{
+	Display *dpy;
+	Xv_Drawable_info *info;
+	Rect rect;
+	GC  shadow_gc;
+	GC *gc_list;
+	Xv_object screen = xv_get(shadowwin, XV_SCREEN);
+	XID xid;
+	Pixmap pix;
+
+	DRAWABLE_INFO_MACRO(shadowwin, info);
+	dpy = xv_display(info);
+	xid = xv_xid(info);
+
+	/* Create the shadow's 75% gray pattern Graphics Context */
+	gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, shadowwin);
+	shadow_gc = gc_list[SCREEN_MENUSHADOW_GC];
+
+	/* Fill in shadow window with shadow pattern */
+	rect = *(Rect *) xv_get(shadowwin, WIN_RECT);
+	pix = (Pixmap)xv_get(shadowwin, XV_KEY_DATA, MENU_SHADOW_PIXMAP);
+	if (! pix) {
+		XFillRectangle(dpy, xid, shadow_gc, 0, 0,
+						(unsigned)rect.r_width + 1,
+						(unsigned)rect.r_height + 1);
+
+		pix = XCreatePixmap(dpy, xid, (unsigned)rect.r_width + 1,
+						(unsigned)rect.r_height + 1, xv_depth(info));
+		XCopyArea(dpy, xid, pix, gc_list[SCREEN_SET_GC], 0, 0,
+						(unsigned)rect.r_width + 1, (unsigned)rect.r_height + 1,
+						0, 0);
+		xv_set(shadowwin, XV_KEY_DATA, MENU_SHADOW_PIXMAP, pix, NULL);
+	}
+	else {
+		XCopyArea(dpy, pix, xid, gc_list[SCREEN_SET_GC], 0, 0,
+						(unsigned)rect.r_width + 1, (unsigned)rect.r_height + 1,
+						0, 0);
+	}
+}
+
+
+static void menu_shadow_event_proc(Xv_Window shadowwin, Event *event)
+{
+	Xv_menu_info *m;
+
+	m = (Xv_menu_info *) xv_get(shadowwin, XV_KEY_DATA, MENU_SHADOW_MENU);
+	if (!m || !m->group_info) return;
+
+	if (m->group_info->client_window && event_id(event) == WIN_REPAINT)
+		menu_shadow_paint(shadowwin);
+}
 
 /*
  * Menu_render modifies the inputevent parameter iep. It should contain the
@@ -1762,10 +1814,19 @@ static void cleanup(register Xv_menu_info *m, Cleanup_mode cleanup_mode)
 				m->window = 0;
 			}
 			if (m->shadow_window) {
+				Pixmap pix = (Pixmap)xv_get(m->shadow_window, XV_KEY_DATA,
+									MENU_SHADOW_PIXMAP);
+
 				xv_set(m->shadow_window, XV_SHOW, FALSE, NULL);
+				if (pix) {
+					xv_set(m->shadow_window,
+							XV_KEY_DATA, MENU_SHADOW_PIXMAP, XV_NULL,
+							NULL);
+					XFreePixmap(xv_display(info), pix);
+				}
 				screen_set_cached_window_busy(xv_screen(info), m->shadow_window,
 									FALSE);
-				m->shadow_window = 0;
+				m->shadow_window = XV_NULL;
 			}
 			SERVERTRACE((44, "SERVER_JOURNALLING?\n"));
 			if (xv_get(xv_server(info), SERVER_JOURNALLING)) {
@@ -2831,18 +2892,6 @@ void menu_window_event_proc(Xv_Window window, Event *event)
 }
 
 
-void menu_shadow_event_proc(Xv_Window window, Event *event)
-{
-	Xv_menu_info *m;
-
-	m = (Xv_menu_info *) xv_get(window, XV_KEY_DATA, MENU_SHADOW_MENU);
-	if (!m || !m->group_info)
-		return;
-	if (m->group_info->client_window && event_id(event) == WIN_REPAINT)
-		menu_shadow_paint(window);
-}
-
-
 static void menu_window_paint(Xv_menu_info *m, Xv_Window window)
 {
 	register int i;
@@ -3043,34 +3092,6 @@ static void menu_window_paint(Xv_menu_info *m, Xv_Window window)
 			paint_menu_item(m, i, feedback_state);
 		}
 	}
-}
-
-
-static void menu_shadow_paint(Xv_Window window)
-{
-	Display *display;
-	Xv_Drawable_info *info;
-	Rect rect;
-	GC  shadow_gc;
-	GC *gc_list;
-	Xv_object screen = xv_get(window, XV_SCREEN);
-	XID xid;
-
-	DRAWABLE_INFO_MACRO(window, info);
-	display = xv_display(info);
-	xid = xv_xid(info);
-
-	/* Create the shadow's 75% gray pattern Graphics Context */
-	gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, window);
-	shadow_gc = gc_list[SCREEN_MENUSHADOW_GC];
-
-	/* Fill in shadow window with shadow pattern */
-	rect = *(Rect *) xv_get(window, WIN_RECT);
-	XFillRectangle(display, xid, shadow_gc, rect.r_width - MENU_2D_SHADOW, 0,
-						MENU_2D_SHADOW + 1,
-						(unsigned)rect.r_height - MENU_2D_SHADOW + 1);
-	XFillRectangle(display, xid, shadow_gc, 0, rect.r_height - MENU_2D_SHADOW,
-						(unsigned)rect.r_width + 1, MENU_2D_SHADOW + 1);
 }
 
 
