@@ -1,4 +1,4 @@
-char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.4 2025/03/02 17:58:52 dra Exp $";
+char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.5 2025/03/03 14:18:40 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -34,6 +34,7 @@ char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.4 2025/03/02
 
 /* function vector for menu windows */
 static ClassMenu classMenu;
+static ClassGeneric classShadow;
 
 /***************************************************************************
 *  private event functions
@@ -108,13 +109,19 @@ eventMotionNotify(dpy, event, winInfo)
  * destroyMenu -- destroy the menu window resources and free any allocated
  *	data.
  */
-static int
-destroyMenu(dpy, winInfo)
-	Display		*dpy;
-	WinMenu 	*winInfo;
+static int destroyMenu(Display *dpy, WinMenu *winInfo)
 {
 	XUndefineCursor(dpy, winInfo->core.self);
 	XDestroyWindow(dpy, winInfo->core.self);
+
+	if (winInfo->shadow) {
+		WinShadow *sh = winInfo->shadow;
+
+		XDestroyWindow(dpy, sh->core.self);
+		if (sh->saveShadowPix) XFreePixmap(dpy, sh->saveShadowPix);
+		MemFree(sh);
+	}
+
 	MemFree(winInfo);
 	return 0;
 }
@@ -176,11 +183,11 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 	WIInstallInfo(w);
 
 	{
-		WinMenu 	*sh;
+		WinShadow 	*sh;
 
 		/* create the associated structure */
-		sh = MemNew(WinMenu);
-		sh->class = &classMenu;
+		sh = MemNew(WinShadow);
+		sh->class = &classShadow;
 		sh->core.kind = WIN_MENU;
 		sh->core.children = NULL;
 		sh->core.client = cli;
@@ -188,7 +195,6 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 		sh->core.y = 0;
 		sh->core.width = 8;
 		sh->core.height = 8;
-		/* REMIND - is dirtyconfig necessary??? */
 		sh->core.dirtyconfig = CWX|CWY|CWWidth|CWHeight;
 		sh->core.exposures = NULL;
 		sh->core.helpstring = (char *)0;
@@ -197,7 +203,7 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 		attributes.save_under = True;
 		attributes.event_mask = ExposureMask;
 		valuemask = CWEventMask | CWBackPixmap |  CWSaveUnder;
-		w->shadow = XCreateWindow(dpy, WinRootID(winInfo),
+		sh->core.self = XCreateWindow(dpy, WinRootID(winInfo),
 				0, 0, 8, 8,
 				0,
 				WinDepth(winInfo),
@@ -205,9 +211,10 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 				WinVisual(winInfo),
 				valuemask,
 				&attributes);
-		sh->core.self = w->shadow;
+		sh->saveShadowPix = None;
 
 		WIInstallInfo(sh);
+		w->shadow = sh;
 	}
 
 	XDefineCursor( dpy, win, GRV.MenuPointer );
@@ -218,9 +225,22 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 static void draw_menu_shadow(Display *dpy, WinMenu *winInfo)
 {
 	if (winInfo->shadow) {
-		XFillRectangle(dpy, winInfo->shadow,
-				winInfo->core.client->scrInfo->gc[MENU_SHADOW_GC],
-				0, 0, winInfo->core.width + 1, winInfo->core.height + 1);
+		WinShadow *sh = winInfo->shadow;
+
+		if (sh->saveShadowPix == None) {
+			XFillRectangle(dpy, sh->core.self,
+					sh->core.client->scrInfo->gc[MENU_SHADOW_GC],
+					0, 0, winInfo->core.width + 1, winInfo->core.height + 1);
+		}
+		else {
+			ScreenInfo *scr = winInfo->core.client->scrInfo;
+
+			XCopyArea(dpy, sh->saveShadowPix, sh->core.self,
+							scr->gc[FOREGROUND_GC],
+							0, 0,
+							winInfo->core.width + 1, winInfo->core.height + 1,
+							0, 0);
+		}
 	}
 }
 
@@ -243,12 +263,20 @@ void MapMenuWindow(Display *dpy, WinMenu *winInfo, MenuInfo	*menuInfo)
 	XConfigureWindow(dpy,winInfo->core.self, CWX|CWY|CWWidth|CWHeight,&changes);
 
 	if (winInfo->shadow) {
+		WinShadow *sh = winInfo->shadow;
+
 		/* map shadow below menu window */
 		changes.x = menuInfo->menuX + MENU_SHADOW_OFFSET;
 		changes.y = menuInfo->menuY + MENU_SHADOW_OFFSET;
-		XConfigureWindow(dpy,winInfo->shadow, CWX|CWY|CWWidth|CWHeight,
+
+		sh->core.x = changes.x;
+		sh->core.y = changes.y;
+		sh->core.width = menuInfo->menuWidth;
+		sh->core.height = menuInfo->menuHeight;
+		XConfigureWindow(dpy, sh->core.self, CWX|CWY|CWWidth|CWHeight,
 											&changes);
-		XMapRaised(dpy, winInfo->shadow);
+		XMapRaised(dpy, sh->core.self);
+		/* obviously NOT too early */
 		draw_menu_shadow(dpy, winInfo);
 	}
 
@@ -265,10 +293,17 @@ void MapMenuWindow(Display *dpy, WinMenu *winInfo, MenuInfo	*menuInfo)
  */
 void UnmapMenuWindow(Display *dpy, WinMenu *winInfo)
 {
+	if (winInfo->shadow) {
+		WinShadow *sh = winInfo->shadow;
+
+		XUnmapWindow(dpy,sh->core.self);
+		if (sh->saveShadowPix) {
+			XFreePixmap(dpy, sh->saveShadowPix);
+			sh->saveShadowPix = None;
+		}
+	}
 	XUnmapWindow(dpy,winInfo->core.self);
 	XFlush(dpy);
-/* 	usleep(999999); */
-	if (winInfo->shadow) XUnmapWindow(dpy,winInfo->shadow);
 	winInfo->menuInfo = (MenuInfo *)NULL;
 }
 
@@ -276,22 +311,27 @@ void UnmapMenuWindow(Display *dpy, WinMenu *winInfo)
 int MenuEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
 {
 	MenuInfo *mInfo = NULL;
+	WinMenu *wm = NULL;
 
 	dra_olwm_trace(740, "MenuEventExpose(%lx)\n", winInfo);
 
-	if (winInfo->core.kind == WIN_MENU)
-		mInfo = ((WinMenu *) winInfo)->menuInfo;
-	else
+	if (winInfo->core.kind == WIN_MENU) {
+		wm = (WinMenu *)winInfo;
+		mInfo = wm->menuInfo;
+	}
+	else {
 		mInfo = ((WinPinMenu *) winInfo)->menuInfo;
+	}
 
-	if (mInfo == NULL)	/*not yet reparented */
+	if (mInfo == NULL) { /*not yet reparented */
 		WinEventExpose(dpy, event, winInfo);
+	}
 	else {
 		SetMenuRedrawHints(dpy, event, mInfo);
 
 		if (event->xexpose.count == 0) {
 			if (winInfo->core.kind == WIN_MENU) {
-				draw_menu_shadow(dpy, (WinMenu *) winInfo);
+				draw_menu_shadow(dpy, wm);
 			}
 			DrawMenuWithHints(dpy, mInfo);
 		}
@@ -321,6 +361,39 @@ int MenuEventDrawMenu(Display *dpy, WinGeneric *winInfo)
 	return 0;
 }
 
+static int ShadowEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
+{
+	dra_olwm_trace(740, "ShadowEventExpose(%lx)\n", winInfo);
+
+	if (event->xexpose.count == 0) {
+		WinShadow *wm = (WinShadow *)winInfo;
+
+		if (wm->saveShadowPix == None) {
+			ScreenInfo *scr = winInfo->core.client->scrInfo;
+
+			XFillRectangle(dpy, wm->core.self,
+					wm->core.client->scrInfo->gc[MENU_SHADOW_GC],
+					0, 0, winInfo->core.width + 1, winInfo->core.height + 1);
+
+			wm->saveShadowPix = XCreatePixmap(dpy, wm->core.self,
+					wm->core.width + 1, wm->core.height + 1,
+					WinDepth(winInfo));
+			XCopyArea(dpy, wm->core.self, wm->saveShadowPix,
+					scr->gc[FOREGROUND_GC], 0, 0,
+					wm->core.width + 1, wm->core.height + 1, 0, 0);
+		}
+		else {
+			ScreenInfo *scr = winInfo->core.client->scrInfo;
+
+			XCopyArea(dpy, wm->saveShadowPix, winInfo->core.self,
+							scr->gc[FOREGROUND_GC], 0, 0,
+							winInfo->core.width + 1, winInfo->core.height + 1,
+							0, 0);
+		}
+	}
+	return 0;
+}
+
 
 /*
  * MenuInit - initialize WinMenu class functions
@@ -339,4 +412,11 @@ void MenuInit(Display *dpy)
 	classMenu.core.destroyfunc = destroyMenu;
 	classMenu.core.heightfunc = NULL;
 	classMenu.core.widthfunc = NULL;
+
+	classShadow.core.kind = WIN_SHADOW;
+	classShadow.core.xevents[Expose] = ShadowEventExpose;
+	classShadow.core.drawfunc = NULL;
+	classShadow.core.destroyfunc = NULL;
+	classShadow.core.heightfunc = NULL;
+	classShadow.core.widthfunc = NULL;
 }
