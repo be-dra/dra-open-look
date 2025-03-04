@@ -1,4 +1,4 @@
-/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.2 2024/07/01 15:38:12 dra Exp $	*/
+/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.3 2025/03/03 19:33:15 dra Exp $	*/
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL_NOTICE 
@@ -191,6 +191,7 @@ typedef enum {
 	MENU_PULLDOWN		= MENU_ATTR(ATTR_INT, 			228),
 	MENU_SHADOW_MENU	= MENU_ATTR(ATTR_OPAQUE,		230),
 	MENU_SHADOW_GC		= MENU_ATTR(ATTR_OPAQUE,		231),
+	MENU_SHADOW_PIXMAP  = MENU_ATTR(ATTR_OPAQUE,		232),
 	MENU_WINDOW_MENU	= MENU_ATTR(ATTR_OPAQUE,		233),
 	MENU_VERTICAL_LINE	= MENU_ATTR(ATTR_INT,			234),
 	/*
