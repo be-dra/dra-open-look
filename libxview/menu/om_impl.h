@@ -1,4 +1,4 @@
-/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.2 2024/05/23 11:05:04 dra Exp $	*/
+/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.3 2025/03/03 20:00:20 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -318,7 +318,6 @@ Pkg_private Notify_value menu_client_window_event_proc(
     Xv_Window       win,	/* menu client window */
     Notify_event ev, Notify_arg      arg, Notify_event_type type);
 Pkg_private void menu_done(Xv_menu_info *m);
-Pkg_private void menu_shadow_event_proc(Xv_Window window, Event *event);
 Pkg_private void menu_window_event_proc(Xv_Window window, Event *event);
 Pkg_private void menu_destroys(Xv_menu_info *m, void (*destroy_proc) (Xv_menu_info *, Attr_attribute));
 Pkg_private void menu_item_destroys(Xv_menu_item_info *mi, void (*destroy_proc) (Menu_item, Attr_attribute));
