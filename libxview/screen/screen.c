@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.13 2025/02/12 20:42:13 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.14 2025/03/03 19:08:33 dra Exp $ ";
 #endif
 #endif
 
@@ -750,56 +750,54 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
  */
 Xv_private Xv_Window screen_get_cached_window(Xv_Screen screen_public,
     Notify_func	event_proc, int borders, int transp, Visual *visual,
-    int	*new_window)
+    int	*is_new_window)
 {
-    Screen_info    *screen = SCREEN_PRIVATE(screen_public);
-    Xv_cached_window *cached_window;
+	Screen_info *screen = SCREEN_PRIVATE(screen_public);
+	Xv_cached_window *cached_window;
 
-    for (cached_window = screen->cached_windows; cached_window != NULL;
-	 cached_window = cached_window->next) {
-	if (cached_window->busy == FALSE &&
-	    cached_window->borders == (short) borders &&
-	    cached_window->transparent == (short) transp &&
-	    XVisualIDFromVisual(cached_window->visual) == 
-	        XVisualIDFromVisual(visual)) {
-	    cached_window->busy = TRUE;
-	    *new_window = FALSE;
-	    return ((Xv_Window) cached_window->window);
+	for (cached_window = screen->cached_windows; cached_window != NULL;
+			cached_window = cached_window->next) {
+		if (cached_window->busy == FALSE &&
+				cached_window->borders == (short)borders &&
+				cached_window->transparent == (short)transp &&
+				XVisualIDFromVisual(cached_window->visual) ==
+				XVisualIDFromVisual(visual)) {
+			cached_window->busy = TRUE;
+			*is_new_window = FALSE;
+			return ((Xv_Window) cached_window->window);
+		}
 	}
-    }
 
-    *new_window = TRUE;
-    cached_window = (Xv_cached_window *) xv_alloc(Xv_cached_window);
+	*is_new_window = TRUE;
+	cached_window = (Xv_cached_window *) xv_alloc(Xv_cached_window);
 
 	if (transp) {
-    	cached_window->window = (Xv_Window) xv_create(
-					xv_get(screen_public, XV_ROOT), WINDOW,
-					WIN_BIT_GRAVITY, ForgetGravity,
-					WIN_TRANSPARENT,
-					WIN_BORDER, borders,
-        			XV_VISUAL, visual,						  
-					WIN_NOTIFY_SAFE_EVENT_PROC, event_proc,
-					WIN_TOP_LEVEL_NO_DECOR, TRUE,
-					WIN_SAVE_UNDER, TRUE,
-					XV_SHOW, FALSE,
-					NULL);
+		cached_window->window = xv_create(xv_get(screen_public,XV_ROOT), WINDOW,
+				WIN_BIT_GRAVITY, ForgetGravity,
+				WIN_TRANSPARENT,
+				WIN_BORDER, borders,
+				XV_VISUAL, visual,
+				WIN_NOTIFY_SAFE_EVENT_PROC, event_proc,
+				WIN_TOP_LEVEL_NO_DECOR, TRUE,
+				WIN_SAVE_UNDER, TRUE,
+				XV_SHOW, FALSE,
+				NULL);
 	}
 	else {
-    	cached_window->window = (Xv_Window) xv_create(
-					xv_get(screen_public, XV_ROOT), WINDOW,
-					WIN_BIT_GRAVITY, ForgetGravity,
-					WIN_BORDER, borders,
-        			XV_VISUAL, visual,						  
-					WIN_NOTIFY_SAFE_EVENT_PROC, event_proc,
-					WIN_TOP_LEVEL_NO_DECOR, TRUE,
-					WIN_SAVE_UNDER, TRUE,
-					XV_SHOW, FALSE,
-					NULL);
+		cached_window->window = xv_create(xv_get(screen_public,XV_ROOT), WINDOW,
+				WIN_BIT_GRAVITY, ForgetGravity,
+				WIN_BORDER, borders,
+				XV_VISUAL, visual,
+				WIN_NOTIFY_SAFE_EVENT_PROC, event_proc,
+				WIN_TOP_LEVEL_NO_DECOR, TRUE,
+				WIN_SAVE_UNDER, TRUE,
+				XV_SHOW, FALSE,
+				NULL);
 	}
 
 	{
 		Xv_server srv = xv_get(screen_public, SCREEN_SERVER);
-		Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
+		Display *dpy = (Display *) xv_get(srv, XV_DISPLAY);
 		Atom nwt[2];
 		Window win;
 
@@ -810,18 +808,18 @@ Xv_private Xv_Window screen_get_cached_window(Xv_Screen screen_public,
 				XA_ATOM, 32, PropModeReplace, (unsigned char *)nwt, 1);
 	}
 
-    if (screen->cached_windows == NULL) {
+	if (screen->cached_windows == NULL) {
 		screen->cached_windows = cached_window;
-    }
+	}
 	else {
 		cached_window->next = screen->cached_windows;
 		screen->cached_windows = cached_window;
-    }
-    cached_window->busy = TRUE;
-    cached_window->borders = (short) borders;
-    cached_window->transparent = (short) transp;
-    cached_window->visual = visual;
-    return ((Xv_Window) cached_window->window);
+	}
+	cached_window->busy = TRUE;
+	cached_window->borders = (short)borders;
+	cached_window->transparent = (short)transp;
+	cached_window->visual = visual;
+	return cached_window->window;
 }
 
 Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index)
