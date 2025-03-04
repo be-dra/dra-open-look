@@ -1,4 +1,4 @@
-/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.5 2025/03/02 17:58:27 dra Exp $ */
+/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.8 2025/03/03 14:17:50 dra Exp $ */
 /* #ident	"@(#)win.h	26.43	93/06/28 SMI" */
 
 /*
@@ -180,7 +180,7 @@ typedef struct _client
 /* classes of window which we can deal with */
 typedef enum { WIN_FRAME, WIN_ICON, WIN_RESIZE, WIN_PUSHPIN, WIN_WINBUTTON,
 	WIN_PANE, WIN_ICONPANE, WIN_COLORMAP, WIN_MENU, WIN_PINMENU, 
-	WIN_NOFOCUS, WIN_ROOT, WIN_BUSY } WinKind;
+	WIN_NOFOCUS, WIN_ROOT, WIN_BUSY, WIN_SHADOW } WinKind;
 
 typedef int (*EvFunc)();
 typedef int (*IntFunc)();
@@ -482,12 +482,18 @@ typedef struct _winpane {
 
 #define MENU_SHADOW_OFFSET 6
 
+typedef struct _winshadow {
+	ClassMenu	*class;
+	WinCore		core;
+	Pixmap saveShadowPix;
+} WinShadow;
+
 typedef struct _winmenu {
 	ClassMenu	*class;
 	WinCore		core;
 	struct _menuInfo *menuInfo;
 	Bool		ignoreNextExpose;
-	Window shadow;                   /* used only for the real menu */
+	WinShadow  *shadow;
 } WinMenu;
 
 typedef struct _winpinmenu {	/* pinned menus are a subclass of panes */
