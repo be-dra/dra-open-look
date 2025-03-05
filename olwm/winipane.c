@@ -274,45 +274,107 @@ static int eventEnterNotify(Display *dpy, XEvent *event, WinIconPane *winInfo)
 	return 0;
 }
 
-static Pixmap createNetPixmap(Display *dpy, ScreenInfo *scr,
+static Pixmap createNetPixmapInternal(Display *dpy, Window clwin,
+						ScreenInfo *scr, unsigned long offset,
+						unsigned long length)
+{
+	int xsiz, ysiz;
+	XImage *xima;
+	Pixmap pix;
+	int r, c;
+	char *pixdata;
+	unsigned long len, rest;
+	unsigned long *data = GetWindowProperty(dpy, clwin, Atom_NET_WM_ICON, 
+							offset, length, XA_CARDINAL, 32, &len, &rest);
+	xsiz = (int)data[0];
+	ysiz = (int)data[1];
+
+	pix = XCreatePixmap(dpy, scr->rootid, xsiz, ysiz,
+							DefaultDepth(dpy, scr->screen));      
+
+	pixdata = calloc(sizeof(unsigned long), xsiz * ysiz);
+	xima = XCreateImage(dpy, scr->visual, DefaultDepth(dpy, scr->screen),
+    				ZPixmap, 0, pixdata, xsiz, ysiz, BitmapPad(dpy), 0);
+
+	data += 2;
+	for (c = 0; c < xsiz; c++) {
+		for (r = 0; r < ysiz; r++) {
+			/* ignore the alpha channel */
+			XPutPixel(xima, r, c, 0xffffff & *data++);
+		}
+	}
+	XPutImage(dpy, pix, scr->gc[ROOT_GC], xima, 0, 0, 0, 0, xsiz, ysiz);
+	XDestroyImage(xima);
+	/* we die here:                   free(pixdata); */
+
+/* 	fprintf(stderr, "net icon pixmap = %lx\n", pix); */
+	return pix;
+}
+
+static Pixmap createNetPixmap(Display *dpy, Window clwin, ScreenInfo *scr,
 							unsigned long *netIcon, int netIconLength,
 							int preferredsize)
 {
+	int xsiz, ysiz;
+	unsigned long offset;
+#ifdef SOMETIMES_DIRTY
 	XImage *xima;
 	Pixmap pix;
-	int siz, r, c;
+	int r, c;
 	char *pixdata;
+#endif
 
-	siz = (int)netIcon[0];
-	while (siz != preferredsize) {
-		netIcon += (siz * siz + 2);
-		netIconLength -= (siz * siz + 2);
+	offset = 0;
+	xsiz = (int)netIcon[0];
+	ysiz = (int)netIcon[1];
+	while (xsiz != preferredsize) {
+		netIcon += (xsiz * ysiz + 2);
+		offset += (xsiz * ysiz + 2);
+		netIconLength -= (xsiz * ysiz + 2);
 		if (netIconLength <= 0) {
 			/* preferredsize not found */
 			return None;
 		}
-		siz = (int)netIcon[0];
+		xsiz = (int)netIcon[0];
+		ysiz = (int)netIcon[1];
 	}
 
-	pix = XCreatePixmap(dpy, scr->rootid, siz, siz,
+	/* now xsiz == preferredsize. In many cases (firefox, gimp)
+	 * the resulting pixmap was *sometimes* 'dirty', with wrong colors
+	 * and text fragments. I wonder whether there is a bug in either
+	 * XChangeProperty or XGetWindiowProperty or the X server (I never
+	 * encountered dirty firefox icons in the conext of Xvnc...).
+	 * Let's try the following: we use the 'big data' to find out whether
+	 * a suitable icon size is available and then perform a SMALLER
+	 * XGetWindowProperty for the pixmap data.
+	 *
+	 * First impression: no more dirt....
+	 * Second impression: still dirt....
+	 */
+#ifdef SOMETIMES_DIRTY
+	pix = XCreatePixmap(dpy, scr->rootid, xsiz, ysiz,
 							DefaultDepth(dpy, scr->screen));      
 
-	pixdata = calloc(sizeof(unsigned long), siz * siz);
+	pixdata = calloc(sizeof(unsigned long), xsiz * ysiz);
 	xima = XCreateImage(dpy, scr->visual, DefaultDepth(dpy, scr->screen),
-    				ZPixmap, 0, pixdata, siz, siz, BitmapPad(dpy), 0);
+    				ZPixmap, 0, pixdata, xsiz, ysiz, BitmapPad(dpy), 0);
 
 	netIcon += 2;
-	for (c = 0; c < siz; c++) {
-		for (r = 0; r < siz; r++) {
+	for (c = 0; c < xsiz; c++) {
+		for (r = 0; r < ysiz; r++) {
 			/* ignore the alpha channel */
 			XPutPixel(xima, r, c, 0xffffff & *netIcon++);
 		}
 	}
-	XPutImage(dpy, pix, scr->gc[ROOT_GC], xima, 0, 0, 0, 0, siz, siz);
+	XPutImage(dpy, pix, scr->gc[ROOT_GC], xima, 0, 0, 0, 0, xsiz, ysiz);
 	XDestroyImage(xima);
 	/* we die here:                   free(pixdata); */
 
+/* 	fprintf(stderr, "net icon pixmap = %lx\n", pix); */
 	return pix;
+#else /* SOMETIMES_DIRTY */
+	return createNetPixmapInternal(dpy, clwin, scr, offset, xsiz*ysiz + 2);
+#endif /* SOMETIMES_DIRTY */
 }
 
 /***************************************************************************
@@ -412,12 +474,12 @@ WinIconPane * MakeIconPane(Client *cli, WinGeneric *par, XWMHints *wmHints,
 		int size = 64;
 		Pixmap netpix;
 
-		netpix = createNetPixmap(dpy, cli->scrInfo,
+		netpix = createNetPixmap(dpy, clwin, cli->scrInfo,
 								netIcon, netIconLength, size);
 
 		if (netpix == None) {
 			size = 48;
-			netpix = createNetPixmap(dpy, cli->scrInfo,
+			netpix = createNetPixmap(dpy, clwin, cli->scrInfo,
 								netIcon, netIconLength, size);
 		}
 
