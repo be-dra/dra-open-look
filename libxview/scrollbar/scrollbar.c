@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.2 2025/01/28 21:46:07 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.3 2025/03/06 17:36:51 dra Exp $ ";
 #endif
 #endif
 
@@ -22,20 +22,17 @@ static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.2 2
 #include <xview_private/win_info.h>
 #include <xview_private/svr_impl.h>
 #include <olgx/olgx.h>
-#include <xview/scrollbar.h>
+#include <xview/canvas.h>
+#include <xview/font.h>
 #include <xview/openmenu.h>
 #include <xview/win_notify.h>
 #include <xview/openwin.h>
-#include <xview/panel.h>
 #include <xview/xv_error.h>
 #include <xview/defaults.h>
 #include <xview/svrimage.h>
-#include <xview/screen.h>
-#include <xview/textsw.h>
 #include <xview/termsw.h>
 #include <xview/fullscreen.h>
 #include <xview/help.h>
-#include <X11/Xlib.h>
 
 /* macros to convert variable from/to public/private form */
 #define SCROLLBAR_PRIVATE(scrollbar)  \
@@ -684,8 +681,27 @@ static void scrollbar_absolute_position_elevator(Xv_scrollbar_info *sb,
 
 static void sb_rescale(Xv_scrollbar_info *sb, Frame_rescale_state scale)
 {
+	SERVERTRACE((790, "%s: scale=%d\n", __FUNCTION__, scale));
 	if (sb->scale != scale) {
+		Scrollbar scrollbar = SCROLLBAR_PUBLIC(sb);
+		Xv_font old_font, new_font;
+		Xv_screen scr = XV_SCREEN_FROM_WINDOW(scrollbar);
+		int three_d;
+
+		old_font = xv_get(scrollbar, XV_FONT);
+		new_font = old_font ? xv_find(scrollbar, FONT,
+								FONT_RESCALE_OF, old_font, (int)scale,
+								NULL)
+							: (Xv_Font) 0;
+		if (new_font) {
+			(void)xv_set(old_font, XV_INCREMENT_REF_COUNT, NULL);
+			(void)xv_set(scrollbar, XV_FONT, new_font, NULL);
+		}
+
+		three_d = (SCREEN_UIS_3D_COLOR ==
+							(screen_ui_style_t)xv_get(scr, SCREEN_UI_STYLE));
 		sb->scale = scale;
+		sb->ginfo = xv_init_olgx(scrollbar, &three_d, new_font);
 		if (sb->size == SCROLLBAR_ABBREVIATED) {
 			sb_abbreviated(sb);
 		}
@@ -1250,12 +1266,10 @@ static void scrollbar_handle_timed_page_event(Xv_scrollbar_info *sb, Scroll_moti
  * correctly on the _slowest_ case, rather than taking advantage of the
  * faster hardware that is available. jcb 5/3/89
  */
-static int scrollbar_left_mouse_up(Xv_scrollbar_info *sb)
+static int scrollbar_select_is_up(Xv_scrollbar_info *sb)
 {
 	Scrollbar sb_public = SCROLLBAR_PUBLIC(sb);
 	Xv_Drawable_info *info;
-	Display *display;
-	Window window;
 	Window root, child;
 	int root_X, root_Y;
 	int win_X, win_Y;
@@ -1263,12 +1277,16 @@ static int scrollbar_left_mouse_up(Xv_scrollbar_info *sb)
 
 	/* get the root of X information */
 	DRAWABLE_INFO_MACRO(sb_public, info);
-	display = xv_display(info);
-	window = xv_xid(info);
 
-	(void)XQueryPointer(display, window, &root, &child,
-			&root_X, &root_Y, &win_X, &win_Y, &key_buttons);
+	XQueryPointer(xv_display(info), xv_xid(info), &root, &child,
+						&root_X, &root_Y, &win_X, &win_Y, &key_buttons);
 
+	/* This looks as if the SELECT button is hardcoded Button1.
+	 * However, if a user uses olws_props to manage the workspace properties,
+	 * the mouse button will be (re)mapped via XSetPointerMapping, so,
+	 * SELECT will always be Button1, ADJUST=Button2, MENU=Button3 -
+	 * at least for a 3 button mouse.
+	 */
 	return ((key_buttons & Button1Mask) == 0);
 }
 
@@ -1281,7 +1299,7 @@ static Notify_value scrollbar_timed_out(Notify_client client, int which)
 	/* method to use the current programmatic paradigm w/o processing  */
 	/* past events/timeouts that have triggered but are no longer valid */
 	/* jcb -- 5/3/89 */
-	if (scrollbar_left_mouse_up(sb))
+	if (scrollbar_select_is_up(sb))
 		return NOTIFY_DONE;
 
 
