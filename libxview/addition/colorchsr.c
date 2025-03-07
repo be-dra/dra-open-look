@@ -29,12 +29,13 @@
 #include <xview/xview.h>
 #include <xview/panel.h>
 #include <xview/cms.h>
+#include <xview/group.h>
 #include <xview/colorchsr.h>
 #include <xview/svrimage.h>
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.4 2024/12/04 21:22:46 dra Exp $";
+char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.5 2025/03/06 14:16:27 dra Exp $";
 #endif
 
 #define IMAGE_WIDTH 64
@@ -428,6 +429,8 @@ static void update_message(Panel_item mess, int val)
 
 	sprintf(buf, "%3d", val);
 	xv_set(mess, PANEL_LABEL_STRING, buf, NULL);
+	sprintf(buf, "#%x", val);
+	xv_set(xv_get(mess, PANEL_CLIENT_DATA), PANEL_LABEL_STRING, buf, NULL);
 }
 
 static void update_colors(Colorchooser_private *priv)
@@ -676,10 +679,13 @@ static void fill_me(Color_chooser self)
 {
 	Colorchooser_private *priv = COLCHPRIV(self);
 	Panel pan;
+	Panel_item r_msg, g_msg, b_msg;
 	Rect *r;
 	char image_data[IMAGE_WIDTH * IMAGE_HEIGHT];
-	int item_top;
+/* 	int item_top; */
 	char *h1, *h2;
+	Panel_item preview;
+	Group g;
 
 	if (! priv->cms) priv->cms = create_palette(priv);
 	pan = xv_get(self, FRAME_PROPS_PANEL);
@@ -791,7 +797,7 @@ static void fill_me(Color_chooser self)
 
 	xv_set(self,
 			FRAME_PROPS_CREATE_ITEM,
-				FRAME_PROPS_ITEM_SPEC, NULL, -1, PANEL_MESSAGE,
+				FRAME_PROPS_ITEM_SPEC, &preview, -1, PANEL_MESSAGE,
 				PANEL_LABEL_BOLD, TRUE,
 				PANEL_LABEL_STRING, XV_MSG("Preview:"),
 				XV_HELP_DATA, make_help(priv,"preview"),
@@ -856,21 +862,16 @@ static void fill_me(Color_chooser self)
 			FRAME_PROPS_ALIGN_ITEMS,
 			NULL);
 
-	item_top = (int)xv_get(priv->p_image, XV_Y);
-	r = (Rect *)xv_get(priv->h_slider, XV_RECT);
 	xv_set(self,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&priv->r_slider, FRAME_PROPS_NO_LAYOUT, PANEL_SLIDER,
-				XV_X, rect_right(r) + 50,
-				XV_Y, item_top,
 				PANEL_DIRECTION, PANEL_VERTICAL,
 				PANEL_MIN_VALUE, 0,
 				PANEL_MAX_VALUE, 255,
 				PANEL_ITEM_COLOR, CMS_CONTROL_COLORS+NUM_RWCOLORS,
 				PANEL_SHOW_RANGE, FALSE,
 				PANEL_SHOW_VALUE, FALSE,
-/* 				PANEL_SLIDER_WIDTH, 150, */
 				PANEL_NOTIFY_LEVEL, PANEL_ALL,
 				PANEL_NOTIFY_PROC, rgb_slider_notify,
 				PANEL_CLIENT_DATA, 1,
@@ -881,28 +882,30 @@ static void fill_me(Color_chooser self)
 				NULL,
 			NULL);
 
-	r = (Rect *)xv_get(priv->r_slider, XV_RECT);
 	xv_set(self,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&priv->r_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
-				XV_X, r->r_left - 6,
-				XV_Y, rect_bottom(r) + 10,
+				PANEL_LABEL_STRING, "255",
+				XV_HELP_DATA, make_help(priv,"RSlider"),
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				NULL,
+			FRAME_PROPS_CREATE_ITEM,
+				FRAME_PROPS_ITEM_SPEC,
+					&r_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
+				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"RSlider"),
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&priv->g_slider, FRAME_PROPS_NO_LAYOUT, PANEL_SLIDER,
-				XV_X, rect_right(r) + 20,
-				XV_Y, item_top,
 				PANEL_DIRECTION, PANEL_VERTICAL,
 				PANEL_MIN_VALUE, 0,
 				PANEL_MAX_VALUE, 255,
 				PANEL_ITEM_COLOR, CMS_CONTROL_COLORS+NUM_RWCOLORS+1,
 				PANEL_SHOW_RANGE, FALSE,
 				PANEL_SHOW_VALUE, FALSE,
-/* 				PANEL_SLIDER_WIDTH, 150, */
 				PANEL_NOTIFY_LEVEL, PANEL_ALL,
 				PANEL_NOTIFY_PROC, rgb_slider_notify,
 				FRAME_PROPS_DATA_OFFSET, OFF(rgb.g),
@@ -913,21 +916,24 @@ static void fill_me(Color_chooser self)
 				NULL,
 			NULL);
 
-	r = (Rect *)xv_get(priv->g_slider, XV_RECT);
 	xv_set(self,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&priv->g_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
-				XV_X, r->r_left - 6,
-				XV_Y, rect_bottom(r) + 10,
+				PANEL_LABEL_STRING, "255",
+				XV_HELP_DATA, make_help(priv,"GSlider"),
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				NULL,
+			FRAME_PROPS_CREATE_ITEM,
+				FRAME_PROPS_ITEM_SPEC,
+					&g_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
+				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"GSlider"),
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&priv->b_slider, FRAME_PROPS_NO_LAYOUT, PANEL_SLIDER,
-				XV_X, rect_right(r) + 20,
-				XV_Y, item_top,
 				PANEL_DIRECTION, PANEL_VERTICAL,
 				PANEL_MIN_VALUE, 0,
 				PANEL_MAX_VALUE, 255,
@@ -944,20 +950,72 @@ static void fill_me(Color_chooser self)
 				NULL,
 			NULL);
 
-	r = (Rect *)xv_get(priv->b_slider, XV_RECT);
 	xv_set(self,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&priv->b_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
-				XV_X, r->r_left - 6,
-				XV_Y, rect_bottom(r) + 10,
+				PANEL_LABEL_STRING, "255",
+				XV_HELP_DATA, make_help(priv,"BSlider"),
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				NULL,
+			FRAME_PROPS_CREATE_ITEM,
+				FRAME_PROPS_ITEM_SPEC,
+					&b_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
+				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"BSlider"),
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 				NULL,
 			NULL);
-		
+
+	xv_set(priv->r_msg, PANEL_CLIENT_DATA, r_msg, NULL);
+	xv_set(priv->g_msg, PANEL_CLIENT_DATA, g_msg, NULL);
+	xv_set(priv->b_msg, PANEL_CLIENT_DATA, b_msg, NULL);
+
+	r = (Rect *)xv_get(priv->h_slider, PANEL_ITEM_VALUE_RECT);
+	g = xv_create(pan, GROUP,
+			GROUP_TYPE, GROUP_ROW,
+			GROUP_HORIZONTAL_SPACING, 10,
+			GROUP_ANCHOR_OBJ, preview,
+			GROUP_VERTICAL_OFFSET, 0,
+			GROUP_HORIZONTAL_OFFSET, 30 + r->r_width,
+			GROUP_ANCHOR_POINT, GROUP_NORTHEAST,
+			GROUP_MEMBERS,
+				xv_create(pan, GROUP,
+						GROUP_TYPE, GROUP_COLUMN,
+						GROUP_COLUMN_ALIGNMENT, GROUP_VERTICAL_CENTERS,
+						GROUP_VERTICAL_SPACING, 4,
+						GROUP_MEMBERS,
+							priv->r_slider,
+							priv->r_msg,
+							r_msg,
+							NULL,
+						NULL),
+				xv_create(pan, GROUP,
+						GROUP_TYPE, GROUP_COLUMN,
+						GROUP_COLUMN_ALIGNMENT, GROUP_VERTICAL_CENTERS,
+						GROUP_VERTICAL_SPACING, 4,
+						GROUP_MEMBERS,
+							priv->g_slider,
+							priv->g_msg,
+							g_msg,
+							NULL,
+						NULL),
+				xv_create(pan, GROUP,
+						GROUP_TYPE, GROUP_COLUMN,
+						GROUP_COLUMN_ALIGNMENT, GROUP_VERTICAL_CENTERS,
+						GROUP_VERTICAL_SPACING, 4,
+						GROUP_MEMBERS,
+							priv->b_slider,
+							priv->b_msg,
+							b_msg,
+							NULL,
+						NULL),
+				NULL,
+			NULL);
+	group_anchor(g);
 	update_colors(priv);
 	window_fit_width(pan);
+	xv_set(pan, XV_WIDTH, 8 + (int)xv_get(pan, XV_WIDTH), NULL);
 
 	xv_set(self,
 				FRAME_PROPS_CREATE_BUTTONS,
