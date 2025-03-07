@@ -1,5 +1,5 @@
 #ifndef lint
-char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.7 2025/01/09 19:37:33 dra Exp $ ";
+char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.8 2025/03/06 17:36:29 dra Exp $ ";
 #endif
 
 /*
@@ -669,7 +669,6 @@ static Notify_value openwin_view_event(Xv_window view, Notify_event ev,
 {
     Event *event = (Event *)ev;
 	Openwin_view_info *vp = VIEW_PRIVATE(view);
-	Scrollbar sb;
 	Notify_value val;
 
 	switch (event_action(event)) {
@@ -704,24 +703,18 @@ static Notify_value openwin_view_event(Xv_window view, Notify_event ev,
 			break;
 
 		case ACTION_WHEEL_FORWARD:
-			if (event_is_down(event) && 
-				(sb = xv_get(OPENWIN_PUBLIC(vp->owin),
-								OPENWIN_VERTICAL_SCROLLBAR, view)))
-			{
-				int newpos = (int)xv_get(sb, SCROLLBAR_VIEW_START);
+			if (event_is_down(event) && vp->sb[0]) {
+				int newpos = (int)xv_get(vp->sb[0], SCROLLBAR_VIEW_START);
 				if (newpos > 0) {
-					xv_set(sb, SCROLLBAR_VIEW_START, newpos - 1, NULL);
+					xv_set(vp->sb[0], SCROLLBAR_VIEW_START, newpos - 1, NULL);
 				}
 			}
 			break;
 
 		case ACTION_WHEEL_BACKWARD:
-			if (event_is_down(event) && 
-				(sb = xv_get(OPENWIN_PUBLIC(vp->owin),
-								OPENWIN_VERTICAL_SCROLLBAR, view)))
-			{
-				int newpos = (int)xv_get(sb, SCROLLBAR_VIEW_START);
-				xv_set(sb, SCROLLBAR_VIEW_START, newpos + 1, NULL);
+			if (event_is_down(event) && vp->sb[0]) {
+				int newpos = (int)xv_get(vp->sb[0], SCROLLBAR_VIEW_START);
+				xv_set(vp->sb[0], SCROLLBAR_VIEW_START, newpos + 1, NULL);
 			}
 			break;
 
@@ -746,6 +739,21 @@ static Notify_value openwin_view_event(Xv_window view, Notify_event ev,
 					return NOTIFY_DONE;
 				}
 				xv_help_show(view, "xview:pane_borders", event);
+			}
+			return NOTIFY_DONE;
+
+		case ACTION_RESCALE:
+			if (vp->sb[0]) {
+    			notify_post_event_and_arg(vp->sb[0], ev, NOTIFY_IMMEDIATE,
+			      		arg, NOTIFY_COPY_NULL, NOTIFY_RELEASE_NULL);
+			}
+			if (vp->sb[1]) {
+    			notify_post_event_and_arg(vp->sb[1], ev, NOTIFY_IMMEDIATE,
+			      		arg, NOTIFY_COPY_NULL, NOTIFY_RELEASE_NULL);
+			}
+			if (vp->pw) {
+    			notify_post_event_and_arg(vp->pw, ev, NOTIFY_IMMEDIATE,
+			      		arg, NOTIFY_COPY_NULL, NOTIFY_RELEASE_NULL);
 			}
 			return NOTIFY_DONE;
 
