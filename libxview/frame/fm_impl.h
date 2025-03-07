@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.3 2024/11/30 12:45:32 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.4 2025/03/06 20:51:26 dra Exp $ ";
 #endif
 #endif
 
@@ -246,7 +246,8 @@ Pkg_private void frame_focus_win_event_proc(Xv_Window window, Event *event, Noti
 
 /* frame_display.c */
 Pkg_private void frame_display_label(Frame_class_info *frame);
-Pkg_private void frame_display_footer(Frame frame_public, int clear_first);
+Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
+			int *left_start, int *left_end, int *right_start, int *right_end);
 #ifdef OW_I18N
 Pkg_private void	frame_display_IMstatus(void);
 #endif
