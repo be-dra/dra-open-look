@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.7 2025/01/07 18:42:37 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.8 2025/03/08 13:37:48 dra Exp $";
 #endif
 
 typedef void (*dnd_done_proc_t)(FileDrag, int);
@@ -800,7 +800,7 @@ static int filedrag_destroy(Xv_opaque self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_filedrag_pkg = {
+const Xv_pkg xv_filedrag_pkg = {
 	"FileDrag",
 	ATTR_PKG_FILEDRAG,
 	sizeof(Xv_filedrag_public),
