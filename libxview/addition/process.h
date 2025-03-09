@@ -2,7 +2,7 @@
 #define process_h_included 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: process.h,v 4.1 2024/04/12 05:58:21 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: process.h,v 4.2 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -31,7 +31,7 @@
 #include <xview/generic.h>
 #include <xview/attrol.h>
 
-extern Xv_pkg xv_process_pkg;
+extern const Xv_pkg xv_process_pkg;
 #define PROCESS &xv_process_pkg
 typedef Xv_opaque Process;
 
