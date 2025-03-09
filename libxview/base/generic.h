@@ -1,4 +1,4 @@
-/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.2 2024/04/03 08:46:34 dra Exp $      */
+/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.3 2025/03/08 13:01:51 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -268,7 +268,7 @@ typedef enum {
  ***********************************************************************
  */
 
-extern Xv_pkg		xv_generic_pkg;
+extern const Xv_pkg		xv_generic_pkg;
 
 /*
  * PUBLIC functions 
