@@ -2,7 +2,7 @@
 #define filedrag_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: filedrag.h,v 4.2 2024/11/04 22:25:14 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: filedrag.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -30,7 +30,7 @@
 #include <xview/iccc.h>
 
 
-extern Xv_pkg xv_filedrag_pkg;
+extern const Xv_pkg xv_filedrag_pkg;
 typedef Xv_opaque FileDrag;
 
 #define FILEDRAG &xv_filedrag_pkg
