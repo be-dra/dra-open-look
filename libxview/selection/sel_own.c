@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.27 2025/02/07 07:46:21 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.28 2025/03/08 14:06:27 dra Exp $";
 #endif
 #endif
 
@@ -1261,7 +1261,7 @@ static void RegisterSelClient(Sel_owner_info *owner, int flag)
 	};
 }
 
-Xv_pkg xv_sel_owner_pkg = {
+const Xv_pkg xv_sel_owner_pkg = {
     "Selection Owner",
     ATTR_PKG_SELECTION,
     sizeof(Xv_sel_owner),
