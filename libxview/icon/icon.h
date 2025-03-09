@@ -1,4 +1,4 @@
-/*	@(#)icon.h 20.13 90/03/13 SMI	DRA: RCS $Id: icon.h,v 4.1 2024/03/28 18:01:16 dra Exp $ 	*/
+/*	@(#)icon.h 20.13 90/03/13 SMI	DRA: RCS $Id: icon.h,v 4.2 2025/03/08 13:46:13 dra Exp $ 	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -90,7 +90,7 @@ typedef struct {
 /*
  * Variables 
  */
-extern Xv_pkg		xv_icon_pkg;
+extern const Xv_pkg		xv_icon_pkg;
 
 /*
  * PUBLIC Functions 
