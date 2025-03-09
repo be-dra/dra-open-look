@@ -26,7 +26,7 @@
  * 2550 Garcia Avenue
  * Mountain View, California  94043
 
-char group_c_sccsid[] = "@(#)group.c 2.28 92/08/03 Copyright 1991 Sun Microsystems RCS: $Id: group.c,v 4.1 2024/03/31 17:11:11 dra Exp $";
+char group_c_sccsid[] = "@(#)group.c 2.28 92/08/03 Copyright 1991 Sun Microsystems RCS: $Id: group.c,v 4.2 2025/03/08 13:37:48 dra Exp $";
  */
 
 /*
@@ -35,7 +35,7 @@ char group_c_sccsid[] = "@(#)group.c 2.28 92/08/03 Copyright 1991 Sun Microsyste
 
 #include <xview/group.h>
 
-char group_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: group.c,v 4.1 2024/03/31 17:11:11 dra Exp $";
+char group_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: group.c,v 4.2 2025/03/08 13:37:48 dra Exp $";
 
 typedef struct {
 	Xv_object public_self;
@@ -1068,7 +1068,7 @@ void group_layout(Group group_public)
 		group_anchor((Group)group_public);
 }
 
-Xv_pkg	group_pkg = {
+const Xv_pkg	group_pkg = {
 	"Group",			/* Package name */
 	ATTR_PKG_GROUP,		/* Package ID */
 	sizeof(Group_public),		/* Size of public struct */
