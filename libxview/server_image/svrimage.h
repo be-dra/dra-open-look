@@ -1,4 +1,4 @@
-/*	@(#)svrimage.h 20.30 93/06/28 SMI DRA: RCS $Id: svrimage.h,v 2.3 2025/02/16 20:23:09 dra Exp $ 	*/
+/*	@(#)svrimage.h 20.30 93/06/28 SMI DRA: RCS $Id: svrimage.h,v 2.4 2025/03/08 14:53:36 dra Exp $ 	*/
 
 #ifndef xview_server_image_DEFINED
 #define xview_server_image_DEFINED
@@ -95,7 +95,7 @@ typedef struct {
  ***********************************************************************
  */
 
-Xv_public Xv_pkg  xv_server_image_pkg;
+Xv_public const Xv_pkg  xv_server_image_pkg;
 
 /*
  * PUBLIC functions 
