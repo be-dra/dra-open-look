@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fs.c 20.45 93/06/28 DRA $Id: fs.c,v 2.3 2024/09/15 08:43:51 dra Exp $";
+static char     sccsid[] = "@(#)fs.c 20.45 93/06/28 DRA $Id: fs.c,v 2.4 2025/03/08 13:50:55 dra Exp $";
 #endif
 #endif
 
@@ -321,7 +321,7 @@ Pkg_private void fullscreen_update_globals(void)
 
 }
 
-Xv_pkg xv_fullscreen_pkg = {
+const Xv_pkg xv_fullscreen_pkg = {
     "Fullscreen", ATTR_PKG_FULLSCREEN,
     sizeof(Xv_fullscreen),
     &xv_generic_pkg,
