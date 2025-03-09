@@ -4,17 +4,10 @@
 #include <xview/xview.h>
 #include <xview/sel_pkg.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: talk.h,v 1.11 2025/03/06 16:05:56 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: talk.h,v 1.13 2025/03/08 14:06:27 dra Exp $" */
 
 /* This class has been motivated by ToolTalk.
- * We can distinguish three kinds of TALK objects:
- *
- * +++ one instance with TALK_SERVER, TRUE. There should be only one such
- *     object - and it should be 'living' in a program that runs forever.
- *     This object plays the role of the message server.
- *     xv_create(window, TALK,
- *                      TALK_SERVER, TRUE,
- *                      NULL);
+ * We can distinguish two kinds of TALK objects:
  *
  * +++ TALK objects that are only used to trigger an action (= send a
  *     message).
@@ -37,7 +30,7 @@
  *
  */
 
-extern Xv_pkg xv_talk_pkg;
+extern const Xv_pkg xv_talk_pkg;
 #define TALK &xv_talk_pkg
 typedef Xv_opaque Talk;
 
@@ -51,7 +44,6 @@ typedef struct {
 				TALK_ATTR(ATTR_LIST_INLINE((ltype), (type)), (ordinal))
 
 typedef enum {
-	TALK_SERVER        = TALK_ATTR(ATTR_BOOLEAN, 1),                /* C-- */
 	TALK_NOTIFY_PROC   = TALK_ATTR(ATTR_FUNCTION_PTR, 2),           /* CSG */
 	TALK_PATTERN       = TALK_ATTR(ATTR_STRING, 3),                 /* CS- */
 	TALK_MESSAGE       = TALK_ATTR(ATTR_STRING, 4),                 /* -S- */
