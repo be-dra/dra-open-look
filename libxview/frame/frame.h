@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.5 2025/01/29 18:16:03 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.6 2025/03/08 13:21:40 dra Exp $ ";
 #endif
 #endif
 
@@ -340,12 +340,12 @@ typedef enum {
  ***********************************************************************
  */
 
-extern Xv_pkg	xv_frame_class_pkg;
-extern Xv_pkg	xv_frame_base_pkg;
-extern Xv_pkg	xv_frame_cmd_pkg;
-extern Xv_pkg	xv_frame_props_pkg;
-extern Xv_pkg	xv_frame_help_pkg;
-extern Xv_pkg xv_propframe_pkg;
+extern const Xv_pkg	xv_frame_class_pkg;
+extern const Xv_pkg	xv_frame_base_pkg;
+extern const Xv_pkg	xv_frame_cmd_pkg;
+extern const Xv_pkg	xv_frame_props_pkg;
+extern const Xv_pkg	xv_frame_help_pkg;
+extern const Xv_pkg xv_propframe_pkg;
 
 /*
  * XView public functions
