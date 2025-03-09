@@ -23,29 +23,40 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.3 2025/03/06 08:45:10 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.6 2025/03/08 14:06:27 dra Exp $";
+
+/* This class is a helper for "quick duplicate".
+ *
+ * It is (as of 2025-03-07) used by 
+ *
+ * · frame for quick duplicate on footers (fm_input.c)
+ * · panel items for quick duplicate on panel labels (p_select.c)
+ * · panel lists for quick duplicate on list lines (p_list.c)
+ */
 
 #include <xview/xview.h>
 #include <xview/defaults.h>
 #include <xview/font.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/svr_impl.h>
 #include <xview_private/xv_quick.h>
+#include <xview_private/i18n_impl.h>
 
-typedef char *(*get_string_t)(Quick_owner, int *startx);
 typedef void (*remove_underline_t)(Quick_owner);
+
+#define MAX_SELECTED 500
 
 typedef struct {
     Quick_owner public_self;  /* back pointer to public object */
-	int startx; /* where the ACTION_SELECT down happened */
-	int endx;
-	int xpos[500];
+	int startx; /* left end of underlining */
+	int endx; /* right end of underlining */
+	int xpos[MAX_SELECTED];
 	int startindex, endindex;
 	unsigned long reply_data;
-	char seltext[1000];
+	char seltext[MAX_SELECTED];
     struct timeval last_click_time;
 	int select_click_cnt;
 
-	get_string_t get_string;
 	remove_underline_t remove_underline;
 	Display *dpy;
 	Window xid;
@@ -55,6 +66,9 @@ typedef struct {
 	char delimtab[256];   /* TRUE= character is a word delimiter */
 	XFontStruct *fs;
 	Xv_opaque client_data;
+	char full_text[MAX_SELECTED];
+	int full_startx;
+	int full_endx;
 } Quick_private_t;
 
 #define QUICKPRIV(_x_) XV_PRIVATE(Quick_private_t, Xv_quick_owner, _x_)
@@ -129,17 +143,9 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 	Xv_Server srv = XV_SERVER_FROM_WINDOW(win);
 
 	if (priv->seltext[0] == '\0') {
-		char *s = NULL;
-		int unused;
-
-		if (priv->get_string) {
-			s = priv->get_string(self, &unused);
-		}
-		if (s) {
-			strncpy(priv->seltext, s + priv->startindex,
+		strncpy(priv->seltext, priv->full_text + priv->startindex,
 						(size_t)(priv->endindex - priv->startindex + 1));
-			priv->seltext[priv->endindex - priv->startindex + 1] = '\0';
-		}
+		priv->seltext[priv->endindex - priv->startindex + 1] = '\0';
 	}
 
 	if (*type == xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END")) {
@@ -195,7 +201,10 @@ static void note_quick_lose(Quick_owner self)
 	priv->reply_data = 0;
 	priv->seltext[0] = '\0';
 	priv->select_click_cnt = 0;
+	priv->full_startx = priv->full_endx = -1;
+	priv->full_text[0] = '\0';
 
+	SERVERTRACE((300, "%s\n", __FUNCTION__));
 	if (priv->remove_underline) {
 		priv->remove_underline(self);
 	}
@@ -299,89 +308,90 @@ static void select_word(Quick_private_t *priv, char *s, int sx)
 	}
 }
 
-static void quick_select_down(Quick_private_t *priv, Event *ev, char *s,
-						int sx, int ex)
+static void select_start(Quick_private_t *priv, char *s, int sx, int ex)
 {
+	if (strlen(s) >= MAX_SELECTED) {
+		xv_error(XV_NULL,
+					ERROR_STRING, XV_MSG("Quick duplicate: string too long"),
+					ERROR_PKG, QUICK_OWNER,
+					NULL);
+		return;
+	}
+	strcpy(priv->full_text, s);
+	priv->full_startx = sx;
+	priv->full_endx = ex;
+	SERVERTRACE((300, "%s\n", __FUNCTION__));
+}
+
+static void quick_select_down(Quick_private_t *priv, Event *ev)
+{
+	int save_startx = priv->startx, save_endx = priv->endx;
 	int is_multiclick = determine_multiclick(priv->multiclick_timeout,
 					&priv->last_click_time, &event_time(ev));
 	priv->last_click_time = event_time(ev);
 
 	priv->xpos[0] = 0;
-	if (s) {
-		int save_startx = priv->startx, save_endx = priv->endx;
 
-		priv->startx = sx;
-		priv->endx = ex;
-		mouse_to_charpos(priv,event_x(ev), s, &priv->startx, &priv->startindex);
+	priv->startx = priv->full_startx;
+	priv->endx = priv->full_endx;
+	mouse_to_charpos(priv,event_x(ev), priv->full_text, &priv->startx,
+									&priv->startindex);
 
-		if (is_multiclick) {
-			++priv->select_click_cnt;
-			if (priv->select_click_cnt == 2) {
-				/* really sx here ? Or rather priv->startx ???? */
-				select_word(priv, s, sx);
-			}
-			else if (priv->select_click_cnt == 3) {
-				/* whole text */
+	SERVERTRACE((300, "%s\n", __FUNCTION__));
+	if (is_multiclick) {
+		++priv->select_click_cnt;
+		if (priv->select_click_cnt == 2) {
+			select_word(priv, priv->full_text, priv->startx);
+		}
+		else if (priv->select_click_cnt == 3) {
+			/* whole text */
 
-				/* clean the "word underlining" */
-				XDrawLine(priv->dpy, priv->xid, priv->gc,
-							save_startx, priv->baseline,
-							save_endx, priv->baseline);
-
-				priv->startindex = 0;
-				priv->startx = sx;
-				priv->endindex = strlen(s) - 1;
-				priv->endx = ex;
-			}
-
+			/* clean the "word underlining" */
 			XDrawLine(priv->dpy, priv->xid, priv->gc,
-							priv->startx, priv->baseline,
-							priv->endx, priv->baseline);
+						save_startx, priv->baseline,
+						save_endx, priv->baseline);
+
+			priv->startindex = 0;
+			priv->startx = priv->full_startx;
+			priv->endindex = strlen(priv->full_text) - 1;
+			priv->endx = priv->full_endx;
 		}
-		else {
-			priv->select_click_cnt = 1;
-			priv->endx = priv->startx;
-		}
+
+		XDrawLine(priv->dpy, priv->xid, priv->gc,
+						priv->startx, priv->baseline,
+						priv->endx, priv->baseline);
 	}
 	else {
 		priv->select_click_cnt = 1;
 		priv->endx = priv->startx;
-	}
 
-	xv_set(QUICKPUB(priv),
-			SEL_OWN, TRUE,
-			SEL_TIME, &priv->last_click_time,
-			NULL);
-	priv->seltext[0] = '\0';
+		xv_set(QUICKPUB(priv),
+				SEL_OWN, TRUE,
+				SEL_TIME, &priv->last_click_time,
+				NULL);
+		priv->seltext[0] = '\0';
+	}
 }
 
 static int update_secondary(Quick_private_t *priv, int mx)
 {
-	char *s = NULL;
+	int *xp = priv->xpos;
 	int len, i;
 
 	XDrawLine(priv->dpy, priv->xid, priv->gc,
 				priv->startx, priv->baseline, priv->endx, priv->baseline);
 	priv->endx = 0;
 
-	if (priv->get_string) {
-		int unused;
+	len = strlen(priv->full_text);
 
-		s = priv->get_string(QUICKPUB(priv), &unused);
-	}
-
-	if (s) {
-		int *xp = priv->xpos;
-		len = strlen(s);
-
-		for (i = 0; i < len; i++) {
-			if (mx >= xp[i] && mx < xp[i+1]) {
-				priv->endx = xp[i+1];
-				priv->endindex = i;
-				break;
-			}
+	for (i = 0; i < len; i++) {
+		if (mx >= xp[i] && mx < xp[i+1]) {
+			priv->endx = xp[i+1];
+			priv->endindex = i;
+			break;
 		}
 	}
+
 	if (!priv->endx) {
 		priv->endx = priv->startx;
 	}
@@ -394,6 +404,7 @@ static int update_secondary(Quick_private_t *priv, int mx)
 
 static int quick_loc_drag(Quick_private_t *priv, Event *ev)
 {
+	SERVERTRACE((300, "%s\n", __FUNCTION__));
 	if (action_select_is_down(ev)) {
 		return update_secondary(priv, event_x(ev));
 	}
@@ -410,16 +421,11 @@ static int adjust_secondary(Quick_private_t *priv, Event *ev)
 	int startindex = priv->startindex;
 	int endindex = priv->endindex;
 	int newstartx, newstartindex;
-	int sx;
-	char *s = NULL;
 
-	if (priv->get_string) {
-		s = priv->get_string(QUICKPUB(priv), &sx);
-	}
+	newstartx = priv->full_startx;
 
-	newstartx = sx;
-
-	mouse_to_charpos(priv, event_x(ev), s, &newstartx, &newstartindex);
+	mouse_to_charpos(priv, event_x(ev), priv->full_text,
+							&newstartx, &newstartindex);
 
 	/* several cases: */
 	if (newstartx < startx) { /* adjust left of old start */
@@ -471,17 +477,11 @@ static int adjust_wordwise(Quick_private_t *priv, Event *ev)
 	int endx = priv->endx;
 	int startindex = priv->startindex;
 	int endindex = priv->endindex;
-	char *s = NULL;
-	int sx;
 
-	if (priv->get_string) {
-		s = priv->get_string(QUICKPUB(priv), &sx);
-	}
-
-	priv->startx = sx;
-	mouse_to_charpos(priv, event_x(ev), s, &priv->startx, &priv->startindex);
-	/* really sx here ? Or rather priv->startx ???? */
-	select_word(priv, s, sx);
+	priv->startx = priv->full_startx;
+	mouse_to_charpos(priv, event_x(ev), priv->full_text,
+							&priv->startx, &priv->startindex);
+	select_word(priv, priv->full_text, priv->startx);
 
 	/* several cases: */
 	if (priv->startx < startx) { /* adjust left of old start */
@@ -518,6 +518,7 @@ static int adjust_wordwise(Quick_private_t *priv, Event *ev)
 
 static int quick_adjust_up(Quick_private_t *priv, Event *ev)
 {
+	SERVERTRACE((300, "%s click_cnt=%d\n", __FUNCTION__, priv->select_click_cnt));
 	if (priv->select_click_cnt == 2) {
 		return adjust_wordwise(priv, ev);
 	}
@@ -531,21 +532,18 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
-			case QUICK_START_X: priv->startx = (int)A1; ADONE;
-			case QUICK_END_X: priv->endx = (int)A1; ADONE;
+			case QUICK_START:
+				select_start(priv, (char *)A1, (int)A2, (int)A3);
+				ADONE;
+
 			case QUICK_BASELINE: priv->baseline = (int)A1; ADONE;
 			case QUICK_CLIENT_DATA: priv->client_data = (Xv_opaque)A1; ADONE;
-			case QUICK_FONTINFO:
-					priv->fs = (XFontStruct *)A1;
-					ADONE;
+			case QUICK_FONTINFO: priv->fs = (XFontStruct *)A1; ADONE;
 
 			case XV_FONT: {
 					Xv_font f = (Xv_font)A1;
 					priv->fs = (XFontStruct *)xv_get(f, FONT_INFO);
 				}
-				ADONE;
-			case QUICK_GET_STRING_PROC:
-				priv->get_string = (get_string_t)A1;
 				ADONE;
 
 			case QUICK_REMOVE_UNDERLINE_PROC:
@@ -553,8 +551,7 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 				ADONE;
 
 			case QUICK_SELECT_DOWN:
-				quick_select_down(priv, (Event *)A1, (char *)A2, (int)A3, 
-									(int)A4);
+				quick_select_down(priv, (Event *)A1);
 				ADONE;
 
 			case QUICK_LOC_DRAG:
@@ -585,12 +582,9 @@ static Xv_opaque quick_get(Quick_owner self, int *status, Attr_attribute attr,
 	Quick_private_t *priv = QUICKPRIV(self);
 
 	switch (attr) {
-		case QUICK_START_X: return (Xv_opaque)priv->startx;
-		case QUICK_END_X: return (Xv_opaque)priv->endx;
+		case QUICK_NEED_START: return (Xv_opaque)(priv->full_text[0] == '\0');
 		case QUICK_BASELINE: return (Xv_opaque)priv->baseline;
 		case QUICK_CLIENT_DATA: return (Xv_opaque)priv->client_data;
-		case QUICK_GET_STRING_PROC:
-			return (Xv_opaque)priv->get_string;
 		case QUICK_REMOVE_UNDERLINE_PROC:
 			return (Xv_opaque)priv->remove_underline;
 		default:
@@ -614,7 +608,7 @@ static int quick_destroy(Quick_owner self, Destroy_status status)
 }
 
 
-Xv_pkg xv_quick_owner_pkg = {
+const Xv_pkg xv_quick_owner_pkg = {
     "Quick Duplicate",
 	ATTR_PKG_QUICK,
     sizeof(Xv_quick_owner),
