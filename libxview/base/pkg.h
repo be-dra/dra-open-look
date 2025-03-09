@@ -1,4 +1,4 @@
-/*      @(#)pkg.h 20.22 91/03/19 SMI   DRA: $Id: pkg.h,v 4.1 2024/03/28 19:35:11 dra Exp $      */
+/*      @(#)pkg.h 20.22 91/03/19 SMI   DRA: $Id: pkg.h,v 4.3 2025/03/08 12:52:02 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -74,12 +74,12 @@ typedef struct _xview_pkg {
     char                *name;
     Attr_attribute       attr_id;
     unsigned             size_of_object;
-    struct _xview_pkg   *parent_pkg;
+    const struct _xview_pkg   *parent_pkg;
     int                  (*init)(Xv_opaque , Xv_opaque, Attr_avlist, int *);
     Xv_opaque            (*set)(Xv_opaque, Attr_avlist);
     Xv_opaque            (*get)(Xv_opaque, int *, Attr_attribute, va_list vali);
     int                  (*destroy)(Xv_opaque, Destroy_status );
-    Xv_object            (*find)(Xv_opaque, struct _xview_pkg *, Attr_avlist);
+    Xv_object            (*find)(Xv_opaque, const struct _xview_pkg *, Attr_avlist);
 } Xv_pkg;
 
 /*
@@ -93,14 +93,14 @@ typedef struct _xview_pkg {
  */
 
 _XVFUNCPROTOBEGIN
-EXTERN_FUNCTION (Xv_object xv_create_avlist, (Xv_opaque parent, Xv_pkg *pkg, Attr_attribute *avlist));
+EXTERN_FUNCTION (Xv_object xv_create_avlist, (Xv_opaque parent, const Xv_pkg *pkg, Attr_attribute *avlist));
 EXTERN_FUNCTION (Xv_opaque xv_set_avlist, (Xv_opaque passed_object, Attr_avlist avlist));
-EXTERN_FUNCTION (Xv_opaque xv_super_set_avlist, (Xv_opaque object, Xv_pkg *pkg, Attr_avlist avlist));
+EXTERN_FUNCTION (Xv_opaque xv_super_set_avlist, (Xv_opaque object, const Xv_pkg *pkg, Attr_avlist avlist));
 EXTERN_FUNCTION (int xv_destroy_status, (Xv_object passed_object, Destroy_status status));
-EXTERN_FUNCTION (int xv_check_bad_attr, (Xv_pkg *pkg, Attr_attribute attr));
+EXTERN_FUNCTION (int xv_check_bad_attr, (const Xv_pkg *pkg, Attr_attribute attr));
 EXTERN_FUNCTION (Xv_opaque xv_get_varargs, (Xv_opaque passed_object, Attr_attribute attr, va_list valist));
 
-EXTERN_FUNCTION (void xv_add_custom_attrs, (Xv_pkg *, DOTDOTDOT)) _X_SENTINEL(0);
+EXTERN_FUNCTION (void xv_add_custom_attrs, (const Xv_pkg *, DOTDOTDOT)) _X_SENTINEL(0);
 _XVFUNCPROTOEND
 
 #endif /* ~xview_pkg_DEFINED */
