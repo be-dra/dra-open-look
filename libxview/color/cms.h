@@ -1,4 +1,4 @@
-/*	@(#)cms.h 20.12 89/08/17 SMI   DRA: RCS $Id: cms.h,v 2.1 2020/07/26 07:30:56 dra Exp $	*/
+/*	@(#)cms.h 20.12 89/08/17 SMI   DRA: RCS $Id: cms.h,v 2.2 2025/03/08 13:26:38 dra Exp $	*/
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL NOTICE 
@@ -138,6 +138,6 @@ typedef enum {
  *                              Globals
  ***********************************************************************
  */
-extern Xv_pkg	xv_cms_pkg;
+extern const Xv_pkg	xv_cms_pkg;
 
 #endif	/* ~xview_cms_h_DEFINED */
