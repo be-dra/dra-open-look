@@ -1,4 +1,4 @@
-/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.7 2025/02/04 20:08:35 dra Exp $      */
+/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.8 2025/03/08 13:42:17 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -201,7 +201,7 @@ extern Xv_Server	xv_default_server;
  * PRIVATE variables 
  */
 #ifndef XV_ATTRIBUTES_ONLY
-extern Xv_pkg		xv_server_pkg;
+extern const Xv_pkg		xv_server_pkg;
 #endif /* ~XV_ATTRIBUTES_ONLY */
 
 _XVFUNCPROTOBEGIN
