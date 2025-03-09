@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.4 2024/11/14 15:26:29 dra Exp $";
+static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.6 2025/03/08 13:01:51 dra Exp $";
 #endif
 #endif
 
@@ -391,8 +391,8 @@ Pkg_private Xv_opaque generic_get(Xv_object object, int *status,
 			break;
 
 		case XV_IS_SUBTYPE_OF:{
-				register Xv_pkg *pkg = ((Xv_base *) object)->pkg;
-				register Xv_pkg *super_pkg;
+				const Xv_pkg *pkg = ((Xv_base *) object)->pkg;
+				const Xv_pkg *super_pkg;
 
 				super_pkg = va_arg(args, Xv_pkg *);
 				while (pkg) {
@@ -553,7 +553,7 @@ static void delete_node(Xv_object object, Generic_node *node, Generic_node *prev
 	xv_free(node);
 }
 
-Xv_pkg xv_generic_pkg = {
+const Xv_pkg xv_generic_pkg = {
     "Generic",
     ATTR_PKG_GENERIC,
     sizeof(Xv_generic_struct),
