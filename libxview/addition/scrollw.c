@@ -35,7 +35,7 @@
 #include <olgx/olgx.h>
 #include <xview/win_notify.h>
 
-char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.6 2025/01/28 19:49:43 dra Exp $";
+char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.7 2025/03/08 13:04:27 dra Exp $";
 
 extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 
@@ -1685,7 +1685,7 @@ static int scrollwin_destroy(Scrollwin self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_scrollwin_pkg = {
+const Xv_pkg xv_scrollwin_pkg = {
 	"ScrollWin",
 	ATTR_PKG_SCROLL,
 	sizeof(Xv_scrollwin),
@@ -1697,7 +1697,7 @@ Xv_pkg xv_scrollwin_pkg = {
 	0
 };
 
-Xv_pkg xv_scrollview_pkg = {
+const Xv_pkg xv_scrollview_pkg = {
 	"ScrollView",
 	ATTR_PKG_SCROLL,
 	sizeof(Xv_scrollview),
@@ -1709,7 +1709,7 @@ Xv_pkg xv_scrollview_pkg = {
 	0
 };
 
-Xv_pkg xv_scrollpw_pkg = {
+const Xv_pkg xv_scrollpw_pkg = {
 	"ScrollPaintWindow",
 	ATTR_PKG_SCROLL,
 	sizeof(Xv_scrollpw),
