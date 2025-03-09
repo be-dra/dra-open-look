@@ -27,7 +27,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview/shortcut.h>
 
-char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.11 2025/01/23 08:58:54 dra Exp $";
+char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.12 2025/03/08 13:37:48 dra Exp $";
 
 typedef struct {
 	char *code;
@@ -838,7 +838,7 @@ static int shortcuts_destroy(Shortcuts self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_shortcuts_pkg = {
+const Xv_pkg xv_shortcuts_pkg = {
 	"Shortcuts",
 	ATTR_PKG_FUNCTION_KEYS,
 	sizeof(Xv_shortcuts),
