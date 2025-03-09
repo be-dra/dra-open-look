@@ -1,4 +1,4 @@
-/*      @(#)scrollbar.h 1.35 91/03/19	RCS: $Id: scrollbar.h,v 4.3 2025/01/28 21:45:59 dra Exp $ */
+/*      @(#)scrollbar.h 1.35 91/03/19	RCS: $Id: scrollbar.h,v 4.4 2025/03/08 13:11:09 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -9,7 +9,7 @@
 #ifndef	xview_scrollbar_DEFINED
 #define	xview_scrollbar_DEFINED
 
-/* $Id: scrollbar.h,v 4.3 2025/01/28 21:45:59 dra Exp $ */
+/* $Id: scrollbar.h,v 4.4 2025/03/08 13:11:09 dra Exp $ */
 /*
  * Module:	scrollbar.h
  * Library:	libxview.a
@@ -137,7 +137,7 @@ typedef enum {
  ***********************************************************************
  */
 
-extern Xv_pkg 		xv_scrollbar_pkg;
+extern const Xv_pkg xv_scrollbar_pkg;
 
 /*
  * Public functions
