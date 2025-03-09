@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.8 2025/01/07 18:39:52 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.9 2025/03/08 13:30:00 dra Exp $ ";
 #endif
 #endif
 
@@ -206,7 +206,7 @@ static int dnd_destroy(Dnd dnd_public, Destroy_status status)
 	return (XV_OK);
 }
 
-Xv_pkg xv_dnd_pkg = {
+const Xv_pkg xv_dnd_pkg = {
     "Drag & Drop", ATTR_PKG_DND,
     sizeof(Xv_dnd_struct),
     &xv_sel_owner_pkg,
