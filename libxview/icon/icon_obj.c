@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon_obj.c 20.33 90/02/26 DRA: RCS $Id: icon_obj.c,v 4.4 2025/01/10 10:09:04 dra Exp $ ";
+static char     sccsid[] = "@(#)icon_obj.c 20.33 90/02/26 DRA: RCS $Id: icon_obj.c,v 4.5 2025/03/08 13:46:13 dra Exp $ ";
 #endif
 #endif
 
@@ -492,7 +492,7 @@ static void icon_set_wrk_space_color(Icon icon_public)
 	XSetWindowBackground(display, xid, icon->workspace_pixel);
 }
 
-Xv_pkg          xv_icon_pkg = {
+const Xv_pkg xv_icon_pkg = {
     "Icon",			/* seal -> package name */
     (Attr_pkg) ATTR_PKG_ICON,	/* icon attr */
     sizeof(Xv_icon),		/* size of the icon data struct */
