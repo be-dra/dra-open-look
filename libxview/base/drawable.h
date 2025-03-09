@@ -1,4 +1,4 @@
-/*      @(#)drawable.h 20.15 93/06/28 SMI   DRA: $Id: drawable.h,v 4.1 2024/03/28 19:35:11 dra Exp $      */
+/*      @(#)drawable.h 20.15 93/06/28 SMI   DRA: $Id: drawable.h,v 4.2 2025/03/08 13:01:51 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -63,6 +63,6 @@ typedef struct {			/* For sub-pkg implementors only */
  ***********************************************************************
  */
 
-extern Xv_pkg			xv_drawable_pkg;
+extern const Xv_pkg			xv_drawable_pkg;
 
 #endif	/* ~xview_drawable_DEFINED */
