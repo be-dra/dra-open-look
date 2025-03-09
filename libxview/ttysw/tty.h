@@ -1,5 +1,5 @@
 /*
- * @(#)tty.h 20.18 93/06/28 SMI RCS: $Id: tty.h,v 4.3 2024/10/04 14:50:10 dra Exp $
+ * @(#)tty.h 20.18 93/06/28 SMI RCS: $Id: tty.h,v 4.4 2025/03/08 13:18:09 dra Exp $
  *
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL NOTICE 
@@ -107,8 +107,8 @@ typedef enum {
  ***********************************************************************
  */
 
-extern  Xv_pkg		xv_tty_pkg;
-extern  Xv_pkg		xv_tty_view_pkg;
+extern  const Xv_pkg		xv_tty_pkg;
+extern  const Xv_pkg		xv_tty_view_pkg;
 
 /*
  * 		Escape sequences recognized by TTY subwindows
