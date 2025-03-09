@@ -1,4 +1,4 @@
-/*      @(#)pkg_public.h 20.25 93/06/28 SMI   DRA: $Id: pkg_public.h,v 4.1 2024/03/28 19:35:11 dra Exp $      */
+/*      @(#)pkg_public.h 20.25 93/06/28 SMI   DRA: $Id: pkg_public.h,v 4.2 2025/03/08 12:37:37 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -43,7 +43,7 @@ typedef long unsigned	 Xv_embedding;
  */
 typedef struct {
     long unsigned	 seal;	/* Has "special" value meaning "am object" */
-    Xv_pkg		*pkg;   /* Always points to pkg chain for an object */
+    const Xv_pkg		*pkg;   /* Always points to pkg chain for an object */
 } Xv_base;
 
 typedef unsigned int Attr32_attribute;
@@ -58,8 +58,8 @@ typedef unsigned int Attr32_attribute;
  * PUBLIC General interface functions	
  */
 _XVFUNCPROTOBEGIN
-EXTERN_FUNCTION (Xv_object xv_create, (Xv_opaque owner, Xv_pkg *pkg, DOTDOTDOT)) _X_SENTINEL(0);
-EXTERN_FUNCTION (Xv_object xv_find, (Xv_opaque owner, Xv_pkg *pkg, DOTDOTDOT)) _X_SENTINEL(0);
+EXTERN_FUNCTION (Xv_object xv_create, (Xv_opaque owner, const Xv_pkg *pkg, DOTDOTDOT)) _X_SENTINEL(0);
+EXTERN_FUNCTION (Xv_object xv_find, (Xv_opaque owner, const Xv_pkg *pkg, DOTDOTDOT)) _X_SENTINEL(0);
 EXTERN_FUNCTION (Xv_opaque xv_set, (Xv_opaque object, DOTDOTDOT)) _X_SENTINEL(0);
 EXTERN_FUNCTION (Xv_opaque xv_get, (Xv_opaque object, Attr32_attribute attr, DOTDOTDOT));
 EXTERN_FUNCTION (int xv_destroy_safe, (Xv_object object));
