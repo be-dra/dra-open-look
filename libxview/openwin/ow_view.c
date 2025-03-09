@@ -1,5 +1,5 @@
 #ifndef lint
-char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.8 2025/03/06 17:36:29 dra Exp $ ";
+char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.9 2025/03/08 12:47:02 dra Exp $ ";
 #endif
 
 /*
@@ -54,7 +54,7 @@ static void openwin_free_view(Openwin_view_info *view);
 
 
 typedef Xv_opaque  Resize_handle;
-static Xv_pkg *resize_handle_class(void);
+static const Xv_pkg *resize_handle_class(void);
 
 extern char *xv_app_name;
 
@@ -324,7 +324,7 @@ Pkg_private void openwin_copy_scrollbar(Xv_openwin_info *owin, Scrollbar sb, Ope
 	Scrollbar copy_sb;
 	int pixs_per_unit;
 	char instname[200], *owinst;
-	Xv_pkg *pkg;
+	const Xv_pkg *pkg;
 	Openwin ow = OPENWIN_PUBLIC(owin);
 
 	r = *(Rect *) xv_get(VIEW_PUBLIC(to_view), WIN_RECT);
@@ -337,7 +337,7 @@ Pkg_private void openwin_copy_scrollbar(Xv_openwin_info *owin, Scrollbar sb, Ope
 	view_length = view_length / pixs_per_unit;
 
 	owinst = (char *)xv_get(ow, XV_INSTANCE_NAME);
-	pkg = (Xv_pkg *)xv_get(ow, XV_TYPE);
+	pkg = (const Xv_pkg *)xv_get(ow, XV_TYPE);
 	sprintf(instname, "%s%sSB", owinst ? owinst : pkg->name,
 					((direction == SCROLLBAR_VERTICAL) ? "vert" : "hor"));
 	copy_sb = xv_create(ow, SCROLLBAR,
@@ -814,8 +814,8 @@ static void openwin_create_viewwindow(Xv_openwin_info *owin, Openwin_view_info *
 	Cms cms;
 	Openwin self = OPENWIN_PUBLIC(owin);
 	Openwin_view newview;
-	Xv_pkg *vcl = (Xv_pkg *)xv_get(self, OPENWIN_VIEW_CLASS);
-	Xv_pkg *pwcl = (Xv_pkg *)xv_get(self, OPENWIN_PW_CLASS);
+	const Xv_pkg *vcl = (const Xv_pkg *)xv_get(self, OPENWIN_VIEW_CLASS);
+	const Xv_pkg *pwcl = (const Xv_pkg *)xv_get(self, OPENWIN_PW_CLASS);
 
 	if (from_view != NULL) {
 		xborders = (int)xv_get(VIEW_PUBLIC(from_view), WIN_BORDER);
@@ -2148,7 +2148,7 @@ static int openwin_view_destroy(Openwin_view self, Destroy_status stat)
 }
 
 
-Xv_pkg xv_openwin_view_pkg = {
+const Xv_pkg xv_openwin_view_pkg = {
     "Open Window View",				/* seal -> package name */
     (Attr_pkg) ATTR_PKG_OPENWIN,	/* openwin attr */
     sizeof(Xv_openwin_view),		/* size of the openwin data struct */
@@ -2250,7 +2250,7 @@ static int resize_handle_destroy(Resize_handle self, Destroy_status stat)
 	return XV_OK;
 }
 
-static Xv_pkg xv_resize_handle_pkg = {
+static const Xv_pkg xv_resize_handle_pkg = {
     "ResizeHandle",
     (Attr_pkg) ATTR_PKG_OPENWIN,
     sizeof(Xv_resize_handle),
@@ -2262,7 +2262,7 @@ static Xv_pkg xv_resize_handle_pkg = {
     NULL
 };
 
-static Xv_pkg *resize_handle_class(void)
+static const Xv_pkg *resize_handle_class(void)
 {
 	return &xv_resize_handle_pkg;
 }
