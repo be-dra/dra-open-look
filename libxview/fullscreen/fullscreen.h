@@ -1,4 +1,4 @@
-/* @(#)fullscreen.h 20.29 93/06/28  DRA $Id: fullscreen.h,v 2.2 2024/02/08 21:13:54 dra Exp $	 */
+/* @(#)fullscreen.h 20.29 93/06/28  DRA $Id: fullscreen.h,v 2.3 2025/03/08 13:50:55 dra Exp $	 */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -116,7 +116,7 @@ typedef enum {
  * PUBLIC variables
  */
 
-extern Xv_pkg   xv_fullscreen_pkg;
+extern const Xv_pkg   xv_fullscreen_pkg;
 
 /*
  * PUBLIC functions
