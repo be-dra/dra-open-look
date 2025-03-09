@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.6 2024/12/23 21:05:17 dra Exp $ ";
+static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.7 2025/03/08 13:24:37 dra Exp $ ";
 #endif
 #endif
 
@@ -2396,7 +2396,7 @@ fchsr_case_descend_compare( row1, row2 )
 
 /*----------------------------------------------------------------------------*/
 
-Xv_pkg file_chooser_pkg = {
+const Xv_pkg file_chooser_pkg = {
     "File_chooser",
     ATTR_PKG_FILE_CHOOSER,
     sizeof(File_chooser_public),
