@@ -1,4 +1,4 @@
-/*      @(#)file_chsr.h 1.20 93/06/28 SMI  DRA: RCS $Id: file_chsr.h,v 4.2 2024/05/06 18:46:27 dra Exp $      */
+/*      @(#)file_chsr.h 1.20 93/06/28 SMI  DRA: RCS $Id: file_chsr.h,v 4.3 2025/03/08 13:24:37 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 
 
-extern Xv_pkg		file_chooser_pkg;
+extern const Xv_pkg		file_chooser_pkg;
 #define FILE_CHOOSER	&file_chooser_pkg
 
 typedef Xv_opaque File_chooser;
