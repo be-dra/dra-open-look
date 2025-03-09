@@ -2,7 +2,7 @@
 #define guide_group_DEFINED
 
 /*
- * @(#)group.h	2.15 92/05/20 Copyright 1991 Sun Microsystems RCS $Id: group.h,v 2.5 2024/11/04 22:25:14 dra Exp $
+ * @(#)group.h	2.15 92/05/20 Copyright 1991 Sun Microsystems RCS $Id: group.h,v 2.6 2025/03/08 13:37:48 dra Exp $
  *
  * This file is a product of Sun Microsystems, Inc. and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -36,7 +36,7 @@
 #include	<xview/panel.h>
 #include	<xview/attrol.h>
 
-extern Xv_pkg	group_pkg;
+extern const Xv_pkg	group_pkg;
 
 #define	GROUP	&group_pkg
 
