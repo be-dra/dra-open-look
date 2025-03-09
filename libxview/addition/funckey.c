@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.15 2025/02/13 17:26:52 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.16 2025/03/08 13:37:48 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -1227,7 +1227,7 @@ Function_keys xv_function_keys_from_server(Xv_server srv)
 	return xv_get(srv, XV_KEY_DATA, fkey_key);
 }
 
-Xv_pkg xv_funckeys_pkg = {
+const Xv_pkg xv_funckeys_pkg = {
 	"FunctionKeys",
 	ATTR_PKG_FUNCTION_KEYS,
 	sizeof(Xv_funckeys),
