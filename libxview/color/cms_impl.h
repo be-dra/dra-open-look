@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char sccsid[] = "@(#)cms_impl.h 1.10 89/08/18   SMI   DRA: RCS $Id: cms_impl.h,v 2.2 2024/05/22 21:39:20 dra Exp $";
+static char sccsid[] = "@(#)cms_impl.h 1.10 89/08/18   SMI   DRA: RCS $Id: cms_impl.h,v 2.3 2025/03/08 13:26:50 dra Exp $";
 #endif
 #endif
 
@@ -62,6 +62,8 @@ typedef struct xv_colormap {
     struct xv_colormap  *next;
 } Xv_Colormap;
 
+struct screen_visual;
+
 typedef struct cms_info {
     Cms			public_self;
     char	       *name;
@@ -70,7 +72,7 @@ typedef struct cms_info {
     unsigned long      *index_table;
     Xv_Colormap	       *cmap;
     Xv_Screen           screen;
-    Screen_visual      *visual;
+    struct screen_visual *visual;
     struct cms_info    *next;
     struct {
 	BIT_FIELD(default_cms);
