@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.14 2025/03/03 19:08:33 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.15 2025/03/08 13:49:01 dra Exp $ ";
 #endif
 #endif
 
@@ -1240,7 +1240,7 @@ static void screen_input(Xv_server server, Display *dpy, XPropertyEvent	*xev,
 	}
 }
 
-Xv_pkg xv_screen_pkg = {
+const Xv_pkg xv_screen_pkg = {
     "Screen", ATTR_PKG_SCREEN,
     sizeof(Xv_screen_struct),
     &xv_generic_pkg,
