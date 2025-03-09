@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.4 2025/01/03 12:58:25 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.5 2025/03/08 12:58:04 dra Exp $";
 #endif
 #endif
 
@@ -98,8 +98,7 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 #endif
 
 	/* Inherit WIN_USE_IM from parent */
-	if (parent_public &&
-			((Xv_pkg *) xv_get(parent_public, XV_IS_SUBTYPE_OF, WINDOW))) {
+	if (parent_public && xv_get(parent_public, XV_IS_SUBTYPE_OF, WINDOW)) {
 		win_use_im = xv_get(parent_public, WIN_USE_IM);
 	}
 #endif /* OW_I18N */
@@ -502,8 +501,7 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	/*
 	 * inherit parent's font
 	 */
-	if (parent_public &&
-			((Xv_pkg *) xv_get(parent_public, XV_IS_SUBTYPE_OF, WINDOW))) {
+	if (parent_public && xv_get(parent_public, XV_IS_SUBTYPE_OF, WINDOW)) {
 		win->font = (Xv_font) xv_get(parent_public, XV_FONT);
 	}
 
@@ -795,7 +793,7 @@ static int window_destroy_win_struct(Xv_Window win_public, Destroy_status status
 	return XV_OK;
 }
 
-Xv_pkg          xv_window_pkg = {
+const Xv_pkg          xv_window_pkg = {
     "Window", ATTR_PKG_WIN,
     sizeof(Xv_window_struct),
     &xv_drawable_pkg,
