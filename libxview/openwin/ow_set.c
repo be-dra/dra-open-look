@@ -1,5 +1,5 @@
 #ifndef lint
-char     ow_set_c_sccsid[] = "@(#)ow_set.c 1.49 91/05/23 DRA: $Id: ow_set.c,v 4.2 2024/11/14 19:30:28 dra Exp $ ";
+char     ow_set_c_sccsid[] = "@(#)ow_set.c 1.49 91/05/23 DRA: $Id: ow_set.c,v 4.3 2025/03/08 12:47:02 dra Exp $ ";
 #endif
 
 /*
@@ -316,7 +316,7 @@ Pkg_private Xv_opaque openwin_set(Openwin self, Attr_avlist avlist)
 					ow_set_height(owin, owin->nbr_rows);
 				STATUS_SET(owin, created);
 				{
-					Xv_pkg *socl = (Xv_pkg *)xv_get(self, OPENWIN_SEL_OWNER_CLASS);
+					const Xv_pkg *socl = (const Xv_pkg *)xv_get(self, OPENWIN_SEL_OWNER_CLASS);
 					owin->sel_owner = xv_create(self, socl,
 								SEL_RANK, XA_PRIMARY,
 								SEL_LOSE_PROC, openwin_lose_selection,
