@@ -1,4 +1,4 @@
-/*      @(#)attr_impl.h 20.13 90/11/13 SMI   DRA: $Id: attr_impl.h,v 4.1 2024/03/28 19:32:21 dra Exp $ "    */
+/*      @(#)attr_impl.h 20.13 90/11/13 SMI   DRA: $Id: attr_impl.h,v 4.2 2025/03/08 12:36:59 dra Exp $ "    */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -45,7 +45,7 @@
 extern Attr_avlist attr_copy_avlist(Attr_avlist dest, Attr_avlist avlist);
 extern int attr_count_avlist(Attr_avlist avlist, Attr_attribute UNUSED_last_attr);
 extern Attr_avlist attr_copy_valist(Attr_avlist dest, va_list valist);
-extern Attr_avlist attr_customize(Xv_object, Xv_pkg *pkg, char *instance_name, Xv_object owner, Attr_avlist avlist_copy, int size, Attr_avlist avlist);
+extern Attr_avlist attr_customize(Xv_object, const Xv_pkg *pkg, char *instance_name, Xv_object owner, Attr_avlist avlist_copy, int size, Attr_avlist avlist);
 extern Attr_avlist attr_find(Attr_avlist attrs, Attr_attribute attr);
 
 #endif  /* _attr_impl_h_already_included */
