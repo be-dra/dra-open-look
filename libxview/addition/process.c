@@ -33,7 +33,7 @@
 #include <xview/process.h>
 #include <xview_private/i18n_impl.h>
 
-char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.3 2024/11/03 13:00:21 dra Exp $";
+char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.4 2025/03/08 13:37:48 dra Exp $";
 
 typedef enum { NOT_RUNNING, IS_ALIVE, MAYBE_DEAD, IS_DEAD, IS_DONE } chstat_t;
 
@@ -677,7 +677,7 @@ static int process_destroy(Process self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_process_pkg = {
+const Xv_pkg xv_process_pkg = {
 	"Process",
 	ATTR_PKG_PROCESS,
 	sizeof(Xv_process),
