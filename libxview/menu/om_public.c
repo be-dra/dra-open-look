@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.7 2025/01/31 21:24:23 dra Exp $";
+static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.8 2025/03/08 13:52:55 dra Exp $";
 #endif
 #endif
 
@@ -387,7 +387,7 @@ static int menu_create_internal(Xv_opaque parent, Xv_opaque object,
 									Xv_opaque *avlist, int *u)
 {
 	register Xv_menu_info *m;
-	register Xv_pkg *menu_type;
+	register const Xv_pkg *menu_type;
 	register Attr_avlist attrs;
 
 	/*
@@ -455,7 +455,7 @@ static int menu_create_internal(Xv_opaque parent, Xv_opaque object,
 	/*
 	 * set the class field depending on what type of menu the client created
 	 */
-	menu_type = (Xv_pkg *) xv_get(object, XV_TYPE);
+	menu_type = (const Xv_pkg *) xv_get(object, XV_TYPE);
 	if (menu_type == MENU_COMMAND_MENU) {
 		m->class = MENU_COMMAND;
 	}
@@ -815,7 +815,7 @@ Pkg_private void menu_return_no_value(Menu menu_public)
  * xv_find via the menu package ops vector.
  */
 	/* Must be MENUITEM */
-static Xv_opaque menu_pkg_find(Menu menu_public, Xv_pkg *pkg,
+static Xv_opaque menu_pkg_find(Menu menu_public, const Xv_pkg *pkg,
 							Attr_attribute avlist[ATTR_STANDARD_SIZE])
 {
 	register Attr_avlist attrs;
@@ -1911,7 +1911,7 @@ Xv_private void menu_accelerator_notify_proc(Frame_accel_data *accelerator_data,
 /* ACC_XVIEW */
 
 
-Xv_pkg xv_command_menu_pkg = {
+const Xv_pkg xv_command_menu_pkg = {
     "Command Menu",		/* seal -> package name */
     (Attr_pkg) ATTR_PKG_MENU,	/* menu attr */
     sizeof(Xv_menu),		/* size of the menu public data structure */
@@ -1923,7 +1923,7 @@ Xv_pkg xv_command_menu_pkg = {
     NULL			/* no find proc */
 };
 
-Xv_pkg xv_choice_menu_pkg = {
+const Xv_pkg xv_choice_menu_pkg = {
     "Choice Menu",		/* seal -> package name */
     (Attr_pkg) ATTR_PKG_MENU,	/* menu attr */
     sizeof(Xv_menu),		/* size of the menu public data structure */
@@ -1935,7 +1935,7 @@ Xv_pkg xv_choice_menu_pkg = {
     NULL			/* no find proc */
 };
 
-Xv_pkg xv_toggle_menu_pkg = {
+const Xv_pkg xv_toggle_menu_pkg = {
     "Toggle Menu",		/* seal -> package name */
     (Attr_pkg) ATTR_PKG_MENU,	/* menu attr */
     sizeof(Xv_menu),		/* size of the menu public data structure */
@@ -1947,7 +1947,7 @@ Xv_pkg xv_toggle_menu_pkg = {
     NULL			/* no find proc */
 };
 
-Xv_pkg xv_mixed_menu_pkg = {
+const Xv_pkg xv_mixed_menu_pkg = {
     "Mixed Menu",		/* seal -> package name */
     (Attr_pkg) ATTR_PKG_MENU,	/* menu attr */
     sizeof(Xv_menu),		/* size of the menu public data structure */
@@ -1959,7 +1959,7 @@ Xv_pkg xv_mixed_menu_pkg = {
     NULL			/* no find proc */
 };
 
-Xv_pkg xv_menu_item_pkg = {
+const Xv_pkg xv_menu_item_pkg = {
     "Menu_item",
     (Attr_pkg) ATTR_PKG_MENU,	/* menu item shares menu attrs */
     sizeof(Xv_menu_item),	/* size of the item public data structure */
