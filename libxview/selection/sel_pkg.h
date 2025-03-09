@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.7 2025/01/26 20:52:49 dra Exp $";
+static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.8 2025/03/08 14:06:27 dra Exp $";
 #endif
 #endif
 
@@ -210,10 +210,10 @@ typedef struct {
 /*
  * 	Package Structures 
  */
-extern Xv_pkg 		xv_sel_pkg;
-extern Xv_pkg 		xv_sel_owner_pkg;
-extern Xv_pkg 		xv_sel_requestor_pkg;
-extern Xv_pkg 		xv_sel_item_pkg;
+extern const Xv_pkg 		xv_sel_pkg;
+extern const Xv_pkg 		xv_sel_owner_pkg;
+extern const Xv_pkg 		xv_sel_requestor_pkg;
+extern const Xv_pkg 		xv_sel_item_pkg;
 
 /*
  * 	Public Functions 
