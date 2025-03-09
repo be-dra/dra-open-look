@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.6 2024/11/30 12:54:14 dra Exp $ ";
+static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.7 2025/03/08 13:24:37 dra Exp $ ";
 #endif
 #endif
  
@@ -1424,7 +1424,7 @@ file_list_case_descend_compare( row1, row2 )
 }
 
 
-Xv_pkg file_list_pkg = {
+const Xv_pkg file_list_pkg = {
     "File_list",
     ATTR_PKG_FILE_LIST,
     sizeof(File_list_public),
