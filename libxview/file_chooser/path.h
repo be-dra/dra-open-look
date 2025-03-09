@@ -1,4 +1,4 @@
-/*      @(#)path.h 1.6 93/06/28 SMI  DRA: RCS $Id: path.h,v 4.1 2024/03/28 13:04:11 dra Exp $      */
+/*      @(#)path.h 1.6 93/06/28 SMI  DRA: RCS $Id: path.h,v 4.2 2025/03/08 13:24:37 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -12,7 +12,7 @@
 
 #include <sys/stat.h>
 
-extern Xv_pkg		path_pkg;
+extern const Xv_pkg		path_pkg;
 #define PATH_NAME	&path_pkg
 
 typedef Xv_opaque Path_name;
