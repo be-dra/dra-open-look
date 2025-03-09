@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.3 2025/03/06 17:36:51 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.4 2025/03/08 13:11:09 dra Exp $ ";
 #endif
 #endif
 
@@ -2984,7 +2984,7 @@ Xv_public void scrollbar_paint(Scrollbar sb_public)
 }
 
 
-Xv_pkg          xv_scrollbar_pkg = {
+const Xv_pkg xv_scrollbar_pkg = {
     "Scrollbar",			/* seal -> package name */
     (Attr_pkg) ATTR_PKG_SCROLLBAR,	/* scrollbar attr */
     sizeof(Xv_scrollbar),		/* size of the scrollbar data struct */
