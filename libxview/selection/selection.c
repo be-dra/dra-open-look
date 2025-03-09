@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)selection.c 1.11 93/06/28 DRA: $Id: selection.c,v 4.2 2024/05/22 17:56:03 dra Exp $";
+static char     sccsid[] = "@(#)selection.c 1.11 93/06/28 DRA: $Id: selection.c,v 4.3 2025/03/08 14:06:27 dra Exp $";
 #endif
 #endif
 
@@ -126,7 +126,7 @@ static int sel_destroy(Selection sel_public, Destroy_status status)
     return XV_OK;
 }
 
-Xv_pkg xv_sel_pkg = {
+const Xv_pkg xv_sel_pkg = {
     "Selection",
     ATTR_PKG_SELECTION,
     sizeof(Xv_sel),
