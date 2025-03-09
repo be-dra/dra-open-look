@@ -28,7 +28,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/attr_impl.h>
 
-char colortext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colortext.c,v 4.3 2024/11/19 12:58:02 dra Exp $";
+char colortext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colortext.c,v 4.4 2025/03/08 13:37:48 dra Exp $";
 
 typedef void (*layout_proc_t)(Panel_item, Rect *);
 typedef struct {
@@ -326,7 +326,7 @@ static int colortext_destroy(Panel_color_text_item self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_panel_color_text_pkg = {
+const Xv_pkg xv_panel_color_text_pkg = {
 	"PanelColortextItem",
 	ATTR_PKG_PANEL_COLOR_TEXT,
 	sizeof(Xv_panel_colortext),
