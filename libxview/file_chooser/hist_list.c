@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)hist_list.c 1.10 93/06/28  DRA: RCS $Id: hist_list.c,v 4.3 2024/11/01 18:32:13 dra Exp $ ";
+static char     sccsid[] = "@(#)hist_list.c 1.10 93/06/28  DRA: RCS $Id: hist_list.c,v 4.4 2025/03/08 13:24:37 dra Exp $ ";
 #endif
 #endif
 
@@ -381,7 +381,7 @@ static Xv_opaque hist_list_get(History_list public, int *status, Attr_attribute 
 /*
  * Don't act so surprised!  Yes, this is an xv_find method...
  */
-static Xv_object hist_list_find(Xv_opaque parent, Xv_pkg *pkg, Attr_avlist avlist)
+static Xv_object hist_list_find(Xv_opaque parent, const Xv_pkg *pkg, Attr_avlist avlist)
 {
     Attr_avlist attrs;
     struct history_list *node = global_list; /* global list */
@@ -665,7 +665,7 @@ static void populate_menu(History_list_private *private, Menu menu)
 
 }
 
-Xv_pkg history_list_pkg = {
+const Xv_pkg history_list_pkg = {
     "History List",
     ATTR_PKG_HIST,
     sizeof(History_list_public),
