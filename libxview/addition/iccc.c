@@ -33,7 +33,7 @@
 #include <pwd.h>				/* System V dependent */
 
 #ifndef lint
-char iccc_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: iccc.c,v 4.10 2025/01/07 20:00:21 dra Exp $";
+char iccc_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: iccc.c,v 4.11 2025/03/08 13:37:48 dra Exp $";
 #endif
 
 #define A0 *attrs
@@ -511,7 +511,7 @@ static int iccc_destroy(Iccc self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_iccc_pkg = {
+const Xv_pkg xv_iccc_pkg = {
 	"Iccc",
 	ATTR_PKG_ICCC,
 	sizeof(Xv_iccc_public),
