@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.2 2025/01/03 15:08:37 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.3 2025/03/07 16:27:56 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -301,7 +301,7 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 	 */
 	if (fcntl(ConnectionNumber(DefDpy), F_SETFD, 1) == -1) {
 		perror(GetString("olwm: child cannot disinherit TCP fd"));
-		exit(1);
+		exit(14);
 	}
 
 	/* Init the global menus */
@@ -459,7 +459,7 @@ openDisplay(rdb)
 	    dpystr = GetString("(NULL DISPLAY)");
 	fprintf(stderr, GetString("%s: cannot connect to %s\n"),
 		ProgramName, dpystr);
-	exit(1);
+	exit(15);
     }
     return dpy;
 }
@@ -739,5 +739,5 @@ USAGE(" -numeric <locale-name>      Specify the numeric format");
 
 #undef USAGE
 
-	exit(1);
+	exit(16);
 }
