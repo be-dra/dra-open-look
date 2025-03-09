@@ -1,5 +1,5 @@
 /* #ident	"@(#)error.c	26.22	93/06/28" */
-char error_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: error.c,v 1.2 1995/09/22 06:14:31 dra Exp $";
+char error_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: error.c,v 1.3 2025/03/07 16:27:09 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -227,11 +227,11 @@ printError(dpy, err, tag)
 	err->request_code, buf);
     FPRINTF(stderr, GetString("  request minor code:  %d\n"),
 	err->minor_code);
-    FPRINTF(stderr, GetString("  resource ID in failed request:  0x%x\n"),
+    FPRINTF(stderr, GetString("  resource ID in failed request:  0x%lx\n"),
 	err->resourceid);
-    FPRINTF(stderr, GetString("  serial number of failed request:  %d\n"),
+    FPRINTF(stderr, GetString("  serial number of failed request:  %ld\n"),
 	err->serial);
-    FPRINTF(stderr, GetString("  current request serial number:  %d\n"),
+    FPRINTF(stderr, GetString("  current request serial number:  %ld\n"),
 	NextRequest(dpy)-1);
 }
 
@@ -309,7 +309,7 @@ ErrorHandler(dpy, event)
 		printError(dpy, event,
 		    GetString("olwm: fatal X protocol error -- "));
 		FPRINTF(stderr, "%s\n", hyperSensitive);
-		exit(1);
+		exit(11);
 		/*NOTREACHED*/
 	}
 
@@ -324,7 +324,7 @@ ErrorHandler(dpy, event)
 	if (errBitmask & entry->fatal) {
 		printError(dpy, event,
 			GetString("olwm: fatal X protocol error -- "));
-		exit(1);
+		exit(12);
 		/*NOTREACHED*/
 	} else if (errBitmask & entry->warning) {
 		if (GRV.PrintWarnings) {
@@ -352,7 +352,7 @@ ErrorGeneral(txt)
 	abort();
 	/*NOTREACHED*/
 #else
-        exit(1);
+        exit(13);
 	/*NOTREACHED*/
 #endif
 }
