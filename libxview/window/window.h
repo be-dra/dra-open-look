@@ -1,4 +1,4 @@
-/*      @(#)window.h 20.99 93/06/28 SMI   DRA $Id: window.h,v 4.2 2024/11/05 11:54:15 dra Exp $      */
+/*      @(#)window.h 20.99 93/06/28 SMI   DRA $Id: window.h,v 4.3 2025/03/08 12:58:04 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -398,7 +398,7 @@ typedef struct window_rescale_rect_obj {
  ***********************************************************************
  */
 
-extern Xv_pkg		xv_window_pkg;
+extern const Xv_pkg		xv_window_pkg;
 
 /*
  * PUBLIC functions
@@ -438,7 +438,7 @@ EXTERN_FUNCTION (int win_translate_xy, (Xv_object src, Xv_object dst, int src_x,
  * For SunView 1 Compatibility
  */
 
-EXTERN_FUNCTION (Xv_Window window_create, (Xv_Window window, Xv_pkg *pkg, DOTDOTDOT)) _X_SENTINEL(0);
+EXTERN_FUNCTION (Xv_Window window_create, (Xv_Window window, const Xv_pkg *pkg, DOTDOTDOT)) _X_SENTINEL(0);
 EXTERN_FUNCTION (Xv_opaque window_get, (Xv_Window window, Window_attribute attr, DOTDOTDOT)) _X_SENTINEL(0);
 EXTERN_FUNCTION (int window_set, (Xv_Window window, DOTDOTDOT)) _X_SENTINEL(0);
 EXTERN_FUNCTION (int window_destroy, (Xv_Window window));
