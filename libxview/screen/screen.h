@@ -1,4 +1,4 @@
- /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.7 2025/02/12 20:41:12 dra Exp $     */
+ /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.8 2025/03/08 13:49:01 dra Exp $     */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -133,6 +133,6 @@ extern Xv_Screen	xv_default_screen;
  * PRIVATE Variables 
  */
 
-extern Xv_pkg	xv_screen_pkg;
+extern const Xv_pkg	xv_screen_pkg;
 
 #endif /* ~xview_screen_DEFINED */
