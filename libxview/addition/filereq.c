@@ -46,7 +46,7 @@
 #include <xview/filereq.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.6 2024/11/07 14:47:31 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.7 2025/03/08 13:37:48 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -1132,7 +1132,7 @@ static int filereq_destroy(File_requestor self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_filereq_pkg = {
+const Xv_pkg xv_filereq_pkg = {
 	"FileRequestor",
 	ATTR_PKG_FILE_REQ,
 	sizeof(Xv_filereq_public),
