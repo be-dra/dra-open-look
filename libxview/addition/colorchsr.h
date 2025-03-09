@@ -2,7 +2,7 @@
 #define _colorchsr_h_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: colorchsr.h,v 4.2 2024/04/12 16:20:20 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: colorchsr.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -31,7 +31,7 @@
 #include <xview/frame.h>
 #include <xview/attrol.h>
 
-extern Xv_pkg xv_colorchsr_pkg;
+extern const Xv_pkg xv_colorchsr_pkg;
 #define COLOR_CHOOSER &xv_colorchsr_pkg
 typedef Xv_opaque Color_chooser;
 
