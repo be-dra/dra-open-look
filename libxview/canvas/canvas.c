@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.3 2025/01/16 21:09:46 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.4 2025/03/08 12:52:57 dra Exp $ ";
 #endif
 #endif
 
@@ -1065,7 +1065,7 @@ static int canvas_init(Xv_Window parent, Canvas self, Attr_attribute avlist[],
 
 #ifdef OW_I18N
     Frame	        frame_public;
-    Xv_pkg              *frame_type;
+    const Xv_pkg              *frame_type;
 #endif /*OW_I18N*/
 
     if (canvas_context_key == (Attr_attribute) 0) {
@@ -1911,8 +1911,8 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public, Attr_avlist 
 			case XV_END_CREATE:
 				{
 					Frame frame_public;
-					Xv_pkg *object_type;
-					Xv_pkg *frame_type;
+					const Xv_pkg *object_type;
+					const Xv_pkg *frame_type;
 					Canvas canvas_public;
 					Xv_object serverobj;
 
@@ -1923,7 +1923,7 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public, Attr_avlist 
 
 					canvas_public = CANVAS_PUBLIC(canvas);
 
-					object_type = (Xv_pkg *) xv_get(canvas_public, XV_TYPE);
+					object_type = (const Xv_pkg *) xv_get(canvas_public, XV_TYPE);
 					if (object_type->attr_id == (Attr_pkg) ATTR_PKG_PANEL)
 						break;
 
@@ -1935,7 +1935,7 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public, Attr_avlist 
 						break;
 
 					frame_public = (Frame) xv_get(canvas_public, WIN_FRAME);
-					frame_type = (Xv_pkg *) xv_get(frame_public, XV_TYPE);
+					frame_type = (const Xv_pkg *) xv_get(frame_public, XV_TYPE);
 
 #ifdef notdef
 					/*
@@ -1945,7 +1945,7 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public, Attr_avlist 
 					 */
 					if (!strcmp(frame_type->name, "Frame_cmd")) {
 						frame_public = (Frame) xv_get(frame_public, XV_OWNER);
-						frame_type = (Xv_pkg *) xv_get(frame_public, XV_TYPE);
+						frame_type = (const Xv_pkg *) xv_get(frame_public, XV_TYPE);
 					}
 
 					if (strcmp(frame_type->name, "Frame_base"))
@@ -2042,7 +2042,7 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public, Attr_avlist 
 	return (result);
 }
 		
-Xv_pkg          xv_canvas_pw_pkg = {
+const Xv_pkg          xv_canvas_pw_pkg = {
     "Canvas paint window",
     (Attr_pkg) ATTR_PKG_CANVAS_PAINT_WINDOW,
     sizeof(Xv_canvas_pw),
@@ -2053,7 +2053,7 @@ Xv_pkg          xv_canvas_pw_pkg = {
     NULL,
     NULL
 };
-Xv_pkg          xv_canvas_pkg = {
+const Xv_pkg          xv_canvas_pkg = {
     "Canvas",
     (Attr_pkg) ATTR_PKG_CANVAS,
     sizeof(Xv_canvas),
@@ -2064,7 +2064,7 @@ Xv_pkg          xv_canvas_pkg = {
     canvas_destroy,
     NULL
 };
-Xv_pkg          xv_canvas_view_pkg = {
+const Xv_pkg          xv_canvas_view_pkg = {
     "Canvas view",
     (Attr_pkg) ATTR_PKG_CANVAS_VIEW,
     sizeof(Xv_canvas_view),
