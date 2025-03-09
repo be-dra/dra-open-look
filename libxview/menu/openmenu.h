@@ -1,4 +1,4 @@
-/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.3 2025/03/03 19:33:15 dra Exp $	*/
+/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.4 2025/03/08 13:52:55 dra Exp $	*/
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL_NOTICE 
@@ -273,11 +273,11 @@ typedef struct {
  * PUBLIC variables 
  */
 
-extern Xv_pkg		xv_command_menu_pkg;
-extern Xv_pkg		xv_choice_menu_pkg;
-extern Xv_pkg		xv_toggle_menu_pkg;
-extern Xv_pkg		xv_mixed_menu_pkg;
-extern Xv_pkg		xv_menu_item_pkg;
+extern const Xv_pkg		xv_command_menu_pkg;
+extern const Xv_pkg		xv_choice_menu_pkg;
+extern const Xv_pkg		xv_toggle_menu_pkg;
+extern const Xv_pkg		xv_mixed_menu_pkg;
+extern const Xv_pkg		xv_menu_item_pkg;
 
 /*
  * PUBLIC variables 
