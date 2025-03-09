@@ -2,7 +2,7 @@
 #define mllist_h_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: mllist.h,v 1.10 2024/06/27 13:04:42 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: mllist.h,v 1.11 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -30,7 +30,7 @@
 #include <xview/proplist.h>
 #include <xview/attrol.h>
 
-extern Xv_pkg xv_multi_level_list_pkg;
+extern const Xv_pkg xv_multi_level_list_pkg;
 typedef Panel_item Multi_level_list;
 
 #define MULTI_LEVEL_LIST &xv_multi_level_list_pkg
