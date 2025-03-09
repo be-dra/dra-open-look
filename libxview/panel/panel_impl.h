@@ -1,4 +1,4 @@
-/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.13 2025/02/14 09:29:44 dra Exp $	*/
+/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.14 2025/03/08 13:08:26 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -321,6 +321,6 @@ Pkg_private int panel_view_init(Panel parent, Panel_view view_public, Attr_attri
 Pkg_private int panel_x_to_col(Xv_Font font, int x);
 Pkg_private int panel_event_is_xview_semantic(Event *event);
 
-Pkg_private Xv_pkg xv_panel_pw_pkg;
+Pkg_private const Xv_pkg xv_panel_pw_pkg;
 
 #endif
