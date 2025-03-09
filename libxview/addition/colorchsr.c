@@ -35,7 +35,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.5 2025/03/06 14:16:27 dra Exp $";
+char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.6 2025/03/08 13:37:48 dra Exp $";
 #endif
 
 #define IMAGE_WIDTH 64
@@ -1221,7 +1221,7 @@ void xv_color_chooser_convert_color(char *val, int panel_to_data,
 	}
 }
 
-Xv_pkg xv_colorchsr_pkg = {
+const Xv_pkg xv_colorchsr_pkg = {
 	"ColorChooser",
 	ATTR_PKG_COLOR_CHOOSER,
 	sizeof(Xv_colorchsr),
