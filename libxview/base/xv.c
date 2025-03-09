@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.5 2024/11/18 09:01:49 dra Exp $";
+static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.6 2025/03/08 12:37:37 dra Exp $";
 #endif
 #endif
 
@@ -212,10 +212,10 @@ Xv_private Xv_opaque xv_object_to_standard(Xv_opaque object, const char *caller)
 	return ((Xv_opaque) ccom_object);
 }
 
-static Xv_object xv_find_avlist(Xv_opaque parent, Xv_pkg *pkg,
+static Xv_object xv_find_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 								Attr_attribute *avlist)
 {
-	register Xv_pkg *find_pkg;
+	register const Xv_pkg *find_pkg;
 	Attr_avlist attrs;
 	Xv_object object = XV_NULL;
 	int auto_create = TRUE, auto_create_seen = FALSE;
@@ -265,7 +265,7 @@ static Xv_object xv_find_avlist(Xv_opaque parent, Xv_pkg *pkg,
 	return object;
 }
 
-Xv_public Xv_object xv_find( Xv_opaque parent, Xv_pkg *pkg, ... )
+Xv_public Xv_object xv_find( Xv_opaque parent, const Xv_pkg *pkg, ... )
 {
     AVLIST_DECL;
     va_list         args;
@@ -277,7 +277,7 @@ Xv_public Xv_object xv_find( Xv_opaque parent, Xv_pkg *pkg, ... )
     return xv_find_avlist(parent, pkg, avlist);
 }
 
-Xv_public Xv_object xv_create(Xv_opaque parent, Xv_pkg *pkg, ...)
+Xv_public Xv_object xv_create(Xv_opaque parent, const Xv_pkg *pkg, ...)
 {
     AVLIST_DECL;
     va_list         args;
@@ -289,14 +289,14 @@ Xv_public Xv_object xv_create(Xv_opaque parent, Xv_pkg *pkg, ...)
     return xv_create_avlist(parent, pkg, avlist);
 }
 
-Xv_private Xv_object xv_create_avlist(Xv_opaque parent, Xv_pkg *pkg,
+Xv_private Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 								Attr_attribute *avlist)
 {
 	Xv_object object = XV_NULL;
 	Xv_base *ccom_object;
-	Xv_pkg *pkg_stack[MAX_NESTED_PKGS];
-	register Xv_pkg **pkgp, **loop_pkgp;
-	Xv_pkg *orig_pkg = pkg;
+	const Xv_pkg *pkg_stack[MAX_NESTED_PKGS];
+	register const Xv_pkg **pkgp, **loop_pkgp;
+	const Xv_pkg *orig_pkg = pkg;
 	register int error_code = 0;
 	int embedding_offset, total_offset;
 	Attr_attribute argv[2];
@@ -447,7 +447,7 @@ Xv_public Xv_opaque xv_set(Xv_opaque object, ...)
     return xv_set_avlist(object, avlist);
 }
 
-static Xv_opaque xv_set_pkg_avlist(Xv_object object, Xv_pkg *pkg,
+static Xv_opaque xv_set_pkg_avlist(Xv_object object, const Xv_pkg *pkg,
 											Attr_avlist avlist)
 /* Caller must guarantee that object is a standard, not embedded, object. */
 {
@@ -485,7 +485,7 @@ Xv_private Xv_opaque xv_set_avlist(Xv_opaque passed_object, Attr_avlist avlist)
     return xv_set_pkg_avlist(object, ((Xv_base *) object)->pkg, avlist);
 }
 
-Xv_public Xv_opaque xv_super_set_avlist(Xv_opaque object, Xv_pkg *pkg,
+Xv_public Xv_opaque xv_super_set_avlist(Xv_opaque object, const Xv_pkg *pkg,
 											Attr_avlist avlist)
 /* Caller must guarantee that object is a standard, not embedded, object. */
 {
@@ -494,7 +494,7 @@ Xv_public Xv_opaque xv_super_set_avlist(Xv_opaque object, Xv_pkg *pkg,
 
 Xv_public Xv_opaque xv_get(Xv_opaque passed_object, Attr32_attribute attr, ...)
 {
-	register Xv_pkg *pkg;
+	register const Xv_pkg *pkg;
 	int status;
 	Xv_opaque result;
 	va_list args;
@@ -578,7 +578,7 @@ Xv_public Xv_opaque xv_get(Xv_opaque passed_object, Attr32_attribute attr, ...)
 Xv_private Xv_opaque xv_get_varargs(Xv_opaque passed_object,
 							Attr_attribute attr, va_list valist)
 {
-    register Xv_pkg *pkg;
+    register const Xv_pkg *pkg;
     Xv_opaque       object;
     int             status;
     Xv_opaque       result;
@@ -698,7 +698,7 @@ Xv_public int xv_destroy_safe(Xv_opaque object)
 
 Xv_public int xv_destroy_status(Xv_object passed_object, Destroy_status status)
 {
-	register Xv_pkg *pkg;
+	register const Xv_pkg *pkg;
 	Xv_opaque object;
 
 	if (status == DESTROY_CLEANUP)
@@ -750,7 +750,7 @@ Xv_public int xv_destroy_status(Xv_object passed_object, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_private int xv_check_bad_attr(Xv_pkg *pkg, Attr_attribute attr)
+Xv_private int xv_check_bad_attr(const Xv_pkg *pkg, Attr_attribute attr)
 /*
  * At first glance the return values seem to be backwards. However, if the
  * specified package was meant to handle the attribute, it wants to return a
