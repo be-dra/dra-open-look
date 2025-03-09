@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.32 2025/02/10 21:54:31 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.33 2025/03/08 14:06:27 dra Exp $";
 #endif
 #endif
 
@@ -1654,7 +1654,7 @@ int sel_post_req(Selection_requestor sel)
     return XV_OK;
 }
 
-Xv_pkg xv_sel_requestor_pkg = {
+const Xv_pkg xv_sel_requestor_pkg = {
     "Selection Requestor",
     ATTR_PKG_SELECTION,
     sizeof(Xv_sel_requestor),
