@@ -29,7 +29,7 @@
 #include <xview_private/i18n_impl.h>
 
 #ifndef lint
-char proplist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: proplist.c,v 4.5 2024/11/12 20:39:25 dra Exp $";
+char proplist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: proplist.c,v 4.6 2025/03/08 13:37:48 dra Exp $";
 #endif
 
 #define A0 *attrs
@@ -852,7 +852,7 @@ void xv_proplist_converter(int unused1, int panel_to_data,
 	else data_to_list(PROPLISTPRIV(self), data);
 }
 
-Xv_pkg xv_proplist_pkg = {
+const Xv_pkg xv_proplist_pkg = {
 	"PropertyList",
 	ATTR_PKG_LISTPROP,
 	sizeof(Xv_proplist),
