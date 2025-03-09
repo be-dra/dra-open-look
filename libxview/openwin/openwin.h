@@ -10,7 +10,7 @@
  *	file for terms of the license.
  */
 
-/* $Id: openwin.h,v 4.1 2024/03/28 18:20:25 dra Exp $ */
+/* $Id: openwin.h,v 4.2 2025/03/08 12:47:02 dra Exp $ */
 
 #ifndef	xview_openwin_DEFINED
 #define	xview_openwin_DEFINED
@@ -178,7 +178,7 @@ _XVFUNCPROTOEND
  ***********************************************************************
  */
 
-extern Xv_pkg xv_openwin_pkg;
-extern Xv_pkg xv_openwin_view_pkg;
+extern const Xv_pkg xv_openwin_pkg;
+extern const Xv_pkg xv_openwin_view_pkg;
 
 #endif	 /* ~xview_openwin_DEFINED */
