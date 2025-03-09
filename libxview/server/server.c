@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.23 2025/02/23 16:40:26 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.24 2025/03/08 13:43:30 dra Exp $";
 #endif
 #endif
 
@@ -2315,7 +2315,7 @@ void server_appl_busy(Frame fram, int busy, Frame except)
 	xv_set(srv, SERVER_APPL_BUSY, busy, except, NULL);
 }
 
-Xv_pkg          xv_server_pkg = {
+const Xv_pkg xv_server_pkg = {
     "Server",
     ATTR_PKG_SERVER,
     sizeof(Xv_server_struct),
