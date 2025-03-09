@@ -2,7 +2,7 @@
 #define filereq_h_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: filereq.h,v 4.2 2024/11/06 21:52:43 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: filereq.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -32,7 +32,7 @@
 #include <xview/sel_pkg.h>
 #include <xview/attrol.h>
 
-extern Xv_pkg xv_filereq_pkg;
+extern const Xv_pkg xv_filereq_pkg;
 typedef Xv_opaque File_requestor;
 
 #define FILE_REQUESTOR &xv_filereq_pkg
