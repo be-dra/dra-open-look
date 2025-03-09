@@ -33,7 +33,7 @@
 #include <xview_private/panel_impl.h>
 
 #ifndef lint
-char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.34 2025/01/09 19:35:10 dra Exp $";
+char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.35 2025/03/08 13:37:48 dra Exp $";
 #endif
 
 /*******************************************************************
@@ -1292,7 +1292,7 @@ static int mllist_destroy(Multi_level_list self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_multi_level_list_pkg = {
+const Xv_pkg xv_multi_level_list_pkg = {
 	"MultiLevelList",
 	ATTR_PKG_MLLIST,
 	sizeof(Xv_multi_level_list),
