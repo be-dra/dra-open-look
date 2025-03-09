@@ -2,7 +2,7 @@
 #define funckey_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: funckey.h,v 4.4 2024/11/04 22:25:14 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: funckey.h,v 4.5 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -30,7 +30,7 @@
 #include <xview/permlist.h>
 
 
-extern Xv_pkg xv_funckeys_pkg;
+extern const Xv_pkg xv_funckeys_pkg;
 #define FUNCTION_KEYS &xv_funckeys_pkg
 typedef Xv_opaque Function_keys;
 
