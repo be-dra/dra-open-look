@@ -1,4 +1,4 @@
-char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.5 2025/03/03 14:18:40 dra Exp $";
+char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.6 2025/03/07 16:21:57 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -202,7 +202,8 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 		attributes.background_pixmap = None; /* transparent */
 		attributes.save_under = True;
 		attributes.event_mask = ExposureMask;
-		valuemask = CWEventMask | CWBackPixmap |  CWSaveUnder;
+		attributes.override_redirect = True;
+		valuemask = CWEventMask |CWBackPixmap |CWSaveUnder |CWOverrideRedirect;
 		sh->core.self = XCreateWindow(dpy, WinRootID(winInfo),
 				0, 0, 8, 8,
 				0,
