@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.1 2024/03/28 13:07:32 dra Exp $ ";
+static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.2 2025/03/08 13:30:00 dra Exp $ ";
 #endif
 #endif
 
@@ -116,8 +116,8 @@ typedef struct {
 /*
  * Public Functions 
  */
-extern Xv_pkg	xv_dnd_pkg;
-extern Xv_pkg	xv_drop_site_item;
+extern const Xv_pkg	xv_dnd_pkg;
+extern const Xv_pkg	xv_drop_site_item;
 _XVFUNCPROTOBEGIN
 EXTERN_FUNCTION (int dnd_send_drop, (Drag_drop object));
 EXTERN_FUNCTION (Xv_opaque dnd_decode_drop, (Selection_requestor object,
