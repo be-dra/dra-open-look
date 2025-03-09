@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.9 2025/01/29 22:12:44 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.10 2025/03/08 14:06:08 dra Exp $ ";
 #endif
 #endif
 
@@ -4903,7 +4903,7 @@ Xv_public int notice_prompt(Xv_Window client_window, Event *event, ...)
 	return result;
 }
 
-Xv_pkg xv_notice_pkg = {
+const Xv_pkg xv_notice_pkg = {
     "Notice",
 	ATTR_PKG_NOTICE,
     sizeof(Xv_notice_struct),
