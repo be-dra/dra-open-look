@@ -30,7 +30,7 @@
 #include <xview/permprop.h>
 #include <xview_private/i18n_impl.h>
 
-char fontprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontprop.c,v 4.3 2024/12/05 06:29:35 dra Exp $";
+char fontprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontprop.c,v 4.4 2025/03/08 13:37:48 dra Exp $";
 
 #define SUBOFF(_field_) FP_OFF(fontprop_t *,_field_)
 
@@ -769,7 +769,7 @@ static int fontprops_destroy(Font_props self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_fontprops_pkg = {
+const Xv_pkg xv_fontprops_pkg = {
 	"FontProperty",
 	ATTR_PKG_FONT_PROPS,
 	sizeof(Xv_fontprops),
