@@ -1,4 +1,4 @@
-/*      @(#)canvas.h 20.38 93/06/28 SMI    DRA: $Id: canvas.h,v 4.1 2024/03/28 17:51:16 dra Exp $    */
+/*      @(#)canvas.h 20.38 93/06/28 SMI    DRA: $Id: canvas.h,v 4.2 2025/03/08 12:52:57 dra Exp $    */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -147,9 +147,9 @@ typedef struct {
 /*
  * Variables 
  */
-extern Xv_pkg	xv_canvas_pkg;
-extern Xv_pkg	xv_canvas_view_pkg;
-extern Xv_pkg	xv_canvas_pw_pkg;
+extern const Xv_pkg	xv_canvas_pkg;
+extern const Xv_pkg	xv_canvas_view_pkg;
+extern const Xv_pkg	xv_canvas_pw_pkg;
 
 /*
  * Functions
