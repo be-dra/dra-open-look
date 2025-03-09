@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cms_pblc.c 1.21 91/03/21 DRA: RCS $Id: cms_pblc.c,v 2.5 2025/01/09 17:13:23 dra Exp $";
+static char     sccsid[] = "@(#)cms_pblc.c 1.21 91/03/21 DRA: RCS $Id: cms_pblc.c,v 2.6 2025/03/08 13:26:33 dra Exp $";
 #endif
 #endif
 
@@ -471,7 +471,7 @@ static Xv_opaque cms_get_attr(Cms cms_public, int *status,
 }
 
 /* ARGSUSED */
-static Xv_object cms_find_cms(Xv_opaque screen_public, Xv_pkg *pkg,
+static Xv_object cms_find_cms(Xv_opaque screen_public, const Xv_pkg *pkg,
 							Attr_avlist avlist)
 {
 	Xv_Screen screen;
@@ -570,7 +570,7 @@ static int cms_destroy(Cms cms_public, Destroy_status status)
 	return (XV_OK);
 }
 
-Xv_pkg          xv_cms_pkg = {
+const Xv_pkg          xv_cms_pkg = {
     "Color", ATTR_PKG_CMS,
     sizeof(Xv_cms_struct),
     &xv_generic_pkg,
