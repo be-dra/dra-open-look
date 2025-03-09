@@ -34,7 +34,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-char bitmap_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: bitmap.c,v 4.2 2024/12/31 16:25:32 dra Exp $";
+char bitmap_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: bitmap.c,v 4.3 2025/03/08 13:37:48 dra Exp $";
 
 typedef struct {
 	Xv_opaque           public_self;
@@ -660,7 +660,7 @@ static int bitmap_destroy(Bitmap self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_bitmap_pkg = {
+const Xv_pkg xv_bitmap_pkg = {
 	"Bitmap",
 	ATTR_PKG_BITMAP,
 	sizeof(Xv_bitmap),
