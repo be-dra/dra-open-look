@@ -1,4 +1,4 @@
-/*	@(#)cursor.h 20.36 93/06/28 SMI DRA: RCS  $Id: cursor.h,v 2.2 2024/02/08 20:57:51 dra Exp $	*/
+/*	@(#)cursor.h 20.36 93/06/28 SMI DRA: RCS  $Id: cursor.h,v 2.3 2025/03/08 13:28:12 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -257,7 +257,7 @@ typedef struct {
  ***********************************************************************
  */
 
-extern Xv_pkg		xv_cursor_pkg;
+extern const Xv_pkg		xv_cursor_pkg;
 
 /*
  * Public Functions 
