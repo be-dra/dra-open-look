@@ -1,5 +1,5 @@
 /* #ident	"@(#)services.c	26.53	93/06/28 SMI" */
-char services_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: services.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char services_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: services.c,v 2.3 2025/03/07 16:37:36 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -95,7 +95,7 @@ execCommand(winInfo,cmd)
 #endif
 	execve(args[0], args, env);
 	perror("olwm: exec");
-	exit(1);
+	exit(17);
     }
     return 0;
 }
@@ -287,27 +287,16 @@ FlipFocusFunc(dpy, winInfo, menuInfo, idx)
  * NopFunc - a no-operation function, used as a placeholder for
  *      the NOP service
  */
-/*ARGSUSED*/
-int
-NopFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int NopFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
+	return 0;
 }
 
 /***************************************************************************
 * Clipboard
 ****************************************************************************/
 
-/*ARGSUSED*/
-int
-ClipboardFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int ClipboardFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	NoticeBox	noticeBox;
 	Text		*buttons[1];
@@ -328,6 +317,7 @@ ClipboardFunc(dpy, winInfo, menuInfo, idx)
 
 	FreeText(buttons[0]);
 	FreeText(msg);
+	return 0;
 }
 
 /***************************************************************************
@@ -335,12 +325,7 @@ ClipboardFunc(dpy, winInfo, menuInfo, idx)
 ****************************************************************************/
 
 /*ARGSUSED*/
-int
-PrintScreenFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int PrintScreenFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	NoticeBox	noticeBox;
 	Text		*buttons[1];
@@ -361,6 +346,7 @@ PrintScreenFunc(dpy, winInfo, menuInfo, idx)
 
 	FreeText(buttons[0]);
 	FreeText(msg);
+	return 0;
 }
 
 
@@ -376,10 +362,7 @@ PrintScreenFunc(dpy, winInfo, menuInfo, idx)
  * XClearArea will generate a BadMatch error if called on InputOnly windows; 
  * this error is suppressed in Error.c.
  */
-void
-RecursiveRefresh(dpy, win)
-	Display *dpy;
-	Window win;
+void RecursiveRefresh(Display *dpy, Window win)
 {
 	int i;
 	unsigned int nchildren;
@@ -398,11 +381,7 @@ RecursiveRefresh(dpy, win)
 	XFree((char *)childlist);
 }
 
-int RestartWindowSystemFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int RestartWindowSystemFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	char *restart_file = getenv("OL_RESTART_FILE");
 	FILE *fil;
@@ -422,40 +401,32 @@ int RestartWindowSystemFunc(dpy, winInfo, menuInfo, idx)
 		fprintf(stderr, "olwm: environment variable OL_RESTART_FILE no set\n");
 		XBell(dpy, 100);
 	}
+	return 0;
 }
 
 #ifdef linux
-int ShutdownSystemFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int ShutdownSystemFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	initiateSystemShutdown(dpy);
 	olwm_usleep(500000);
 	Exit(dpy);
+	return 0;
 }
 
-int RebootSystemFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int RebootSystemFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	initiateSystemReboot(dpy);
 	olwm_usleep(500000);
 	Exit(dpy);
+	return 0;
 }
 
-int LogoutFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int LogoutFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	initiateLogout(dpy);
 	olwm_usleep(500000);
 	Exit(dpy);
+	return 0;
 }
 #endif /* linux */
 
@@ -464,12 +435,7 @@ int LogoutFunc(dpy, winInfo, menuInfo, idx)
  *	the olwm menu
  */
 /*ARGSUSED*/
-int
-RefreshFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int RefreshFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	if (GRV.RefreshRecursively) {
 		RecursiveRefresh(dpy, winInfo->core.client->scrInfo->rootid);
@@ -490,6 +456,7 @@ RefreshFunc(dpy, winInfo, menuInfo, idx)
 		XMapRaised(dpy, w);
 		ScreenDestroyWindow(winInfo->core.client->scrInfo, w);
 	}
+	return 0;
 }
 
 /***************************************************************************
@@ -502,13 +469,7 @@ RefreshFunc(dpy, winInfo, menuInfo, idx)
  * PropertiesFunc -- called when the "Properties ..." item has been selected 
  * on the root menu.  REMIND: this and AppMenuFunc should be merged.
  */
-/*ARGSUSED*/
-int
-PropertiesFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int PropertiesFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
     int pid;
 
@@ -518,9 +479,9 @@ PropertiesFunc(dpy, winInfo, menuInfo, idx)
 		return 1;
     } else if (pid == 0) {
 		/* child */
-		execlp(WORKSPACEPROPS, WORKSPACEPROPS, 0);
+		execlp(WORKSPACEPROPS, WORKSPACEPROPS, NULL);
 		perror("olwm: exec");
-		exit(1);
+		exit(18);
     }
 	dra_olws_started(dpy, pid);
     return 0;
@@ -635,15 +596,10 @@ SaveWorkspaceFunc(dpy, winInfo, menuInfo, idx)
 /* 
  * ReReadUserMenuFunc
  */
-/*ARGSUSED*/
-int
-ReReadUserMenuFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int ReReadUserMenuFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ReInitUserMenu(dpy,True);
+	return 0;
 }
 
 /***************************************************************************
@@ -654,60 +610,40 @@ ReReadUserMenuFunc(dpy, winInfo, menuInfo, idx)
  * WindowOpenCloseAction
  *	Toggles Open/Close.
  */
-/*ARGSUSED*/
-int
-WindowOpenCloseAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowOpenCloseAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientOpenCloseToggle(winInfo->core.client,LastEventTime);
+	return 0;
 }
 
 /* 
  * WindowFullRestoreSizeAction
  *	Toggles Full/Restore Size.
  */
-/*ARGSUSED*/
-int
-WindowFullRestoreSizeAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowFullRestoreSizeAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientFullRestoreSizeToggle(winInfo->core.client,LastEventTime);
+	return 0;
 }
 
 /*
  * WindowMoveAction
  *	Moves the window with user interaction.
  */
-/*ARGSUSED*/
-int
-WindowMoveAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowMoveAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientMove(winInfo->core.client,(XEvent *)NULL);
+	return 0;
 }
 
 /*
  * WindowResizeAction
  *	Resizes the window with user interaction.
  */
-/*ARGSUSED*/
-int
-WindowResizeAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowResizeAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientResize(winInfo->core.client, NULL, keyevent, NULL, NULL);
+	return 0;
 }
 
 /* 
@@ -717,12 +653,7 @@ WindowResizeAction(dpy, winInfo, menuInfo, idx)
  *	of what the WM is supposed to do when the "Props" item is hit.
  */
 /*ARGSUSED*/
-int
-WindowPropsAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowPropsAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientShowProps(winInfo->core.client);
 	return 0;
@@ -732,15 +663,10 @@ WindowPropsAction(dpy, winInfo, menuInfo, idx)
  * WindowBackAction
  *	Pushes a window back in the window hierarchy.
  */
-/*ARGSUSED*/
-int
-WindowBackAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowBackAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientBack(winInfo->core.client);
+	return 0;
 }
 
 /* 
@@ -748,29 +674,20 @@ WindowBackAction(dpy, winInfo, menuInfo, idx)
  *	Refreshes the window
  */
 /*ARGSUSED*/
-int
-WindowRefreshAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowRefreshAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientRefresh(winInfo->core.client);
+	return 0;
 }
 
 /* 
  * WindowQuitAction
  *
  */
-/*ARGSUSED*/
-int
-WindowQuitAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowQuitAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientKill(winInfo->core.client,True);
+	return 0;
 }
 
 /* 
@@ -778,29 +695,20 @@ WindowQuitAction(dpy, winInfo, menuInfo, idx)
  *
  */
 /*ARGSUSED*/
-int
-WindowFlashOwnerAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowFlashOwnerAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientFlashOwner(winInfo->core.client);
+	return 0;
 }
 
 /* 
  * WindowThisAction
  *	Dismiss this window.
  */
-/*ARGSUSED*/
-int
-WindowDismissThisAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowDismissThisAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	ClientKill(winInfo->core.client, False);
+	return 0;
 }
 
 /*
@@ -822,12 +730,7 @@ _dismissSiblingMenus(cli, winInfo)
  */
 
 /*ARGSUSED*/
-int
-WindowDismissAllAction(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int WindowDismissAllAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	Client	*cli = winInfo->core.client;
 
@@ -845,6 +748,7 @@ WindowDismissAllAction(dpy, winInfo, menuInfo, idx)
 	    if (cli->groupmask != GROUP_DEPENDENT)
 		ClientKill(winInfo->core.client, False);
 	}
+	return 0;
 }
 
 /***************************************************************************
@@ -862,18 +766,14 @@ WindowDismissAllAction(dpy, winInfo, menuInfo, idx)
  *	Toggles Open/Close on all selected clients
  */
 /*ARGSUSED*/
-int
-OpenCloseSelnFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int OpenCloseSelnFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	Client 	*cli = (Client *)NULL;
 
-	while (cli = EnumSelections(cli)) {
+	while ((cli = EnumSelections(cli))) {
 		ClientOpenCloseToggle(cli,LastEventTime);
 	}
+	return 0;
 }
 
 /*
@@ -881,18 +781,14 @@ OpenCloseSelnFunc(dpy, winInfo, menuInfo, idx)
  *	Toggles Full/Restore Size on all selected clients
  */
 /*ARGSUSED*/
-int
-FullRestoreSizeSelnFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int FullRestoreSizeSelnFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	Client 	*cli = (Client *)NULL;
 
-	while (cli = EnumSelections(cli)) {
+	while ((cli = EnumSelections(cli))) {
 		ClientFullRestoreSizeToggle(cli,LastEventTime);
 	}
+	return 0;
 }
 
 /*
@@ -901,18 +797,14 @@ FullRestoreSizeSelnFunc(dpy, winInfo, menuInfo, idx)
  *	window hierarchy.
  */
 /*ARGSUSED*/
-int
-BackSelnFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int BackSelnFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	Client 	*cli = (Client *)NULL;
 
-	while (cli = EnumSelections(cli)) {
+	while ((cli = EnumSelections(cli))) {
 		ClientBack(cli);
 	}
+	return 0;
 }
 
 /*
@@ -920,18 +812,14 @@ BackSelnFunc(dpy, winInfo, menuInfo, idx)
  *	Quit's all selected clients.
  */
 /*ARGSUSED*/
-int
-QuitSelnFunc(dpy, winInfo, menuInfo, idx)
-	Display 	*dpy;
-	WinGeneric 	*winInfo;
-	MenuInfo    	*menuInfo;
-	int     	idx;
+int QuitSelnFunc(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int idx)
 {
 	Client 	*cli = (Client *)NULL;
 
-	while (cli = EnumSelections(cli)) {
+	while ((cli = EnumSelections(cli))) {
 		ClientKill(cli,True);
 	}
+	return 0;
 }
 
 
