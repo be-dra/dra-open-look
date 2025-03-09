@@ -1,5 +1,5 @@
 /*
- * @(#)termsw.h 20.18 93/06/28 SMI RCS: $Id: termsw.h,v 4.2 2024/03/31 17:36:22 dra Exp $      
+ * @(#)termsw.h 20.18 93/06/28 SMI RCS: $Id: termsw.h,v 4.3 2025/03/08 13:18:09 dra Exp $      
  *
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL NOTICE 
@@ -99,7 +99,7 @@ typedef enum {
  ***********************************************************************
  */
 
-extern  Xv_pkg			xv_termsw_pkg;
-extern  Xv_pkg       		xv_termsw_view_pkg;
+extern  const Xv_pkg			xv_termsw_pkg;
+extern  const Xv_pkg       		xv_termsw_view_pkg;
 
 #endif /* ~xview_termsw_DEFINED */
