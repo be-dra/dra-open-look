@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)path.c 1.18 93/06/29  DRA: RCS $Id: path.c,v 4.2 2024/05/22 18:17:59 dra Exp $ ";
+static char     sccsid[] = "@(#)path.c 1.18 93/06/29  DRA: RCS $Id: path.c,v 4.3 2025/03/08 13:24:37 dra Exp $ ";
 #endif
 #endif
 
@@ -371,7 +371,7 @@ Pkg_private Panel_setting xv_path_name_notify_proc(Path_name item, Event *event)
     return panel_text_notify(item, event);
 } /* xv_path_name_notify_proc() */
 
-Xv_pkg path_pkg = {
+const Xv_pkg path_pkg = {
     "Path_name",
     ATTR_PKG_PATH,
     sizeof(Path_public),
