@@ -2,7 +2,7 @@
 #define iccc_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: iccc.h,v 4.3 2024/11/04 22:25:14 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: iccc.h,v 4.4 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -32,7 +32,7 @@
 #include <xview/attrol.h>
 
 
-extern Xv_pkg xv_iccc_pkg;
+extern const Xv_pkg xv_iccc_pkg;
 typedef Xv_opaque Iccc;
 
 #define ICCC &xv_iccc_pkg
