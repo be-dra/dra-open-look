@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.14 2025/02/14 09:50:27 dra Exp $";
+static char     sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.15 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -370,7 +370,7 @@ static int panel_unregister_view(Panel_info *panel, Xv_Window view)
 	return (XV_OK);
 }
 
-Xv_pkg xv_panel_pkg = {
+const Xv_pkg xv_panel_pkg = {
     "Panel", ATTR_PKG_PANEL,
     sizeof(Xv_panel),
     &xv_window_pkg,
@@ -380,7 +380,7 @@ Xv_pkg xv_panel_pkg = {
     panel_destroy,
     NULL			/* no find proc */
 };
-Xv_pkg xv_scrollable_panel_pkg = {
+const Xv_pkg xv_scrollable_panel_pkg = {
     "Panel", ATTR_PKG_PANEL,
     sizeof(Xv_panel),
     &xv_canvas_pkg,
