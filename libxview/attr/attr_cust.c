@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)attr_cust.c 1.7 91/03/25  DRA: $Id: attr_cust.c,v 4.1 2024/03/28 19:32:21 dra Exp $ ";
+static char     sccsid[] = "@(#)attr_cust.c 1.7 91/03/25  DRA: $Id: attr_cust.c,v 4.2 2025/03/08 12:37:06 dra Exp $ ";
 #endif
 #endif
 
@@ -41,7 +41,7 @@ typedef struct cust_attrs  {
  * Node for storing customizable attributes for one pkg
  */
 typedef struct cust_pkgs  {
-    Xv_pkg		*pkg;
+    const Xv_pkg		*pkg;
     Cust_attrs		*attr_list;
     struct cust_pkgs	*next;
 }Cust_pkgs;
@@ -59,7 +59,7 @@ static Cust_pkgs	*customizable_pkgs = (Cust_pkgs *)NULL;
  * attr_new_cust_pkg
  * allocs new Cust_pkgs node and returns it
  */
-static Cust_pkgs *attr_new_cust_pkg(Xv_pkg *pkg)
+static Cust_pkgs *attr_new_cust_pkg(const Xv_pkg *pkg)
 {
     Cust_pkgs	*new;
 
@@ -124,7 +124,7 @@ static Cust_attrs *attr_search_cust_attr(Cust_attrs *attr_list, Attr_attribute	a
  * searches customizable_pkgs list for node corresponding to 'pkg'
  * and returns it
  */
-static Cust_pkgs *attr_search_cust_pkg(Xv_pkg *pkg)
+static Cust_pkgs *attr_search_cust_pkg(const Xv_pkg *pkg)
 {
 	Cust_pkgs *cur_pkg = (Cust_pkgs *) NULL;
 
@@ -143,7 +143,7 @@ static Cust_pkgs *attr_search_cust_pkg(Xv_pkg *pkg)
  * 'pkg' and returns it.
  * If it is not found, a new one is created.
  */
-static Cust_pkgs * attr_find_cust_pkg(Xv_pkg *pkg)
+static Cust_pkgs * attr_find_cust_pkg(const Xv_pkg *pkg)
 {
 	Cust_pkgs *cur_pkg = (Cust_pkgs *) NULL;
 
@@ -164,7 +164,7 @@ static Cust_pkgs * attr_find_cust_pkg(Xv_pkg *pkg)
  * Checks if the attribute  'attr' is customizable for the package
  * 'pkg'
  */
-static char *attr_check_custom_pkg(Xv_pkg *pkg, Attr_attribute attr)
+static char *attr_check_custom_pkg(const Xv_pkg *pkg, Attr_attribute attr)
 {
     Cust_pkgs   *c_pkg = (Cust_pkgs *)NULL;
     Cust_attrs  *c_attr = (Cust_attrs *)NULL;
@@ -186,9 +186,9 @@ static char *attr_check_custom_pkg(Xv_pkg *pkg, Attr_attribute attr)
  * Checks if the attribute  'attr' is customizable for the package
  * 'pkg'
  */
-static char *attr_check_custom(Xv_pkg *pkg, Attr_attribute attr)
+static char *attr_check_custom(const Xv_pkg *pkg, Attr_attribute attr)
 {
-	Xv_pkg *orig_pkg;
+	const Xv_pkg *orig_pkg;
 	char *attr_name = (char *)NULL;
 
 	orig_pkg = pkg;
@@ -244,7 +244,7 @@ static Xv_server attr_get_server(Xv_object obj, Xv_object passed_owner)
 }
 
 static Attr_avlist
-attr_copy_customize(Xv_object obj, Xv_pkg *pkg, char *instance_name,
+attr_copy_customize(Xv_object obj, const Xv_pkg *pkg, char *instance_name,
 			Xv_object owner, int use_db, Attr_avlist dest, Attr_avlist avlist)
 {
 	register unsigned cardinality;
@@ -467,7 +467,7 @@ static int attr_check_use_custom(Attr_attribute *avlist)
 /*
  * XView private interface to customizable attrs
  */
-Xv_private Attr_avlist attr_customize(Xv_object obj, Xv_pkg *pkg,
+Xv_private Attr_avlist attr_customize(Xv_object obj, const Xv_pkg *pkg,
 				char *instance_name, Xv_object owner, Attr_attribute listhead[],
 				int listlen, Attr_attribute avlist[])
 {
@@ -488,7 +488,7 @@ Xv_private Attr_avlist attr_customize(Xv_object obj, Xv_pkg *pkg,
 /*
  * Public interface to customizable attributes
  */
-Xv_public void xv_add_custom_attrs(Xv_pkg *pkg, ...)
+Xv_public void xv_add_custom_attrs(const Xv_pkg *pkg, ...)
 {
 	va_list list;
 	Cust_pkgs *c_pkg;
