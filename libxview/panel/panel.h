@@ -1,4 +1,4 @@
-/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.6 2024/11/09 21:01:56 dra Exp $	*/
+/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.7 2025/03/08 13:08:26 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -709,23 +709,23 @@ typedef Panel_attr	Panel_attribute;
 /*
  * 	Variables
  */
-extern Xv_pkg 		xv_panel_pkg;
-extern Xv_pkg		xv_panel_ambtn_pkg;
-extern Xv_pkg		xv_panel_button_pkg;
-extern Xv_pkg		xv_panel_choice_pkg;
-extern Xv_pkg		xv_panel_drop_pkg;
-extern Xv_pkg		xv_panel_gauge_pkg;
-extern Xv_pkg		xv_panel_item_pkg;
-extern Xv_pkg		xv_panel_list_pkg;
-extern Xv_pkg		xv_panel_message_pkg;
-extern Xv_pkg           xv_panel_multiline_text_pkg;
-extern Xv_pkg           xv_panel_num_text_pkg;
-extern Xv_pkg		xv_panel_slider_pkg;
-extern Xv_pkg		xv_panel_text_pkg;
-extern Xv_pkg		xv_panel_view_pkg;
-extern Xv_pkg		xv_scrollable_panel_pkg;
-extern Xv_pkg xv_panel_subwin_pkg;
-extern Xv_pkg xv_panel_awbtn_pkg;
+extern const Xv_pkg 		xv_panel_pkg;
+extern const Xv_pkg		xv_panel_ambtn_pkg;
+extern const Xv_pkg		xv_panel_button_pkg;
+extern const Xv_pkg		xv_panel_choice_pkg;
+extern const Xv_pkg		xv_panel_drop_pkg;
+extern const Xv_pkg		xv_panel_gauge_pkg;
+extern const Xv_pkg		xv_panel_item_pkg;
+extern const Xv_pkg		xv_panel_list_pkg;
+extern const Xv_pkg		xv_panel_message_pkg;
+extern const Xv_pkg           xv_panel_multiline_text_pkg;
+extern const Xv_pkg           xv_panel_num_text_pkg;
+extern const Xv_pkg		xv_panel_slider_pkg;
+extern const Xv_pkg		xv_panel_text_pkg;
+extern const Xv_pkg		xv_panel_view_pkg;
+extern const Xv_pkg		xv_scrollable_panel_pkg;
+extern const Xv_pkg xv_panel_subwin_pkg;
+extern const Xv_pkg xv_panel_awbtn_pkg;
 
 /*
  * 	Public Functions
@@ -781,7 +781,7 @@ EXTERN_FUNCTION (int panel_set, (Panel panel, DOTDOTDOT)) _X_SENTINEL(0);
 EXTERN_FUNCTION (int panel_paint, (Panel panel, Panel_setting flag));
 EXTERN_FUNCTION (int panel_free, (Panel panel));
 EXTERN_FUNCTION (int panel_destroy_item, (Panel_item item));
-EXTERN_FUNCTION (Panel_item panel_create_item, (Panel panel, Xv_pkg *item_type, DOTDOTDOT)) _X_SENTINEL(0);
+EXTERN_FUNCTION (Panel_item panel_create_item, (Panel panel, const Xv_pkg *item_type, DOTDOTDOT)) _X_SENTINEL(0);
 _XVFUNCPROTOEND
 
 #endif	/* ~xview_panel_DEFINED */
