@@ -1,4 +1,4 @@
-/*      @(#)font.h 20.35 93/06/28 SMI  DRA: RCS $Id: font.h,v 4.1 2024/03/28 17:55:25 dra Exp $      */
+/*      @(#)font.h 20.35 93/06/28 SMI  DRA: RCS $Id: font.h,v 4.2 2025/03/08 13:32:15 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -183,7 +183,7 @@ typedef struct {
  */
 
 #ifndef XV_ATTRIBUTES_ONLY
-extern Xv_pkg		xv_font_pkg;
+extern const Xv_pkg		xv_font_pkg;
 #endif /* ~XV_ATTRIBUTES_ONLY */
 
 #endif /* ~xview_font_DEFINED */
