@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.10 2025/01/28 21:00:05 dra Exp $";
+static char     sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.11 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -1444,7 +1444,7 @@ Pkg_private void panel_layout_items(Panel pan, int do_fit_width)
 	if (! panel->show_border) return;
 
 	fram = xv_get(pan, WIN_FRAME);
-	if (FRAME_CMD != (Xv_pkg *)xv_get(fram, XV_TYPE)) return;
+	if (FRAME_CMD != (const Xv_pkg *)xv_get(fram, XV_TYPE)) return;
 
 	/* only REAL command frame, no base frames, no property frames etc */
 	/* this a is a command frame with a pane -let us make a menu */
