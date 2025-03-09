@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)drawable.c 20.24 93/06/28  DRA: $Id: drawable.c,v 4.2 2024/05/25 18:33:06 dra Exp $";
+static char     sccsid[] = "@(#)drawable.c 20.24 93/06/28  DRA: $Id: drawable.c,v 4.3 2025/03/08 13:01:51 dra Exp $";
 #endif
 #endif
 
@@ -72,7 +72,7 @@ Xv_private GC xv_private_gc(Xv_opaque d)
     return ((GC) window_private_gc(d));
 }
 
-Xv_pkg xv_drawable_pkg = {
+const Xv_pkg xv_drawable_pkg = {
     "Drawable",
     ATTR_PKG_DRAWABLE,
     sizeof(Xv_drawable_struct),
