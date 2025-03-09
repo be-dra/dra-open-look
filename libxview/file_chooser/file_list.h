@@ -1,4 +1,4 @@
-/*      @(#)file_list.h 1.9 93/06/28 SMI  DRA: RCS $Id: file_list.h,v 4.1 2024/03/28 13:04:11 dra Exp $      */
+/*      @(#)file_list.h 1.9 93/06/28 SMI  DRA: RCS $Id: file_list.h,v 4.2 2025/03/08 13:24:37 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 
 
-extern Xv_pkg		file_list_pkg;
+extern const Xv_pkg		file_list_pkg;
 #define FILE_LIST	&file_list_pkg
 
 typedef Xv_opaque File_list;
