@@ -2,7 +2,7 @@
 #define colortext_included
 
 /*
- * "@(#) colortext.h V1.7 95/06/19 11:40:03 $Id: colortext.h,v 4.1 2024/04/12 05:58:21 dra Exp $"
+ * "@(#) colortext.h V1.7 95/06/19 11:40:03 $Id: colortext.h,v 4.2 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -32,7 +32,7 @@
 #include <xview/colorchsr.h>
 
 
-extern Xv_pkg xv_panel_color_text_pkg;
+extern const Xv_pkg xv_panel_color_text_pkg;
 typedef Panel_item Panel_color_text_item;
 
 #define PANEL_COLORTEXT &xv_panel_color_text_pkg
