@@ -1,4 +1,4 @@
-/*      @(#)notice.h 20.23 91/01/11 DRA: RCS $Id: notice.h,v 4.1 2024/03/28 13:01:39 dra Exp $  */
+/*      @(#)notice.h 20.23 91/01/11 DRA: RCS $Id: notice.h,v 4.2 2025/03/08 14:06:08 dra Exp $  */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -118,6 +118,6 @@ EXTERN_FUNCTION (int		notice_prompt, (Xv_Window window,
 					DOTDOTDOT)) _X_SENTINEL(0);
 _XVFUNCPROTOEND
 
-extern Xv_pkg		xv_notice_pkg;
+extern const Xv_pkg		xv_notice_pkg;
 
 #endif /* ~xview_notice_DEFINED */
