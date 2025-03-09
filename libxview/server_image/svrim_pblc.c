@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.3 2024/09/15 16:05:15 dra Exp $ ";
+static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.4 2025/03/08 14:53:36 dra Exp $ ";
 #endif
 #endif
 
@@ -464,7 +464,7 @@ server_image_destroy(pr)
     return XV_OK;
 }
 
-Xv_pkg xv_server_image_pkg = {
+const Xv_pkg xv_server_image_pkg = {
     "Server Image",			/* seal -> package name */
     ATTR_PKG_IMAGE,		/* image attr */
     sizeof(Xv_server_image),	/* size of the image data struct */
