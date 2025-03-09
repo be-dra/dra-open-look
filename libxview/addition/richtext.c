@@ -28,7 +28,7 @@
 #include <xview/richtext.h>
 #include <xview_private/svr_impl.h>
 
-char richtext_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: richtext.c,v 1.7 2024/12/13 20:52:26 dra Exp $";
+char richtext_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: richtext.c,v 1.8 2025/03/08 13:37:48 dra Exp $";
 
 typedef enum {
 	RT_NORMAL,
@@ -622,7 +622,7 @@ static int richtext_destroy(Richtext self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_richtext_pkg = {
+const Xv_pkg xv_richtext_pkg = {
 	"RICHTEXT",
 	ATTR_PKG_RICHTEXT,
 	sizeof(Xv_richtext),
