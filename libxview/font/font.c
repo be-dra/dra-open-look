@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.4 2024/12/05 06:29:03 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.5 2025/03/08 13:32:15 dra Exp $ ";
 #endif
 #endif
 
@@ -814,11 +814,11 @@ static int font_init(parent_public, font_public, avlist)
 		server = (Xv_opaque) xv_default_server;
 	}
 	else {
-		Xv_pkg *pkgtype = (Xv_pkg *) xv_get(parent_public, XV_TYPE);
+		const Xv_pkg *pkgtype = (const Xv_pkg *) xv_get(parent_public, XV_TYPE);
 
 		display = (Display *) xv_get(parent_public, XV_DISPLAY);
 		if (!display) {
-			if ((Xv_pkg *) pkgtype == (Xv_pkg *) & xv_font_pkg) {
+			if ((const Xv_pkg *) pkgtype == (const Xv_pkg *) & xv_font_pkg) {
 				Xv_Font real_parent_public = 0;
 				Font_info *real_parent_private = 0;
 
@@ -831,7 +831,7 @@ static int font_init(parent_public, font_public, avlist)
 			else
 				display = (Display *) xv_default_display;
 		}
-		if ((Xv_pkg *) pkgtype == (Xv_pkg *) & xv_server_pkg) {
+		if ((const Xv_pkg *) pkgtype == (const Xv_pkg *) & xv_server_pkg) {
 			server = (Xv_opaque) parent_public;
 		}
 		else {
@@ -1219,11 +1219,11 @@ static int font_init(Xv_opaque parent_public, Xv_opaque fp, Attr_avlist avlist, 
 		server = (Xv_opaque) xv_default_server;
 	}
 	else {
-		Xv_pkg *pkgtype = (Xv_pkg *) xv_get(parent_public, XV_TYPE);
+		const Xv_pkg *pkgtype = (const Xv_pkg *) xv_get(parent_public, XV_TYPE);
 
 		display = (Display *) xv_get(parent_public, XV_DISPLAY);
 		if (!display) {
-			if ((Xv_pkg *) pkgtype == (Xv_pkg *) & xv_font_pkg) {
+			if ((const Xv_pkg *) pkgtype == (const Xv_pkg *) & xv_font_pkg) {
 				Xv_Font real_parent_public = 0;
 				Font_info *real_parent_private = 0;
 
@@ -1236,7 +1236,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque fp, Attr_avlist avlist, 
 			else
 				display = (Display *) xv_default_display;
 		}
-		if ((Xv_pkg *) pkgtype == (Xv_pkg *) & xv_server_pkg) {
+		if ((const Xv_pkg *) pkgtype == (const Xv_pkg *) & xv_server_pkg) {
 			server = (Xv_opaque) parent_public;
 		}
 		else {
@@ -2551,7 +2551,7 @@ static int font_name_is_equivalent(my_attrs, finfo)
 /*ARGSUSED*/
 static Xv_object font_find_font(parent_public, pkg, avlist)
 	Xv_opaque parent_public;
-	Xv_pkg *pkg;
+	const Xv_pkg *pkg;
 	Attr_avlist avlist;
 {
 	int font_attrs_exist;
@@ -2568,9 +2568,9 @@ static Xv_object font_find_font(parent_public, pkg, avlist)
 		server = (Xv_opaque) xv_default_server;
 	}
 	else {
-		Xv_pkg *pkgtype = (Xv_pkg *) xv_get(parent_public, XV_TYPE);
+		const Xv_pkg *pkgtype = (const Xv_pkg *) xv_get(parent_public, XV_TYPE);
 
-		if ((Xv_pkg *) pkgtype == (Xv_pkg *) & xv_server_pkg) {
+		if ((const Xv_pkg *) pkgtype == (const Xv_pkg *) & xv_server_pkg) {
 			server = parent_public;
 		}
 		else {
@@ -2722,7 +2722,7 @@ static Xv_object font_find_font(parent_public, pkg, avlist)
 #else
 
 /*ARGSUSED*/
-static Xv_object font_find_font(Xv_opaque parent_public, Xv_pkg *pkg,
+static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 									Attr_avlist avlist)
 {
 	int font_attrs_exist;
@@ -2739,9 +2739,9 @@ static Xv_object font_find_font(Xv_opaque parent_public, Xv_pkg *pkg,
 		server = (Xv_opaque) xv_default_server;
 	}
 	else {
-		Xv_pkg *pkgtype = (Xv_pkg *) xv_get(parent_public, XV_TYPE);
+		const Xv_pkg *pkgtype = (const Xv_pkg *) xv_get(parent_public, XV_TYPE);
 
-		if ((Xv_pkg *) pkgtype == (Xv_pkg *) & xv_server_pkg) {
+		if ((const Xv_pkg *) pkgtype == (const Xv_pkg *) & xv_server_pkg) {
 			server = parent_public;
 		}
 		else {
@@ -4473,7 +4473,7 @@ static char *font_strip_name(char *str, int	pos, int delim)
 	return (p1);
 }
 
-Xv_pkg          xv_font_pkg = {
+const Xv_pkg          xv_font_pkg = {
     "Font", ATTR_PKG_FONT,
     sizeof(Xv_font_struct),
     &xv_generic_pkg,
