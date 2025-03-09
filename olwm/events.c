@@ -1,5 +1,5 @@
 /* #ident	"@(#)events.c	26.50	93/06/28 SMI" */
-char events_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: events.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char events_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: events.c,v 2.2 2025/03/07 16:28:02 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -313,7 +313,7 @@ static void nextEventOrTimeout(dpy, event)
 			case -1: 
 				if (errno == EINTR) break;
 				perror("select");
-				exit(1);
+				exit(19);
 			case 0:
 				break;
 			default:
@@ -717,7 +717,7 @@ Bool AwaitEvents(Display *dpy, struct timeval *timeout)
 			fputs("olwm: generating core dump for analysis...\n", stderr);
 			if (fork() == 0) {
 				abort();
-				exit(1);
+				exit(20);
 			}
 #endif
 
