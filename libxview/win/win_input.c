@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.30 2025/02/26 18:29:05 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.31 2025/03/07 21:57:17 dra Exp $";
 #endif
 #endif
 
@@ -1715,14 +1715,16 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						(int)(e->state & quick_modmask));
 				event_set_x(event, e->x);
 				event_set_y(event, e->y);
+				DRAWABLE_INFO_MACRO(event_window(event), info);
 				if (event_type == EnterNotify) {
 					event_set_id(event, LOC_WINENTER);
-					DRAWABLE_INFO_MACRO(event_window(event), info);
 					pointer_window_xid = xv_xid(info);
 				}
 				else {
 					event_set_id(event, LOC_WINEXIT);
 				}
+				if (server_get_seln_function_pending(srv))
+					win_handle_quick_selection(info, event);
 				break;
 			}
 
@@ -3319,7 +3321,6 @@ Xv_private XID xv_get_softkey_xid(Xv_server server, Display *display)
 
 static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
 {
-
 	Atom key_type = xv_get(xv_server(info), SERVER_ATOM,
 					(event_action(event) == ACTION_CUT ? "MOVE" : "DUPLICATE"));
 	Atom property = xv_get(xv_server(info), SERVER_ATOM,
@@ -3341,7 +3342,9 @@ static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
 		case ACTION_SELECT:
 		case ACTION_ADJUST:
 		case ACTION_MENU:
-		case LOC_DRAG:
+		case LOC_DRAG: /* dear people: again and again.... */
+		case LOC_WINENTER:
+		case LOC_WINEXIT:
 			{
 				Atom notUsed;
 				int format;
