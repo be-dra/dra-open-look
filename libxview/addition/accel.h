@@ -2,7 +2,7 @@
 #define accel_h_INCLUDED
 
 /*
- * "@(#) $Id: accel.h,v 4.3 2025/02/01 22:37:40 dra Exp $"
+ * "@(#) $Id: accel.h,v 4.4 2025/03/08 13:04:27 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -30,7 +30,7 @@
 #include <xview/permlist.h>
 
 
-extern Xv_pkg xv_accelerator_pkg;
+extern const Xv_pkg xv_accelerator_pkg;
 #define ACCELERATOR &xv_accelerator_pkg
 typedef Xv_opaque Accelerator;
 
