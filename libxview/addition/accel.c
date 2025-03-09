@@ -26,7 +26,7 @@
 #include <xview/accel.h>
 #include <xview_private/i18n_impl.h>
 
-char accel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: accel.c,v 4.6 2025/01/21 19:59:04 dra Exp $";
+char accel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: accel.c,v 4.7 2025/03/08 13:04:27 dra Exp $";
 
 #define ADOFF(f) FP_OFF(Accel_descr_t *,f)
 
@@ -718,7 +718,7 @@ Accelerator xv_accel_get_accelerator(Xv_window win_maybe_NULL)
 	return xv_get(xv_default_server, XV_KEY_DATA, accel_key);
 }
 
-Xv_pkg xv_accelerator_pkg = {
+const Xv_pkg xv_accelerator_pkg = {
 	"Accelerators",
 	ATTR_PKG_ACCEL,
 	sizeof(Xv_accelerator),
