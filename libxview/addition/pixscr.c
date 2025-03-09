@@ -29,7 +29,7 @@
 #include <xview/filereq.h>
 #include <xview/dragdrop.h>
 
-char pixscr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pixscr.c,v 4.1 2024/04/12 05:58:21 dra Exp $";
+char pixscr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pixscr.c,v 4.2 2025/03/08 13:37:48 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -407,7 +407,7 @@ static int pixscr_destroy(Pixmap_scroller self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_pixmap_scroller_pkg = {
+const Xv_pkg xv_pixmap_scroller_pkg = {
 	"PixmapScroller",
 	ATTR_PKG_PIXMAP_SCROLLER,
 	sizeof(Xv_pixmap_scroller),
