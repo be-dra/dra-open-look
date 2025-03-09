@@ -2,7 +2,7 @@
 #define proplist_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: proplist.h,v 4.2 2024/04/12 16:20:14 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: proplist.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -31,7 +31,7 @@
 #include <xview/panel.h>
 #include <xview/attrol.h>
 
-extern Xv_pkg xv_proplist_pkg;
+extern const Xv_pkg xv_proplist_pkg;
 #define PROP_LIST &xv_proplist_pkg
 typedef Xv_opaque Property_list;
 
