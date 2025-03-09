@@ -1,5 +1,5 @@
 #ifndef lint
-char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.5 2025/01/09 20:40:44 dra Exp $ ";
+char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.6 2025/03/08 12:47:02 dra Exp $ ";
 #endif
 
 /*
@@ -301,7 +301,7 @@ Pkg_private void openwin_set_bg_color(Openwin owin_public)
 }
 #endif /* NO_OPENWIN_PAINT_BG */
 
-Xv_pkg xv_openwin_pkg = {
+const Xv_pkg xv_openwin_pkg = {
     "Open Window",		/* seal -> package name */
     (Attr_pkg) ATTR_PKG_OPENWIN,/* openwin attr */
     sizeof(Xv_openwin),		/* size of the openwin data struct */
