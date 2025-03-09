@@ -2,7 +2,7 @@
 #define scrollw_h_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.2 2024/07/28 05:00:53 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.3 2025/03/08 13:04:27 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -33,7 +33,7 @@
 #include <xview/attrol.h>
 
 
-extern Xv_pkg xv_scrollwin_pkg;
+extern const Xv_pkg xv_scrollwin_pkg;
 #define SCROLLWIN &xv_scrollwin_pkg
 typedef Xv_opaque Scrollwin;
 
@@ -42,7 +42,7 @@ typedef struct {
     Xv_opaque   private_data;
 } Xv_scrollwin;
 
-extern Xv_pkg xv_scrollview_pkg;
+extern const Xv_pkg xv_scrollview_pkg;
 #define SCROLLVIEW &xv_scrollview_pkg
 typedef Xv_opaque Scrollview;
 
@@ -51,7 +51,7 @@ typedef struct {
 	Xv_opaque         private_data;
 } Xv_scrollview;
 
-extern Xv_pkg xv_scrollpw_pkg;
+extern const Xv_pkg xv_scrollpw_pkg;
 #define SCROLLPW &xv_scrollpw_pkg
 typedef Xv_opaque Scrollpw;
 
