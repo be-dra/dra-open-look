@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.4 2024/11/18 19:30:19 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.5 2025/03/08 13:28:12 dra Exp $";
 #endif
 #endif
 
@@ -555,7 +555,7 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 }
 
 
-Xv_pkg          xv_cursor_pkg = {
+const Xv_pkg          xv_cursor_pkg = {
     "Cursor",			/* seal -> package name */
     ATTR_PKG_CURSOR,		/* cursor attr */
     sizeof(Xv_cursor_struct),	/* size of the cursor data struct */
