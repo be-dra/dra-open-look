@@ -1,4 +1,4 @@
-/*      @(#)hist.h 1.5 93/06/28 SMI  DRA: RCS $Id: hist.h,v 4.1 2024/03/28 13:04:11 dra Exp $      */
+/*      @(#)hist.h 1.5 93/06/28 SMI  DRA: RCS $Id: hist.h,v 4.2 2025/03/08 13:24:37 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -10,8 +10,8 @@
 #define xview_history_pkg_DEFINED
 
 
-extern Xv_pkg		history_menu_pkg;
-extern Xv_pkg		history_list_pkg;
+extern const Xv_pkg		history_menu_pkg;
+extern const Xv_pkg		history_list_pkg;
 #define HISTORY_MENU	&history_menu_pkg
 #define HISTORY_LIST	&history_list_pkg
 
