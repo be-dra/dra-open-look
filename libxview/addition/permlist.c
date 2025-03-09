@@ -29,7 +29,7 @@
 #include <string.h>
 #include <xview/permlist.h>
 
-char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.9 2025/02/07 18:18:06 dra Exp $";
+char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.10 2025/03/08 13:37:48 dra Exp $";
 
 /* this attribute is so private that I don't even want to have it in
  * permlist.h
@@ -689,7 +689,7 @@ static Xv_object permlist_find(Perm_prop_frame owner, Xv_pkg *pkg,
 	return XV_NULL;
 }
 
-Xv_pkg xv_permlist_pkg = {
+const Xv_pkg xv_permlist_pkg = {
 	"PermanentList",
 	ATTR_PKG_PERM_LIST,
 	sizeof(Xv_permlist),
