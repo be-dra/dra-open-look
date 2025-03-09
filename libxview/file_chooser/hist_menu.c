@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)hist_menu.c 1.9 93/06/28  DRA: RCS $Id: hist_menu.c,v 4.2 2024/05/22 18:17:59 dra Exp $ ";
+static char     sccsid[] = "@(#)hist_menu.c 1.9 93/06/28  DRA: RCS $Id: hist_menu.c,v 4.3 2025/03/08 13:24:37 dra Exp $ ";
 #endif
 #endif
 
@@ -259,7 +259,7 @@ static Menu hist_menu_gen_proc(Menu menu, Menu_generate op)
 	return menu;
 }
 
-Xv_pkg history_menu_pkg = {
+const Xv_pkg history_menu_pkg = {
     "History Menu",
     ATTR_PKG_HIST,
     sizeof(History_menu_public),
