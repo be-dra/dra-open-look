@@ -5,7 +5,7 @@
 #include <xview/talk.h>
 #include <xview/defaults.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.35 2025/03/08 14:06:27 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.36 2025/03/09 17:52:38 dra Exp $";
 
 typedef void (*notify_proc_t)(Talk, char *, int, char **);
 
@@ -243,6 +243,15 @@ static int client_convert_proc(Selection_owner sel_own, Atom *type,
 		*type = XA_ATOM;
 		*length = i;
 		*format = 32;
+		return TRUE;
+	}
+	if (*type == priv->regist) {
+		/* a new server has been started - we should "reconnect" */
+		xv_set(sel_own, SEL_OWN, FALSE, NULL);
+
+		*data = XV_NULL;
+		*length = 0;
+		*format = 8;
 		return TRUE;
 	}
 
