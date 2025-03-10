@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.3 2025/03/07 16:27:56 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.5 2025/03/09 19:29:17 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -172,12 +172,9 @@ static char	**argVec;
 /*
  * main	-- parse arguments, perform initialization, call event-loop
  */
-int main(argc, argv)
-	int argc;
-	char **argv;
+int main(int argc, char **argv)
 {
 	XrmDatabase		commandlineDB = NULL;
-	char			*dpystr;
 
 #ifdef OW_I18N_L3
 	char			*OpenWinHome;
@@ -343,6 +340,7 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 	EventLoop(DefDpy);
 
 	/*NOTREACHED*/
+	exit(33);
 }
 
 
@@ -400,9 +398,9 @@ XrmDatabase	*tmpDB;
 
 	instName[MAX_NAME-1] = '\0';
 	for (p=instName; *p != '\0'; ++p) {
-	    if (!(*p >= 'a' && *p <= 'z' ||
-		  *p >= 'A' && *p <= 'Z' ||
-		  *p >= '0' && *p <= '9' ||
+	    if (!((*p >= 'a' && *p <= 'z') ||
+		  (*p >= 'A' && *p <= 'Z') ||
+		  (*p >= '0' && *p <= '9') ||
 		  *p == '_' || *p == '-')) {
 		*p = '_';
 	    }
@@ -425,6 +423,10 @@ XrmDatabase	*tmpDB;
 	}
 }
 
+static int io_errors(Display *dpy)
+{
+	exit(55);
+}
 
 /*
  * openDisplay - open the connection to the X display.  A probe is done into
@@ -461,6 +463,7 @@ openDisplay(rdb)
 		ProgramName, dpystr);
 	exit(15);
     }
+	XSetIOErrorHandler(io_errors);
     return dpy;
 }
 
@@ -657,13 +660,13 @@ cleanup()
 
 
 /* RestartOLWM -- clean up and then re-exec argv. */
-int
-RestartOLWM()
+int RestartOLWM(void)
 {
     cleanup();
     execvp(argVec[0], argVec);
     ErrorGeneral("cannot restart");
     /*NOTREACHED*/
+	return 44;
 }
 
 
