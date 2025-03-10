@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.25 2024/12/13 20:38:19 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.26 2025/03/09 22:37:26 dra Exp $";
 #endif
 
 /*
@@ -390,7 +390,8 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 		text = NULL;
 	if (!text) {
 		/* don't want a notice for nonavailable footer help,
-		 * just return XV_ERROR - see also in
+		 * just return XV_ERROR - see also in frame_footer_input
+		 * in fm_input.c
 		 */
 		if (! xv_get(client_window, XV_KEY_DATA, FRAME_FOOTER_WINDOW)) {
 			help_request_failed(client_window, client_data,
