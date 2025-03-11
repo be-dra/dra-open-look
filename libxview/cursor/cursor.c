@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.5 2025/03/08 13:28:12 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.6 2025/03/10 20:09:46 dra Exp $";
 #endif
 #endif
 
@@ -228,51 +228,56 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 #endif
 
 				cursor->type = CURSOR_TYPE_TEXT;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 #ifdef OW_I18N
 			case CURSOR_STRING_WCS:
 				_xv_set_wcs_attr_dup(&cursor->string, (CHAR *) arg1);
 				cursor->type = CURSOR_TYPE_TEXT;
+				ATTR_CONSUME(avlist[0]);
 				break;
 #endif
 
 			case CURSOR_DRAG_STATE:
 				cursor->drag_state = (Cursor_drag_state) arg1;
-/* 				if (cursor->drag_state > CURSOR_ACCEPT) { */
-				/* CURSOR_REJECT is not supported yet */
-/* 					cursor->drag_state = CURSOR_ACCEPT; */
-/* 				} */
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_DRAG_TYPE:
 				cursor->drag_type = (Cursor_drag_type) arg1;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_SRC_CHAR:
 				cursor->cur_src_char = (unsigned int)arg1;
 				cursor->type = CURSOR_TYPE_GLYPH;
 				dirty = TRUE;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_MASK_CHAR:
 				cursor->cur_mask_char = (unsigned int)arg1;
 				dirty = TRUE;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_XHOT:
 				cursor->cur_xhot = (int)arg1;
 				dirty = TRUE;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_YHOT:
 				cursor->cur_yhot = (int)arg1;
 				dirty = TRUE;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_OP:
 				cursor->cur_function = (int)arg1;
 				dirty = TRUE;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_IMAGE:
@@ -284,6 +289,7 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 				cursor->cur_shape = (Pixrect *) arg1;
 				cursor->type = CURSOR_TYPE_PIXMAP;
 				dirty = TRUE;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_FOREGROUND_COLOR:
@@ -291,6 +297,7 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 				cursor->fg.red = fg->red;
 				cursor->fg.green = fg->green;
 				cursor->fg.blue = fg->blue;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case CURSOR_BACKGROUND_COLOR:
@@ -298,6 +305,7 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 				cursor->bg.red = bg->red;
 				cursor->bg.green = bg->green;
 				cursor->bg.blue = bg->blue;
+				ATTR_CONSUME(avlist[0]);
 				break;
 
 			case XV_COPY_OF:
