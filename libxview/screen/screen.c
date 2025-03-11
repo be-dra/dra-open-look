@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.15 2025/03/08 13:49:01 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.16 2025/03/10 21:02:04 dra Exp $ ";
 #endif
 #endif
 
@@ -777,6 +777,7 @@ Xv_private Xv_Window screen_get_cached_window(Xv_Screen screen_public,
 				WIN_TRANSPARENT,
 				WIN_BORDER, borders,
 				XV_VISUAL, visual,
+				WIN_CONSUME_X_EVENT_MASK, ExposureMask | StructureNotifyMask,
 				WIN_NOTIFY_SAFE_EVENT_PROC, event_proc,
 				WIN_TOP_LEVEL_NO_DECOR, TRUE,
 				WIN_SAVE_UNDER, TRUE,
