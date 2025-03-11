@@ -1,5 +1,5 @@
 /* #ident	"@(#)usermenu.c	26.62	93/06/28 SMI" */
-char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.2 2025/03/10 18:22:28 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -302,12 +302,7 @@ static menudata *
 getUserMenu()
 {
     menudata   *userroot;
-    char        temp[MAXPATHLEN];
     char       *path;
-    char       *homeEnv;
-    char        homePath[MAXPATHLEN];
-    char       *openwinhomeEnv;
-    char        openwinhomePath[MAXPATHLEN];
 
 	if (alternate_menu_file) {
     	if ((userroot = makeRootMenu(alternate_menu_file)) != NULL)
@@ -541,13 +536,10 @@ ReInitUserMenu(dpy, forceReRead)
  * RootMenuShow	- makes sure the user root menu is up to date and
  * then calls MenuShow on the root menu to bring it up on the display.
  */
-void
-RootMenuShow(dpy, winInfo, pEvent)
-    Display    *dpy;
-    WinGeneric *winInfo;
-    XEvent     *pEvent;
+void RootMenuShow(Display *dpy, WinGeneric *winInfo, XEvent *pEvent)
 {
     ReInitUserMenu(dpy, False);
+	fprintf(stderr, "\n");
     MenuShowSync(dpy, winInfo, MenuTable[MENU_ROOT], pEvent, NULL, NULL,
 		 False, False);
 }
@@ -1105,7 +1097,7 @@ parseMenu(filename, stream, parent, lineno)
 			else {
 				u = args;
 				/* can't use strcpy because they overlap */
-				while (*u++ = *t++)
+				while ((*u++ = *t++))
 					/* EMPTY */
 					;
 			}
@@ -2196,14 +2188,9 @@ InitMenus(dpy)
  *	Assumes that Destroy called before Create.
  *	Assumes that the window menus will take up the first 6 slots
  */
-int
-CreateWindowMenuInfo(dpy, scrInfo)
-    Display    *dpy;
-    ScreenInfo *scrInfo;
+int CreateWindowMenuInfo(Display *dpy, ScreenInfo *scrInfo)
 {
     int         origNextSlot = scrInfo->menuCache->nextSlot;
-
-    int j, x;
 
     scrInfo->menuCache->nextSlot = 0;
 
@@ -2211,6 +2198,7 @@ CreateWindowMenuInfo(dpy, scrInfo)
     (void) MenuInfoCreate(scrInfo->menuCache, scrInfo->rootwin, MenuTable[MENU_LIMITED], 1);
 
     scrInfo->menuCache->nextSlot = origNextSlot;
+	return 0;
 }
 
 
