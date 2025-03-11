@@ -1,5 +1,5 @@
 /* #ident	"@(#)menu.c	26.76	93/06/28 SMI" */
-char menu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: menu.c,v 2.2 2025/01/11 18:54:58 dra Exp $";
+char menu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: menu.c,v 2.3 2025/03/10 18:24:15 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -47,6 +47,9 @@ char menu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: menu.c,v 2.2 2025/01/11 18:54
 #include "globals.h"
 #include "error.h"
 #include "atom.h"
+
+#define clientid(xid) ((int)((int)(xid)& 0xfff00000) >> 20)
+
 
 static Bool isEnabled();
 
@@ -565,7 +568,6 @@ SetMenuRedrawHints(dpy, ee, mInfo)
 	}
 }
 
-
 /*
  * Draw menu contents into menu->window.
  */
@@ -879,9 +881,7 @@ void MenuShow(dpy, winInfo, menu, pevent)
 /*
  * PointInRect	-- check if a point is inside a rectangle
  */
-int
-PointInRect(x, y, rx, ry, rw, rh)
-    int         x, y, rx, ry, rw, rh;
+int PointInRect(int x,int y, int rx, int ry, int rw, int rh)
 {
     return (x >= rx && x < rx + rw) && (y >= ry && y < ry + rh);
 }
@@ -1026,7 +1026,12 @@ establishAccelerator(bInfo, binding)
 
 	/* If the accelerator is a letter key, force it to upper case. */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wtraditional-conversion"
 	ks = XKeycodeToKeysym(DefDpy, binding->keycode, 0);
+#pragma GCC diagnostic pop
+
 	if (ks >= XK_a && ks <= XK_z)
 		ks = ks - XK_a + XK_A;
 
@@ -1448,6 +1453,7 @@ DestroyWindowMenuInfo(dpy, scrInfo)
 	for (i = 0; i < (int)MENU_NONE; i++) {
 		menuInfoDestroy(scrInfo->menuCache->menuInfoList[i]);
 	}
+	return 0;
 }
 
 /*
@@ -1477,6 +1483,7 @@ CreateUserMenuInfo(dpy, scrInfo)
 		}
 		scrInfo->menuCache->maxDepth = maxDepth;
 	}
+	return 0;
 }
 
 /*
@@ -1493,6 +1500,7 @@ DestroyUserMenuInfo(dpy, scrInfo)
 		menuInfoDestroy(scrInfo->menuCache->menuInfoList[i]);
 		scrInfo->menuCache->menuInfoList[i] = 0;
 	}
+	return 0;
 }
 
 /*
@@ -1684,11 +1692,7 @@ handleMenuKeyPress(dpy, pevent)
 	}
 }
 
-
-static Bool
-keyEventToItem(dpy, xke)
-    Display *dpy;
-    XKeyEvent *xke;
+static Bool keyEventToItem(Display *dpy, XKeyEvent *xke)
 {
 	MenuInfo *mInfo = menuInfoTable[topMenu - 1];
 	Button *pb;
@@ -1696,11 +1700,12 @@ keyEventToItem(dpy, xke)
 	int ct;
 	int best;
 	int i;
+	KeySym dra_keysym;
 
 	if (mInfo == NULL)
 		return False;
 
-	ct = XLookupString(xke, &c, sizeof(c), NULL, NULL);
+	ct = XLookupString(xke, &c, sizeof(c), &dra_keysym, NULL);
 
 	if (ct > 0) {
 		best = NOBUTTON;
@@ -1825,12 +1830,8 @@ menuHelpCommand(dpy, xke, closure)
 }
 
 
-Bool
-MenuHandleKeyEvent(dpy, pevent, win, closure)
-    Display *dpy;
-    XEvent *pevent;
-    WinGeneric *win;
-    WinGeneric *closure;
+Bool MenuHandleKeyEvent(Display *dpy, XEvent *pevent, WinGeneric *win,
+											WinGeneric *closure)
 {
 	SemanticAction a;
 	MenuInfo *mInfo;
@@ -1904,7 +1905,7 @@ MenuHandleKeyEvent(dpy, pevent, win, closure)
 			}
 			break;
 		case ACTION_NONE:
-			if (!keyEventToItem(dpy, pevent))
+			if (!keyEventToItem(dpy, &pevent->xkey))
 				KeyBeep(dpy, pevent);
 			break;
 		case ACTION_HELP:
@@ -1940,13 +1941,7 @@ MenuHandleKeyEvent(dpy, pevent, win, closure)
  * Event interposer for menu tracking.
  */
 
-/*ARGSUSED*/
-int
-MenuTrack(dpy, pevent, win, closure)
-    Display    *dpy;
-    XEvent     *pevent;
-    WinGeneric *win;
-    WinGeneric *closure;
+int MenuTrack(Display *dpy,XEvent *pevent, WinGeneric *win, WinGeneric *closure)
 {
 	MenuInfo *mInfo = menuInfoTable[topMenu - 1];
 	XEvent nextevent;
@@ -2105,13 +2100,9 @@ getMenuDim(mInfo, prect)
 	}
 }
 
-static Bool
-inMenuDent(mInfo, bindex, pevent)
-    MenuInfo *mInfo;
-    int bindex;
-    XEvent *pevent;
+static Bool inMenuDent(MenuInfo *mInfo, int bindex, XEvent *pevent)
 {
-	int curX;
+	int curX = 0;
 	Graphics_info *gisNormal;
 	Graphics_info *gisButton;
 	XRectangle menuDim;
@@ -2662,7 +2653,7 @@ checkMenuEvent(dpy, menuInfo, pevent, bindex)
 	Window hitwindow = 0;
 	int ex, ey;
 	Graphics_info *gisNormal = WinGI(menuInfo->menuWin, NORMAL_GINFO);
-	int rx, ry;
+	int rx = 0, ry = 0;
 	XRectangle menuDim;
 
 	/* menu->title == NULL for pinned menus, as well as title-less ones */
@@ -2832,6 +2823,8 @@ menuHide(dpy, winInfo, fldoit)
 
 	if (InterposerInstalled() == MenuTrack)
 		UninstallInterposer();
+
+	return 0;
 }
 
 
