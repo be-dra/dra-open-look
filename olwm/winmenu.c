@@ -1,4 +1,4 @@
-char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.6 2025/03/07 16:21:57 dra Exp $";
+char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.8 2025/03/10 18:43:00 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -43,11 +43,7 @@ static ClassGeneric classShadow;
 /* 
  * eventButtonPress  - a button has gone down.
  */
-static int
-eventButtonPress(dpy, event, winInfo)
-	Display		*dpy;
-	XEvent		*event;
-	WinMenu		*winInfo;
+static int eventButtonPress(Display *dpy, XEvent *event, WinMenu *winInfo)
 {
 	/* REMIND - placeholder for future */
 	return 0;
@@ -56,11 +52,7 @@ eventButtonPress(dpy, event, winInfo)
 /* 
  * eventButtonRelease  - a button has gone up
  */
-static int
-eventButtonRelease(dpy, event, winInfo)
-	Display		*dpy;
-	XEvent		*event;
-	WinMenu		*winInfo;
+static int eventButtonRelease(Display *dpy, XEvent *event, WinMenu *winInfo)
 {
 	/* REMIND - placeholder for future */
 	return 0;
@@ -69,11 +61,7 @@ eventButtonRelease(dpy, event, winInfo)
 /* 
  * eventKeyPress  - a key has gone down
  */
-static int
-eventKeyPress(dpy, event, winInfo)
-	Display		*dpy;
-	XEvent		*event;
-	WinMenu		*winInfo;
+static int eventKeyPress(Display *dpy, XEvent *event, WinMenu *winInfo)
 {
 	/* REMIND - mouseless operation */
 	return 0;
@@ -82,11 +70,7 @@ eventKeyPress(dpy, event, winInfo)
 /* 
  * eventKeyRelease  - a key has gone up
  */
-static int
-eventKeyRelease(dpy, event, winInfo)
-	Display		*dpy;
-	XEvent		*event;
-	WinMenu		*winInfo;
+static int eventKeyRelease(Display *dpy, XEvent *event, WinMenu *winInfo)
 {
 	/* REMIND - mouseless operation */
 	return 0;
@@ -95,11 +79,7 @@ eventKeyRelease(dpy, event, winInfo)
 /* 
  * eventMotionNotify - mouse moved
  */
-static int
-eventMotionNotify(dpy, event, winInfo)
-	Display		*dpy;
-	XEvent		*event;
-	WinMenu		*winInfo;
+static int eventMotionNotify(Display *dpy, XEvent *event, WinMenu *winInfo)
 {
 	/* REMIND - placeholder for future */
 	return 0;
@@ -201,7 +181,7 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 
 		attributes.background_pixmap = None; /* transparent */
 		attributes.save_under = True;
-		attributes.event_mask = ExposureMask;
+		attributes.event_mask = ExposureMask | StructureNotifyMask;
 		attributes.override_redirect = True;
 		valuemask = CWEventMask |CWBackPixmap |CWSaveUnder |CWOverrideRedirect;
 		sh->core.self = XCreateWindow(dpy, WinRootID(winInfo),
@@ -221,28 +201,6 @@ WinMenu * MakeMenu(Display *dpy, WinGeneric *winInfo)
 	XDefineCursor( dpy, win, GRV.MenuPointer );
 
 	return w;
-}
-
-static void draw_menu_shadow(Display *dpy, WinMenu *winInfo)
-{
-	if (winInfo->shadow) {
-		WinShadow *sh = winInfo->shadow;
-
-		if (sh->saveShadowPix == None) {
-			XFillRectangle(dpy, sh->core.self,
-					sh->core.client->scrInfo->gc[MENU_SHADOW_GC],
-					0, 0, winInfo->core.width + 1, winInfo->core.height + 1);
-		}
-		else {
-			ScreenInfo *scr = winInfo->core.client->scrInfo;
-
-			XCopyArea(dpy, sh->saveShadowPix, sh->core.self,
-							scr->gc[FOREGROUND_GC],
-							0, 0,
-							winInfo->core.width + 1, winInfo->core.height + 1,
-							0, 0);
-		}
-	}
 }
 
 /*
@@ -277,8 +235,6 @@ void MapMenuWindow(Display *dpy, WinMenu *winInfo, MenuInfo	*menuInfo)
 		XConfigureWindow(dpy, sh->core.self, CWX|CWY|CWWidth|CWHeight,
 											&changes);
 		XMapRaised(dpy, sh->core.self);
-		/* obviously NOT too early */
-		draw_menu_shadow(dpy, winInfo);
 	}
 
 	XMapRaised(dpy,winInfo->core.self);
@@ -294,6 +250,7 @@ void MapMenuWindow(Display *dpy, WinMenu *winInfo, MenuInfo	*menuInfo)
  */
 void UnmapMenuWindow(Display *dpy, WinMenu *winInfo)
 {
+	dra_olwm_trace(742, "%s(%lx)\n", __FUNCTION__, winInfo);
 	if (winInfo->shadow) {
 		WinShadow *sh = winInfo->shadow;
 
@@ -314,7 +271,7 @@ int MenuEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
 	MenuInfo *mInfo = NULL;
 	WinMenu *wm = NULL;
 
-	dra_olwm_trace(740, "MenuEventExpose(%lx)\n", winInfo);
+	dra_olwm_trace(743, "MenuEventExpose(%lx)\n", winInfo);
 
 	if (winInfo->core.kind == WIN_MENU) {
 		wm = (WinMenu *)winInfo;
@@ -331,9 +288,6 @@ int MenuEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
 		SetMenuRedrawHints(dpy, event, mInfo);
 
 		if (event->xexpose.count == 0) {
-			if (winInfo->core.kind == WIN_MENU) {
-				draw_menu_shadow(dpy, wm);
-			}
 			DrawMenuWithHints(dpy, mInfo);
 		}
 	}
@@ -354,10 +308,19 @@ int MenuEventDrawMenu(Display *dpy, WinGeneric *winInfo)
 	mInfo = ((WinPinMenu *) winInfo)->menuInfo;
 
     if (mInfo) {
-    	if (winInfo->core.kind == WIN_MENU) {
-			draw_menu_shadow(dpy, (WinMenu *)winInfo);
-		}
 		DrawMenu(dpy, mInfo);
+	}
+	return 0;
+}
+
+static int ShadowEventUnmap(Display *dpy, XEvent *event, WinGeneric *winInfo)
+{
+	WinShadow *ws = (WinShadow *)winInfo;
+
+	dra_olwm_trace(740, "%s(%lx)\n", __FUNCTION__, winInfo);
+	if (ws->saveShadowPix) {
+		XFreePixmap(dpy, ws->saveShadowPix);
+		ws->saveShadowPix = None;
 	}
 	return 0;
 }
@@ -367,26 +330,26 @@ static int ShadowEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
 	dra_olwm_trace(740, "ShadowEventExpose(%lx)\n", winInfo);
 
 	if (event->xexpose.count == 0) {
-		WinShadow *wm = (WinShadow *)winInfo;
+		WinShadow *ws = (WinShadow *)winInfo;
 
-		if (wm->saveShadowPix == None) {
+		if (ws->saveShadowPix == None) {
 			ScreenInfo *scr = winInfo->core.client->scrInfo;
 
-			XFillRectangle(dpy, wm->core.self,
-					wm->core.client->scrInfo->gc[MENU_SHADOW_GC],
+			XFillRectangle(dpy, ws->core.self,
+					ws->core.client->scrInfo->gc[MENU_SHADOW_GC],
 					0, 0, winInfo->core.width + 1, winInfo->core.height + 1);
 
-			wm->saveShadowPix = XCreatePixmap(dpy, wm->core.self,
-					wm->core.width + 1, wm->core.height + 1,
+			ws->saveShadowPix = XCreatePixmap(dpy, ws->core.self,
+					ws->core.width + 1, ws->core.height + 1,
 					WinDepth(winInfo));
-			XCopyArea(dpy, wm->core.self, wm->saveShadowPix,
+			XCopyArea(dpy, ws->core.self, ws->saveShadowPix,
 					scr->gc[FOREGROUND_GC], 0, 0,
-					wm->core.width + 1, wm->core.height + 1, 0, 0);
+					ws->core.width + 1, ws->core.height + 1, 0, 0);
 		}
 		else {
 			ScreenInfo *scr = winInfo->core.client->scrInfo;
 
-			XCopyArea(dpy, wm->saveShadowPix, winInfo->core.self,
+			XCopyArea(dpy, ws->saveShadowPix, winInfo->core.self,
 							scr->gc[FOREGROUND_GC], 0, 0,
 							winInfo->core.width + 1, winInfo->core.height + 1,
 							0, 0);
@@ -416,6 +379,7 @@ void MenuInit(Display *dpy)
 
 	classShadow.core.kind = WIN_SHADOW;
 	classShadow.core.xevents[Expose] = ShadowEventExpose;
+	classShadow.core.xevents[UnmapNotify] = ShadowEventUnmap;
 	classShadow.core.drawfunc = NULL;
 	classShadow.core.destroyfunc = NULL;
 	classShadow.core.heightfunc = NULL;
