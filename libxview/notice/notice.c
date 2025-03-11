@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.10 2025/03/08 14:06:08 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.11 2025/03/10 20:19:12 dra Exp $ ";
 #endif
 #endif
 
@@ -3938,6 +3938,8 @@ static int notice_do_show(Notice_info	*notice)
 
 }
 
+#define ADONE ATTR_CONSUME(avlist[0]);break
+
 static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avlist)
 {
     Notice_info	*notice = NOTICE_PRIVATE(notice_public);
@@ -3972,18 +3974,18 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 				 */
 			case NOTICE_LOCK_SCREEN:
 				notice->lock_screen = (avlist[1] != 0L);
-				break;
+				ADONE;
 
 			case NOTICE_LOCK_SCREEN_LOOKING:
 				notice->lock_screen_looking = (avlist[1] != 0L);
-				break;
+				ADONE;
 
 			case NOTICE_BLOCK_THREAD:
 				notice->block_thread = (avlist[1] != 0L);
 				if (! notice->block_thread) {
 					notice->lock_screen_looking = FALSE;
 				}
-				break;
+				ADONE;
 
 #ifdef OW_I18N
 			case NOTICE_MESSAGE_STRINGS_ARRAY_PTR:
@@ -4006,11 +4008,11 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					wc_msg[str_count] = (CHAR *) NULL;
 					new_msg = (CHAR **) wc_msg;
 				}
-				break;
+				ADONE;
 
 			case NOTICE_MESSAGE_STRINGS_ARRAY_PTR_WCS:
 				new_msg = (CHAR **) value;
-				break;
+				ADONE;
 
 			case NOTICE_MESSAGE_STRINGS:
 				/* Convert mbs to wchar before passing to new_msg */
@@ -4032,23 +4034,23 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					wc_msg[str_count] = (CHAR *) NULL;
 					new_msg = (CHAR **) wc_msg;
 				}
-				break;
+				ADONE;
 
 			case NOTICE_MESSAGE_STRINGS_WCS:
 				new_msg = (CHAR **) & avlist[1];
-				break;
+				ADONE;
 
 			case NOTICE_MESSAGE_STRING:
 				one_msg[0] = (wchar_t *)_xv_mbstowcsdup((char *)avlist[1]);
 				one_msg[1] = (CHAR *) NULL;
 				new_msg = (CHAR **) one_msg;
-				break;
+				ADONE;
 
 			case NOTICE_MESSAGE_STRING_WCS:
 				one_msg[0] = (CHAR *) avlist[1];
 				one_msg[1] = (CHAR *) NULL;
 				new_msg = (CHAR **) one_msg;
-				break;
+				ADONE;
 
 			case NOTICE_BUTTON_YES:
 			case NOTICE_BUTTON_YES_WCS:{
@@ -4097,7 +4099,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					notice->yes_button_exists = TRUE;
 					num_butt++;
 					butt_changed = TRUE;
-					break;
+					ADONE;
 				}
 
 			case NOTICE_BUTTON_NO:
@@ -4143,7 +4145,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					num_butt++;
 					butt_changed = TRUE;
 
-					break;
+					ADONE;
 				}
 
 			case NOTICE_BUTTON:
@@ -4175,22 +4177,22 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					num_butt++;
 					butt_changed = TRUE;
 
-					break;
+					ADONE;
 				}
 #else
 			case NOTICE_MESSAGE_STRINGS_ARRAY_PTR:
 				new_msg = (char **)value;
-				break;
+				ADONE;
 
 			case NOTICE_MESSAGE_STRINGS:
 				new_msg = (char **)&avlist[1];
-				break;
+				ADONE;
 
 			case NOTICE_MESSAGE_STRING:
 				one_msg[0] = (char *)avlist[1];
 				one_msg[1] = (char *)NULL;
 				new_msg = (char **)one_msg;
-				break;
+				ADONE;
 
 			case NOTICE_BUTTON_YES:{
 					notice_buttons_handle button;
@@ -4246,7 +4248,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					num_butt++;
 					butt_changed = TRUE;
 
-					break;
+					ADONE;
 				}
 
 			case NOTICE_BUTTON_NO:{
@@ -4287,7 +4289,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					num_butt++;
 					butt_changed = TRUE;
 
-					break;
+					ADONE;
 				}
 
 			case NOTICE_BUTTON:{
@@ -4314,7 +4316,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					num_butt++;
 					butt_changed = TRUE;
 
-					break;
+					ADONE;
 				}
 #endif
 
@@ -4325,7 +4327,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 				if (notice->new) {
 					notice->notice_font = (Xv_Font) avlist[1];
 				}
-				break;
+				ADONE;
 
 			case NOTICE_NO_BEEPING:
 				if (avlist[1]) {
@@ -4334,7 +4336,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 				else {
 					notice->dont_beep = 0;
 				}
-				break;
+				ADONE;
 
 				/*
 				 * END of GENERIC NOTICE ATTRIBUTES
@@ -4350,24 +4352,24 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 				notice->focus_x = (int)avlist[1];
 				notice->focus_y = (int)avlist[2];
 				notice->focus_specified = TRUE;
-				break;
+				ADONE;
 
 			case NOTICE_TRIGGER:
 				notice->default_input_code = (int)avlist[1];
 				trigger_set = 1;
-				break;
+				ADONE;
 
 			case NOTICE_TRIGGER_EVENT:
 				if ((Event *) value) {
 					notice->event = (Event *) value;
 				}
-				break;
+				ADONE;
 
 			case NOTICE_STATUS:
 				if ((int *)value) {
 					notice->result_ptr = (int *)value;
 				}
-				break;
+				ADONE;
 
 				/*
 				 * END OF SCREEN LOCKING ATTRIBUTES
@@ -4380,11 +4382,11 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 				if (avlist[1]) {
 					notice->event_proc = (void (*)(Xv_notice, int, Event *))avlist[1];
 				}
-				break;
+				ADONE;
 
 			case NOTICE_BUSY_FRAMES:
 				if (notice->lock_screen) {
-					break;
+					ADONE;
 				}
 
 				if ((Frame) value) {
@@ -4415,7 +4417,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 
 					notice->busy_frames = busy_frames;
 				}
-				break;
+				ADONE;
 
 
 			case XV_SHOW:
