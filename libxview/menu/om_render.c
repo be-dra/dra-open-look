@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.9 2025/03/03 20:01:55 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.10 2025/03/10 21:02:31 dra Exp $";
 #endif
 #endif
 
@@ -402,6 +402,17 @@ static void menu_shadow_paint(Xv_Window shadowwin)
 static void menu_shadow_event_proc(Xv_Window shadowwin, Event *event)
 {
 	Xv_menu_info *m;
+
+	if (event_id(event) == WIN_UNMAP_NOTIFY) {
+		Pixmap pix = (Pixmap)xv_get(shadowwin, XV_KEY_DATA, MENU_SHADOW_PIXMAP);
+		if (pix) {
+			Display *dpy = (Display *)xv_get(shadowwin, XV_DISPLAY);
+
+			xv_set(shadowwin, XV_KEY_DATA, MENU_SHADOW_PIXMAP, XV_NULL, NULL);
+			XFreePixmap(dpy, pix);
+		}
+		return;
+	}
 
 	m = (Xv_menu_info *) xv_get(shadowwin, XV_KEY_DATA, MENU_SHADOW_MENU);
 	if (!m || !m->group_info) return;
