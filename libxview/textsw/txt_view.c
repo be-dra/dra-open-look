@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_view_c_sccsid[] = "@(#)txt_view.c 1.32 93/06/28 DRA: $Id: txt_view.c,v 4.5 2024/11/01 11:50:27 dra Exp $";
+char     txt_view_c_sccsid[] = "@(#)txt_view.c 1.32 93/06/28 DRA: $Id: txt_view.c,v 4.6 2025/03/08 13:15:23 dra Exp $";
 #endif
 
 /*
@@ -128,7 +128,7 @@ Pkg_private	void textsw_split_init_proc(Textsw_view oldview,
 	}
 }
 
-Xv_pkg xv_textsw_view_pkg = {
+const Xv_pkg xv_textsw_view_pkg = {
     "Textsw_view",
     (Attr_pkg) ATTR_PKG_TEXTSW_VIEW,
     sizeof(Xv_textsw_view),
