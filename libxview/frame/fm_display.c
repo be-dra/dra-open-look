@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.2 2025/03/06 20:51:47 dra Exp $ ";
 #endif
 #endif
 
@@ -79,7 +79,15 @@ send:
 #endif
 }
 
-Pkg_private void frame_display_footer(Frame frame_public, int clear_first)
+/* Originally, this function was only what the name says: display.
+ * However, when "quick duplicate" was implemented for the footer, we
+ * needed to know exactly where the left and the right footer are.
+ * But this seems to be the only piece of code that calculates the
+ * position and size of the two footer parts.
+ * Therefore, a few mor parameters were introduced....
+ */
+Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
+			int *left_start, int *left_w, int *right_start, int *right_w)
 {
 	Frame_class_info *frame = FRAME_PRIVATE(frame_public);
 	Xv_Drawable_info *info;
@@ -179,51 +187,60 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first)
 		max_right_width = quarter_width;
 	}
 
-	if (clear_first)
-		XClearWindow(xv_display(info), xv_xid(info));
+	/* NULL parameter ? - then really display */
+	if (left_start == NULL) {
+		if (clear_first)
+			XClearWindow(xv_display(info), xv_xid(info));
 
-#ifdef OW_I18N
-	if (frame->left_footer.pswcs.value != NULL) {
-		olgx_draw_text(frame->ginfo, xv_xid(info),
-				frame->left_footer.pswcs.value, margin, baseline,
-				max_left_width,
-				OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
-	}
-	if (frame->right_footer.pswcs.value != NULL) {
-		olgx_draw_text(frame->ginfo, xv_xid(info),
-				frame->right_footer.pswcs.value,
-				footer_width + margin - max_right_width, baseline,
-				max_right_width,
-				OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
-	}
-#else
-	if (frame->left_footer) {
-		/* siehe auch die folgenden olgx_draw_text */
-		frame->left_x = margin;
+	#ifdef OW_I18N
+		if (frame->left_footer.pswcs.value != NULL) {
+			olgx_draw_text(frame->ginfo, xv_xid(info),
+					frame->left_footer.pswcs.value, margin, baseline,
+					max_left_width,
+					OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
+		}
+		if (frame->right_footer.pswcs.value != NULL) {
+			olgx_draw_text(frame->ginfo, xv_xid(info),
+					frame->right_footer.pswcs.value,
+					footer_width + margin - max_right_width, baseline,
+					max_right_width,
+					OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
+		}
+	#else
+		if (frame->left_footer) {
+			/* siehe auch die folgenden olgx_draw_text */
+			frame->left_x = margin;
+		}
+		else {
+			frame->left_x = 0;
+		}
+		if (frame->right_footer) {
+			/* siehe auch die folgenden olgx_draw_text */
+			frame->right_x = footer_width + margin - max_right_width;
+		}
+		else {
+			frame->right_x = 0;
+		}
+		if (frame->left_footer != NULL) {
+			olgx_draw_text(frame->ginfo, xv_xid(info), frame->left_footer,
+					margin, baseline, max_left_width,
+					OLGX_NORMAL | OLGX_MORE_ARROW);
+		}
+		if (frame->right_footer != NULL) {
+			olgx_draw_text(frame->ginfo, xv_xid(info), frame->right_footer,
+					footer_width + margin - max_right_width, baseline,
+					max_right_width, OLGX_NORMAL | OLGX_MORE_ARROW);
+		}
+	#endif
+
+		XFlush(xv_display(info));
 	}
 	else {
-		frame->left_x = 0;
+		*left_start = margin;
+		*left_w = max_left_width;
+		*right_start = footer_width + margin - max_right_width;
+		*right_w = max_right_width;
 	}
-	if (frame->right_footer) {
-		/* siehe auch die folgenden olgx_draw_text */
-		frame->right_x = footer_width + margin - max_right_width;
-	}
-	else {
-		frame->right_x = 0;
-	}
-	if (frame->left_footer != NULL) {
-		olgx_draw_text(frame->ginfo, xv_xid(info), frame->left_footer,
-				margin, baseline, max_left_width,
-				OLGX_NORMAL | OLGX_MORE_ARROW);
-	}
-	if (frame->right_footer != NULL) {
-		olgx_draw_text(frame->ginfo, xv_xid(info), frame->right_footer,
-				footer_width + margin - max_right_width, baseline,
-				max_right_width, OLGX_NORMAL | OLGX_MORE_ARROW);
-	}
-#endif
-
-	XFlush(xv_display(info));
 
 	/*
 	 * Restore OLGX_BLACK in ginfo only if it was changed before
