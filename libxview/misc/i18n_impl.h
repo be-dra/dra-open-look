@@ -1,4 +1,4 @@
-/*      @(#)i18n_impl.h 1.23 93/06/28 SMI	DRA: RCS: $Id: i18n_impl.h,v 4.3 2024/11/30 12:40:36 dra Exp $ */
+/*      @(#)i18n_impl.h 1.23 93/06/28 SMI	DRA: RCS: $Id: i18n_impl.h,v 4.4 2025/03/11 17:08:13 dra Exp $ */
 /*
  *      (c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
  *      pending in the U.S. and foreign countries. See LEGAL_NOTICE 
@@ -83,19 +83,19 @@ Xv_private CONST char	*xv_domain;
 #define	INDEX		STRCHR
 #define	RINDEX		STRRCHR
 #define	SPRINTF		wsprintf
-#define	STRCAT		wscat
-#define	STRCHR		wschr
-#define	STRCMP		wscmp
-#define	STRCPY		wscpy
+#define	STRCAT		wcscat
+#define	STRCHR		wcschr
+#define	STRCMP		wcscmp
+#define	STRCPY		wcscpy
 #ifdef notdef
 /* Conflict with sun.h's define */
-#define	STRDUP		wsdup
+#define	STRDUP		wcsdup
 #endif
-#define	STRLEN		wslen
-#define	STRNCAT		wsncat
-#define	STRNCMP		wsncmp
-#define	STRNCPY		wsncpy
-#define	STRRCHR		wsrchr
+#define	STRLEN		wcslen
+#define	STRNCAT		wcsncat
+#define	STRNCMP		wcsncmp
+#define	STRNCPY		wcsncpy
+#define	STRRCHR		wcsrchr
 
 /*
  * DEPEND_ON_OS: word selection library, the following _wckind is
