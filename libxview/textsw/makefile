@@ -12,7 +12,7 @@ OFILES.textsw.4	= ${CFILES.textsw.4:%.c=%.o}
 HFILES.textsw.4        = convpos.h
 HFILES.textsw.3        =
 
-HDRSPRIVATE=    ei.h es.h ev.h ev_impl.h primal.h ps_impl.h		finger_tbl.h txt_impl.h txt_18impl.h ${HFILES.textsw.3}
+HDRSPRIVATE=ei.h es.h ev.h ev_impl.h primal.h ps_impl.h finger_tbl.h txt_impl.h txt_18impl.h ${HFILES.textsw.3}
 
 HDRSPUBLIC=textsw.h text.h
 
@@ -123,7 +123,7 @@ includes::
 	else (set -x; $(MKDIRHIER) $(BUILDINCDIR)/$(XVPRI_INCDIR)); fi
 	@(set -x; cd $(BUILDINCDIR)/$(XVPRI_INCDIR); for i in $(HDRSPRIVATE); do \
 	$(RM) $$i; \
-	$(LN) $(BUILDINCTOP)//$(CURRENT_DIR)/$$i .; \
+	$(LN) $(BUILDINCTOP)/$(CURRENT_DIR)/$$i .; \
 	done)
 
 populate::
@@ -186,7 +186,7 @@ depend::
 retrieve: $(HEADERS)
 
 
-# convpos.h: RCS/convpos.h,v
+convpos.h: RCS/convpos.h,v
 # ei.h: RCS/ei.h,v
 es.h: RCS/es.h,v
 # ev.h: RCS/ev.h,v
