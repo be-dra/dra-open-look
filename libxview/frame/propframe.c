@@ -34,7 +34,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.14 2025/02/11 21:35:54 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.15 2025/03/08 13:21:40 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -288,7 +288,7 @@ static void convert_nil(Xv_opaque first, int panel_to_data, char **datptr, Panel
 {
 }
 
-static struct { Xv_pkg *pkg; convert_t proc; } converters[] = {
+static struct { const Xv_pkg *pkg; convert_t proc; } converters[] = {
 	{ PANEL_MESSAGE,            convert_nil },
 	{ PANEL_ABBREV_MENU_BUTTON, convert_nil },
 	{ PANEL_BUTTON,             convert_nil },
@@ -311,7 +311,7 @@ static void reset_change_bars_in_panel(Propframe_private *priv, Panel pan)
 	Panel_item cb;
 
 	PANEL_EACH_ITEM(pan, cb)
-		if (PANEL_MESSAGE == (Xv_pkg *)xv_get(cb, CB_TO_TYPE)) {
+		if (PANEL_MESSAGE == (const Xv_pkg *)xv_get(cb, CB_TO_TYPE)) {
 			xv_set(cb, PANEL_LABEL_STRING, " ", NULL);
 		}
 	PANEL_END_EACH
@@ -490,7 +490,7 @@ static void propagate_through_panel_data_items(Propframe_private *priv, Panel pa
 		Propframe_item *attach;
 
 		/* eliminate change bars */
-		if (PANEL_MESSAGE == (Xv_pkg *)xv_get(it, CB_TO_TYPE))
+		if (PANEL_MESSAGE == (const Xv_pkg *)xv_get(it, CB_TO_TYPE))
 			continue;
 
 		/* don't handle items with no attached data */
@@ -1493,7 +1493,7 @@ static void free_key_data(Xv_opaque obj, int key, char *data)
 	if (data) xv_free(data);
 }
 
-static Panel_item create_panel_item(Propframe_private *priv, int layout, Xv_pkg *pkg, Attr_avlist avlist)
+static Panel_item create_panel_item(Propframe_private *priv, int layout, const Xv_pkg *pkg, Attr_avlist avlist)
 {
 	Panel_item newitem, cb = XV_NULL;
 	Attr_attribute *attrs;
@@ -1865,7 +1865,7 @@ static Xv_opaque propframe_set(Frame_props self, Attr_avlist avlist)
 					ADONE;
 				}
 
-				newitem = create_panel_item(priv,(int)A3,(Xv_pkg *)A4,attrs+5);
+				newitem = create_panel_item(priv,(int)A3,(const Xv_pkg *)A4,attrs+5);
 
 				if (ret) *ret = newitem;
 			}
@@ -2279,7 +2279,7 @@ static int propframe_destroy(Frame_props self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_propframe_pkg = {
+const Xv_pkg xv_propframe_pkg = {
 	"PropertyFrame",
     (Attr_pkg) ATTR_PKG_FRAME,
 	sizeof(Xv_propframe),
