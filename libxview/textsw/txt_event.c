@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_event_c_sccsid[] = "@(#)txt_event.c 20.63 93/06/28 DRA: $Id: txt_event.c,v 4.5 2025/01/05 10:35:33 dra Exp $";
+char     txt_event_c_sccsid[] = "@(#)txt_event.c 20.63 93/06/28 DRA: $Id: txt_event.c,v 4.6 2025/03/08 13:15:23 dra Exp $";
 #endif
 
 /*
@@ -53,7 +53,7 @@ Pkg_private Textsw_view_private textsw_view_abs_to_rep(Textsw_view abstract
 
 {
 /* ich will hier dazu kommen, dass ich nur mit Textsw_view aufgerufen werde */
-Xv_pkg *pkg = (Xv_pkg *)xv_get(abstract, XV_TYPE);
+const Xv_pkg *pkg = (const Xv_pkg *)xv_get(abstract, XV_TYPE);
 
 if (0 != strcmp(pkg->name, "Textsw_view") && 0 != strcmp(pkg->name, "Termsw_view")) {
 	fprintf(stderr, "%s: %s-%d: called with %s\n", xv_app_name, func, line, pkg->name);
@@ -94,7 +94,7 @@ typedef struct {
 
 Nein! :
 
-Xv_pkg          xv_termsw_view_pkg = {
+const Xv_pkg          xv_termsw_view_pkg = {
     "Termsw_view",
     (Attr_pkg) ATTR_PKG_TERMSW_VIEW,
     sizeof(Xv_termsw_view),
