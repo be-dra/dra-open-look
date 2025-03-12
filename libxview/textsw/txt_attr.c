@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.10 2025/01/01 20:52:01 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.12 2025/03/08 13:15:23 dra Exp $";
 #endif
 
 /*
@@ -650,6 +650,10 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				priv->notify = (int (*)(Xv_opaque, Attr_avlist))attrs[1];
 				if (priv->notify_level == 0)
 					priv->notify_level = TEXTSW_NOTIFY_STANDARD;
+				break;
+			case TEXTSW_CONVERT_PROC:
+				priv->convert_proc = (textsw_convert_proc_t)attrs[1];
+				ATTR_CONSUME(*attrs);
 				break;
 			case TEXTSW_READ_ONLY:
 				read_only_start = TXTSW_IS_READ_ONLY(priv);
@@ -1586,6 +1590,7 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 			return ((Xv_opaque) priv->notify_level);
 		case TEXTSW_NOTIFY_PROC:
 			return ((Xv_opaque) priv->notify);
+		case TEXTSW_CONVERT_PROC: return (Xv_opaque)priv->convert_proc;
 		case TEXTSW_READ_ONLY:
 			return ((Xv_opaque)
 					BOOL_FLAG_VALUE(priv->state, TXTSW_READ_ONLY_ESH));
@@ -1626,7 +1631,7 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 	}
 }
 
-static Xv_pkg *textsw_paintwindow_class(void);
+static const Xv_pkg *textsw_paintwindow_class(void);
 
 /* Caller turns varargs into va_list that has already been va_start'd */
 Pkg_private Xv_opaque textsw_get(Textsw abstract, int *status, Attr_attribute attr, va_list args)
@@ -2128,7 +2133,7 @@ static Xv_opaque textsw_pw_get(Xv_opaque xself, int *status, Attr_attribute attr
 }
 #endif /* NOT_NEEDED */
 
-static Xv_pkg xv_textsw_pw_pkg = {
+static const Xv_pkg xv_textsw_pw_pkg = {
     "Textsw_paint_window",
     (Attr_pkg) ATTR_PKG_TEXTSW_VIEW,
     sizeof(Xv_textsw_pw),
@@ -2140,7 +2145,7 @@ static Xv_pkg xv_textsw_pw_pkg = {
     NULL			/* no find proc */
 };
 
-static Xv_pkg *textsw_paintwindow_class(void)
+static const Xv_pkg *textsw_paintwindow_class(void)
 {
 	return &xv_textsw_pw_pkg;
 }
