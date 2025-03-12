@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.18 2025/02/14 09:32:04 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.19 2025/03/11 17:54:21 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -424,8 +424,9 @@ Pkg_private void ttysw_vpos(int row, int col);
 Pkg_private void xv_tty_new_size(Ttysw_private ttysw, int cols, int lines);
 
 #ifdef OW_I18N
-Pkg_private void
-	tty_column_wchar_type(Xv_opaque UNKNOWN);
+Pkg_private void tty_column_wchar_type(int xChar, int yChar,
+		int *cwidth, /* character width (RETURN) */
+		int *offset); /* offset of charcter (RETURN) */
 #endif
 
 Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on);
