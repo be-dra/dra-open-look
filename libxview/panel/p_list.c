@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.8 2024/09/11 09:11:00 dra Exp $ DRA: $Id: p_list.c,v 4.8 2024/09/11 09:11:00 dra Exp $";
+static char     sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.15 2025/03/08 13:08:26 dra Exp $ DRA: $Id: p_list.c,v 4.15 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -18,9 +18,9 @@ static char     sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.8
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 #undef STRING
-#include <xview_private/p_lst_impl.h>
 #include <xview_private/draw_impl.h>
 #include <xview_private/win_info.h>
+#include <xview_private/xv_quick.h>
 #include <xview/font.h>
 #include <xview/scrollbar.h>
 #include <xview/server.h>
@@ -30,6 +30,139 @@ static char     sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.8
 #ifdef SVR4 
 #include <stdlib.h> 
 #endif /* SVR4 */
+
+typedef struct panel_list_struct		Panel_list_info;
+
+typedef enum {
+    OP_NONE,
+    OP_CHANGE,
+    OP_INSERT,
+    OP_DELETE
+} Edit_op;
+
+#define PRIMARY_CHOICE	0
+#define SHELF_CHOICE	1
+#define PANEL_LIST_DEFAULT_ROW	5
+
+/*** Note: Update PANEL_LIST_SORT code when changing this structure. ***/
+typedef struct panel_list_row_struct {
+	Xv_opaque	client_data;	/* Client data with each row */
+	int		display_str_len; /* length of displayed string */
+	Xv_Font		font;		/* NULL => use WIN_FONT */
+	Pixrect		*glyph;
+	Pixrect		*mask_glyph;
+	int		row;            /* Row number */
+#ifdef OW_I18N
+	_xv_string_attr_dup_t
+			string;
+#else
+	char		*string;
+#endif
+	int		string_y;
+	Xv_opaque	exten_data;	/* client data for extensions */
+
+	struct {
+	  unsigned edit_selected : 1;	/* selected in edit mode */
+#ifndef OW_I18N
+	  unsigned free_string : 1;	/* free malloc'ed string */
+#endif
+	  unsigned selected : 1;        /* selected in read mode (= current) */
+	  unsigned show : 1;		/* row is to be painted */
+	  unsigned row_inactive : 1;	/* row is inactive */
+	} f;	/* flags */
+
+	/* Chaining */
+	struct panel_list_row_struct *next;
+	struct panel_list_row_struct *prev;
+} Row_info;
+ 
+struct panel_list_struct {
+	Panel_item	public_self;
+        Panel		parent_panel;   /* Panel we're in */
+	Rect		list_box;	/* Box enclosing list of rows */
+	Scrollbar	list_sb;	/* Scrollbar for list_box */
+	Menu		edit_menu;	/* Row panel edit mode menu */
+	Edit_op		edit_op;	/* current edit operation, if any */
+	Row_info	*focus_row;	/* Location Cursor is on this row */
+	int		focus_win_x;	/* x position of focus window */
+	int		focus_win_y;	/* y position of focus window */
+	Xv_Font		font;		/* font of parent panel */
+#ifdef OW_I18N
+        XFontSet        font_set;       /* font set of parent panel */
+#else
+	XFontStruct     *font_struct;	/* font structure of parent panel */
+#endif
+	Menu		read_menu;	/* Row panel read mode menu */
+	int		sb_active;	/* all events go to Scrollbar */
+	Rect		sb_rect;	/* Scrollbar window rectangle */
+	Panel_item	text_item;	/* Text item used during editing */
+	Row_info	*text_item_row;	/* Text item is editing this row */
+	int		text_item_view_start; /* first row in view when text
+					       * item was made visible. */
+#ifdef OW_I18N
+	_xv_string_attr_dup_t
+			title;
+#else
+	CHAR		*title;
+#endif
+	int		title_display_str_len;
+	Rect		title_rect;
+
+	/* control */
+	unsigned choose_none: 1;	/* no current row is okay */
+	unsigned choose_one : 1;    /* TRUE: exclusive, FALSE: non-exclusive */
+	unsigned edit_mode : 1;		/* TRUE: read-write, FALSE: read */
+	unsigned focus_win_shown : 1; /* state of XV_SHOW for focus window */
+	unsigned initialized : 1;	/* set of XV_END_CREATE has occurred */
+	unsigned insert_delete_enabled;	/* OK to insert or delete rows */
+	unsigned insert_duplicate : 1;/* OK to insert duplicate strings */
+	unsigned left_hand_sb: 1; /* list_box Scrollbar is on left hand side */
+	unsigned read_only : 1;		/* TRUE: read, FALSE: read/write */
+	unsigned setting_current_row:1;
+	unsigned destroy_edit_menu:1; /* flags to check if we need to */
+	unsigned destroy_read_menu:1; /* destroy the edit/read menu */
+	unsigned show_props:1; /* "Properties..." instead of "Change" */
+#ifdef OW_I18N         
+        unsigned stored_length_wc:1;  /* TRUE: use PANEL_VALUE_STORED_LENGTH_WCS,
+        				 FALSE: use PANEL_VALUE_STORED_LENGTH */
+#endif
+
+	unsigned do_dbl_click : 1;	/* deliver dbl click ops */
+	
+	/* sizes and positions */
+	unsigned short	nlevels;	/* Number of levels */
+	unsigned short	height;		/* Height of the scroll list */
+	int	width;		/* -1 = extend width to edge of panel
+				 * 0 = fit width to widest row
+				 * other = list box width */
+	unsigned short	nrows;		/* Number of rows */
+	unsigned short	rows_displayed;	/* Number of rows displayed */
+	unsigned short	row_height;  /* Height of each row. 0 => font height */
+	unsigned short  string_x;	/* left margin of each row's string */
+
+	/* Current data */
+	Row_info	*rows;
+	Row_info	*current_row;	/* last row selected */
+	Row_info	*last_edit_row; /* last row selected for editing */
+	Row_info	*last_click_row;	/* last row click'd in */
+	struct timeval	last_click_time; 	/* double-click detection */
+};
+
+#ifdef OW_I18N
+#define	STRING	string.pswcs.value
+#define	TITLE	title.pswcs.value
+#define	PANEL_VALUE_I18N	PANEL_VALUE_WCS
+#define	PANEL_STRSAVE		panel_strsave_wc
+#define	XV_PF_TEXTWIDTH		xv_pf_textwidth_wc
+#define	NULL_STRING		_xv_null_string_wc
+#else
+#define	STRING	string
+#define	TITLE	title
+#define	PANEL_VALUE_I18N	PANEL_VALUE
+#define	PANEL_STRSAVE		panel_strsave
+#define	XV_PF_TEXTWIDTH		xv_pf_textwidth
+#define	NULL_STRING		""
+#endif
 
 #define PANEL_LIST_PRIVATE(item)        \
         XV_PRIVATE(Panel_list_info, Xv_panel_list, item)
@@ -102,7 +235,6 @@ static void set_row_glyph(Panel_list_info *dp, Row_info *row, Pixrect *);
 static void set_row_mask_glyph(Panel_list_info *dp, Row_info *row, Pixrect *);
 static void show_feedback(Panel_list_info *dp, Row_info *row, Event *event);
 static void list_menu_done_proc(Menu menu, Xv_opaque result);
-static int is_dbl_click(Panel_list_info *dp, Row_info *row, Event *event);
 
 static Panel_ops ops = {
     panel_list_handle_event,		/* handle_event() */
@@ -1610,7 +1742,137 @@ static int panel_list_destroy(Panel_item item_public, Destroy_status  status)
     return XV_OK;
 }
 
+static Attr_attribute quick_dupl_key = 0;
 
+typedef struct {
+	Panel_list_info *priv;
+	Row_info *row;
+	Rect string_rect;
+} quick_data_t;
+
+static void q_remove_underline(Quick_owner qo)
+{
+	quick_data_t *qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
+	Panel_list_info *dp = qd->priv;
+	Panel_list_item lpub = PANEL_LIST_PUBLIC(dp);
+
+	panel_paint(lpub, PANEL_CLEAR);
+	qd->priv = NULL;
+	qd->row = NULL;
+}
+
+extern char *xv_app_name;
+
+static int is_quick_duplicate_on_row(Panel_item list, Event *ev, Row_info *row)
+{
+	Panel_list_info *dp = PANEL_LIST_PRIVATE(list);
+	Quick_owner qo;
+	quick_data_t *qd;
+	XFontStruct *fs;
+	char *s;
+	int ex, sx;
+	Rect row_rect;
+
+	switch (event_action(ev)) {
+		case ACTION_SELECT:
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! event_is_down(ev)) return TRUE;
+
+			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
+
+			if (row->font) fs = (XFontStruct *)xv_get(row->font, FONT_INFO);
+			else {
+				Xv_font font = xv_get(dp->parent_panel, XV_FONT);
+				fs = (XFontStruct *)xv_get(font, FONT_INFO);
+			}
+
+			qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
+			if (! qo) {
+				qd = xv_alloc(quick_data_t);
+				qo = xv_create(dp->parent_panel, QUICK_OWNER,
+							QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
+							QUICK_CLIENT_DATA, qd,
+							NULL);
+				xv_set(dp->parent_panel, XV_KEY_DATA,quick_dupl_key, qo, NULL);
+			}
+			else {
+				qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
+			}
+
+			if (xv_get(qo, QUICK_NEED_START)) {
+				qd->priv = dp;
+				qd->row = row;
+
+				s = qd->row->string;
+
+				if (!get_row_rect(dp, row, &row_rect)) return TRUE;
+				if (row->STRING) {
+					qd->string_rect.r_left = dp->list_box.r_left + dp->string_x;
+					qd->string_rect.r_top = row_rect.r_top;
+					qd->string_rect.r_width = row_rect.r_width - dp->string_x +
+							LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
+					qd->string_rect.r_height = row_rect.r_height;
+				}
+				else
+					qd->string_rect = row_rect;
+
+				sx = qd->string_rect.r_left;
+				ex = rect_right(&qd->string_rect);
+
+				xv_set(qo,
+					QUICK_BASELINE, rect_bottom(&qd->string_rect) - 2,
+					QUICK_FONTINFO, fs,
+					QUICK_START, s, sx, ex, 
+					NULL);
+			}
+
+			xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+			return TRUE;
+
+		case LOC_DRAG:
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! quick_dupl_key) return TRUE;
+			qo = xv_get(dp->parent_panel, XV_KEY_DATA,quick_dupl_key);
+			if (! qo) return TRUE;
+			if (! xv_get(qo, SEL_OWN)) return TRUE;
+			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
+			return TRUE;
+
+		case ACTION_ADJUST:
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! quick_dupl_key) {
+				xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
+			if (! qo) {
+				xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			if (event_is_down(ev)) {
+				if (! xv_get(qo, SEL_OWN))
+					xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
+			if (! qd) {
+				xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			if (qd->priv) {
+				if (dp != qd->priv || row != qd->row) {
+					xv_set(qo, SEL_OWN, FALSE, NULL);
+					return TRUE;
+				}
+			}
+			qd->priv = dp;
+
+			xv_set(qo, QUICK_ADJUST_UP, ev, NULL);
+			return TRUE;
+	}
+
+	return FALSE;
+}
 
 /* --------------------  Panel Item Operations  -------------------- */
 static void panel_list_handle_event(Panel_item item_public, Event *event)
@@ -1837,6 +2099,8 @@ static void panel_list_handle_event(Panel_item item_public, Event *event)
 			}
 		}
 	}
+
+	if (is_quick_duplicate_on_row(item_public, event, row)) return;
 
 	switch (event_action(event)) {
 
@@ -3717,63 +3981,94 @@ static void set_row_mask_glyph(Panel_list_info *dp, Row_info *row, Pixrect *glyp
     }
 }
 
+static int is_dbl_click(Panel_list_info *dp, Row_info *row, Event *event)
+{
+	Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
+	int is_multiclick;
+	static struct timeval empty_time = { 0, 0 };
+
+	/* make sure they don't try to pull one over on us */
+	if ((event_action(event) != ACTION_SELECT) || !event_is_down(event))
+		return FALSE;
+
+	/* make sure both click's occured on the same row */
+	if (!dp->last_click_row || (dp->last_click_row != row)) {
+		dp->last_click_row = row;
+		dp->last_click_time = event_time(event);
+		return FALSE;
+	}
+
+	/* weigh timeval's against multiclick-timeout resource */
+	is_multiclick = panel_is_multiclick(ip->panel,
+			&dp->last_click_time, &event_time(event));
+
+	if (is_multiclick)
+		dp->last_click_time = empty_time;	/* reset timeval */
+	else
+		dp->last_click_time = event_time(event);
+
+	SERVERTRACE((500, "is %smulticlick\n", is_multiclick ? "" : "no "));
+	return is_multiclick;
+}
 
 static void show_feedback(Panel_list_info *dp, Row_info *row, Event *event)
 {
-    Item_info *panel_list_ip = ITEM_PRIVATE(dp->public_self);
-    list_notify_proc_t notify_proc = (list_notify_proc_t)panel_list_ip->notify;
-    Panel_list_op op;
-    int dbl_click = FALSE;
+	Item_info *panel_list_ip = ITEM_PRIVATE(dp->public_self);
+	list_notify_proc_t notify_proc = (list_notify_proc_t)panel_list_ip->notify;
+	int have_double_click = FALSE, dbl_click = FALSE;
 
-    if (!panel_list_ip->panel->status.painted)
-	return;
+	if (!panel_list_ip->panel->status.painted) return;
 
 #ifdef OW_I18N
-    if ( wchar_notify(panel_list_ip) )
-	notify_proc = panel_list_ip->notify_wc;
+	if (wchar_notify(panel_list_ip))
+		notify_proc = panel_list_ip->notify_wc;
 #endif
 
+	/*
+	 * if double-click, we must convert a de-select into a select/dbl-click op.
+	 */
 
-    /*
-     * if double-click, we must convert a de-select into a select/dbl-click op.
-     */
-    if ( notify_proc && event
-	&& row->f.selected
-	&& dp->do_dbl_click
-	&& is_dbl_click(dp, row, event)
-	) {
-	dbl_click = TRUE;
-    } 
+	/* But to detect a double click, we must "always" call is_dbl_click
+	 * because only *there* dp->last_click_row will be set
+	 */
+	if (event) have_double_click = is_dbl_click(dp, row, event);
+
+	if (notify_proc && event && row->f.selected && dp->do_dbl_click
+		&& have_double_click)
+	{
+		dbl_click = TRUE;
+	}
+
+	if (!hidden(panel_list_ip))
+		paint_row(dp, row);
 
 
-    if (!hidden(panel_list_ip))
-	paint_row(dp, row);
+	if (!dp->edit_mode) {
+		if (notify_proc && event) {
+			Panel_list_op op;
 
-
-    if (!dp->edit_mode) {
-	if (notify_proc && event) {
-	    if ( dbl_click )
-		op = PANEL_LIST_OP_DBL_CLICK;
-	    else
-		op = row->f.selected ? PANEL_LIST_OP_SELECT : PANEL_LIST_OP_DESELECT;
+			if (dbl_click)
+				op = PANEL_LIST_OP_DBL_CLICK;
+			else
+				op = row->f.selected ? PANEL_LIST_OP_SELECT :
+										PANEL_LIST_OP_DESELECT;
 
 #ifdef OW_I18N
-	    if (wchar_notify(panel_list_ip)) {
-		(*notify_proc) (dp->public_self, row->STRING, row->client_data,
-				op, event, row->row);
-	    }
-	    else {
-		(*notify_proc) (dp->public_self,
-				_xv_get_mbs_attr_dup(&row->string),
-				row->client_data,
-				op, event, row->row);
-	    }
+			if (wchar_notify(panel_list_ip)) {
+				(*notify_proc) (dp->public_self, row->STRING, row->client_data,
+						op, event, row->row);
+			}
+			else {
+				(*notify_proc) (dp->public_self,
+						_xv_get_mbs_attr_dup(&row->string),
+						row->client_data, op, event, row->row);
+			}
 #else
-	    (*notify_proc) (dp->public_self, row->string, row->client_data,
-		op, event, row->row);
+			(*notify_proc) (dp->public_self, row->string, row->client_data,
+					op, event, row->row);
 #endif /* OW_I18N */
+		}
 	}
-    }
 }
 
 
@@ -3796,42 +4091,7 @@ static void list_menu_done_proc(Menu menu, Xv_opaque result)
     ip->panel->status.current_item_active = FALSE;
 }
 
-
-
-static int is_dbl_click(Panel_list_info *dp, Row_info *row, Event *event)
-{
-    Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
-    int is_multiclick;
-    static struct timeval empty_time = {0, 0};
-
-
-    /* make sure they don't try to pull one over on us */
-    if ( (event_action(event) != ACTION_SELECT) || !event_is_down(event) )
-	return FALSE;
-
-
-    /* make sure both click's occured on the same row */
-    if ( !dp->last_click_row || (dp->last_click_row != row) ) {
-	dp->last_click_row = row;
-	dp->last_click_row->click_time = event_time(event);
-	return FALSE;
-    }
-    
-
-    /* weigh timeval's against multiclick-timeout resource */
-    is_multiclick = panel_is_multiclick(ip->panel, 
-					&dp->last_click_row->click_time, &event_time(event));
-
-    if ( is_multiclick )
-	dp->last_click_row->click_time = empty_time; 	/* reset timeval */
-    else
-	dp->last_click_row->click_time = event_time(event);
-
-    return is_multiclick;
-
-}
-
-Xv_pkg xv_panel_list_pkg = {
+const Xv_pkg xv_panel_list_pkg = {
     "Panel_list Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_list),
     &xv_panel_item_pkg,
