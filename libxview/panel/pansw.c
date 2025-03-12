@@ -28,7 +28,7 @@
 
 #ifndef lint
 #ifdef sccs
-static char pansw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pansw.c,v 4.2 2024/04/12 06:05:12 dra Exp $";
+static char pansw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pansw.c,v 4.3 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -38,7 +38,7 @@ typedef struct {
 	Xv_window subwin;
 	int width, height;
 	char size_dirty, pos_dirty;
-	Xv_pkg *subwin_class;
+	const Xv_pkg *subwin_class;
 	Attr_avlist create_attrs;
 	notify_t notify_proc;
 } Panel_subwin_private;
@@ -230,7 +230,7 @@ static Xv_opaque pansw_set(Panel_subwin_item self, Attr_avlist avlist)
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case PANEL_WINDOW_CLASS:
-			if (!priv->subwin) priv->subwin_class = (Xv_pkg *)A1;
+			if (!priv->subwin) priv->subwin_class = (const Xv_pkg *)A1;
 			ADONE;
 
 		case PANEL_WINDOW_ATTRS:
@@ -373,7 +373,7 @@ static int pansw_destroy(Panel_subwin_item self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_panel_subwin_pkg = {
+const Xv_pkg xv_panel_subwin_pkg = {
 	"PanelSubWindowItem",
 	ATTR_PKG_PANEL,
 	sizeof(Xv_panel_subwindow),
