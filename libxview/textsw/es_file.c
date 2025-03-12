@@ -1,5 +1,5 @@
 #ifndef lint
-char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,v 4.4 2024/12/05 06:03:37 dra Exp $ ";
+char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,v 4.5 2025/03/11 17:50:37 dra Exp $ ";
 #endif
 
 /*
@@ -104,7 +104,7 @@ char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,
 #ifdef OW_I18N
 #include <xview/generic.h>
 #include <xview/server.h>
-#include <euc.h>
+/* #include <euc.h> */
 #endif /* OW_I18N */
 #include <xview_private/txt_18impl.h>
 
