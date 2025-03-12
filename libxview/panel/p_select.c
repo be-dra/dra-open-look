@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.23 2025/01/18 22:33:33 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.26 2025/03/07 21:55:27 dra Exp $";
 #endif
 #endif
 
@@ -135,7 +135,7 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
     										Notify_arg arg)
 {
 	Item_info *ip;
-	Item_info *new = NULL;
+	Item_info *newip = NULL;
 	Xv_Window paint_window = event_window(event);
 	Panel_info *panel;
 	Panel panel_public;
@@ -213,12 +213,21 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 				 * handle LOC_WINEXIT. But I don't remember...
 				 * Now we had a problem when we do DnD from a PANEL_TEXT:
 				 * While the drop's sel requests take place, this 'panel_cancel'
-				 * removes sets panel->sel_holder[PANEL_SEL_PRIMARY] = NULL.
+				 * sets panel->sel_holder[PANEL_SEL_PRIMARY] = NULL.
 				 * But now the solution was to invent
-				 * panel->sel_holder[PANEL_SEL_DND] and
 				 * panel->sel_holder[PANEL_SEL_DND]
+				 *
+				 * But still, when we have a secondary selection in a 
+				 * PANEL_TEXT and move out of the panel, we lost the
+				 * selection, so, quick duplicate failed...
 				 */
-
+				if (event_is_quick_move(event)
+					|| event_is_quick_duplicate(event)) 
+				{
+					/* do not handle LOC_WINEXIT */
+fprintf(stderr, "%s`%s-%d: LOC_WINEXIT is quick\n", __FILE__, __FUNCTION__, __LINE__);
+					return NOTIFY_DONE;
+				}
 				if (panel->current) {
 					Panel_item item = ITEM_PUBLIC(panel->current);
 
@@ -256,61 +265,61 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 								event);
 
 					event_set_action(event, ACTION_SELECT);
-					new = ITEM_PRIVATE(panel->default_item);
-					if (new != panel->current) {
+					newip = ITEM_PRIVATE(panel->default_item);
+					if (newip != panel->current) {
 						if (panel->current)
 							panel_cancel(ITEM_PUBLIC(panel->current), event);
-						panel->current = new;
+						panel->current = newip;
 					}
 
-					panel_handle_event(ITEM_PUBLIC(new), event);	/* SELECT-down */
+					panel_handle_event(ITEM_PUBLIC(newip), event);	/* SELECT-down */
 					event_set_up(event);
-					panel_handle_event(ITEM_PUBLIC(new), event);	/* SELECT-up */
+					panel_handle_event(ITEM_PUBLIC(newip), event);	/* SELECT-up */
 					return (int)NOTIFY_DONE;
 				}
 				break;
 			case ACTION_ACCELERATOR:	/* only received on down (KeyPress) events */
 				event_set_action(event, ACTION_SELECT);
-				new = ITEM_PRIVATE((Panel_item) arg);
-				if (new != panel->current) {
+				newip = ITEM_PRIVATE((Panel_item) arg);
+				if (newip != panel->current) {
 					if (panel->current)
 						panel_cancel(ITEM_PUBLIC(panel->current), event);
-					panel->current = new;
+					panel->current = newip;
 				}
-				panel_handle_event(ITEM_PUBLIC(new), event);	/* SELECT-down */
+				panel_handle_event(ITEM_PUBLIC(newip), event);	/* SELECT-down */
 				event_set_up(event);
-				panel_handle_event(ITEM_PUBLIC(new), event);	/* SELECT-up */
+				panel_handle_event(ITEM_PUBLIC(newip), event);	/* SELECT-up */
 				return (int)NOTIFY_DONE;
 			case SCROLLBAR_REQUEST:
-				new = (Item_info *) xv_get(arg, XV_KEY_DATA,
+				newip = (Item_info *) xv_get(arg, XV_KEY_DATA,
 						PANEL_LIST_EXTENSION_DATA);
 				break;
 			case ACTION_DRAG_COPY:
 			case ACTION_DRAG_MOVE:
 				if (dnd_is_forwarded(event))
-					new = panel->default_drop_site_item;
+					newip = panel->default_drop_site_item;
 				else
-					new = panel_find_item(panel, event);
+					newip = panel_find_item(panel, event);
 				break;
 			case ACTION_PASTE:	/* for quick-duplicate */
 				/* panel->current is active item, panel will propagate paste
 				 * otherwise, preview gets canceled below
 				 */
-				new = (Item_info *) panel;
+				newip = (Item_info *) panel;
 				break;
 			default:
 				/* Find out who's under the locator */
-				new = panel_find_item(panel, event);
+				newip = panel_find_item(panel, event);
 				break;
 		}
 	}
 	else {
-		new = panel->current;
+		newip = panel->current;
 	}
 
 	/* Use the panel if not over some item */
-	if (!new) {
-		new = (Item_info *) panel;
+	if (!newip) {
+		newip = (Item_info *) panel;
 	}
 
 	/* Set Quick Move status */
@@ -326,7 +335,7 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 	}
 
 	/* cancel the old item if needed */
-	if (new != panel->current) {
+	if (newip != panel->current) {
 		if (panel->current &&
 				((panel->current != (Item_info *) panel
 						&& panel->current->item_type == PANEL_DROP_TARGET_ITEM)
@@ -338,7 +347,7 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 		{
 			panel_cancel(ITEM_PUBLIC(panel->current), event);
 		}
-		panel->current = new;
+		panel->current = newip;
 	}
 	/* If help event, call help request function. */
 	if (event_action(event) == ACTION_HELP ||
@@ -365,9 +374,9 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 			char helpbuf[200];
 
 			if (event_action(event) == ACTION_INPUT_FOCUS_HELP)
-				new = panel->kbd_focus_item;
-			if (new && new != (Item_info *) panel) {
-				Panel_item hit = ITEM_PUBLIC(new);
+				newip = panel->kbd_focus_item;
+			if (newip && newip != (Item_info *) panel) {
+				Panel_item hit = ITEM_PUBLIC(newip);
 				item_help = (char *)xv_get(hit, XV_HELP_DATA);
 				if (item_help) {
 					strcpy(helpbuf, item_help);
@@ -442,7 +451,7 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 	}
 	else {
 		/* Give the non-key event to the item under the pointer */
-		panel_handle_event(ITEM_PUBLIC(new), event);
+		panel_handle_event(ITEM_PUBLIC(newip), event);
 	}
 	return (int)NOTIFY_DONE;
 }
@@ -452,47 +461,18 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 static Attr_attribute quick_dupl_key = 0;
 
 typedef struct {
-	quick_common_data_t qc;
 	Item_info *priv;
 } quick_data_t;
 
-static int note_quick_convert(Selection_owner sel_own, Atom *type,
-					Xv_opaque *data, unsigned long *length, int *format)
+extern char *xv_app_name;
+
+static void q_remove_underline(Quick_owner qo)
 {
-	quick_data_t *qd = (quick_data_t *)xv_get(sel_own, XV_KEY_DATA, 
-												quick_dupl_key);
-
-	if (qd->qc.seltext[0] == '\0') {
-		Item_info *priv = qd->priv;
-		char *s;
-
-		if (! priv) return FALSE;
-
-		/* now we determine the selected string */
-		s = image_string(&priv->label);
-		if (s) {
-			strncpy(qd->qc.seltext, s + qd->qc.startindex,
-						(size_t)(qd->qc.endindex - qd->qc.startindex + 1));
-			qd->qc.seltext[qd->qc.endindex - qd->qc.startindex + 1] = '\0';
-		}
-	}
-
-	return xvq_note_quick_convert(sel_own, &qd->qc, type, data, length, format);
-}
-
-static void note_quick_lose(Selection_owner sel_owner)
-{
-	quick_data_t *qd = (quick_data_t *)xv_get(sel_owner, XV_KEY_DATA,
-												quick_dupl_key);
-	Xv_window panel = xv_get(sel_owner, XV_OWNER);
+	quick_data_t *qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
+	Item_info *priv = qd->priv;
+	Xv_window panel = xv_get(qo, XV_OWNER);
 	Xv_Drawable_info *info;
-	Item_info *ip = qd->priv;
-	Rect *r = &ip->label_rect;
-
-	qd->qc.startindex = qd->qc.endindex = 0;
-	qd->qc.reply_data = 0;
-	qd->qc.seltext[0] = '\0';
-	qd->qc.select_click_cnt = 0;
+	Rect *r = &priv->label_rect;
 
 	DRAWABLE_INFO_MACRO(panel, info);
 	/* the following panel_redisplay_item seems to keep the underline
@@ -506,54 +486,7 @@ static void note_quick_lose(Selection_owner sel_owner)
 		panel_paint_label(ITEM_PUBLIC(qd->priv));
 	 */
 	panel_redisplay_item(qd->priv, PANEL_CLEAR);
-	xv_set(ITEM_PUBLIC(qd->priv), XV_KEY_DATA, quick_dupl_key, XV_NULL, NULL);
 	qd->priv = NULL;
-}
-
-static int update_secondary(Panel_item item, Event *ev)
-{
-	Item_info *ip;
-	quick_data_t *qd = (quick_data_t *)xv_get(item, XV_KEY_DATA, quick_dupl_key);
-	Xv_Drawable_info *info;
-	int mx;
-	int len, i;
-	char *s;
-
-	if (! qd) return FALSE;
-
-	if (ITEM_PRIVATE(item) != qd->priv) return FALSE;
-
-	ip = qd->priv;
-	if (! ip) return FALSE;
-
-	DRAWABLE_INFO_MACRO(event_window(ev), info);
-	mx = event_x(ev);
-
-	XDrawLine(xv_display(info), xv_xid(info), qd->qc.gc,
-				qd->qc.startx, qd->qc.baseline, qd->qc.endx, qd->qc.baseline);
-	qd->qc.endx = 0;
-
-	s = image_string(&ip->label);
-	if (s) {
-		int *xp = qd->qc.xpos;
-		len = strlen(s);
-
-		for (i = 0; i < len; i++) {
-			if (mx >= xp[i] && mx < xp[i+1]) {
-				qd->qc.endx = xp[i+1];
-				qd->qc.endindex = i;
-				break;
-			}
-		}
-	}
-	if (!qd->qc.endx) {
-		qd->qc.endx = qd->qc.startx;
-	}
-
-	XDrawLine(xv_display(info), xv_xid(info), qd->qc.gc,
-				qd->qc.startx, qd->qc.baseline, qd->qc.endx, qd->qc.baseline);
-
-	return TRUE;
 }
 
 static XFontStruct *get_fontstruct(Item_info *ip)
@@ -580,214 +513,107 @@ static XFontStruct *get_fontstruct(Item_info *ip)
 	return fs;
 }
 
-static int adjust_secondary(quick_data_t *qd, Panel_item item, Event *ev)
-{
-	Item_info *ip;
-	XFontStruct *fs;
-	int sx;
-	char *s;
-
-	if (ITEM_PRIVATE(item) != qd->priv) return FALSE;
-
-	ip = qd->priv;
-	if (! ip) return FALSE;
-
-	fs = get_fontstruct(ip);
-	s = image_string(&ip->label);
-	sx = ip->label_rect.r_left;
-
-	xvq_adjust_secondary(&qd->qc, fs, ev, s, sx);
-	return TRUE;
-}
-
-static int adjust_wordwise(quick_data_t *qd, Item_info *ip, Event *ev)
-{
-	char *s;
-	int sx;
-	XFontStruct *fs;
-
-	fs = get_fontstruct(ip);
-	s = image_string(&ip->label);
-	sx = ip->label_rect.r_left;
-
-	return xvq_adjust_wordwise(&qd->qc, fs, s, sx, ev);
-}
-
-static quick_data_t *supply_quick_data(Panel pan)
-{
-	quick_data_t *qd;
-	XGCValues   gcv;
-	Xv_Drawable_info *info;
-	Cms cms;
-	int i, fore_index, back_index;
-	unsigned long fg, bg;
-	char *delims, delim_chars[256];	/* delimiter characters */
-
-	qd = xv_alloc(quick_data_t);
-	xv_set(pan, XV_KEY_DATA, quick_dupl_key, qd, NULL);
-
-	qd->qc.sel_owner = xv_create(pan, SELECTION_OWNER,
-					SEL_RANK, XA_SECONDARY,
-					SEL_CONVERT_PROC, note_quick_convert,
-					SEL_LOSE_PROC, note_quick_lose,
-					XV_KEY_DATA, quick_dupl_key, qd,
-					NULL);
-
-	cms = xv_get(pan, WIN_CMS);
-	fore_index = (int)xv_get(pan, WIN_FOREGROUND_COLOR);
-	back_index = (int)xv_get(pan, WIN_BACKGROUND_COLOR);
-	bg = (unsigned long)xv_get(cms, CMS_PIXEL, back_index);
-	fg = (unsigned long)xv_get(cms, CMS_PIXEL, fore_index);
-
-	gcv.foreground = fg ^ bg;
-	gcv.function = GXxor;
-
-	DRAWABLE_INFO_MACRO(pan, info);
-
-	qd->qc.gc = XCreateGC(xv_display(info), xv_xid(info),
-					GCForeground | GCFunction, &gcv);
-
-	delims = (char *)defaults_get_string("text.delimiterChars",
-			"Text.DelimiterChars", " \t,.:;?!\'\"`*/-+=(){}[]<>\\|~@#$%^&");
-	/* Print the string into an array to parse the potential
-	 * octal/special characters.
-	 */
-	strcpy(delim_chars, delims);
-	/* Mark off the delimiters specified */
-	for (i = 0; i < sizeof(qd->qc.delimtab); i++) qd->qc.delimtab[i] = FALSE;
-	for (delims = delim_chars; *delims; delims++) {
-		qd->qc.delimtab[(int)*delims] = TRUE;
-	}
-
-	return qd;
-}
-
 static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 {
+	Quick_owner qo;
 	quick_data_t *qd;
 	Item_info *ip;
 	Panel pan;
-	Panel_info *pinf;
-	int is_multiclick;
-	XFontStruct *fs;
 	char *s;
-	int sx;
+	int sx, ex;
 
 	if (! item) return FALSE;
 
 	switch (event_action(ev)) {
+		case ACTION_SELECT:
+			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
+
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! event_is_down(ev)) return TRUE;
+
+			ip = ITEM_PRIVATE(item);
+			if (ip->label.im_type != PIT_STRING) return FALSE;
+
+			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
+				return FALSE;
+			}
+
+			pan = xv_get(item, XV_OWNER);
+
+			qo = xv_get(pan, XV_KEY_DATA,quick_dupl_key);
+			if (! qo) {
+				qd = xv_alloc(quick_data_t);
+				qo = xv_create(pan, QUICK_OWNER,
+							QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
+							QUICK_CLIENT_DATA, qd,
+							NULL);
+				xv_set(pan, XV_KEY_DATA,quick_dupl_key, qo, NULL);
+			}
+			else {
+				qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
+			}
+
+			if (xv_get(qo, QUICK_NEED_START)) {
+				qd->priv = ip;
+				s = image_string(&ip->label);
+				sx = ip->label_rect.r_left;
+				ex = rect_right(&ip->label_rect);
+
+				xv_set(qo,
+					QUICK_BASELINE,
+								(int)xv_get(item, PANEL_ITEM_LABEL_BASELINE)+2,
+					QUICK_FONTINFO, get_fontstruct(ip),
+					QUICK_START, s, sx, ex,
+					NULL);
+			}
+
+			xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+			return TRUE;
+
 		case LOC_DRAG:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (action_select_is_down(ev)) {
-				return update_secondary(item, ev);
-			}
-			if (action_adjust_is_down(ev)) {
-				return update_secondary(item, ev);
-			}
-			break;
+			if (! quick_dupl_key) return FALSE;
+			qo = xv_get(xv_get(item, XV_OWNER), XV_KEY_DATA,quick_dupl_key);
+			if (! qo) return FALSE;
+			if (! xv_get(qo, SEL_OWN)) return FALSE;
+			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
+			return TRUE;
 
 		case ACTION_ADJUST:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (! event_is_up(ev)) return TRUE;
+			if (! quick_dupl_key) {
+				xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
 			ip = ITEM_PRIVATE(item);
 			if (ip->label.im_type != PIT_STRING) return FALSE;
 			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
 				return FALSE;
 			}
 			pan = xv_get(item, XV_OWNER);
-			qd = (quick_data_t *)xv_get(pan, XV_KEY_DATA, quick_dupl_key);
+			qo = xv_get(pan, XV_KEY_DATA, quick_dupl_key);
+			if (! qo) {
+				xv_set(pan, WIN_ALARM, NULL);
+				return TRUE;
+			}
+			if (event_is_down(ev)) {
+				if (! xv_get(qo, SEL_OWN)) xv_set(pan, WIN_ALARM, NULL);
+				return TRUE;
+			}
+			qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
 			if (! qd) {
-				qd = supply_quick_data(pan);
+				xv_set(pan, WIN_ALARM, NULL);
+				return TRUE;
 			}
 			if (qd->priv) {
 				if (ip != qd->priv) {
-					xv_set(qd->qc.sel_owner, SEL_OWN, FALSE, NULL);
-					return FALSE;
+					xv_set(qo, SEL_OWN, FALSE, NULL);
+					return TRUE;
 				}
 			}
-
-			if (qd->qc.select_click_cnt == 2) {
-				return adjust_wordwise(qd, ip, ev);
-			}
-			return adjust_secondary(qd, item, ev);
-
-		case ACTION_SELECT:
-			if (! event_is_down(ev)) return FALSE;
-			if (! event_is_quick_duplicate(ev)) return FALSE;
-
-			ip = ITEM_PRIVATE(item);
-			if (ip->label.im_type != PIT_STRING) return FALSE;
-
-			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
-				return FALSE;
-			}
-
-			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
-
-			pan = xv_get(item, XV_OWNER);
-			pinf = PANEL_PRIVATE(pan);
-
-			fs = get_fontstruct(ip);
-
-			qd = (quick_data_t *)xv_get(pan, XV_KEY_DATA, quick_dupl_key);
-			if (! qd) {
-				qd = supply_quick_data(pan);
-			}
-
-			is_multiclick = panel_is_multiclick(pinf, &qd->qc.last_click_time,
-											&event_time(ev));
-			qd->qc.last_click_time = event_time(ev);
-
-			xv_set(item, XV_KEY_DATA, quick_dupl_key, qd, NULL);
 			qd->priv = ip;
-			s = image_string(&ip->label);
-			sx = ip->label_rect.r_left;
 
-			qd->qc.baseline = (int)xv_get(item, PANEL_ITEM_LABEL_BASELINE) + 2;
-
-			qd->qc.xpos[0] = 0;
-			if (s) {
-				qd->qc.startx = sx;
-				xvq_mouse_to_charpos(&qd->qc, fs, event_x(ev), s,
-							&qd->qc.startx, &qd->qc.startindex);
-
-				if (is_multiclick) {
-					Xv_Drawable_info *info;
-
-					++qd->qc.select_click_cnt;
-					if (qd->qc.select_click_cnt == 2) {
-						/* really sx here ? Or rather qd->qc.startx ???? */
-						xvq_select_word(&qd->qc, s, sx, fs);
-					}
-					else if (qd->qc.select_click_cnt > 2) {
-						/* whole text */
-						qd->qc.startindex = 0;
-						qd->qc.startx = ip->label_rect.r_left;
-						qd->qc.endindex = strlen(s) - 1;
-						qd->qc.endx = rect_right(&ip->label_rect);
-					}
-					DRAWABLE_INFO_MACRO(event_window(ev), info);
-
-					XDrawLine(xv_display(info), xv_xid(info), qd->qc.gc,
-									qd->qc.startx, qd->qc.baseline,
-									qd->qc.endx, qd->qc.baseline);
-				}
-				else {
-					qd->qc.select_click_cnt = 1;
-					qd->qc.endx = qd->qc.startx;
-				}
-			}
-			else {
-				qd->qc.select_click_cnt = 1;
-				qd->qc.endx = qd->qc.startx;
-			}
-
-			xv_set(qd->qc.sel_owner,
-					SEL_OWN, TRUE,
-					SEL_TIME, &qd->qc.last_click_time,
-					NULL);
-			qd->qc.seltext[0] = '\0';
-
+			xv_set(qo, QUICK_ADJUST_UP, ev, NULL);
 			return TRUE;
 	}
 
