@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.57 2025/02/25 17:14:50 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.58 2025/03/11 19:48:59 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -313,6 +313,7 @@ typedef struct textsw_object {
 		Atom seln_yield;
 		Atom seln_is_readonly;
 		Atom plain;
+		Atom utf8;
 		Atom future_use1;
 		Atom future_use2;
 		Atom future_use3;
