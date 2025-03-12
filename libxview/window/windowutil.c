@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.10 2025/01/27 19:42:29 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.11 2025/03/06 17:37:21 dra Exp $";
 #endif
 #endif
 /*
@@ -548,6 +548,7 @@ Xv_private void window_set_rescale_state(Xv_Window window, int state)
 {
 
     Window_info    *win = WIN_PRIVATE(window);
+	SERVERTRACE((790, "%s(%ld, %d)\n", __FUNCTION__, window, state));
     win->scale = state;
 
 }
@@ -572,6 +573,7 @@ Xv_private void window_end_rescaling(Xv_Window window)
 Xv_private void window_start_rescaling(Xv_Window window)
 {
     Window_info    *win = WIN_PRIVATE(window);
+	SERVERTRACE((790, "%s(%ld)\n", __FUNCTION__, window));
     win->being_rescaled = TRUE;
 }
 
@@ -609,7 +611,7 @@ Xv_private void window_calculate_new_size(Xv_Window parent, Xv_Window window,
 
     /* now calculate new size from new font */
 
-	SERVERTRACE((790, "%s(%lx, %lx)\n", __FUNCTION__, parent, window));
+	SERVERTRACE((790, "%s(%ld, %ld)\n", __FUNCTION__, parent, window));
     win->row_height = xv_get(par->font, FONT_DEFAULT_CHAR_HEIGHT);
     *new_height = rows * (win->row_height + win->row_gap)
 						+ win->top_margin + win->bottom_margin;
