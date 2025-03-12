@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.3 2024/12/26 21:36:06 dra Exp $";
+static char     sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.4 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -741,7 +741,7 @@ static void update_rects(register Item_info *ip)
     ip->rect = panel_enclosing_rect(&ip->label_rect, &ip->value_rect);
 }
 
-Xv_pkg          xv_panel_gauge_pkg = {
+const Xv_pkg          xv_panel_gauge_pkg = {
     "Gauge Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_gauge),
     &xv_panel_item_pkg,
