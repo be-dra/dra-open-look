@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_drop.c 1.22 93/06/28 DRA: $Id: p_drop.c,v 4.4 2024/12/21 19:44:47 dra Exp $";
+static char     sccsid[] = "@(#)p_drop.c 1.22 93/06/28 DRA: $Id: p_drop.c,v 4.5 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -584,7 +584,7 @@ static void drop_paint_value(Item_info *ip, Drop_info *dp)
 	PANEL_END_EACH_PAINT_WINDOW
 }
 
-Xv_pkg          xv_panel_drop_pkg = {
+const Xv_pkg          xv_panel_drop_pkg = {
     "Drop Target Item",
     ATTR_PKG_PANEL,
     sizeof(Xv_panel_drop),
