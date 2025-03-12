@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_compat.c 20.24 93/06/28 Copyr 1985 Sun Micro DRA: $Id: p_compat.c,v 4.2 2024/03/31 20:40:58 dra Exp $";
+static char     sccsid[] = "@(#)p_compat.c 20.24 93/06/28 Copyr 1985 Sun Micro DRA: $Id: p_compat.c,v 4.3 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -22,11 +22,11 @@ static char     sccsid[] = "@(#)p_compat.c 20.24 93/06/28 Copyr 1985 Sun Micro D
 
 Sv1_public      Panel_item
 #ifdef ANSI_FUNC_PROTO
-panel_create_item(Panel client_panel, Xv_pkg *item_type, ...)
+panel_create_item(Panel client_panel, const Xv_pkg *item_type, ...)
 #else
 panel_create_item(client_panel, item_type, va_alist)
     Panel           client_panel;
-    Xv_pkg *item_type;
+    const Xv_pkg *item_type;
 va_dcl
 #endif
 {
