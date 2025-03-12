@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.7 2024/12/27 21:37:58 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.8 2025/03/08 13:18:09 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -745,7 +745,7 @@ static Xv_opaque termsw_get(Termsw termsw_folio_public, int *status,
 		case TEXTSW_IS_TERMSW: return (Xv_opaque)TRUE;
 		case XV_IS_SUBTYPE_OF:
 			{
-				Xv_pkg *pkg = va_arg(args, Xv_pkg *);
+				const Xv_pkg *pkg = va_arg(args, const Xv_pkg *);
 
 				/* Termsw is a textsw or textsw view */
 				if (pkg == TEXTSW) return ((Xv_opaque) TRUE);
@@ -976,14 +976,14 @@ static Xv_opaque termsw_view_get(Termsw_view termsw_view_public, int *status, At
 	Xv_opaque save = termsw_object->parent_data.private_data;
 
 
-	if ((attr == XV_IS_SUBTYPE_OF) && (va_arg(args, Xv_pkg *) == TEXTSW_VIEW))
+	if ((attr == XV_IS_SUBTYPE_OF) && (va_arg(args, const Xv_pkg *) == TEXTSW_VIEW))
 		return ((Xv_opaque) TRUE);
 
 	switch (attr) {
 		case OPENWIN_VIEW_CLASS:
 			return ((Xv_opaque) TERMSW_VIEW);
 		case XV_IS_SUBTYPE_OF:{
-				Xv_pkg *pkg = va_arg(args, Xv_pkg *);
+				const Xv_pkg *pkg = va_arg(args, const Xv_pkg *);
 
 				/* Termsw is a textsw or textsw view */
 				if (pkg == TEXTSW)
@@ -1148,7 +1148,7 @@ Pkg_private Termsw_view_handle termsw_first_view_private(Termsw_folio priv)
 	return TERMSW_VIEW_PRIVATE(view);
 }
 
-Xv_pkg          xv_termsw_pkg = {
+const Xv_pkg          xv_termsw_pkg = {
     "Termsw",
     (Attr_pkg) ATTR_PKG_TERMSW,
     sizeof(Xv_termsw),
@@ -1160,7 +1160,7 @@ Xv_pkg          xv_termsw_pkg = {
     NULL			/* no find proc */
 };
 
-Xv_pkg          xv_termsw_view_pkg = {
+const Xv_pkg          xv_termsw_view_pkg = {
     "Termsw_view",
     (Attr_pkg) ATTR_PKG_TERMSW_VIEW,
     sizeof(Xv_termsw_view),
