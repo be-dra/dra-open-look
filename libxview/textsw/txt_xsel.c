@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.49 2025/02/14 09:49:57 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.50 2025/02/25 17:18:33 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -235,9 +235,12 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
 			(char *)xv_get(server, SERVER_ATOM_NAME, rank_atom),
 			(char *)xv_get(server, SERVER_ATOM_NAME, *type)));
 
-	if (xv_get(sel_own, SEL_RANK) == XA_SECONDARY 
-		&& *type == priv->atoms.selection_end)
-	{
+	if (priv->convert_proc) {
+		if ((*(priv->convert_proc))(tsw, rank_atom, type, data, length, format))
+			return TRUE;
+	}
+
+	if (rank_atom == XA_SECONDARY && *type == priv->atoms.selection_end) {
 		/* Lose the Selection - we support this only for SECONDARY */
 		xv_set(sel_own, SEL_OWN, FALSE, NULL);
         *type = priv->atoms.null;
@@ -247,9 +250,7 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
 		return TRUE;
 	}
 
-	if (xv_get(sel_own, SEL_RANK) == XA_SECONDARY 
-		&& *type == priv->atoms.seln_yield)
-	{
+	if (rank_atom == XA_SECONDARY && *type == priv->atoms.seln_yield) {
 		static long answer;
 		/* Lose the Selection - we support this only for SECONDARY */
 		xv_set(sel_own, SEL_OWN, FALSE, NULL);
