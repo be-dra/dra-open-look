@@ -32,7 +32,7 @@
 #include <xview_private/i18n_impl.h>
 
 #ifndef lint
-char permprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permprop.c,v 4.3 2024/11/30 18:14:38 dra Exp $";
+char permprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permprop.c,v 4.4 2025/03/08 13:21:40 dra Exp $";
 #endif
 
 #define A0 *attrs
@@ -750,7 +750,7 @@ static int permprop_destroy(Xv_window self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_permprop_pkg = {
+const Xv_pkg xv_permprop_pkg = {
 	"PermanentPropertyFrame",
 	ATTR_PKG_PERMPROP,
 	sizeof(Xv_permprop),
