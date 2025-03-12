@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowcmpt.c 20.23 93/06/28 DRA: $Id: windowcmpt.c,v 4.2 2024/09/15 17:11:32 dra Exp $";
+static char     sccsid[] = "@(#)windowcmpt.c 20.23 93/06/28 DRA: $Id: windowcmpt.c,v 4.3 2025/03/08 12:58:04 dra Exp $";
 #endif
 #endif
 
@@ -16,11 +16,11 @@ static char     sccsid[] = "@(#)windowcmpt.c 20.23 93/06/28 DRA: $Id: windowcmpt
 /* VARARGS2 */
 Xv_Window
 #ifdef ANSI_FUNC_PROTO
-window_create(Xv_Window parent_public, Xv_pkg *pkg, ...)
+window_create(Xv_Window parent_public, const Xv_pkg *pkg, ...)
 #else
 window_create(parent_public, pkg, va_alist)
     Xv_Window       parent_public;
-    Xv_pkg         *pkg;
+    const Xv_pkg         *pkg;
 va_dcl
 #endif
 {
