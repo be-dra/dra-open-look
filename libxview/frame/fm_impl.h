@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.4 2025/03/06 20:51:26 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.5 2025/03/11 17:28:05 dra Exp $ ";
 #endif
 #endif
 
@@ -259,7 +259,7 @@ Pkg_private int frame_width_from_columns(int x);
 Pkg_private void frame_position_sw(Frame_class_info *frame, Xv_Window nsw, Xv_Window swprevious, int width, int height, Rect *rect);
 Pkg_private int frame_footer_height(Frame_rescale_state scale);
 #ifdef OW_I18N
-Pkg_private int		frame_IMstatus_height(void);
+Pkg_private int frame_IMstatus_height(Frame_rescale_state scale);
 #endif
 Pkg_private int frame_footer_baseline(Frame_rescale_state scale);
 Pkg_private int frame_footer_margin(Frame_rescale_state scale);
