@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_msg.c 20.30 93/06/28 Copyr 1987 Sun Micro DRA: $Id: p_msg.c,v 4.1 2024/03/28 09:12:09 dra Exp $";
+static char     sccsid[] = "@(#)p_msg.c 20.30 93/06/28 Copyr 1987 Sun Micro DRA: $Id: p_msg.c,v 4.2 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -68,7 +68,7 @@ static void msg_paint(Panel_item item_public, Panel_setting u)
     panel_paint_label(item_public);
 }
 
-Xv_pkg xv_panel_message_pkg = {
+const Xv_pkg xv_panel_message_pkg = {
     "Message Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_message),
     &xv_panel_item_pkg,
