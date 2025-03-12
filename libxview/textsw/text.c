@@ -1,5 +1,5 @@
 #ifndef lint
-char     text_c_sccsid[] = "@(#)text.c 20.31 93/06/28 DRA: $Id: text.c,v 4.13 2024/12/24 22:18:49 dra Exp $";
+char     text_c_sccsid[] = "@(#)text.c 20.31 93/06/28 DRA: $Id: text.c,v 4.14 2025/03/08 13:15:23 dra Exp $";
 #endif
 
 /*
@@ -70,7 +70,7 @@ static int textsw_init(Xv_Window parent, Textsw textsw_public,
 }
 
 
-Xv_pkg          xv_textsw_pkg = {
+const Xv_pkg xv_textsw_pkg = {
     "Textsw",
     (Attr_pkg) ATTR_PKG_TEXTSW,
     sizeof(Xv_textsw),
