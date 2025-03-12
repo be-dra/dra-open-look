@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_num_txt.c 20.47 93/06/28 DRA: $Id: p_num_txt.c,v 4.2 2024/09/15 09:39:03 dra Exp $";
+static char     sccsid[] = "@(#)p_num_txt.c 20.47 93/06/28 DRA: $Id: p_num_txt.c,v 4.3 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -980,7 +980,7 @@ static Panel_setting text_notify_proc(Panel_item text_field, Event *event)
 }
 
 
-Xv_pkg xv_panel_num_text_pkg = {
+const Xv_pkg xv_panel_num_text_pkg = {
     "Numeric Text Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_num_text),
     &xv_panel_item_pkg,
