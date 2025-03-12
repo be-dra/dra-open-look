@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.5 2025/03/08 13:32:15 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.6 2025/03/11 17:23:55 dra Exp $ ";
 #endif
 #endif
 
@@ -25,7 +25,7 @@ static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.
 #include <xview_private/pw_impl.h>
 #include <xview_private/portable.h>
 #ifdef OW_I18N
-#include <euc.h>
+/* #include <euc.h> */
 #include <sys/param.h>
 #endif /*OW_I18N*/
 
