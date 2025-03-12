@@ -28,7 +28,7 @@
 #include <xview_private/panel_impl.h>
 #include <xview_private/draw_impl.h>
 
-char panabwb_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: panabwb.c,v 4.2 2024/04/12 06:04:53 dra Exp $";
+char panabwb_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: panabwb.c,v 4.3 2025/03/08 13:08:26 dra Exp $";
 
 typedef Frame (*creation_proc_t)(Panel_item);
 
@@ -282,7 +282,7 @@ static int panabwb_destroy(Panel_abbrev_window_item self, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_pkg xv_panel_awbtn_pkg = {
+const Xv_pkg xv_panel_awbtn_pkg = {
 	"PanelAbbrevWindowItem",
 	ATTR_PKG_PANEL,
 	sizeof(Xv_panel_abbrev_window),
