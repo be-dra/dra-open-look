@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.2 2024/05/23 12:22:06 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.3 2025/03/08 13:21:40 dra Exp $ ";
 #endif
 #endif
 
@@ -182,7 +182,7 @@ cmd_warp_pointer(frame_public)
     status_set(frame, warp_pointer, FALSE);
 }  */
 
-Xv_pkg          xv_frame_cmd_pkg = {
+const Xv_pkg          xv_frame_cmd_pkg = {
     "Frame_cmd", (Attr_pkg) ATTR_PKG_FRAME,
     sizeof(Xv_frame_cmd),
     &xv_frame_class_pkg,
