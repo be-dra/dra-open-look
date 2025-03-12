@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.7 2025/02/14 09:08:37 dra Exp $";
+static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.8 2025/03/11 17:46:52 dra Exp $";
 #endif
 #endif
 
@@ -529,7 +529,7 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 	}
 
 #ifdef OW_I18N
-	defaults_set_locale(NULL, NULL);
+	defaults_set_locale(NULL, (Xv_generic_attr)0);
 #endif
 
 	if (panel->bold_font == XV_NULL) {
