@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_slider.c 20.84 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_slider.c,v 4.4 2024/06/25 17:40:30 dra Exp $";
+static char     sccsid[] = "@(#)p_slider.c 20.84 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_slider.c,v 4.5 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -1966,7 +1966,7 @@ static void update_rects(Item_info *ip)
     ip->rect = panel_enclosing_rect(&ip->label_rect, &ip->value_rect);
 }
 
-Xv_pkg          xv_panel_slider_pkg = {
+const Xv_pkg          xv_panel_slider_pkg = {
     "Slider Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_slider),
     &xv_panel_item_pkg,
