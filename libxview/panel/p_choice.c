@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 4.3 2024/10/06 20:07:04 dra Exp $";
+static char     sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 4.4 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -2686,7 +2686,7 @@ static void update_value_rect(Item_info *ip)
     }
 }				/* update_value_rect */
 
-Xv_pkg xv_panel_choice_pkg = {
+const Xv_pkg xv_panel_choice_pkg = {
     "Choice Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_choice),
     &xv_panel_item_pkg,
