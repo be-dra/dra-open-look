@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_ambtn.c 1.21 93/06/28 DRA: $Id: p_ambtn.c,v 4.1 2024/03/28 09:12:09 dra Exp $";
+static char     sccsid[] = "@(#)p_ambtn.c 1.21 93/06/28 DRA: $Id: p_ambtn.c,v 4.2 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -405,7 +405,7 @@ static void ambtn_paint_value(Item_info *ip, int state)
     PANEL_END_EACH_PAINT_WINDOW
 }
 
-Xv_pkg          xv_panel_ambtn_pkg = {
+const Xv_pkg          xv_panel_ambtn_pkg = {
     "Abbreviated Menu Button Item",
     ATTR_PKG_PANEL,
     sizeof(Xv_panel_ambtn),
