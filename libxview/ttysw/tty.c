@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.8 2024/12/17 18:26:29 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.9 2025/03/08 13:18:09 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -552,7 +552,7 @@ static int ttysw_folio_destroy(Tty ttysw_folio_public, Destroy_status status)
     return (ttysw_destroy(ttysw_folio_public, status));
 }
 
-Xv_pkg          xv_tty_pkg = {
+const Xv_pkg          xv_tty_pkg = {
     "Tty",
     (Attr_pkg) ATTR_PKG_TTY,
     sizeof(Xv_tty),
@@ -564,7 +564,7 @@ Xv_pkg          xv_tty_pkg = {
     NULL			/* no find proc */
 };
 
-Xv_pkg          xv_tty_view_pkg = {
+const Xv_pkg          xv_tty_view_pkg = {
     "Tty_view",
     (Attr_pkg) ATTR_PKG_TTY_VIEW,
     sizeof(Xv_tty_view),
