@@ -650,7 +650,7 @@ clean::
 	$(RM) $(SODIR)/?*.o; else exit 0; fi
 
 lib${LIBTARGET}.so.${SOREV}::  $(OBJS)
-	@for i in $(OBJS) ; do ( set -x ; $(CP) $(SODIR)32/$$i $(SHARED_DIR)32; $(CP) $(SODIR)64/$$i $(SHARED_DIR)64; $(CP) $(SODIR)32/$$i .); done
+	@for i in $(OBJS) ; do ( $(CP) $(SODIR)32/$$i $(SHARED_DIR)32; $(CP) $(SODIR)64/$$i $(SHARED_DIR)64; $(CP) $(SODIR)32/$$i .); done
 
 lib${LIBTARGET}.a:: $(OBJS)
 	$(AR) $(TARGETDIR)$@ $(OBJS)
