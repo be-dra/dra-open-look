@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.10 2025/03/08 13:21:40 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.11 2025/03/11 17:28:12 dra Exp $ ";
 #endif
 #endif
 
@@ -415,9 +415,7 @@ Pkg_private Xv_window frame_create_footer(Frame_class_info *frame)
 }
 
 #ifdef OW_I18N
-Pkg_private Xv_window
-frame_create_IMstatus(frame)
-    Frame_class_info *frame;
+Pkg_private Xv_window frame_create_IMstatus(Frame_class_info *frame)
 {
     Frame frame_public = FRAME_PUBLIC(frame);
     Frame_rescale_state scale;
