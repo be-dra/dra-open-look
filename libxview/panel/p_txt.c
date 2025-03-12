@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.37 2025/02/14 09:50:37 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.40 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -208,7 +208,6 @@ static void panel_select_line(Item_info *ip, Event *event, int rank);
 static void text_add_selection(Panel_info *panel, Item_info *ip);
 static int text_convert_proc(Selection_owner sel_own, Atom *type,
 						Xv_opaque *data, unsigned long *length, int *format);
-static void text_lose_rank(Panel_info *panel, int rank);
 static void text_seln_dehighlight(Item_info *ip, int rank);
 static int text_seln_delete(Item_info *ip, int rank);
 #ifdef OW_I18N
@@ -1169,6 +1168,25 @@ static void selection_insert(Text_info *dp, char *sel_string, long sel_length,
 /* END selection_insert */
 }
 
+static void text_lose_rank(Panel_info *panel, int rank)
+{
+	Text_info *dp;
+
+	if (!panel->sel_holder[rank])
+		return;
+	text_seln_dehighlight(panel->sel_holder[rank], rank);
+	if (rank <= PANEL_SEL_SECONDARY) {
+		dp = TEXT_FROM_ITEM(panel->sel_holder[rank]);
+		if (rank == PANEL_SEL_PRIMARY)
+			dp->flags &= ~TEXT_SELECTED;
+		dp->select_click_cnt[rank] = 0;
+		SERVERTRACE((444, "scc[%d] = %d\n", rank, dp->select_click_cnt[rank]));
+		dp->sel_first[rank] = 0;
+		dp->sel_last[rank] = 0;
+	}
+	panel->sel_holder[rank] = NULL;
+}
+
 
 /* --------------------  Panel Item Operations  -------------------- */
 static void text_handle_event(Panel_item item_public, Event *event)
@@ -2127,8 +2145,9 @@ static void text_cancel_preview(Panel_item item_public, Event *event)
 	else {
 		for (sel_rank = PANEL_SEL_PRIMARY;
 				sel_rank <= PANEL_SEL_SECONDARY; sel_rank++) {
-			if (panel->sel_holder[sel_rank] == ip)
+			if (panel->sel_holder[sel_rank] == ip) {
 				xv_set(panel->sel_owner[sel_rank], SEL_OWN, FALSE, NULL);
+			}
 		}
 	}
 }
@@ -2147,7 +2166,7 @@ static void text_accept_preview(Panel_item item_public, Event *event)
 	 */
 	if (ip->panel->status.current_item_active) {
 		ip->panel->status.current_item_active = FALSE;
-		text_lose_rank(ip->panel, PANEL_SEL_PRIMARY);	/* cancel the selection */
+		text_lose_rank(ip->panel, PANEL_SEL_PRIMARY); /* cancel the selection */
 		event_set_down(event);	/* event = SELECT-down */
 		text_begin_preview(item_public, event);	/* set the caret position */
 		return;
@@ -3813,8 +3832,10 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
 	if (*type == panel->atom.delete) {
 		if (rank_atom == XA_SECONDARY)
 			rank_index = PANEL_SEL_SECONDARY;	/* Quick Move */
-		else if (rank_atom == panel->atom.clipboard)
-			rank_index = PANEL_SEL_CLIPBOARD;
+		else if (rank_atom == panel->atom.clipboard) {
+			/* we do not want to delete "from the clipboard" */
+			return FALSE;
+		}
 		else if (rank_atom == XA_PRIMARY)
 			rank_index = PANEL_SEL_PRIMARY;
 		else rank_index = PANEL_SEL_DND; /* problem in text_seln_delete */
@@ -3962,26 +3983,6 @@ static void text_lose_proc(Selection_owner sel_owner)
 	}
 	if (panel->sel_holder[rank_index])
 		text_lose_rank(panel, rank_index);
-}
-
-
-static void text_lose_rank(Panel_info *panel, int rank)
-{
-	Text_info *dp;
-
-	if (!panel->sel_holder[rank])
-		return;
-	text_seln_dehighlight(panel->sel_holder[rank], rank);
-	if (rank <= PANEL_SEL_SECONDARY) {
-		dp = TEXT_FROM_ITEM(panel->sel_holder[rank]);
-		if (rank == PANEL_SEL_PRIMARY)
-			dp->flags &= ~TEXT_SELECTED;
-		dp->select_click_cnt[rank] = 0;
-		SERVERTRACE((444, "scc[%d] = %d\n", rank, dp->select_click_cnt[rank]));
-		dp->sel_first[rank] = 0;
-		dp->sel_last[rank] = 0;
-	}
-	panel->sel_holder[rank] = NULL;
 }
 
 
@@ -7146,7 +7147,7 @@ wslen_in_byte(wcs)
 #endif /* OW_I18N */
 
 
-Xv_pkg          xv_panel_text_pkg = {
+const Xv_pkg          xv_panel_text_pkg = {
     "Text Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_text),
     &xv_panel_item_pkg,
