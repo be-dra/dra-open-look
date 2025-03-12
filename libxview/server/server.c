@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.24 2025/03/08 13:43:30 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.25 2025/03/11 17:48:47 dra Exp $";
 #endif
 #endif
 
@@ -1002,7 +1002,8 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 		/*
 		 * Get locale characteristic informaitions from Xrm.
 		 */
-		defaults_set_locale(server->ollc[OLLC_BASICLOCALE].locale, NULL);
+		defaults_set_locale(server->ollc[OLLC_BASICLOCALE].locale, 
+							(Xv_generic_attr)0);
 		need_im = defaults_get_boolean("xview.needIm", "Xview.NeedIm", False);
 		character_set = defaults_get_string("xview.characterSet",
 				"Xview.CharacterSet", ISO8859_1);
