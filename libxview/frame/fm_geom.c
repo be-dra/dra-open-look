@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_geom.c 20.31 93/06/28 DRA: $Id: fm_geom.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_geom.c 20.31 93/06/28 DRA: $Id: fm_geom.c,v 4.2 2025/03/11 17:27:57 dra Exp $ ";
 #endif
 #endif
 
@@ -164,9 +164,7 @@ Pkg_private int frame_footer_height(Frame_rescale_state scale)
 }
 
 #ifdef OW_I18N
-Pkg_private int
-frame_IMstatus_height(scale)
-    Frame_rescale_state scale;
+Pkg_private int frame_IMstatus_height(Frame_rescale_state scale)
 {
     int height;
     
