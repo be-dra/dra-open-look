@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.7 2024/12/02 20:00:49 dra Exp $";
+static char     sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.8 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -1054,7 +1054,7 @@ static int notify_user(Mltxt_info *dp, Event *event)
     }
 }
 
-Xv_pkg xv_panel_multiline_text_pkg = {
+const Xv_pkg xv_panel_multiline_text_pkg = {
     "Multiline Text Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_multiline_text),
     &xv_panel_item_pkg,
