@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.6 2025/03/10 20:09:46 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.7 2025/03/11 17:22:02 dra Exp $";
 #endif
 #endif
 
@@ -531,7 +531,7 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 
 #ifdef OW_I18N
 	XwcDrawString(display, src_pixmap, (XFontSet) xv_get(textfont, FONT_SET_ID),
-			visual->gc, cte.x_offset, cte.y_offset,
+			visual->gc, 20, ascent+descent+3,
 			cursor->string.pswcs.value, length);
 #else
 	XDrawString(display,src_pixmap,visual->gc, 20, ascent+descent+3,
