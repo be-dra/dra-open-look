@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.2 2024/05/19 09:45:08 dra Exp $";
+char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.3 2025/03/11 17:54:28 dra Exp $";
 #endif
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -396,12 +396,9 @@ ttysw_insertChar(fromcol, tocol, row)
 }
 
 #ifdef OW_I18N
-Pkg_private void
-tty_column_wchar_type( xChar , yChar , cwidth , offset )
-    int         xChar;
-    int         yChar;
-    int         *cwidth;        /* character width (RETURN) */
-    int         *offset;        /* offset of charcter (RETURN) */
+Pkg_private void tty_column_wchar_type(int xChar, int yChar,
+		int *cwidth, /* character width (RETURN) */
+		int *offset) /* offset of charcter (RETURN) */
 {
     CHAR               *line = image[yChar];
     register CHAR       c = line[xChar];
