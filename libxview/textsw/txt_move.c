@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.49 2025/01/08 12:46:50 dra Exp $";
+char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.50 2025/02/25 17:18:24 dra Exp $";
 #endif
 
 /*
@@ -103,6 +103,14 @@ static int DndConvertProc(Dnd dnd, Atom *type, Xv_opaque *data,
 	SERVERTRACE((765, "%s request for %s\n", 
 			(char *)xv_get(dnd, SEL_RANK_NAME),
 			(char *)xv_get(server, SERVER_ATOM_NAME, *type)));
+
+	if (priv->convert_proc) {
+		Textsw tsw = TEXTSW_PUBLIC(priv);
+		Atom rank = xv_get(dnd, SEL_RANK);
+
+		if ((*(priv->convert_proc))(tsw, rank, type, data, length, format))
+			return TRUE;
+	}
 
 	if (*type == priv->atoms.dragdrop_done) {
 		xv_set(dnd, SEL_OWN, False, NULL);
