@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.2 2025/03/06 20:51:34 dra Exp $ ";
 #endif
 #endif
 
@@ -1372,7 +1372,7 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public, Attr_attribute *avlis
     }
 
     if (status_get(frame, created) && paint_footers)
-      frame_display_footer(frame_public, TRUE);
+      frame_display_footer(frame_public, TRUE, NULL, NULL, NULL, NULL);
 #ifdef OW_I18N
     if (status_get(frame, created) && paint_imstatus)
       frame_display_IMstatus(frame_public, TRUE);
