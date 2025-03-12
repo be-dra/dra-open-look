@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.16 2025/01/18 22:33:25 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.20 2025/03/07 19:54:13 dra Exp $ ";
 #endif
 #endif
 
@@ -354,328 +354,112 @@ Xv_private	void frame_set_accept_default_focus(Frame frame_public, int flag)
 static Attr_attribute quick_dupl_key = 0;
 
 typedef struct {
-	quick_common_data_t qc;
 	Frame_class_info *priv; /* always the same */
 	int is_left; /* boolean: determined when ACTION_SELECT down */
-	int multiclick_timeout;
 } quick_data_t;
 
-static int note_quick_convert(Selection_owner sel_own, Atom *type,
-					Xv_opaque *data, unsigned long *length, int *format)
+static void q_remove_underline(Quick_owner qo)
 {
-	quick_data_t *qd = (quick_data_t *)xv_get(sel_own, XV_KEY_DATA,
-												quick_dupl_key);
+	frame_display_footer(xv_get(xv_get(qo, XV_OWNER), XV_OWNER), TRUE,
+							NULL, NULL, NULL, NULL);
+}
 
-	if (qd->qc.seltext[0] == '\0') {
-		Frame_class_info *priv = qd->priv;
-		char *s;
+static void start_quick_dup(Xv_window footer, Event *ev)
+{
+	Quick_owner qo;
+	quick_data_t *qd;
+	char *s;
+	int sx, ex;
+	int left_start, left_w, right_start, right_w;
 
-		/* now we determine the selected string */
+	qo = xv_get(footer, XV_KEY_DATA,quick_dupl_key);
+	if (! qo) {
+		qd = xv_alloc(quick_data_t);
+		qo = xv_create(footer, QUICK_OWNER,
+					QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
+					QUICK_CLIENT_DATA, qd,
+					NULL);
+		xv_set(footer, XV_KEY_DATA,quick_dupl_key, qo, NULL);
+	}
+	else {
+		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
+	}
+
+	if (xv_get(qo, QUICK_NEED_START)) {
+		Frame fram;
+		Frame_class_info *priv;
+
+		fram = xv_get(footer, XV_OWNER);
+		priv = FRAME_CLASS_PRIVATE(fram);
+		qd->priv = priv;
+
+		frame_display_footer(fram, FALSE, &left_start, &left_w, &right_start,
+								&right_w);
+
+		qd->is_left = (event_x(ev) <= left_start + left_w);
+
 		if (qd->is_left) {
 			s = priv->left_footer;
+			sx = left_start;
+			ex = left_start + left_w;
 		}
 		else {
 			s = priv->right_footer;
+			sx = right_start;
+			ex = right_start + right_w;
 		}
-		if (s) {
-			strncpy(qd->qc.seltext, s + qd->qc.startindex,
-						(size_t)(qd->qc.endindex - qd->qc.startindex + 1));
-			qd->qc.seltext[qd->qc.endindex - qd->qc.startindex + 1] = '\0';
-		}
+		xv_set(qo, QUICK_START, s, sx, ex, NULL);
 	}
 
-	return xvq_note_quick_convert(sel_own, &qd->qc, type, data, length, format);
+	xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
 }
-
-static void note_quick_lose(Selection_owner sel_owner)
-{
-	quick_data_t *qd = (quick_data_t *)xv_get(sel_owner, XV_KEY_DATA,
-												quick_dupl_key);
-
-	qd->qc.startindex = qd->qc.endindex = 0;
-	qd->qc.reply_data = 0;
-	qd->qc.seltext[0] = '\0';
-	qd->qc.select_click_cnt = 0;
-	frame_display_footer(xv_get(xv_get(sel_owner, XV_OWNER), XV_OWNER), TRUE);
-}
-
-static int update_secondary(Xv_Window footer, int mx)
-{
-	quick_data_t *qd;
-	Xv_Drawable_info *info;
-	char *s;
-	int len, i;
-	Frame_class_info *priv;
-
-	qd = (quick_data_t *)xv_get(footer, XV_KEY_DATA, quick_dupl_key);
-	if (! qd) return FALSE;
-
-	priv = qd->priv;
-
-	DRAWABLE_INFO_MACRO(footer, info);
-
-	XDrawLine(xv_display(info), xv_xid(info), qd->qc.gc,
-				qd->qc.startx, qd->qc.baseline, qd->qc.endx, qd->qc.baseline);
-	qd->qc.endx = 0;
-
-	if (qd->is_left) {
-		s = priv->left_footer;
-	}
-	else {
-		s = priv->right_footer;
-	}
-
-	if (s) {
-		int *xp = qd->qc.xpos;
-		len = strlen(s);
-
-		for (i = 0; i < len; i++) {
-			if (mx >= xp[i] && mx < xp[i+1]) {
-				qd->qc.endx = xp[i+1];
-				qd->qc.endindex = i;
-				break;
-			}
-		}
-	}
-	if (!qd->qc.endx) {
-		qd->qc.endx = qd->qc.startx;
-	}
-
-	XDrawLine(xv_display(info), xv_xid(info), qd->qc.gc,
-				qd->qc.startx, qd->qc.baseline, qd->qc.endx, qd->qc.baseline);
-
-	return TRUE;
-}
-
-static XFontStruct *get_fontstruct(Frame_class_info *priv)
-{
-	return priv->ginfo->textfont;
-}
-
-static int adjust_secondary(quick_data_t *qd, Event *ev)
-{
-	Frame_class_info *priv;
-	XFontStruct *fs;
-	int sx;
-	char *s;
-
-	priv = qd->priv;
-
-	fs = get_fontstruct(priv);
-	if (qd->is_left) {
-		s = priv->left_footer;
-		sx = priv->left_x;
-	}
-	else {
-		s = priv->right_footer;
-		sx = priv->right_x;
-	}
-
-	xvq_adjust_secondary(&qd->qc, fs, ev, s, sx);
-	return TRUE;
-}
-
-static int adjust_wordwise(quick_data_t *qd, Event *ev)
-{
-	Frame_class_info *priv = qd->priv;
-	char *s;
-	int sx;
-	XFontStruct *fs;
-
-	fs = get_fontstruct(priv);
-	if (qd->is_left) {
-		s = priv->left_footer;
-		sx = priv->left_x;
-	}
-	else {
-		s = priv->right_footer;
-		sx = priv->right_x;
-	}
-
-	return xvq_adjust_wordwise(&qd->qc, fs, s, sx, ev);
-}
-
-static quick_data_t *supply_quick_data(Xv_window footer, Frame_class_info *priv)
-{
-	quick_data_t *qd;
-	XGCValues   gcv;
-	Xv_Drawable_info *info;
-	Cms cms;
-	int i, fore_index, back_index;
-	unsigned long fg, bg;
-	char *delims, delim_chars[256];	/* delimiter characters */
-
-	qd = xv_alloc(quick_data_t);
-	xv_set(footer, XV_KEY_DATA, quick_dupl_key, qd, NULL);
-
-	qd->qc.sel_owner = xv_create(footer, SELECTION_OWNER,
-					SEL_RANK, XA_SECONDARY,
-					SEL_CONVERT_PROC, note_quick_convert,
-					SEL_LOSE_PROC, note_quick_lose,
-					XV_KEY_DATA, quick_dupl_key, qd,
-					NULL);
-
-	qd->priv = priv;
-
-	cms = xv_get(footer, WIN_CMS);
-	fore_index = (int)xv_get(footer, WIN_FOREGROUND_COLOR);
-	back_index = (int)xv_get(footer, WIN_BACKGROUND_COLOR);
-	bg = (unsigned long)xv_get(cms, CMS_PIXEL, back_index);
-	fg = (unsigned long)xv_get(cms, CMS_PIXEL, fore_index);
-
-	gcv.foreground = fg ^ bg;
-	gcv.function = GXxor;
-
-	DRAWABLE_INFO_MACRO(footer, info);
-
-	qd->qc.gc = XCreateGC(xv_display(info), xv_xid(info),
-					GCForeground | GCFunction, &gcv);
-	qd->qc.baseline = (int)xv_get(footer, XV_HEIGHT) - 2;
-
-	qd->multiclick_timeout = 100 *
-	    defaults_get_integer_check("openWindows.multiClickTimeout",
-		                   "OpenWindows.MultiClickTimeout", 4, 2, 10);
-
-	delims = (char *)defaults_get_string("text.delimiterChars",
-			"Text.DelimiterChars", " \t,.:;?!\'\"`*/-+=(){}[]<>\\|~@#$%^&");
-	/* Print the string into an array to parse the potential
-	 * octal/special characters.
-	 */
-	strcpy(delim_chars, delims);
-	/* Mark off the delimiters specified */
-	for (i = 0; i < sizeof(qd->qc.delimtab); i++) qd->qc.delimtab[i] = FALSE;
-	for (delims = delim_chars; *delims; delims++) {
-		qd->qc.delimtab[(int)*delims] = TRUE;
-	}
-
-	return qd;
-}
-
-static int determine_multiclick(int multitime,
-            struct timeval *last_click_time, struct timeval *new_click_time)
-{
-	int delta;
-
-	if (last_click_time->tv_sec == 0 && last_click_time->tv_usec == 0)
-		return FALSE;
-	delta = (new_click_time->tv_sec - last_click_time->tv_sec) * 1000;
-	delta += new_click_time->tv_usec / 1000;
-	delta -= last_click_time->tv_usec / 1000;
-	return (delta <= multitime);
-}   
 
 static int is_quick_duplicate_on_footer(Xv_window footer, Event *ev)
 {
-	quick_data_t *qd;
-	Frame fram;
-	Frame_class_info *priv;
-	XFontStruct *fs;
-	char *s;
-	int sx, mx, width, ex;
-	int is_multiclick;
+	Quick_owner qo;
 
 	switch (event_action(ev)) {
+		case ACTION_SELECT:
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! event_is_down(ev)) return TRUE;
+
+			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
+
+			start_quick_dup(footer, ev);
+			return TRUE;
+
 		case LOC_DRAG:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (action_select_is_down(ev)) {
-				return update_secondary(footer, event_x(ev));
-			}
-			if (action_adjust_is_down(ev)) {
-				return update_secondary(footer, event_x(ev));
-			}
-			break;
+			if (! quick_dupl_key) return TRUE;
+
+			qo = xv_get(footer, XV_KEY_DATA,quick_dupl_key);
+			if (! qo) return TRUE;
+			if (! xv_get(qo, SEL_OWN)) return TRUE;
+			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
+			return TRUE;
 
 		case ACTION_ADJUST:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (! event_is_up(ev)) return TRUE;
-			fram = xv_get(footer, XV_OWNER);
-			priv = FRAME_CLASS_PRIVATE(fram);
-			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
-			qd = (quick_data_t *)xv_get(footer, XV_KEY_DATA,quick_dupl_key);
-			if (! qd) {
-				qd = supply_quick_data(footer, priv);
+			if (! quick_dupl_key) {
+				xv_set(footer, WIN_ALARM, NULL);
+				return TRUE;
 			}
-			if (qd->qc.select_click_cnt == 2) {
-				return adjust_wordwise(qd, ev);
+			qo = xv_get(footer, XV_KEY_DATA,quick_dupl_key);
+			if (! qo) {
+				xv_set(footer, WIN_ALARM, NULL);
+				return TRUE;
 			}
-			return adjust_secondary(qd, ev);
-
-		case ACTION_SELECT:
-			if (! event_is_down(ev)) return FALSE;
-			if (! event_is_quick_duplicate(ev)) return FALSE;
-
-			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
-
-			mx = event_x(ev);
-			width = (int)xv_get(footer, XV_WIDTH);
-			fram = xv_get(footer, XV_OWNER);
-			priv = FRAME_CLASS_PRIVATE(fram);
-			qd = (quick_data_t *)xv_get(footer, XV_KEY_DATA,quick_dupl_key);
-			if (! qd) {
-				qd = supply_quick_data(footer, priv);
+			if (event_is_down(ev)) {
+				if (! xv_get(qo, SEL_OWN)) xv_set(footer, WIN_ALARM, NULL);
+				return TRUE;
 			}
-
-			is_multiclick = determine_multiclick(qd->multiclick_timeout,
-							&qd->qc.last_click_time, &event_time(ev));
-			qd->qc.last_click_time = event_time(ev);
-
-			qd->is_left = (mx < (3 * width) / 4);
-			qd->qc.startx = 0; /* uninitialized */
-			fs = get_fontstruct(priv);
-			if (qd->is_left) {
-				s = priv->left_footer;
-				sx = priv->left_x;
-				ex = priv->right_x;
+			if (! xv_get(qo, QUICK_CLIENT_DATA)) {
+				xv_set(footer, WIN_ALARM, NULL);
+				return TRUE;
 			}
-			else {
-				s = priv->right_footer;
-				sx = priv->right_x;
-				ex = width;
-			}
-
-			qd->qc.xpos[0] = 0;
-			if (s) {
-				qd->qc.startx = sx;
-				xvq_mouse_to_charpos(&qd->qc, fs, mx, s,
-							&qd->qc.startx, &qd->qc.startindex);
-
-				if (is_multiclick) {
-					Xv_Drawable_info *info;
-
-					++qd->qc.select_click_cnt;
-					if (qd->qc.select_click_cnt == 2) {
-						/* really sx here ? Or rather qd->qc.startx ???? */
-						xvq_select_word(&qd->qc, s, sx, fs);
-					}
-					else if (qd->qc.select_click_cnt > 2) {
-						/* whole text */
-						qd->qc.startindex = 0;
-						qd->qc.startx = sx;
-						qd->qc.endindex = strlen(s) - 1;
-						qd->qc.endx = ex;
-					}
-					DRAWABLE_INFO_MACRO(event_window(ev), info);
-
-					XDrawLine(xv_display(info), xv_xid(info), qd->qc.gc,
-									qd->qc.startx, qd->qc.baseline,
-									qd->qc.endx, qd->qc.baseline);
-				}
-				else {
-					qd->qc.select_click_cnt = 1;
-					qd->qc.endx = qd->qc.startx;
-				}
-			}
-			else {
-				qd->qc.select_click_cnt = 1;
-				qd->qc.endx = qd->qc.startx;
-			}
-
-			xv_set(qd->qc.sel_owner,
-					SEL_OWN, TRUE,
-					SEL_TIME, &qd->qc.last_click_time,
-					NULL);
-			qd->qc.seltext[0] = '\0';
+			xv_set(qo, QUICK_ADJUST_UP, ev, NULL);
 			return TRUE;
+
 	}
 
 	return FALSE;
@@ -688,7 +472,8 @@ Pkg_private Notify_value frame_footer_input(Xv_Window footer, Event *ev,
 
 	switch (event_action(ev)) {
 		case WIN_REPAINT:
-			frame_display_footer(xv_get(footer, WIN_PARENT), FALSE);
+			frame_display_footer(xv_get(footer, WIN_PARENT), FALSE,
+										NULL, NULL, NULL, NULL);
 			break;
 
 		case ACTION_SELECT:
