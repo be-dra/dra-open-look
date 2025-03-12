@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_view.c 20.31 93/06/28 DRA: $Id: p_view.c,v 4.4 2025/01/28 20:53:40 dra Exp $";
+static char     sccsid[] = "@(#)p_view.c 20.31 93/06/28 DRA: $Id: p_view.c,v 4.5 2025/03/08 13:08:26 dra Exp $";
 #endif
 #endif
 
@@ -52,7 +52,7 @@ Pkg_private int panel_view_init(Panel parent, Panel_view view_public,
 	}
 }
 
-Xv_pkg xv_panel_view_pkg = {
+const Xv_pkg xv_panel_view_pkg = {
     "PanelView", ATTR_PKG_PANEL,
     sizeof(Xv_panel),
     &xv_canvas_view_pkg,
@@ -91,7 +91,7 @@ static int panel_pw_init(Panel_view view, Xv_window pw,
 	return XV_OK;
 }
 
-Xv_pkg xv_panel_pw_pkg = {
+const Xv_pkg xv_panel_pw_pkg = {
     "PanelPW", ATTR_PKG_PANEL,
     sizeof(Xv_canvas_pw),
     &xv_canvas_pw_pkg,
