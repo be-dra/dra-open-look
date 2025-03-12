@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_rescale.c 20.21 93/06/28 DRA: $Id: fm_rescale.c,v 4.3 2024/12/05 05:58:12 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_rescale.c 20.21 93/06/28 DRA: $Id: fm_rescale.c,v 4.4 2025/03/06 17:35:59 dra Exp $ ";
 #endif
 #endif
 
@@ -44,9 +44,20 @@ Pkg_private void frame_rescale_subwindows(Frame frame_public, int scale)
 	 */
 
 
+	/* DRA: just trying */
+	FRAME_EACH_SUBWINDOW(fpriv, sw)
+		Event event;
+
+		event_set_id(&event, ACTION_RESCALE);
+		event_set_action(&event, ACTION_RESCALE);
+		SERVERTRACE((790, "posting ACTION_RESCALE to %ld\n", sw));
+    	notify_post_event_and_arg(sw, (Notify_event)&event, NOTIFY_IMMEDIATE,
+			      (unsigned long)scale, NOTIFY_COPY_NULL, NOTIFY_RELEASE_NULL);
+	FRAME_END_EACH
+
 	/*
 	 * if this is not called from the frame_input function then call it. This
-	 * gets teh correct font and the correct scale.
+	 * gets the correct font and the correct scale.
 	 */
 
 	SERVERTRACE((790, "calling window_default_event_func, font = %ld\n",
@@ -99,4 +110,6 @@ Pkg_private void frame_rescale_subwindows(Frame frame_public, int scale)
 
 	SERVERTRACE((790, "\n"));
 	window_destroy_rect_obj_list(rect_obj_list);
+
+	window_fit(frame_public);
 }
