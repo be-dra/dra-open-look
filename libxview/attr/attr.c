@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)attr.c 20.24 90/12/04  DRA: $Id: attr.c,v 4.20 2024/11/05 18:20:19 dra Exp $ ";
+static char     sccsid[] = "@(#)attr.c 20.24 90/12/04  DRA: $Id: attr.c,v 4.22 2025/03/12 19:52:18 dra Exp $ ";
 #endif
 #endif
 
@@ -79,6 +79,9 @@ char *attr_name(Attr_attribute attr)
 static Attr_attribute trunc_attr(Attr_attribute attr)
 {
 #ifdef __LP64__
+#  ifdef __aarch64__
+	/* the whole idiot business is only needed here */
+
 	/* das ist auch unter ARM definiert */
 	uint32_t rhwng;
 	/* attr wurde von va_arg 'vom Stack' als Attr_attribute geholt, und das
@@ -104,12 +107,16 @@ static Attr_attribute trunc_attr(Attr_attribute attr)
 	 */
 	rhwng = (uint32_t)attr;
 	return (Attr_attribute)rhwng;
+#  else /* __aarch64__ */
+	return attr;
+#  endif /* __aarch64__ */
 #else /* __LP64__ */
 	return attr;
 #endif /* __LP64__ */
 }
 
 #ifdef __LP64__
+#ifdef __aarch64__
 static char *bastypnam(Attr_attribute attr)
 {
 	Attr_base_type basetype = ATTR_BASE_TYPE(attr);
@@ -142,12 +149,14 @@ static char *bastypnam(Attr_attribute attr)
 	}
 	return "??";
 }
+#endif /* __aarch64__ */
 #endif /* __LP64__ */
 
 static Attr_attribute check_arg(Attr_attribute arg, Attr_attribute attr,
 								int expect_nullterm, int idx)
 {
 #ifdef __LP64__
+#  ifdef __aarch64__
 	static int verbosity = -1; /* 0 still, 1 leise, 2 laut, 3 laut und blast */
 	Attr_base_type basetype = ATTR_BASE_TYPE(attr);
 	uint32_t bach, mawr;
@@ -160,23 +169,35 @@ static Attr_attribute check_arg(Attr_attribute arg, Attr_attribute attr,
 		else verbosity = 0;
 	}
 
-	if (verbosity >= 2) {
-		fprintf(stderr, "%s-%d: check_arg(arg=%lx, attr=%lx (%s bt %s))\n",
-						__FILE__, __LINE__, arg, attr, attr_name(attr),
-						bastypnam(attr));
-
-	}
 	bach = (arg & 0xffffffff);
 	mawr = (arg >> 32);
 	bachs = (bach & 0xffff);
 	mawrs = (bach >> 16);
 
-	/* die habe ich schon ueberprueft: */
-	/* aber dann hab ich aufgehoert - viel zu muehsam */
+	/* a few base types should be quite clear: */
+	switch (ATTR_BASE_TYPE(attr)) {
+		case ATTR_BASE_BOOLEAN: return (Attr_attribute)bach;
+		case ATTR_BASE_ENUM: return (Attr_attribute)bach;
+		case ATTR_BASE_FUNCTION_PTR: return arg;
+		case ATTR_BASE_STRING: return arg;
+		case ATTR_BASE_OPAQUE: return arg;
+		case ATTR_BASE_NO_VALUE: return arg;
+		case ATTR_BASE_PIXRECT_PTR: return arg;
+		case ATTR_BASE_PIXFONT_PTR: return arg;
+		case ATTR_BASE_RECT_PTR: return arg;
+		default:
+			break;
+	}
+
 	switch (attr) {
 		case XV_KEY_DATA: 
 			if (idx == 0) return (Attr_attribute)bach;  /* this is the key */
 			else return arg;                            /* this is the value */
+		case XV_KEY_DATA_REMOVE_PROC: 
+			if (idx == 0) return (Attr_attribute)bach;  /* this is the key */
+			else return arg;                            /* this is the proc */
+		case XV_REF_COUNT: return (Attr_attribute)bach;
+#ifdef NOT_NOW
 		case 0x49ed0801: /* WIN_BIT_GRAVITY */
 		case 0x491c8921: /* WIN_CONSUME_EVENTS */
 		case 0x49e20901: /* WIN_SAVE_UNDER */
@@ -191,8 +212,15 @@ static Attr_attribute check_arg(Attr_attribute arg, Attr_attribute attr,
 		case 0x55360901: /* PANEL_INACTIVE */
 		case 0x553f0841: /* PANEL_ITEM_X */
 			return arg;
+#endif /* NOT_NOW */
 
-		default: break;
+		default:
+			if (verbosity >= 2) {
+				fprintf(stderr, "%s-%d: check_arg(arg=%lx, attr=%lx (%s bt %s))\n",
+								__FILE__, __LINE__, arg, attr, attr_name(attr),
+								bastypnam(attr));
+			}
+			break;
 	}
 
 	if (expect_nullterm) {
@@ -305,6 +333,9 @@ static Attr_attribute check_arg(Attr_attribute arg, Attr_attribute attr,
 			if (verbosity >= 3) abort();
 		}
 	}
+#  else /* __aarch64__ */
+	return arg;
+#  endif /* __aarch64__ */
 #endif /* __LP64__ */
 	return arg;
 }
@@ -337,7 +368,7 @@ static int hope_32bits(Attr_attribute attr)
 	 */
 
 	switch (ATTR_BASE_TYPE(attr)) {
-		/* these are the type we hope to be 32 bits: */
+		/* these are the types we hope to be 32 bits: */
 		case ATTR_BASE_INT:
 		case ATTR_BASE_SHORT:
 		case ATTR_BASE_ENUM:
@@ -369,7 +400,8 @@ static int hope_32bits(Attr_attribute attr)
 
 Attr_attribute avlist_tmp[ATTR_STANDARD_SIZE];
 
-Xv_private Attr_avlist copy_va_to_av(va_list valist1, Attr_avlist avlist1, Attr_attribute attr1)
+Xv_private Attr_avlist copy_va_to_av(va_list valist1, Attr_avlist avlist1,
+										Attr_attribute attr1)
 {
 	Attr_attribute attr;
 	unsigned cardinality;
@@ -420,7 +452,7 @@ Xv_private Attr_avlist copy_va_to_av(va_list valist1, Attr_avlist avlist1, Attr_
 				}
 				for (i = 0; i < cardinality; i++) {
 					if (hope_32bits(attr))
-						*avlist++ = check_arg((Attr_attribute)va_arg(valist, int),
+						*avlist++ =check_arg((Attr_attribute)va_arg(valist,int),
 											attr, FALSE, i);
 					else *avlist++ = check_arg(va_arg(valist, Attr_attribute),
 											attr, FALSE, i);
