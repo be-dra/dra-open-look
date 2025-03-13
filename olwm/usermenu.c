@@ -1,5 +1,5 @@
 /* #ident	"@(#)usermenu.c	26.62	93/06/28 SMI" */
-char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.2 2025/03/10 18:22:28 dra Exp $";
+char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.3 2025/03/12 21:40:40 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -539,7 +539,6 @@ ReInitUserMenu(dpy, forceReRead)
 void RootMenuShow(Display *dpy, WinGeneric *winInfo, XEvent *pEvent)
 {
     ReInitUserMenu(dpy, False);
-	fprintf(stderr, "\n");
     MenuShowSync(dpy, winInfo, MenuTable[MENU_ROOT], pEvent, NULL, NULL,
 		 False, False);
 }
