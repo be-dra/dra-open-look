@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.31 2025/03/07 21:57:17 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.32 2025/03/12 17:40:24 dra Exp $";
 #endif
 #endif
 
@@ -1104,7 +1104,6 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				}
 				else
 #endif
-
 					XV_BZERO(buffer, (size_t)buf_length);
 
 				if (ek->state & num_lock_modmask) {
@@ -2854,6 +2853,10 @@ static int process_clientmessage_events(Xv_object window,
 				int alt_modmask = 0;
 				int i;
 
+				/* the format is 32 **always** even if vkbd is runnung on an
+				 * old sun
+				 */
+
 				/* Initialise an xevent  */
 
 				ksym = (KeySym) clientmessage->data.l[0];
@@ -2939,6 +2942,14 @@ static int process_clientmessage_events(Xv_object window,
 												modifiers] | XVIEW_SEMANTIC;
 				event_set_action(event, sem_action);
 
+				if ((int)(clientmessage->data.l[1]) == KeyPress) {
+					SERVERTRACE((100, "%16s: %lx %lx %lx: %d = '%c'\n",
+			 				XKeysymToString((KeySym)clientmessage->data.l[0]),
+			 				clientmessage->data.l[2],
+			 				clientmessage->data.l[3],
+			 				clientmessage->data.l[4],
+							event_id(event), event_id(event)));
+				}
 				/* Initialise the xevent to NULL for now */
 
 				event->ie_xevent = NULL;
@@ -3293,6 +3304,10 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 		/* so that the vkey does not have to call XGetInputFocus */
 		xclientm_event.data.l[4] = keyevent->window;
 
+		if (keyevent->type == KeyPress) {
+			SERVERTRACE((100, "c %d, s %x\n", keyevent->keycode, keyevent->state));
+		}
+
 		XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xclientm_event);
 		return (1);
 
@@ -3462,68 +3477,3 @@ Xv_private void win_repaint_application(Display *dpy)
 		}
 	}
 }
-
-#ifdef SEEMS_UNUSED
-/*
- * win_translate_KP_keysym - This function is taken from the Xlib function
- * XTranslateKeySym(). It EXPECTS a keypad keysym and fills the provided
- * buffer with the corresponding string. The length of this string is
- * returned. Two restrictions to be aware of:
- * It EXPECTS the buffer to have space for 1 character.
- */
-
-static int win_translate_KP_keysym(KeySym keysym, char *buffer)
-{
-    register unsigned char c;
-    unsigned long hiBytes;
-
-    /* We MUST only be passed keypad (XK_KP_mumble) keysyms */
-    /* if X keysym, convert to ascii by grabbing low 7 bits */
- 
-    hiBytes = keysym >> 8;
- 
-    if (keysym == XK_KP_Space)
-        c = XK_space & 0x7F; /* patch encoding botch */
-    else if (hiBytes == 0xFF)
-        c = keysym & 0x7F;
-    else
-        c = keysym & 0xFF;
-    buffer[0] = c;
-    return 1;
-}
-
-/* The following code is copied from Xlib.  For a given keysym it checks
- * to see if it has been rebound via XRebindKeysym, if so, it returns the
- * string in buffer.  This code is dependent on the private Xlib
- * structure _XKeytrans.  XView's definition of _XKeytrans must track
- * Xlib's.
- */
-static int translate_key(Display *dpy, KeySym symbol, unsigned int modifiers,
-							char *buffer, int nbytes)
-{
-	if (!symbol)
-		return 0;
-
-#if XlibSpecificationRelease >= 5
-	return 0;
-#else
-	{
-		struct _XKeytrans *p;
-		int length;
-
-		/* see if symbol rebound, if so, return that string. */
-		for (p = (struct _XKeytrans *)dpy->key_bindings; p; p = p->next) {
-			if (((modifiers & AllMods) == p->state) && (symbol == p->key)) {
-				length = p->len;
-				if (length > nbytes)
-					length = nbytes;
-				XV_BCOPY(p->string, buffer, length);
-				return length;
-			}
-		}
-	}
-#endif
-
-	return 0;
-}
-#endif /* SEEMS_UNUSED */
