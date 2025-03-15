@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.25 2025/03/11 17:48:47 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.27 2025/03/13 16:43:07 dra Exp $";
 #endif
 #endif
 
@@ -17,6 +17,7 @@ static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
+#include <langinfo.h>
 #include <xview/win_input.h>
 #include <xview/win_struct.h>
 #include <xview_private/ntfy.h>
@@ -90,7 +91,8 @@ Xv_private XIMStyle	 xv_determine_im_style();
 /* extern char	    	*setlocale(); */
 static Notify_scheduler_func default_scheduler;
 extern XrmDatabase  	 defaults_rdb;
-extern char	    	 *xv_app_name;
+extern char				*xv_app_name;
+extern int				_xv_is_multibyte;
 Xv_private_data char 	*xv_shell_prompt;
 
 /* global default server parameters */
@@ -651,6 +653,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	char *xdefaults;
 	char *env = getenv("XVIEW_TELL_XINITTHREADS");
 
+	if (getuid()==53) fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__);
 	if (env && *env) {
 		fprintf(stderr, "server_init called in %s\n", xv_app_name);
 	}
@@ -887,6 +890,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 			}
 		}
 
+		if (getuid()==53) fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__);
 		/*
 		 * Now sets all locale categories.
 		 */
@@ -1000,7 +1004,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 
 
 		/*
-		 * Get locale characteristic informaitions from Xrm.
+		 * Get locale characteristic informations from Xrm.
 		 */
 		defaults_set_locale(server->ollc[OLLC_BASICLOCALE].locale, 
 							(Xv_generic_attr)0);
@@ -1359,14 +1363,14 @@ static void server_set_locale(Server_info  *server)
 			oi->locale = strdup((char *)xrm_value.addr);
 			oi->from = OLLC_FROM_RESOURCE;
 
-/* 			fprintf(stderr, "%s-%d: '%s'\n", __FUNCTION__, __LINE__, oi->locale); */
+			if (getuid()==53) fprintf(stderr, "%s-%d: '%s'\n", __FUNCTION__, __LINE__, oi->locale);
 			/* das war, als ich auf das ECHTE dgettext, und das ECHTE msgfmt
 			 * umgestiegen bin
 			 */
 			if (Ollc_const[i].posix >= 0) {
 				char *result = setlocale(Ollc_const[i].posix, oi->locale);
 
-/* 				fprintf(stderr, "%s-%d: setlocale(%d, %s)\n", __FUNCTION__, __LINE__, Ollc_const[i].posix,oi->locale); */
+				if (getuid()==53) fprintf(stderr, "%s-%d: setlocale(%d, %s) -> '%s'\n", __FUNCTION__, __LINE__, Ollc_const[i].posix,oi->locale, result);
 				if (!result) {
 					fprintf(stderr, "unsuccessfully tried to set %s to %s\n", 
 									Ollc_const[i].env , oi->locale);
@@ -1375,7 +1379,7 @@ static void server_set_locale(Server_info  *server)
 			continue;
 		}
 
-/* 		fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__); */
+		if (getuid()==53) fprintf(stderr, "%s-%d: codeset=%s\n", __FUNCTION__, __LINE__, nl_langinfo(CODESET));
 		/*
 		 * For 3.1 backwards compatibility of *numeric resource, need to
 		 * check if the old resource is being used.
@@ -1392,7 +1396,7 @@ static void server_set_locale(Server_info  *server)
 			}
 		}
 
-/* 		fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__); */
+		if (getuid()==53) fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__);
 		/*
 		 * fallback to setlocale(3).
 		 */
@@ -1400,7 +1404,7 @@ static void server_set_locale(Server_info  *server)
 				&& (locale = setlocale(Ollc_const[i].posix, NULL)) != NULL) {
 			oi->locale = strdup(locale);
 			oi->from = OLLC_FROM_POSIX;
-/* 		fprintf(stderr, "%s-%d: locale=%s\n", __FUNCTION__, __LINE__, oi->locale); */
+		if (getuid()==53) fprintf(stderr, "%s-%d: locale=%s\n", __FUNCTION__, __LINE__, oi->locale);
 			continue;
 		}
 
@@ -1412,7 +1416,7 @@ static void server_set_locale(Server_info  *server)
 					("Could not obtain the Basic Locale settings! - Defaulting to \"C\""));
 			oi->locale = strdup("C");
 			oi->from = OLLC_FROM_C;
-/* 		fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__); */
+		if (getuid()==53) fprintf(stderr, "%s-%d: \n", __FUNCTION__, __LINE__);
 			continue;
 		}
 
@@ -1423,11 +1427,13 @@ static void server_set_locale(Server_info  *server)
 		oi->from = server->ollc[OLLC_BASICLOCALE].from;
 	}
 
-/* 	fprintf(stderr, "in server_set_locale:\n"); */
-/* 	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) { */
-/* 		fprintf(stderr, "\t%d. locale = '%s', set from %s\n", */
-/* 				i, oi->locale, server_get_locale_from_str(oi->from)); */
-/* 	} */
+	_xv_is_multibyte = (strncmp(nl_langinfo(CODESET), "UTF", 3L) == 0);
+
+	fprintf(stderr, "in server_set_locale:\n");
+	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
+		fprintf(stderr, "\t%d. locale = '%s', set from %s\n",
+				i, oi->locale, server_get_locale_from_str(oi->from));
+	}
 }
 
 
