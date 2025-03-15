@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.3 2024/11/10 13:49:02 dra Exp $";
+static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.4 2025/03/13 16:05:46 dra Exp $";
 #endif
 #endif
 
@@ -48,6 +48,7 @@ Xv_private_data wchar_t *xv_app_name_wcs;
 Xv_private_data char *xv_app_name;
 Xv_private_data char 	*xv_instance_app_name = NULL;
 Xv_private_data int	_xv_use_locale;
+Xv_private_data int	_xv_is_multibyte;
 Xv_private int	notify_exclude_fd;
 Xv_private Defaults_pairs xv_kbd_cmds_value_pairs[4];
 
