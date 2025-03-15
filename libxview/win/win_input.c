@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.32 2025/03/12 17:40:24 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.33 2025/03/13 16:05:04 dra Exp $";
 #endif
 #endif
 
@@ -18,6 +18,7 @@ static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.
 #include <errno.h>
 #include <unistd.h>
 #include <time.h>
+#include <iconv.h>
 #include <sys/time.h>
 #include <X11/Xlib.h>		/* required by Xutil.h */
 #include <X11/keysym.h>
@@ -66,7 +67,8 @@ static int win_handle_menu_accel(Event *event);
 static int win_handle_window_accel(Event *event);
 
 extern struct rectlist *win_get_damage(Xv_object);
-extern char    *xv_app_name;
+extern char *xv_app_name;
+extern int _xv_is_multibyte;
 
 #ifdef NO_XDND
 #else /* NO_XDND */
@@ -426,9 +428,6 @@ void win_set_no_focus(Xv_object window, int state)
 	    (((state) & Button1Mask) ? MS_LEFT_MASK : 0) | \
 	    (((state) & Button2Mask) ? MS_MIDDLE_MASK : 0) | \
 	    (((state) & Button3Mask) ? MS_RIGHT_MASK : 0))
-
-Xv_private_data Event xv_last_event;
-Xv_private_data XEvent xv_last_x_event;
 
 typedef struct {
     Xv_object       window_requested;
@@ -2357,9 +2356,39 @@ Xv_private void win_set_wm_command_prop(Xv_object window, char **argv,
 	XSetCommand(xv_display(info), xv_xid(info), argv, argc);
 }
 
+static void initialize_ol_trans_utf8(char **utf, char *utfbuf)
+{
+	iconv_t ic;
+	int i;
+	char *p, latbuf[2], *lat;
+	size_t insiz, outsiz;
+
+	/* actually, this is only needed in a UTF-8 locale.... */
+	 if (! _xv_is_multibyte) return;
+	if (utf[0] != NULL) return;
+
+	ic = iconv_open("UTF8", "LATIN1");
+
+	p = utfbuf;
+	latbuf[1] = '\0';
+	for (i = 0; i < 128; i++) {
+		utf[i] = p;
+		latbuf[1] = i + 128;
+		insiz = 1;
+		lat = latbuf;
+		outsiz = 4;
+		iconv(ic, &lat, &insiz, &p, &outsiz);
+		*p++ = '\0';
+	}
+
+	iconv_close(ic);
+}
+
 static int process_clientmessage_events(Xv_object window,
 						XClientMessageEvent *clientmessage, Event *event)
 {
+	static char *ol_trans_utf[128] = { NULL };
+	static char ol_trans_utfbuf[1024];
 	Xv_Drawable_info *info;
 	Xv_opaque server_public;
 	Server_atom_type atom_type;
@@ -2853,8 +2882,10 @@ static int process_clientmessage_events(Xv_object window,
 				int alt_modmask = 0;
 				int i;
 
+				initialize_ol_trans_utf8(ol_trans_utf, ol_trans_utfbuf);
+
 				/* the format is 32 **always** even if vkbd is runnung on an
-				 * old sun
+				 * old sun machine
 				 */
 
 				/* Initialise an xevent  */
@@ -2874,6 +2905,16 @@ static int process_clientmessage_events(Xv_object window,
 					key_value = ((key_map[(int)ksym & 0xFF] == ksym) ||
 								 (!key_map[(int)ksym & 0xFF])) ? key_value :
 										key_map[(int)ksym & 0xFF];
+
+				/* basically, this is the keysym that was sent in data.l[0].
+				 * In a single byte locale (let's say, a LATIN1 or similar
+				 * locale) this keysym is in fact the "character itself"
+				 * (e.g. XK_adiaeresis == 0x00e4).
+				 * However, in a multibyte (utf8...) locale, all non-ASCII
+				 * keysyms will be **two** bytes ....
+				 * At the moment, I see iconv as the reasonable way.
+				 * Please note that this is not depending on the DISPLAY,
+				 */
 				event_set_id(event, key_value);
 
 				if ((int)(clientmessage->data.l[1]) == KeyPress)
@@ -2891,7 +2932,13 @@ static int process_clientmessage_events(Xv_object window,
 				 * Real Key events attempt to supply ie_string using
 				 * XLookupString....
 				 */
-				event->ie_string = NULL;
+	 			if (_xv_is_multibyte) {
+					if (key_value >= 128 && key_value < 256) {
+						event->ie_string = ol_trans_utf[key_value - 128];
+					}
+					else event->ie_string = NULL;
+				}
+				else event->ie_string = NULL;
 
 				alt_modmask = (int)xv_get(server_public, SERVER_ALT_MOD_MASK);
 				meta_modmask = (int)xv_get(server_public, SERVER_META_MOD_MASK);
