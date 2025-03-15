@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_cntral.c 20.20 93/06/28 DRA: $Id: win_cntral.c,v 4.4 2025/01/05 17:18:53 dra Exp $";
+static char     sccsid[] = "@(#)win_cntral.c 20.20 93/06/28 DRA: $Id: win_cntral.c,v 4.5 2025/03/13 09:40:57 dra Exp $";
 #endif
 #endif
 
@@ -24,8 +24,6 @@ static char     sccsid[] = "@(#)win_cntral.c 20.20 93/06/28 DRA: $Id: win_cntral
 #include <xview/win_notify.h>
 
 static Notify_error win_send(Notify_client client, Event *event, Notify_event_type when, Notify_arg arg, Notify_copy copy_func, Notify_release release_func);
-
-extern Event    xv_last_event;
 
 /*
  * Public interface:
