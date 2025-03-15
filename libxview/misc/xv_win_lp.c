@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_win_lp.c 1.11 93/06/28 DRA: RCS $Id: xv_win_lp.c,v 4.2 2024/09/15 09:29:59 dra Exp $ ";
+static char     sccsid[] = "@(#)xv_win_lp.c 1.11 93/06/28 DRA: RCS $Id: xv_win_lp.c,v 4.3 2025/03/13 15:36:00 dra Exp $ ";
 #endif
 #endif
 
@@ -97,7 +97,7 @@ Xv_public Xv_opaque xv_window_loop(Frame   frame)
 	/*
 	 * Set in loop flag
 	 */
-	xv_in_loop = 1;
+	WIN_SET_IN_LOOP(1);
 
 	/*
 	 * Make signal handler deaf - do nothing
@@ -131,7 +131,7 @@ Xv_public Xv_opaque xv_window_loop(Frame   frame)
 	 * While xv_window_return() not called and a request to
 	 * stop the notifier has NOT been made
 	 */
-	while ((xv_in_loop || (frame != xv_loop_frame)) &&
+	while ((WIN_IS_IN_LOOP || (frame != xv_loop_frame)) &&
 			(!(ndet_flags & NDET_STOP))) {
 		XEvent event;
 
@@ -195,7 +195,7 @@ Xv_public Xv_opaque xv_window_loop(Frame   frame)
 		/*
 		 * Set the in loop flag back to 1
 		 */
-		xv_in_loop = 1;
+		WIN_SET_IN_LOOP(1);
 
 		/*
 		 * Make the saved frame and its subwindows active windows during
@@ -225,7 +225,7 @@ Xv_public void xv_window_return(Xv_opaque ret)
     /*
      * Set exit loop flag
      */
-    xv_in_loop = 0;
+	WIN_SET_IN_LOOP(0);
 
     /*
      * Set xv_window_loop return value
