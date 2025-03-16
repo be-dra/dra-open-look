@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.3 2025/03/11 17:54:28 dra Exp $";
+char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.4 2025/03/15 14:16:06 dra Exp $";
 #endif
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -415,11 +415,7 @@ Pkg_private void tty_column_wchar_type(int xChar, int yChar,
 
 }
 
-Pkg_private int
-tty_get_nchars( colstart , colend , row )
-    int                 colstart;
-    register int        colend;
-    int                 row;
+Pkg_private int tty_get_nchars(int colstart, int colend, int row)
 {
     CHAR        *line = image[row];
     register    int     nchar = 0;
