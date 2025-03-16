@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.7 2025/01/04 21:19:38 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.8 2025/03/15 14:16:06 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -740,9 +740,7 @@ ttysw_convert_string( str , ttystr )
 /*
  *      Get the size of a character.
  */
-Pkg_private int
-tty_character_size(c)
-   CHAR         c;
+Pkg_private int tty_character_size(CHAR c)
 {
 
     /*
