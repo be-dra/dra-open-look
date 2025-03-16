@@ -719,6 +719,10 @@ retrieve: $(HEADERS)
 	$(RM) $@
 	$(CC) -E $(CFLAGS) $(_NOOP_) $*.c > $@
 
+.c.s:
+	$(RM) $@
+	$(CC) -S $(CFLAGS) $(_NOOP_) $*.c > $@
+
 emptyrule::
 
 clean::
