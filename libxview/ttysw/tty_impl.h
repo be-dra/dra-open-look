@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.19 2025/03/11 17:54:21 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.20 2025/03/15 14:16:06 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -471,9 +471,9 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 
 #ifdef OW_I18N
 Pkg_private int
-	tty_character_size(),
-	tty_get_nchars(),
-	ttysw_input_it_wcs();
+	tty_character_size(CHAR),
+	tty_get_nchars(int colstart, int colend, int row),
+	ttysw_input_it_wcs(Ttysw_private ttysw, CHAR *addr, register int len);
 #endif
 
 /* Pkg_private void ttyhiliteselection(struct ttyselection *ttysel, */
