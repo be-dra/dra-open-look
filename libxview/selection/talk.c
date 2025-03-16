@@ -1,13 +1,12 @@
 #include <string.h>
 #include <sys/param.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <time.h>
 #include <xview/talk.h>
 #include <xview/defaults.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.36 2025/03/09 17:52:38 dra Exp $";
-
-typedef void (*notify_proc_t)(Talk, char *, int, char **);
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.38 2025/03/15 21:25:49 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -29,7 +28,7 @@ typedef struct {
 	int             last_error;
 	int             silent;
 	int             notify_count;
-	notify_proc_t   notify_proc;
+	talk_notify_proc_t   notify_proc;
 	Talk_state_t    state;
 	pattern_t       not_yet_installed;
 	pattern_t       installed;
@@ -191,14 +190,17 @@ static void analyze_trigger_data(Talk_private *priv, char *val)
 	int pid;
 /* 	char *appname; */
 	char *parstr;
-	char *gsstrings[5];
+	char *gsstrings[10];
 	char *params[20];
+	char *host;
 
 	analyze_string(val, AGS, gsstrings, NUM(gsstrings));
+	/* compare REF (mbfdsvnbserf) */
 	message = gsstrings[0];
 	pid = atoi(gsstrings[1]);
 	/* appname = gsstrings[2]; unused at the moment */
-	parstr = gsstrings[3];
+	host = gsstrings[3];
+	parstr = gsstrings[4];
 
 	if (parstr) {
 		analyze_string(parstr, ARS, params, NUM(params));
@@ -208,7 +210,7 @@ static void analyze_trigger_data(Talk_private *priv, char *val)
 	}
 
 	if (priv->notify_proc) {
-		priv->notify_proc(TALKPUB(priv), message, pid, params);
+		priv->notify_proc(TALKPUB(priv), message, pid, params, host);
 	}
 }
 
@@ -407,17 +409,19 @@ static void add_pattern(Talk_private *priv, char *patt)
 }
 
 static void call_server(Talk t, int bufsize, const char *msg, char **params,
-							int *countptr)
+							int *countptr, char *host)
 {
 	Talk_private *priv = TALKPRIV(t);
-	char pidbuf[20], *p, sep[2];
+	char *p, sep[2];
 
 	/* this is a VLA (variable length array) */
 	char buf[bufsize]; /* similar to alloca */
 
-	strcpy(buf, msg);
-	sprintf(pidbuf, "%c%d%c%s", AGS, getpid(), AGS, xv_app_name);
-	strcat(buf, pidbuf);
+	/* compare REF (mbfdsvnbserf) */
+	sprintf(buf, "%s%c%d%c%s%c%s", msg,       /* gsstrings[0] */
+							AGS, getpid(),    /* gsstrings[1] */
+							AGS, xv_app_name, /* gsstrings[2] */
+							AGS, host);       /* gsstrings[3] */
 	sep[0] = AGS;
 	sep[1] = '\0';
 	if (params) {
@@ -463,8 +467,10 @@ static void trigger(Talk t, const char *msg, char **params, int *countptr)
 {
 	char *p;
 	size_t bufsize;
+	struct utsname u;
 
-	bufsize = strlen(msg) + 30;
+	uname(&u);
+	bufsize = strlen(msg) + strlen(u.nodename) + 3;
 	if (params) {
 		int i = 0;
 
@@ -473,7 +479,7 @@ static void trigger(Talk t, const char *msg, char **params, int *countptr)
 		}
 	}
 
-	call_server(t, (int)bufsize, msg, params, countptr);
+	call_server(t, (int)bufsize, msg, params, countptr, u.nodename);
 }
 
 static void new_pattern(Talk_private *priv, char *patt)
@@ -506,7 +512,7 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case TALK_NOTIFY_PROC:
-			priv->notify_proc = (notify_proc_t)A1;
+			priv->notify_proc = (talk_notify_proc_t)A1;
 			ADONE;
 
 		case TALK_PATTERN:
