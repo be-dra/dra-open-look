@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.6 2025/03/11 17:23:55 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.7 2025/03/15 14:42:19 dra Exp $ ";
 #endif
 #endif
 
@@ -38,7 +38,6 @@ extern Xv_opaque xv_default_server;
 extern Display *xv_default_display;
 
 #ifdef OW_I18N
-extern char     *getenv();
 extern char     *xv_app_name;
 static char 	**construct_font_set_list();
 static char	*get_attr_str_from_opened_names();
