@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.11 2025/02/16 20:25:22 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.12 2025/03/15 14:16:06 dra Exp $";
 #endif
 
 /*
@@ -1300,11 +1300,7 @@ Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 /*
  * Add the wide character string to the input queue.
  */
-Pkg_private int
-ttysw_input_it_wcs(ttysw, addr, len)
-    register Ttysw_private        ttysw;
-    CHAR                        *addr;
-    register int                len;
+Pkg_private int ttysw_input_it_wcs(Ttysw_private ttysw, CHAR *addr, register int len)
 {
     if (ttysw_getopt(ttysw, TTYOPT_TEXT)) {
         Textsw	textsw = TEXTSW_FROM_TTY(ttysw);
