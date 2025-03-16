@@ -1,15 +1,12 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cms_pblc.c 1.21 91/03/21 DRA: RCS $Id: cms_pblc.c,v 2.6 2025/03/08 13:26:33 dra Exp $";
+static char     sccsid[] = "@(#)cms_pblc.c 1.21 91/03/21 DRA: RCS $Id: cms_pblc.c,v 2.7 2025/03/15 12:50:29 dra Exp $";
 #endif
 #endif
 
 #include <xview/cms.h>
 #include <xview/notify.h>
 #include <xview/defaults.h>
-#ifdef OW_I18N
-#include <xview/xv_i18n.h>
-#endif /* OW_I18N */
 #include <xview_private/cms_impl.h>
 #include <xview_private/i18n_impl.h>
 #include <xview_private/portable.h>
