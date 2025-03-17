@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.2 2025/03/11 17:58:30 dra Exp $";
+static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.3 2025/03/16 13:43:22 dra Exp $";
 #endif
 #endif
 
@@ -269,7 +269,7 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 				v = (Xv_opaque) window_empty_event_proc;
 			break;
 
-		case WIN_FONT:
+		case XV_FONT:
 			v = (Xv_opaque) win->font;
 			break;
 
