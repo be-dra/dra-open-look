@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.1 2024/03/28 18:01:16 dra Exp $ ";
+static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.2 2025/03/16 13:33:03 dra Exp $ ";
 #endif
 #endif
 
@@ -78,7 +78,7 @@ Xv_private void icon_display(Icon icon_public, int x, int y)
 
 static void icon_draw_label(Xv_icon_info *icon, Xv_Window pixwin, Xv_Drawable_info *info, int x, int y, unsigned long wrk_space_pixel)
 {	
-    PIXFONT        *font = (PIXFONT *) xv_get(pixwin, WIN_FONT);
+    PIXFONT        *font = (PIXFONT *) xv_get(pixwin, XV_FONT);
     int            left, top, line_leading = xv_get((Xv_opaque)font, FONT_DEFAULT_CHAR_HEIGHT);
 #ifdef OW_I18N
     XFontSet       font_set;
