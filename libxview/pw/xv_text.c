@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_text.c 20.26 89/07/31 DRA: RCS $Id: xv_text.c,v 2.1 2020/07/26 07:31:25 dra Exp $";
+static char     sccsid[] = "@(#)xv_text.c 20.26 89/07/31 DRA: RCS $Id: xv_text.c,v 2.2 2025/03/16 13:42:45 dra Exp $";
 #endif
 #endif
 
@@ -62,7 +62,7 @@ xv_ttext(window, xbasew, ybasew, op, pixfont, str)
 
     /* SunView1.X incompatibility: NULL pixfont meant use system_font. */
     if (pixfont == 0) {
-	pixfont = xv_get(window, WIN_FONT);
+	pixfont = xv_get(window, XV_FONT);
     }
     /*
      * Since this is transparent text, we always paint it with the background
@@ -101,7 +101,7 @@ xv_text(window, xbasew, ybasew, op, pixfont, str)
 
     /* SunView1.X incompatibility: NULL pixfont meant use system_font. */
     if (pixfont == 0) {
-	pixfont = xv_get(window, WIN_FONT);
+	pixfont = xv_get(window, XV_FONT);
     }
     if (PIX_OP(op) == PIX_NOT(PIX_SRC)) {
 	xv_set_gc_op(display, info, gc, op, 
