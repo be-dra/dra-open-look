@@ -1,4 +1,4 @@
-/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.7 2025/03/08 13:08:26 dra Exp $	*/
+/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.8 2025/03/16 13:50:31 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -115,7 +115,6 @@
 #define	PANEL_INDEX_CLIENT_DATA		ATTR_TYPE(ATTR_BASE_UNUSED_FIRST + 4, 2)
 
 
-#define PANEL_FONT		WIN_FONT
 #define PANEL_TYPE		ATTR_PKG_PANEL
 
 /*
