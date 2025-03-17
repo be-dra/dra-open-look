@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.33 2025/03/13 16:05:04 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.35 2025/03/16 20:38:41 dra Exp $";
 #endif
 #endif
 
@@ -903,7 +903,8 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 											SERVER_DISPLAY_CONTEXT),
 									(caddr_t *) & srv)) {
 
-						goto Default;
+						*pwindow = XV_NULL;
+						return 1;
 					}
 					/* Update our notion of the modifiers. */
 					server_refresh_modifiers(srv, FALSE);
@@ -918,7 +919,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 
 #ifdef OW_I18N
 				if (XFilterEvent(xevent, NULL) == True) {
-					*pwindow = NULL;
+					*pwindow = XV_NULL;
 					return (NULL);
 				}
 #endif
@@ -934,7 +935,8 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					}
 
 					if (! srv) {
-						goto Default;
+						*pwindow = XV_NULL;
+						return 1;
 					}
 
 					extensionProc = (void (*)(Display *,XEvent *, Xv_window))xv_get(srv,
@@ -944,7 +946,8 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						(*extensionProc)(display, xevent, window);
 					}
 				}
-				goto Default;
+				*pwindow = XV_NULL;
+				return 1;
 			}
 		}
 		win = WIN_PRIVATE(window);
@@ -1015,7 +1018,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 			}
 		}
 		if (XFilterEvent(xevent, NULL) == True) {
-			*pwindow = NULL;
+			*pwindow = XV_NULL;
 			return (NULL);
 		}
 	  ContProcess:
@@ -1039,13 +1042,15 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 			if ((event_type == ButtonPress) && (buttonEvent->button == Button1)) {
 				window_x_allow_events(display, buttonEvent->time);
 			}
-			goto Default;
+			*pwindow = XV_NULL;
+			return 1;
 		}
 
 	}
 	else {
 		fprintf(stderr, "UNEXPECTED event with type %d\n", event_type);
-		goto Default;
+		*pwindow = XV_NULL;
+		return 1;
 	}
 
 
@@ -1163,8 +1168,10 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 												1) ? XLookupBoth :
 										XLookupKeySym);
 							}
-							if (ret_status == XLookupNone)
-								goto Default;
+							if (ret_status == XLookupNone) {
+								*pwindow = XV_NULL;
+								return 1;
+							}
 #else /* OW_I18N */
 							buf_length =
 									XLookupString(ek, buffer, BUFFERSIZE, &ksym,
@@ -1202,7 +1209,8 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 							(((XKeyEvent *) xevent)->keycode) &&
 #endif
 							(ksym != help_keysym)) && !defeat_event_security) {
-					goto Default;
+					*pwindow = XV_NULL;
+					return 1;
 				}
 
 				/*
@@ -1484,7 +1492,8 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					win_handle_quick_selection(info, event);
 
 				if (win_check_lang_mode(srv, display, event)) {
-					goto Default;
+					*pwindow = XV_NULL;
+					return 1;
 				}
 				break;
 			}
@@ -1501,8 +1510,10 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				 * event came from SendEvent request ), we should ignore it for
 				 * security reasons.
 				 */
-				if (xevent->xany.send_event && !defeat_event_security)
-					goto Default;
+				if (xevent->xany.send_event && !defeat_event_security) {
+					*pwindow = XV_NULL;
+					return 1;
+				}
 
 				server_set_timestamp(srv, &event->ie_time, e->time);
 				temp = e->state;
@@ -1602,7 +1613,8 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						break;
 
 					default:
-						goto Default;
+						*pwindow = XV_NULL;
+						return 1;
 				}
 				SET_SHIFTS(event, temp, meta_modmask, alt_modmask);
 				event_set_id(event, button);
@@ -1965,21 +1977,22 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 			 * display, extension event, and a window object that is possibly
 			 * NULL.
 			 */
-		default:{
+		default:
+			{
+				typedef void (*extproc_t)(Display *,XEvent *, Xv_window);
 				/*
 				 * I would like to cache the extensionProc, but then we run into
-				 * the problem where the extensionProc is sporatically changed by
-				 * the programmer.
+				 * the problem where the extensionProc is sporatically changed
+				 * by the programmer.
 				 */
-				void (*extensionProc) (Display *,XEvent *, Xv_window)
-						= (void (*)(Display *,XEvent *, Xv_window))xv_get(srv, SERVER_EXTENSION_PROC);
+				extproc_t extensionProc = (extproc_t)xv_get(srv,
+												SERVER_EXTENSION_PROC);
 
 				if (extensionProc)
-					(*extensionProc) (display, xevent, window);
+					(*extensionProc)(display, xevent, window);
 			}
-		  Default:
-			*pwindow = 0;
-			return (1);
+			*pwindow = XV_NULL;
+			return 1;
 	}
 
 	*pwindow = window;
@@ -1987,7 +2000,6 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 }
 
 /* read the input and post to the proper window */
-/* ARGSUSED */
 Xv_private Notify_value xv_input_pending(Display *dpy, int unused_fd)
 {
 	Event event;
@@ -3251,10 +3263,9 @@ static void tvdiff(struct timeval *t1, struct timeval *t2, struct timeval *diff)
 Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 {
 	static short lang_mode = 0;
-	Atom enter_lang_atom, exit_lang_atom;
-	Atom translate_key_atom;
-	XClientMessageEvent xclientm_event;
 	static Window sft_key_win;
+	Atom enter_lang_atom, exit_lang_atom, translate_key_atom;
+	XClientMessageEvent xcl;
 	XKeyEvent *keyevent;
 
 	if (!event) {
@@ -3291,11 +3302,11 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 
 
 			/* Construct an Event */
-			xclientm_event.type = ClientMessage;
-			xclientm_event.window = sft_key_win;
-			xclientm_event.message_type = enter_lang_atom;
-			xclientm_event.format = 32;
-			XSendEvent(display, sft_key_win,False,0L,(XEvent *)&xclientm_event);
+			xcl.type = ClientMessage;
+			xcl.window = sft_key_win;
+			xcl.message_type = enter_lang_atom;
+			xcl.format = 32;
+			XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xcl);
 			return (1);
 
 		}
@@ -3313,12 +3324,11 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 			 * &keycontrol_values); XFlush(display);
 			 */
 
-			xclientm_event.type = ClientMessage;
-			xclientm_event.window = sft_key_win;
-			xclientm_event.message_type = exit_lang_atom;
-			xclientm_event.format = 32;
-			XSendEvent(display, sft_key_win, False, 0L,
-					(XEvent *) & xclientm_event);
+			xcl.type = ClientMessage;
+			xcl.window = sft_key_win;
+			xcl.message_type = exit_lang_atom;
+			xcl.format = 32;
+			XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xcl);
 			return (1);
 		}
 	}
@@ -3333,34 +3343,32 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 
 		/* Construct an Event */
 
-		xclientm_event.type = ClientMessage;
-		xclientm_event.window = sft_key_win;
-		xclientm_event.message_type = translate_key_atom;
+		xcl.type = ClientMessage;
+		xcl.window = sft_key_win;
+		xcl.message_type = translate_key_atom;
 
 		/* format 16 WILL NOT WORK when the application is running on a machine
 		 * with different byte order than the machine running vkbd !!!!
 		 */
-		xclientm_event.format = 32;
+		xcl.format = 32;
 
-		xclientm_event.data.l[0] = keyevent->keycode;
-		xclientm_event.data.l[1] = keyevent->type;
-		xclientm_event.data.l[2] = keyevent->state;
+		xcl.data.l[0] = keyevent->keycode;
+		xcl.data.l[1] = keyevent->type;
+		xcl.data.l[2] = keyevent->state;
 
-		xclientm_event.data.l[3] = 0xaffe123; /* pattern to recognize */
+		xcl.data.l[3] = 0xaffe123; /* pattern to recognize */
 
-		/* so that the vkey does not have to call XGetInputFocus */
-		xclientm_event.data.l[4] = keyevent->window;
+		/* so that the vkbd does not have to call XGetInputFocus */
+		xcl.data.l[4] = keyevent->window;
 
 		if (keyevent->type == KeyPress) {
 			SERVERTRACE((100, "c %d, s %x\n", keyevent->keycode, keyevent->state));
 		}
 
-		XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xclientm_event);
+		XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xcl);
 		return (1);
-
 	}
 	return (0);
-
 }
 
 /*
