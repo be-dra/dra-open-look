@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_set.c 20.96 93/06/28 DRA: $Id: om_set.c,v 4.3 2024/11/14 15:28:27 dra Exp $";
+static char     sccsid[] = "@(#)om_set.c 20.96 93/06/28 DRA: $Id: om_set.c,v 4.4 2025/03/17 19:45:32 dra Exp $";
 #endif
 #endif
 
@@ -578,7 +578,7 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 													MENU_STRINGS) ?
 											MENU_STRING_ITEM :
 											MENU_STRING_ITEM_WCS, *a++,
-											m->nitems + 1, 0));
+											m->nitems + 1, NULL));
 						}
 						m->nitems++;
 					}
@@ -601,7 +601,7 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 													MENU_STRINGS_AND_ACCELERATORS)
 											? MENU_STRING_AND_ACCELERATOR :
 											MENU_STRING_AND_ACCELERATOR_WCS,
-											*a++, *a++, 0));
+											*a++, *a++, NULL));
 						}
 						m->nitems++;
 					}
