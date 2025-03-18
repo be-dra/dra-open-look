@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.3 2024/08/24 16:21:52 dra Exp $";
+static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.6 2025/03/16 14:40:34 dra Exp $";
 #endif
 #endif
 
@@ -49,7 +49,7 @@ static Defaults_pairs setinput_pairs[] = {
     { NULL,		FALSE }
 };
 
-static void window_set_softkey_labels(Xv_Drawable_info *info, char *string);
+#define ADONE ATTR_CONSUME(*attrs);break
 
 Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avlist[])
 {
@@ -84,12 +84,12 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 
 				case WIN_RECT_INFO:
 					win->rect_info = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_MOUSE_XY:
 					win_setmouseposition(win_public, (short)attrs[1],
 							(short)attrs[2]);
-					break;
+					ADONE;
 
 				case WIN_CURSOR:
 					if (win->cursor) {
@@ -121,9 +121,9 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 #endif /* FULL_R5 */
 #endif /* OW_I18N */
 
-					break;
+					ADONE;
 
-				case WIN_RECT:
+				case XV_RECT:
 					new_rect = *(Rect *) (attrs[1]);
 					win->rect_info |= WIN_X_SET | WIN_Y_SET;
 					if (new_rect.r_width != WIN_EXTEND_TO_EDGE) {
@@ -138,7 +138,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					else {
 						win->desired_height = WIN_EXTEND_TO_EDGE;
 					}
-					break;
+					ADONE;
 
 				case XV_SHOW:
 				case WIN_MAP:
@@ -199,11 +199,11 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						}
 					}
 					win_map(win, (int)attrs[1]);
-					break;
+					ADONE;
 
 				case WIN_KBD_FOCUS:
 					win->has_kbd = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_CMS:{
 						Cms cms;
@@ -212,7 +212,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						if (xv_cms(info) != cms)
 							window_set_cms(win_public, cms, 0,
 									(int)(xv_get(cms, CMS_SIZE, 0) - 1));
-						break;
+						ADONE;
 					}
 
 				case WIN_ADD_DROP_INTEREST:
@@ -224,7 +224,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					win_add_drop_interest(win, (Xv_opaque) attrs[1]);
 					if (win->map)
 						win_update_dnd_property(win);
-					break;
+					ADONE;
 
 				case XV_HEIGHT:
 					if ((int)(attrs[1]) != WIN_EXTEND_TO_EDGE) {
@@ -234,7 +234,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					else {
 						win->desired_height = (int)attrs[1];
 					}
-					break;
+					ADONE;
 
 				case XV_WIDTH:
 					if ((int)(attrs[1]) != WIN_EXTEND_TO_EDGE) {
@@ -244,17 +244,17 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					else {
 						win->desired_width = (int)attrs[1];
 					}
-					break;
+					ADONE;
 
 				case XV_X:
 					new_rect.r_left = (int)(attrs[1]);
 					win->rect_info |= WIN_X_SET;
-					break;
+					ADONE;
 
 				case XV_Y:
 					new_rect.r_top = (int)(attrs[1]);
 					win->rect_info |= WIN_Y_SET;
-					break;
+					ADONE;
 
 				case WIN_FOREGROUND_COLOR:{
 						int cms_fg;
@@ -263,7 +263,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						if (xv_cms_fg(info) != cms_fg)
 							window_set_cms(win_public, xv_cms(info),
 									xv_cms_bg(info), cms_fg);
-						break;
+						ADONE;
 					}
 
 				case WIN_BACKGROUND_COLOR:{
@@ -273,7 +273,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						if (xv_cms_bg(info) != cms_bg)
 							window_set_cms(win_public, xv_cms(info), cms_bg,
 									xv_cms_fg(info));
-						break;
+						ADONE;
 					}
 
 				case XV_END_CREATE:
@@ -322,22 +322,23 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 				case WIN_X_PAINT_WINDOW:
 					/* window being used to support direct X graphics */
 					win->x_paint_window = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_BIT_GRAVITY:
 					win_attrs_mask |= CWBitGravity;
 					win_attrs.bit_gravity = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_DESIRED_WIDTH:
 					win->desired_width = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_DESIRED_HEIGHT:
 					win->desired_height = (int)attrs[1];
-					break;
+					ADONE;
 
-				case WIN_BELOW:{
+				case WIN_BELOW:
+					{
 						int vp;
 
 						if ((Xv_Window) (attrs[1]) == win_public) {
@@ -349,29 +350,29 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						new_rect.r_top = vp;
 						win->rect_info |= WIN_Y_SET;
 					}
-					break;
+					ADONE;
 
 				case WIN_CLIENT_DATA:
 					win->client_data = (Xv_opaque) attrs[1];
-					break;
+					ADONE;
 
 				case WIN_COLUMNS:
 					win_cols = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_EVENT_PROC:
 					win->event_proc = (void (*)(Xv_window, Event *, Notify_arg))attrs[1];
-					break;
+					ADONE;
 
 				case WIN_FRONT:
 					/* Bring window to top of the heap */
 					win_setlink(win_public, WL_COVERED, 0L);
 
-					break;
+					ADONE;
 
 				case WIN_LAYOUT_PROC:
 					win->layout_proc = (window_layout_proc_t) attrs[1];
-					break;
+					ADONE;
 
 				case WIN_NOTIFY_SAFE_EVENT_PROC:
 					/*
@@ -381,28 +382,28 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					notify_interpose_event_func(win_public,
 							(Notify_event_interposer_func)attrs[1],NOTIFY_SAFE);
 					win->notify_safe_event_proc = (void (*)(Xv_window, Event *))attrs[1];
-					break;
+					ADONE;
 
 				case WIN_NOTIFY_IMMEDIATE_EVENT_PROC:
 					(void)notify_interpose_event_func(win_public,
 							(Notify_event_interposer_func)attrs[1], NOTIFY_IMMEDIATE);
 					win->notify_immediate_event_proc = (void (*)(Xv_window, Event *))attrs[1];
-					break;
+					ADONE;
 
 				case WIN_ROWS:
 					win_rows = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_RETAINED:
 					win_attrs_mask |= CWBackingStore;
 					win_attrs.backing_store =
 							((int)attrs[1] == TRUE) ? Always : NotUseful;
-					break;
+					ADONE;
 
 				case WIN_INPUT_MASK:
 					window_set_event_mask(win_public, (Inputmask *) attrs[1],
 							&win_attrs, &win_attrs_mask);
-					break;
+					ADONE;
 
 
 				case WIN_CONSUME_EVENT:
@@ -418,7 +419,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						}
 						window_set_event_mask(win_public, &im, &win_attrs,
 								&win_attrs_mask);
-						break;
+						ADONE;
 					}
 
 				case WIN_CONSUME_X_EVENT_MASK:
@@ -427,7 +428,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						win_attrs_mask |= CWEventMask;
 						win_attrs.event_mask = win->xmask;;
 					}
-					break;
+					ADONE;
 
 				case WIN_CONSUME_EVENTS:
 				case WIN_IGNORE_EVENTS:{
@@ -444,13 +445,13 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						}
 						window_set_event_mask(win_public, &im, &win_attrs,
 								&win_attrs_mask);
-						break;
+						ADONE;
 					}
 
-				case WIN_OWNER:
+				case XV_OWNER:
 					/* BUG: should we tell the old or new owner? */
 					win->owner = WIN_PRIVATE((Xv_Window) attrs[1]);
-					break;
+					ADONE;
 
 				case WIN_PARENT:{
 						Rect rect;
@@ -461,7 +462,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 								XV_NULL);
 						win_set_parent(win_public, attrs[1], rect.r_left,
 								rect.r_top);
-						break;
+						ADONE;
 					}
 
 				case XV_FONT:
@@ -494,43 +495,46 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 #endif /* FULL_R5 */
 #endif /* OW_I18N */
 					}
+					/* if we change this to "ADONE", cmdtool font is not
+					 * what we want...
+					 */
 					break;
 
 				case WIN_GLYPH_FONT:
 					win->glyph_font = (Xv_Font) attrs[1];
-					break;
+					ADONE;
 
 				case XV_TOP_MARGIN:
 					win->top_margin = (int)attrs[1];
-					break;
+					ADONE;
 
 				case XV_BOTTOM_MARGIN:
 					win->bottom_margin = (int)attrs[1];
-					break;
+					ADONE;
 
 				case XV_LEFT_MARGIN:
 					win->left_margin = (int)attrs[1];
-					break;
+					ADONE;
 
 				case XV_RIGHT_MARGIN:
 					win->right_margin = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_ROW_HEIGHT:
 					win->row_height = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_COLUMN_WIDTH:
 					win->column_width = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_ROW_GAP:
 					win->row_gap = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_COLUMN_GAP:
 					win->column_gap = (int)attrs[1];
-					break;
+					ADONE;
 
 				case WIN_CMS_CHANGE:
 					/*
@@ -539,7 +543,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					 * subclassed from the window object about changes in their
 					 * colormap segment.
 					 */
-					break;
+					ADONE;
 
 #ifdef OW_I18N
 				case WIN_IC_CONVERSION:
@@ -560,7 +564,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 										XIMDisable, NULL);
 						}
 					}
-					break;
+					ADONE;
 
 				case WIN_IC_ACTIVE:
 					/*
@@ -599,24 +603,24 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 							}
 						}
 					}
-					break;
+					ADONE;
 #endif
 
 				case WIN_ADD_DROP_ITEM:
 					win_add_drop_item(win, (Xv_opaque) attrs[1]);
-					break;
+					ADONE;
 
 				case WIN_DELETE_DROP_ITEM:
-					(void)win_delete_drop_item(win, (Xv_opaque) attrs[1],
+					win_delete_drop_item(win, (Xv_opaque) attrs[1],
 							Win_Drop_Site);
-					break;
+					ADONE;
 
 				case WIN_DELETE_DROP_INTEREST:
 					win_delete_drop_item(win, (Xv_opaque) attrs[1],
 							Win_Drop_Interest);
 					if (win->map)
 						win_update_dnd_property(win);
-					break;
+					ADONE;
 
 				default:
 					error = window_set_avlist_tier2(win_public, attrs, error,
@@ -686,13 +690,13 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 				}
 				error = (Xv_opaque) XV_ERROR;
 			}
-			break;
+			ADONE;
 #endif /* OW_I18N */
 
 		case WIN_SAVE_UNDER:
 			*win_attrs_mask |= CWSaveUnder;
 			win_attrs->save_under = ((int)attrs[1] == TRUE) ? True : False;
-			break;
+			ADONE;
 
 		case WIN_TOP_LEVEL_NO_DECOR:
 			if (!win->top_level &&
@@ -707,9 +711,10 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 			*win_attrs_mask |= CWOverrideRedirect;
 			win_attrs->override_redirect =
 					((int)attrs[1] == TRUE) ? True : False;
-			break;
+			ADONE;
 
-		case WIN_FIT_HEIGHT:{
+		case WIN_FIT_HEIGHT:
+			{
 				int y;
 
 				y = (int)xv_get(win_public, WIN_FIT_HEIGHT, attrs[1]);
@@ -721,10 +726,11 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 				attrs[1] = (Window_attribute) y;
 				new_rect->r_height = y;
 				win->rect_info |= WIN_HEIGHT_SET;
-				break;
 			}
+			ADONE;
 
-		case WIN_FIT_WIDTH:{
+		case WIN_FIT_WIDTH:
+			{
 				int x;
 
 				x = (int)xv_get(win_public, WIN_FIT_WIDTH, attrs[1]);
@@ -736,8 +742,8 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 				attrs[1] = (Window_attribute) x;
 				new_rect->r_width = x;
 				win->rect_info |= WIN_WIDTH_SET;
-				break;
 			}
+			ADONE;
 
 		case WIN_CMD_LINE:
 			if (win->cmdline && ((int)((long)win->cmdline) != -1)) {
@@ -751,9 +757,10 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 				win->cmdline = (char *)attrs[1];
 			}
 
-			break;
+			ADONE;
 
-		case WIN_COLOR_INFO:{
+		case WIN_COLOR_INFO:
+			{
 				Xv_Color_info *color_info;
 				Xv_Drawable_info *info;
 
@@ -765,21 +772,21 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 					window_set_cms(win_public, color_info->cms,
 							color_info->cms_bg, color_info->cms_fg);
 				}
-				break;
 			}
+			ADONE;
 
 		case WIN_CMS_DATA:
 			window_set_cms_data(win_public, (Xv_cmsdata *) attrs[1]);
-			break;
+			ADONE;
 
 		case WIN_INHERIT_COLORS:
 			win->inherit_colors = (Bool) attrs[1];
-			break;
+			ADONE;
 
 		case WIN_NO_CLIPPING:
 			/* dont set the GC clip rects on repaints */
 			win->no_clipping = (int)attrs[1];
-			break;
+			ADONE;
 
 		case WIN_MENU:
 			if (win->menu)
@@ -789,15 +796,16 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 
 			if (win->menu)
 				(void)xv_set(win->menu, XV_INCREMENT_REF_COUNT, NULL);
-			break;
+			ADONE;
 
 		case WIN_REMOVE_CARET:
 			/* Ignore: handled by the package with the caret
 			 * (e.g., panel, textsw)
 			 */
-			break;
+			ADONE;
 
-		case WIN_SET_FOCUS:{
+		case WIN_SET_FOCUS:
+			{
 				register Xv_Drawable_info *info;
 
 				DRAWABLE_INFO_MACRO(win_public, info);
@@ -805,8 +813,8 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 					win_set_kbd_focus(win_public, xv_xid(info));
 				else
 					error = (Xv_opaque) XV_ERROR;
-				break;
 			}
+			ADONE;
 
 #ifdef OW_I18N
 		case WIN_IC_PREEDIT_START:
@@ -819,7 +827,7 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 						XNPreeditStartCallback, &win->start_pecb_struct, NULL);
 				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
 			}
-			break;
+			ADONE;
 
 		case WIN_IC_PREEDIT_DRAW:
 			win->draw_pecb_struct.callback = (XIMProc) attrs[1];
@@ -831,7 +839,7 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 						XNPreeditDrawCallback, &win->draw_pecb_struct, NULL);
 				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
 			}
-			break;
+			ADONE;
 
 		case WIN_IC_PREEDIT_CARET:
 			win->caret_pecb_struct.callback = (XIMProc) attrs[1];
@@ -843,7 +851,7 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 						XNPreeditCaretCallback, &win->caret_pecb_struct, NULL);
 				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
 			}
-			break;
+			ADONE;
 
 		case WIN_IC_PREEDIT_DONE:
 			win->done_pecb_struct.callback = (XIMProc) attrs[1];
@@ -855,7 +863,7 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 						XNPreeditDoneCallback, &win->done_pecb_struct, NULL);
 				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
 			}
-			break;
+			ADONE;
 
 		case WIN_IC_STATUS_START:
 			win->start_stcb_struct.callback = (XIMProc) attrs[1];
@@ -867,7 +875,7 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 						XNStatusStartCallback, &win->start_stcb_struct, NULL);
 				XSetICValues(win->xic, XNStatusAttributes, status_list, NULL);
 			}
-			break;
+			ADONE;
 
 		case WIN_IC_STATUS_DRAW:
 			win->draw_stcb_struct.callback = (XIMProc) attrs[1];
@@ -879,7 +887,7 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 						XNStatusDrawCallback, &win->draw_stcb_struct, NULL);
 				XSetICValues(win->xic, XNStatusAttributes, status_list, NULL);
 			}
-			break;
+			ADONE;
 
 		case WIN_IC_STATUS_DONE:
 			win->done_stcb_struct.callback = (XIMProc) attrs[1];
@@ -891,7 +899,7 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 						XNStatusDoneCallback, &win->done_stcb_struct, NULL);
 				XSetICValues(win->xic, XNStatusAttributes, status_list, NULL);
 			}
-			break;
+			ADONE;
 
 		case WIN_IC:
 			/* if this window was created with WIN_USE_IM false
@@ -899,31 +907,31 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 			 */
 			if (win->win_use_im)
 				win->xic = (XIC) attrs[1];
-			break;
+			ADONE;
 #endif /* OW_I18N */
 
 		case WIN_COLLAPSE_EXPOSURES:
 			win->collapse_exposures = (int)attrs[1];
-			break;
+			ADONE;
 
 		case WIN_COLLAPSE_MOTION_EVENTS:
 			win->collapse_motion_events = (int)attrs[1];
-			break;
+			ADONE;
 
 		case WIN_VERTICAL_SCROLLBAR:
-			break;
+			ADONE;
 
 		case WIN_IS_IN_FULLSCREEN_MODE:
 			win->in_fullscreen_mode = (int)(attrs[1]);
-			break;
+			ADONE;
 
 		case WIN_UNGRAB_SELECT:
 			window_ungrab_selectbutton(win_public);
-			break;
+			ADONE;
 
 		case WIN_CMS_NAME:
 			window_set_cms_name(win_public, (char *)attrs[1]);
-			break;
+			ADONE;
 
 		default:
 			error = window_set_avlist_tier3(win_public, attrs, error, new_rect,
@@ -944,14 +952,14 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 		case WIN_WINDOW_GRAVITY:
 			*win_attrs_mask |= CWWinGravity;
 			win_attrs->win_gravity = (int)attrs[1];
-			break;
+			ADONE;
 
 		case WIN_GRAB_ALL_INPUT:
 			if (attrs[1])
 				(void)win_grabio(win_public);
 			else
 				(void)win_releaseio(win_public);
-			break;
+			ADONE;
 
 		case WIN_IGNORE_X_EVENT_MASK:
 			if (win->xmask & (unsigned int)attrs[1]) {
@@ -961,7 +969,7 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 				*win_attrs_mask |= CWEventMask;
 				win_attrs->event_mask = win->xmask;;
 			}
-			break;
+			ADONE;
 
 		case WIN_X_EVENT_MASK:
 			window_grab_selectbutton(win_public, (unsigned long)win->xmask,
@@ -969,7 +977,7 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 			win->xmask = (unsigned int)attrs[1];
 			*win_attrs_mask |= CWEventMask;
 			win_attrs->event_mask = win->xmask;;
-			break;
+			ADONE;
 
 		case WIN_OUTER_RECT:	/* outer border */
 			*new_rect = *(Rect *) (attrs[1]);
@@ -977,16 +985,17 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 				rect_borderadjust(new_rect, WIN_DEFAULT_BORDER_WIDTH);
 			win->rect_info |=
 					WIN_X_SET | WIN_Y_SET | WIN_HEIGHT_SET | WIN_WIDTH_SET;
-			break;
+			ADONE;
 
-		case WIN_BACK:{
+		case WIN_BACK:
+			{
 				/* Put the window in the back of all siblings */
 				register Xv_Drawable_info *info;
 
 				DRAWABLE_INFO_MACRO(win_public, info);
 				XLowerWindow(xv_display(info), xv_xid(info));
-				break;
 			}
+			ADONE;
 
 		case WIN_BACKGROUND_PIXMAP:
 			if (attrs[1]) {
@@ -994,15 +1003,17 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 				*win_attrs_mask |= CWBackPixmap;
 				win_attrs->background_pixmap = (Pixmap) attrs[1];
 			}
-			break;
+			ADONE;
 
-		case WIN_BORDER:{
+		case WIN_BORDER:
+			{
 				/* this affects the outer rect */
 				int width = xv_get(win_public, XV_WIDTH);
 				int height = xv_get(win_public, XV_HEIGHT);
 
-				if (win->has_border == (int)attrs[1])
-					break;
+				if (win->has_border == (int)attrs[1]) {
+					ADONE;
+				}
 
 				win->has_border = (int)attrs[1];
 				if (win->has_border) {
@@ -1024,13 +1035,13 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 							height + 2 * WIN_DEFAULT_BORDER_WIDTH;
 					new_rect->r_height = height;
 				}
-				break;
 			}
+			ADONE;
 
 		case WIN_LOCKDATA:
 			/* lock the window tree for modification (grab server) */
 			win_lockdata(win_public);
-			break;
+			ADONE;
 
 		case WIN_ALARM:{
 				/* sound the window alarm/bell */
@@ -1039,19 +1050,30 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 				XV_BCOPY((struct timeval *)xv_get(win_public, WIN_ALARM_DATA),
 						&tv, sizeof(struct timeval));
 				(void)win_bell(win_public, tv, win_public);
-				break;
 			}
+			ADONE;
 
-		case WIN_SOFT_FNKEY_LABELS:{
+		case WIN_SOFT_FNKEY_LABELS:
+			{
 				register Xv_Drawable_info *info;
+				XTextProperty text_prop;
+				char *string = (char *)attrs[1];
 
 				DRAWABLE_INFO_MACRO(win_public, info);
 				win->softkey_flag = TRUE;
-				window_set_softkey_labels(info, (char *)attrs[1]);
-				break;
-			}
 
-		case WIN_RIGHT_OF:{
+				text_prop.value = (unsigned char *)string;
+				text_prop.encoding = XA_STRING;
+				text_prop.format = 8;
+				text_prop.nitems = strlen(string);
+
+				XSetTextProperty(xv_display(info), xv_xid(info), &text_prop,
+					xv_get(xv_server(info), SERVER_ATOM, "_OL_LABEL_HOLDER"));
+			}
+			ADONE;
+
+		case WIN_RIGHT_OF:
+			{
 				int vp;
 
 				if ((Xv_Window) (attrs[1]) == win_public)
@@ -1061,16 +1083,17 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 						(Xv_opaque) (attrs[1]), (Xv_opaque) & vp);
 				new_rect->r_left = vp;
 				win->rect_info |= WIN_X_SET;
-				break;
 			}
+			ADONE;
 
 		case WIN_HORIZONTAL_SCROLLBAR:
-			break;
+			ADONE;
 
 		case WIN_PERCENT_HEIGHT:
 			/* can't do % height of no owner */
-			if (!win->owner)
-				break;
+			if (!win->owner) {
+				ADONE;
+			}
 			attrs[1] = (Window_attribute)
 					((((int)xv_get(WIN_PUBLIC(win->owner), WIN_HEIGHT) -
 									win->owner->top_margin -
@@ -1078,12 +1101,13 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 							100) - win->owner->row_gap);
 			new_rect->r_height = (int)attrs[1];
 			win->rect_info |= WIN_HEIGHT_SET;
-			break;
+			ADONE;
 
 		case WIN_PERCENT_WIDTH:
 			/* can't do % width of no owner */
-			if (!win->owner)
-				break;
+			if (!win->owner) {
+				ADONE;
+			}
 
 			attrs[1] = (Window_attribute)
 					((((int)xv_get(WIN_PUBLIC(win->owner), WIN_WIDTH) -
@@ -1092,7 +1116,7 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 							100) - win->owner->column_gap);
 			new_rect->r_width = (int)attrs[1];
 			win->rect_info |= WIN_WIDTH_SET;
-			break;
+			ADONE;
 
 		default:
 			if (attrs[0])
@@ -1315,7 +1339,7 @@ Xv_private void window_get_grab_flag(void)
 
 		/* only try grab if in click-to-type mode */
 		if (!follow_mouse) {
-			/* Originally, the default value was True - and I seem to 
+			/* Originally, the default value was True - and I seem to
 			 * remember "locked up X servers".
 			 * For a while I had "window.passiveGrab.select: False"
 			 * in my .Xdefault file.
@@ -1409,28 +1433,4 @@ Xv_private void window_x_allow_events(Display *display, Time t)
     if (!do_passive_grab) return;
 
     XAllowEvents(display, AsyncBoth, t);
-}
-
-static void window_set_softkey_labels(Xv_Drawable_info *info, char *string)
-{
-
-	XTextProperty	*text_prop;
-        Xv_server       server;
-	Atom		label_prop;
-
-
-	text_prop = (XTextProperty *) xv_malloc(sizeof(XTextProperty));
-        server    = (Xv_server) xv_server(info);
-	label_prop = xv_get(server,SERVER_ATOM,"_OL_LABEL_HOLDER");
-
-	text_prop->value     = (unsigned char *) string;
-	text_prop->encoding  = XA_STRING;
-	text_prop->format    = 8;
-	text_prop->nitems    = strlen(string);
-
-	XSetTextProperty(xv_display(info),xv_xid(info), text_prop,label_prop);
-	XFree((char *)text_prop);
-
-	return;
-
 }
