@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.3 2025/03/16 13:43:22 dra Exp $";
+static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.4 2025/03/17 19:33:56 dra Exp $";
 #endif
 #endif
 
@@ -600,16 +600,18 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 					if (style) {
 						/*  Make a list of the styles we currently support */
 						supported_styles[0] =
-								(XIMPreeditCallbacks | XIMStatusCallbacks |
-/* 								XIMLookupCallbacks | */
-								XIMAuxCallbacks);
+								(XIMPreeditCallbacks | XIMStatusCallbacks
+/* 								| XIMLookupCallbacks */
+/* 								| XIMAuxCallbacks */
+								);
 						supported_styles[1] =
 								(XIMPreeditCallbacks | XIMStatusCallbacks
 /* 								| XIMLookupCallbacks */
 								);
 						supported_styles[2] =
-								(XIMPreeditCallbacks | XIMStatusCallbacks |
-								XIMAuxCallbacks);
+								(XIMPreeditCallbacks | XIMStatusCallbacks
+/* 								| XIMAuxCallbacks */
+								);
 						supported_styles[3] =
 								(XIMPreeditCallbacks | XIMStatusCallbacks);
 						supported_styles[4] =
