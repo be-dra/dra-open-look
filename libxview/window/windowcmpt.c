@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowcmpt.c 20.23 93/06/28 DRA: $Id: windowcmpt.c,v 4.3 2025/03/08 12:58:04 dra Exp $";
+static char     sccsid[] = "@(#)windowcmpt.c 20.23 93/06/28 DRA: $Id: windowcmpt.c,v 4.4 2025/03/16 13:43:14 dra Exp $";
 #endif
 #endif
 
@@ -89,7 +89,7 @@ Xv_private void window_scan_and_convert_to_pixels(Xv_Window win_public, Attr_avl
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
-			case WIN_FONT:
+			case XV_FONT:
 				if (attrs[1]) {
 					(void)xv_set(win->font, XV_DECREMENT_REF_COUNT, NULL);
 					win->font = (Xv_font) attrs[1];
