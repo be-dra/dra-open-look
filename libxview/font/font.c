@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.7 2025/03/15 14:42:19 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.8 2025/03/17 19:37:05 dra Exp $ ";
 #endif
 #endif
 
@@ -388,7 +388,7 @@ static char *normalize_font_name(char *name, Font_locale_info *linfo)
 		 *  package
 		 */
 
-		defaults_set_locale(NULL, NULL);
+		defaults_set_locale(NULL, (Xv_generic_attr)0);
 #endif /* OW_I18N */
 
 		if (name == NULL || (strlen(name) == 0)) {
