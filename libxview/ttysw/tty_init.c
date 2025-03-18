@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.10 2025/01/16 19:53:43 dra Exp $";
+char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.11 2025/03/16 13:39:42 dra Exp $";
 #endif
 
 /*
@@ -306,7 +306,7 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 		Xv_opaque parent_font;
 		int scale, size;
 
-		parent_font = (Xv_opaque) xv_get(tty_public, WIN_FONT);
+		parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
 		scale = (int)xv_get(parent_font, FONT_SCALE);
 		if (scale > 0)
 			font = (Xv_opaque) xv_find(tty_public, FONT,
@@ -321,7 +321,7 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 	}
 
 	if (font == NULL)
-		font = (Xv_opaque) xv_get(tty_public, WIN_FONT);
+		font = (Xv_opaque) xv_get(tty_public, XV_FONT);
 #else
 	font_name = xv_font_monospace();
 	if (font_name)
@@ -334,7 +334,7 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 		int scale, size;
 
 		if (!font) {
-			parent_font = (Xv_opaque) xv_get(tty_public, WIN_FONT);
+			parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
 			scale = (int)xv_get(parent_font, FONT_SCALE);
 			if (scale > 0) {
 				font = (Xv_opaque) xv_find(tty_public, FONT,
@@ -354,7 +354,7 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 	}
 	else {
 		if (!font) {
-			Xv_opaque parent_font = (Xv_opaque) xv_get(tty_public, WIN_FONT);
+			Xv_opaque parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
 			int scale = (int)xv_get(parent_font, FONT_SCALE);
 
 			if (scale > 0) {
@@ -375,11 +375,11 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 		}
 	}
 	if (!font)
-		font = (Xv_opaque) xv_get(tty_public, WIN_FONT);
+		font = (Xv_opaque) xv_get(tty_public, XV_FONT);
 #endif
 
 #ifdef OW_I18N
-	xv_set(tty_public, WIN_FONT, font, NULL);
+	xv_set(tty_public, XV_FONT, font, NULL);
 
 	ttysw->im_store = (CHAR *) NULL;
 	ttysw->im_attr = (XIMFeedback *) NULL;
