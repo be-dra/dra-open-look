@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.20 2025/03/15 14:16:06 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.21 2025/03/17 19:51:54 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -402,7 +402,13 @@ Pkg_private void
 	xv_tty_free_image_and_mode(void),
 	xv_tty_imagealloc(Ttysw *ttysw, int for_temp);
 
-Pkg_private void xv_new_tty_chr_font(Pixfont *font);
+Pkg_private void xv_new_tty_chr_font(
+#ifdef OW_I18N
+    Xv_opaque	font
+#else
+    Pixfont    	*font
+#endif
+);
 
 Pkg_private void ttysw_textsw_changed(Textsw textsw, Attr_avlist attributes);
 Pkg_private void ttysw_show_walkmenu(Tty_view anysw_view_public, Event *event);
