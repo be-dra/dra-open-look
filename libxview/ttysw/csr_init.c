@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.2 2024/12/16 22:53:55 dra Exp $";
+char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.3 2025/03/17 19:49:56 dra Exp $";
 #endif
 
 /*
@@ -102,13 +102,13 @@ Pkg_private int wininit(Xv_object win, int *maximagewidth,int *maximageheight)
     return (1);
 }
 
-Pkg_private void
-xv_new_tty_chr_font(font)
+Pkg_private void xv_new_tty_chr_font(
 #ifdef OW_I18N
-    Xv_opaque	font;
+    Xv_opaque	font
 #else
-    Pixfont    	*font;
+    Pixfont    	*font
 #endif
+)
 {
 #ifdef OW_I18N
 	wchar_t     dummy_str[2];
