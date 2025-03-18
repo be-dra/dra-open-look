@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.6 2024/12/27 09:03:47 dra Exp $";
+char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.7 2025/03/16 13:39:42 dra Exp $";
 #endif
 
 /*
@@ -416,7 +416,7 @@ static void ttysw_enable_editor(Menu do_not_use_cmd_menu, Menu_item item)
 	Frame frame = xv_get(textsw, WIN_FRAME);
 	register Termsw_folio termsw_folio =
 			TERMSW_FOLIO_FOR_VIEW(TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw));
-	Xv_opaque my_font = xv_get(textsw, WIN_FONT);
+	Xv_opaque my_font = xv_get(textsw, XV_FONT);
 	Xv_Notice tty_notice;
 
 	if ((int)xv_get(textsw, OPENWIN_NVIEWS) >= 2) {
@@ -457,7 +457,7 @@ Press \"Continue\" to proceed."),
 				NULL);
 
 		termsw_folio->textedit = xv_create(frame, TEXTSW,
-				WIN_FONT, my_font,
+				XV_FONT, my_font,
 				WIN_BELOW, termsw_folio->textedit_panel,
 				XV_SHOW, FALSE,
 				NULL);
