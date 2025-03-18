@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.9 2025/03/08 13:18:09 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.11 2025/03/16 14:43:25 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -272,23 +272,20 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 				(void)ttysw_set_underline_mode((int)attrs[1]);
 				break;
 
-			case WIN_FONT:
-				{
-
-					if (attrs[1] && csr_pixwin_get()) {
-						/*
-						 * Cursor for the original font has been drawn, so take
-						 * down
-						 */
-						ttysw_removeCursor();
-						xv_new_tty_chr_font((Pixfont *) attrs[1]);
-						/* after changing font size, cursor needs to be re-drawn */
-						(void)ttysw_drawCursor(0, 0);
-					}
-					else if (attrs[1])
-						change_font = (Pixfont *) attrs[1];
-					break;
+			case XV_FONT:
+				if (attrs[1] && csr_pixwin_get()) {
+					/*
+					 * Cursor for the original font has been drawn, so take
+					 * down
+					 */
+					ttysw_removeCursor();
+					xv_new_tty_chr_font((Pixfont *) attrs[1]);
+					/* after changing font size, cursor needs to be re-drawn */
+					(void)ttysw_drawCursor(0, 0);
 				}
+				else if (attrs[1])
+					change_font = (Pixfont *) attrs[1];
+				break;
 
 			case WIN_SET_FOCUS:{
 					Tty_view win;
