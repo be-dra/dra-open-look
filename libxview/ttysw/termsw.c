@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.8 2025/03/08 13:18:09 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.10 2025/03/16 14:44:40 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -291,7 +291,7 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	 * creation of the "Window" superclass in window_init.
 	 */
 	if (font == NULL) {
-		parent_font = (Xv_opaque) xv_get(termsw_public, WIN_FONT);
+		parent_font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
 		scale = (int)xv_get(parent_font, FONT_SCALE);
 		if (scale > 0)
 			font = (Xv_opaque) xv_find(termsw_public, FONT,
@@ -306,7 +306,7 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	}
 
 	if (font == NULL)
-		font = (Xv_opaque) xv_get(termsw_public, WIN_FONT);
+		font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
 
 #else
 	font_name = xv_font_monospace();
@@ -319,7 +319,7 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 
 	if (is_client_pane) {
 		if (!font) {
-			parent_font = (Xv_opaque) xv_get(termsw_public, WIN_FONT);
+			parent_font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
 			scale = (int)xv_get(parent_font, FONT_SCALE);
 			if (scale > 0) {
 				font = (Xv_opaque) xv_find(termsw_public, FONT,
@@ -339,7 +339,7 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	}
 	else {
 		if (!font) {
-			parent_font = (Xv_opaque) xv_get(termsw_public, WIN_FONT);
+			parent_font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
 			scale = (int)xv_get(parent_font, FONT_SCALE);
 
 			if (scale > 0) {
@@ -350,7 +350,7 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 						NULL);
 			}
 			else {
-				int size = (int)xv_get(parent_font, FONT_SIZE);
+				size = (int)xv_get(parent_font, FONT_SIZE);
 
 				font = (Xv_opaque) xv_find(termsw_public, FONT,
 						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
@@ -360,11 +360,11 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 		}
 	}
 	if (!font)
-		font = (Xv_opaque) xv_get(termsw_public, WIN_FONT);
+		font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
 #endif
 
 	xv_set(termsw_public,
-			WIN_FONT, font,
+			XV_FONT, font,
 			TEXTSW_STATUS, &status,
 			TEXTSW_DISABLE_LOAD, TRUE,
 			TEXTSW_DISABLE_CD, TRUE,
@@ -583,7 +583,8 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 
 int termsw_creation_flag;
 
-static int termsw_init(Xv_Window parent, Termsw termsw_public, Attr_attribute avlist[], int *u)
+static int termsw_init(Xv_Window parent, Termsw termsw_public,
+							Attr_attribute avlist[], int *u)
 {
 	Xv_termsw *termsw_object = (Xv_termsw *) termsw_public;
 	Termsw_folio termsw_folio;
