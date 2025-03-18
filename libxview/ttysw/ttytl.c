@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.3 2024/12/16 22:58:45 dra Exp $";
+char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.4 2025/03/16 13:48:53 dra Exp $";
 #endif
 
 /*
@@ -124,7 +124,7 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *
 			 * This is actually nothing to do with the I18N issue.  Just
 			 * get around the problem with xv_pf_sys.
 			 */
-			font = (Xv_Font) xv_get(ttysw_public, WIN_FONT);
+			font = (Xv_Font) xv_get(ttysw_public, XV_FONT);
 			rect.r_width = (av[2] * (int)xv_get(font, FONT_DEFAULT_CHAR_WIDTH))
 					+ (2 * FRAME_BORDER_WIDTH);
 			rect.r_height =
