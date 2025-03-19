@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_image.c 20.18 89/07/31 DRA: $Id: p_image.c,v 4.1 2024/03/28 09:12:09 dra Exp $";
+static char     sccsid[] = "@(#)p_image.c 20.18 89/07/31 DRA: $Id: p_image.c,v 4.2 2025/03/16 13:34:24 dra Exp $";
 #endif
 #endif
 
@@ -45,7 +45,7 @@ panel_button_image(client_object, string, width, font)
 	return NULL;
 
     if (!font)
-	font = xv_get(PANEL_PUBLIC(panel), WIN_FONT);
+	font = xv_get(PANEL_PUBLIC(panel), XV_FONT);
 
     size = xv_pf_textwidth((int)strlen(string), font, string);
 
