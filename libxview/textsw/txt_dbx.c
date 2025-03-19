@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_dbx_c_sccsid[] = "@(#)txt_dbx.c 20.26 93/06/28 DRA: $Id: txt_dbx.c,v 4.4 2024/12/20 09:02:27 dra Exp $";
+char     txt_dbx_c_sccsid[] = "@(#)txt_dbx.c 20.26 93/06/28 DRA: $Id: txt_dbx.c,v 4.5 2025/03/16 13:37:28 dra Exp $";
 #endif
 
 /*
@@ -151,7 +151,7 @@ if (0 != strcmp(pkgname(v), "Textsw_view")
 /* das kann auch ein Termsw_view sein ! */
 Pkg_private int textsw_screen_column_count(Textsw_view v)
 {
-    PIXFONT        *font = (PIXFONT *) xv_get(v, WIN_FONT);
+    PIXFONT        *font = (PIXFONT *) xv_get(v, XV_FONT);
     XFontStruct	*x_font_info = (XFontStruct *)xv_get((Xv_opaque)font,FONT_INFO);
     Textsw_view_private view;
 
