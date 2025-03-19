@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.50 2025/02/25 17:18:24 dra Exp $";
+char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.52 2025/03/15 20:15:58 dra Exp $";
 #endif
 
 /*
@@ -112,6 +112,9 @@ static int DndConvertProc(Dnd dnd, Atom *type, Xv_opaque *data,
 			return TRUE;
 	}
 
+	/* this would also be handled in sel_own.c - however, we also want
+	 * to destroy the (temporary dnd object
+	 */
 	if (*type == priv->atoms.dragdrop_done) {
 		xv_set(dnd, SEL_OWN, False, NULL);
 		xv_destroy_safe(dnd);
@@ -170,6 +173,17 @@ static int DndConvertProc(Dnd dnd, Atom *type, Xv_opaque *data,
 
 	return textsw_internal_convert(priv, view, dnd, type, data,
 												length, format);
+}
+
+static void dnd_done_proc(Selection_owner dnd, Xv_opaque value, Atom target)
+{
+	Textsw_view_private view = (Textsw_view_private)xv_get(dnd, XV_KEY_DATA,
+														dnd_view_key);
+	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
+
+	if (target == priv->atoms.utf8) { /* compare textsw_internal_convert */
+		xv_free(value);
+	}
 }
 
 #define MAX_CHARS_SHOWN	 5	/* most chars shown in the drag move cursor */
@@ -253,6 +267,7 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 	 */
     dnd = xv_create(public_view, DRAGDROP,
 			SEL_CONVERT_PROC,	DndConvertProc,
+			SEL_DONE_PROC,      dnd_done_proc,
 			DND_TYPE, 			(is_copy ? DND_COPY : DND_MOVE),
 			DND_CURSOR, 		dnd_cursor,
 			DND_ACCEPT_CURSOR,	dnd_accept_cursor,
