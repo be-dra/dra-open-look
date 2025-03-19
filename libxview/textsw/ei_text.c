@@ -1,5 +1,5 @@
 #ifndef lint
-char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.2 2024/11/30 13:06:05 dra Exp $";
+char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.3 2025/03/14 10:13:33 dra Exp $";
 #endif
 
 /*
@@ -1009,21 +1009,9 @@ static void ei_classes_initialize(void)
     /* set all and then remove the delimiters specified */
     FILL_SET(setp);
     for( delims = delim_chars; *delims; delims++ ) {
-/*	    printf("%c(%o)", (isprint(*delims) ? *delims : ' '), (int)*delims ); */
 	    REMOVE_ELEMENT(setp, *delims );
     }
-/*    printf("\n"); */
 
-/* 	this is the old code. someone never heard of ctype() functions..
-    CLEAR_SET(setp);
-    for (ch = 'a'; ch <= 'z'; ch++)
-	ADD_ELEMENT(setp, ch);
-    for (ch = 'A'; ch <= 'Z'; ch++)
-	ADD_ELEMENT(setp, ch);
-    for (ch = '0'; ch <= '9'; ch++)
-	ADD_ELEMENT(setp, ch);
-    ADD_ELEMENT(setp, '_');
-*/
 #endif /* OW_I18N */
 
     /* PATH_NAME is non-white & non-null chars */
