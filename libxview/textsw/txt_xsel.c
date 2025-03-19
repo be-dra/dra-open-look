@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.50 2025/02/25 17:18:33 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.52 2025/03/16 19:59:29 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -9,10 +9,12 @@ char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.50 2025/02/25 17:18:33 dra 
 #include <xview/textsw.h>
 #include <ctype.h>
 #include <time.h> 
+#include <iconv.h>
 
 #define XVIEW_CLASS_TARGET future_use1
 
 extern char *xv_app_name;
+extern int _xv_is_multibyte;
 
 /* copied basically from textsw_seln_yield */
 static void selection_give_up(Textsw_private priv, Atom rank)
@@ -207,10 +209,57 @@ Pkg_private int textsw_internal_convert(Textsw_private priv,
 
 			*type = savat;
 		}
+		else if (*type == priv->atoms.utf8) {
+			/* this is a little complicated: even in a pure latin1 
+			 * environment, funny people like xterm ask for "UTF8-STRING" -
+			 * but are not able to display the result....
+			 */
+			if (_xv_is_multibyte) {
+				Atom rank_atom = (Atom)xv_get(owner, SEL_RANK);
+				Selection_item si;
+				iconv_t ic;
+				char *latinval;
+				char *utf8val, *outp;
+				size_t len, ulen;
+
+				if (rank_atom == XA_SECONDARY)
+					si = priv->sel_item[TSW_SEL_SECONDARY];
+				else if (rank_atom == priv->atoms.clipboard) {
+					si = priv->sel_item[TSW_SEL_CLIPBOARD];
+				}
+				else { /* primary or dnd */
+					si = priv->sel_item[TSW_SEL_PRIMARY];
+				}
+				latinval = (char *)xv_get(si, SEL_DATA);
+				len = (size_t)xv_get(si, SEL_LENGTH);
+				ulen = 2 * len;
+				utf8val = xv_malloc(ulen); /* questionable... */
+				outp = utf8val;
+				ic = iconv_open("UTF8", "LATIN1");
+				iconv(ic, &latinval, &len, &outp, &ulen);
+				iconv_close(ic);
+				*format = 8;
+				*data = (Xv_opaque)utf8val; /* therefore we need a done_proc */
+				*length = strlen(utf8val);
+				return TRUE;
+			}
+			else return FALSE;
+		}
 	}
 #endif /* NO_XDND */
 
 	return retval;
+}
+
+static void text_done_proc(Selection_owner sel_own, Xv_opaque value,
+							Atom target)
+{
+	Textsw tsw = xv_get(sel_own, XV_OWNER);
+	Textsw_private priv = TEXTSW_PRIVATE(tsw);
+
+	if (target == priv->atoms.utf8) {
+		xv_free(value);
+	}
 }
 
 static int text_convert_proc(Selection_owner sel_own, Atom *type,
@@ -890,12 +939,14 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 	priv->atoms.seln_yield = xv_get(srv, SERVER_ATOM, "_SUN_SELN_YIELD");
 	priv->atoms.seln_is_readonly = xv_get(srv, SERVER_ATOM, "_SUN_SELN_IS_READONLY");
 	priv->atoms.plain = xv_get(srv, SERVER_ATOM, "text/plain");
+	priv->atoms.utf8 = xv_get(srv, SERVER_ATOM, "UTF8_STRING");
 	priv->atoms.XVIEW_CLASS_TARGET  = xv_get(srv, SERVER_ATOM, "_DRA_XVIEW_CLASS");
 
 	priv->sel_owner[TSW_SEL_PRIMARY] =
 					xv_create(tsw, SELECTION_OWNER,
 							SEL_CONVERT_PROC, text_convert_proc,
 							SEL_LOSE_PROC, text_lose_proc,
+							SEL_DONE_PROC, text_done_proc,
 							NULL);
 
 	priv->sel_item[TSW_SEL_PRIMARY] =
@@ -911,6 +962,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 					xv_create(tsw, SELECTION_OWNER,
 							SEL_CONVERT_PROC, text_convert_proc,
 							SEL_LOSE_PROC, text_lose_proc,
+							SEL_DONE_PROC, text_done_proc,
 							SEL_RANK, XA_SECONDARY,
 							NULL);
 
@@ -929,6 +981,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 					xv_create(tsw, SELECTION_OWNER,
 							SEL_CONVERT_PROC, text_convert_proc,
 							SEL_LOSE_PROC, text_lose_proc,
+							SEL_DONE_PROC, text_done_proc,
 							SEL_RANK_NAME, "CLIPBOARD",
 							NULL);
 
