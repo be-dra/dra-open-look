@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.12 2025/03/08 13:15:23 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.13 2025/03/16 13:37:28 dra Exp $";
 #endif
 
 /*
@@ -743,7 +743,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
  */
 
 				/* Super-class attributes that we monitor. */
-			case WIN_FONT:
+			case XV_FONT:
 				if (attrs[1]) {
 					Ev_handle ev_next;
 
@@ -1251,7 +1251,7 @@ Pkg_private long textsw_get_from_defaults(Attr32_attribute attribute, Xv_opaque 
 							"Keyboard.DeleteLine", CTRL('U')));	/* ??? Keymapping strategy? */
 #endif /* __STDC__ */
 
-		case WIN_FONT:{
+		case XV_FONT:{
 				PIXFONT *font;
 
 				/* Text.d may have "" rather than NULL, so check for this case.  */
