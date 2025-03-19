@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.19 2025/01/30 08:51:15 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.20 2025/03/16 13:37:28 dra Exp $";
 #endif
 
 /*
@@ -292,7 +292,7 @@ static void textsw_read_defaults(Textsw_private textsw, Attr_avlist defaults)
 		Xv_opaque parent_font;
 		int scale, size;
 
-		parent_font = (Xv_opaque) xv_get(textsw_public, WIN_FONT);
+		parent_font = (Xv_opaque) xv_get(textsw_public, XV_FONT);
 		scale = (int)xv_get(parent_font, FONT_SCALE);
 
 		if (scale > 0) {
@@ -329,7 +329,7 @@ static void textsw_read_defaults(Textsw_private textsw, Attr_avlist defaults)
 		int scale, size;
 
 		if (!font) {
-			parent_font = xv_get(textsw_public, WIN_FONT);
+			parent_font = xv_get(textsw_public, XV_FONT);
 			scale = xv_get(parent_font, FONT_SCALE);
 			if (scale > 0) {
 				font = (Xv_opaque) xv_find(textsw_public, FONT,
@@ -354,7 +354,7 @@ static void textsw_read_defaults(Textsw_private textsw, Attr_avlist defaults)
 	}
 	else {
 		if (!font) {
-			Xv_opaque parent_font = xv_get(textsw_public, WIN_FONT);
+			Xv_opaque parent_font = xv_get(textsw_public, XV_FONT);
 			int scale = xv_get(parent_font, FONT_SCALE);
 
 			if (scale > 0) {
