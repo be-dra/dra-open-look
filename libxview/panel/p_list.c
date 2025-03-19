@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.15 2025/03/08 13:08:26 dra Exp $ DRA: $Id: p_list.c,v 4.15 2025/03/08 13:08:26 dra Exp $";
+static char     sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.16 2025/03/16 13:48:21 dra Exp $ DRA: $Id: p_list.c,v 4.16 2025/03/16 13:48:21 dra Exp $";
 #endif
 #endif
 
@@ -48,7 +48,7 @@ typedef enum {
 typedef struct panel_list_row_struct {
 	Xv_opaque	client_data;	/* Client data with each row */
 	int		display_str_len; /* length of displayed string */
-	Xv_Font		font;		/* NULL => use WIN_FONT */
+	Xv_Font		font;		/* NULL => use XV_FONT */
 	Pixrect		*glyph;
 	Pixrect		*mask_glyph;
 	int		row;            /* Row number */
