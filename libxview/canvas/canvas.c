@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.5 2025/03/11 16:57:42 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.6 2025/03/18 12:30:40 dra Exp $ ";
 #endif
 #endif
 
@@ -1298,68 +1298,60 @@ static Notify_value canvas_pew_destory(Notify_client client,
  */
 static Canvas_pew *canvas_create_pew(Frame frame)
 {
-    Canvas_pew	     *pew;
-    Xv_font	      font;
+	Canvas_pew *pew;
+	Xv_font font;
 #ifndef PEW_DOES_NOTICE_ON_KBD_USE
-    Xv_Drawable_info *info;
-    Atom	      prop_array[1];
+	Xv_Drawable_info *info;
+	Atom prop_array[1];
 #endif
 
+	pew = xv_alloc(Canvas_pew);
+	font = (Xv_Font) xv_get(frame, XV_FONT);
 
-    pew = xv_alloc(Canvas_pew);
-    font = (Xv_Font) xv_get(frame, XV_FONT);
-
-    pew->frame = (Frame) xv_create(frame, FRAME_CMD,
-            XV_LABEL,                   XV_MSG("Preedit Display"),
-            WIN_USE_IM,                 FALSE,
-            FRAME_CMD_POINTER_WARP,     FALSE,
-            FRAME_SHOW_RESIZE_CORNER,   TRUE,
-            FRAME_DONE_PROC,            canvas_pew_done,
-	    WIN_WIDTH,          	INPUT_WINDOW_WIDTH,
-            NULL);
+	pew->frame = (Frame) xv_create(frame, FRAME_CMD,
+			XV_LABEL, XV_MSG("Preedit Display"),
+			WIN_USE_IM, FALSE,
+			FRAME_CMD_POINTER_WARP, FALSE,
+			FRAME_SHOW_RESIZE_CORNER, TRUE,
+			FRAME_DONE_PROC, canvas_pew_done,
+			WIN_WIDTH, INPUT_WINDOW_WIDTH,
+			NULL);
 
 #ifndef PEW_DOES_NOTICE_ON_KBD_USE
-    /*
-     * Following code can eliminate to have focus event completely.
-     */
-    DRAWABLE_INFO_MACRO(pew->frame, info);
-    prop_array[0] = (Atom) xv_get(xv_server(info), SERVER_WM_DELETE_WINDOW);
-    win_change_property(pew->frame, SERVER_WM_PROTOCOLS, XA_ATOM, 32,
-							prop_array, 1);
+	/*
+	 * Following code can eliminate to have focus event completely.
+	 */
+	DRAWABLE_INFO_MACRO(pew->frame, info);
+	prop_array[0] = (Atom) xv_get(xv_server(info), SERVER_WM_DELETE_WINDOW);
+	win_change_property(pew->frame, SERVER_WM_PROTOCOLS, XA_ATOM, 32,
+			prop_array, 1);
 #endif /* PEW_DOES_NOTICE_ON_KBD_USE */
 
-    pew->panel = xv_get(pew->frame, FRAME_CMD_PANEL);
+	pew->panel = xv_get(pew->frame, FRAME_CMD_PANEL);
 
-    xv_set(pew->panel,
-        WIN_ROWS,           	1,
-        WIN_COLUMNS,          	INPUT_WINDOW_WIDTH,
-        WIN_IGNORE_X_EVENT_MASK,(KeyPress|KeyRelease
-				 |ButtonPress|ButtonRelease),
-        XV_FONT,    		font,
-        NULL);
- 
-    notify_interpose_event_func(pew->panel, canvas_pew_pi_event_proc,
-					   NOTIFY_SAFE);
-    notify_interpose_destroy_func(pew->frame, canvas_pew_destory);
- 
-    pew->ptxt = (Panel_item) xv_create(pew->panel, PANEL_TEXT,
-            PANEL_VALUE_DISPLAY_WIDTH,    INPUT_WINDOW_WIDTH - PANEL_TEXT_RIM,
-            PANEL_VALUE_STORED_LENGTH_WCS,MAX_PREEDIT_CHAR,
-            				  PANEL_VALUE_FONT, font,
-            NULL);
- 
-    xv_set(frame,
-        XV_KEY_DATA,		canvas_pew_key,	pew,
-	NULL);
+	xv_set(pew->panel,
+		WIN_ROWS, 1,
+		WIN_COLUMNS, INPUT_WINDOW_WIDTH,
+		WIN_IGNORE_X_EVENT_MASK, KeyPress|KeyRelease|ButtonPress|ButtonRelease,
+		XV_FONT, font,
+		NULL);
 
-    xv_set(pew->frame,
-	WIN_FIT_HEIGHT,		0,
-	WIN_FIT_WIDTH,		0,
-	NULL);
+	notify_interpose_event_func(pew->panel, canvas_pew_pi_event_proc,
+			NOTIFY_SAFE);
+	notify_interpose_destroy_func(pew->frame, canvas_pew_destory);
 
-    return pew;
+	pew->ptxt = (Panel_item) xv_create(pew->panel, PANEL_TEXT,
+			PANEL_VALUE_DISPLAY_WIDTH, INPUT_WINDOW_WIDTH - PANEL_TEXT_RIM,
+			PANEL_VALUE_STORED_LENGTH_WCS, MAX_PREEDIT_CHAR,
+			PANEL_VALUE_FONT, font,
+			NULL);
+
+	xv_set(frame, XV_KEY_DATA, canvas_pew_key, pew, NULL);
+
+	xv_set(pew->frame, WIN_FIT_HEIGHT, 0, WIN_FIT_WIDTH, 0, NULL);
+
+	return pew;
 }
-
 
 
 /*
@@ -1423,25 +1415,26 @@ canvas window itself instead."),
 static Notify_value canvas_pew_event_proc(Window parent_win, Event *event,
 						Notify_arg arg, Notify_event_type	type)
 {
-    Canvas_pew		*pew;
+	Canvas_pew *pew;
 
-    switch ((Notify_event) event_action(event)) {
-      case ACTION_OPEN:
-      case ACTION_CLOSE:
-	pew = (Canvas_pew *) xv_get(parent_win, XV_KEY_DATA, canvas_pew_key);
+	switch (event_action(event)) {
+		case ACTION_OPEN:
+		case ACTION_CLOSE:
+			pew = (Canvas_pew *) xv_get(parent_win, XV_KEY_DATA,canvas_pew_key);
 
-	if ((Notify_event) event_action(event) == ACTION_CLOSE) {
-	    xv_set(pew->frame, XV_SHOW, FALSE, NULL);
-
-	} else {
-	    if (pew->active_count > 0
-	     || xv_get(pew->frame, FRAME_CMD_PIN_STATE) == FRAME_CMD_PIN_IN)
-		xv_set(pew->frame, XV_SHOW, TRUE, NULL);
+			if ((Notify_event) event_action(event) == ACTION_CLOSE) {
+				xv_set(pew->frame, XV_SHOW, FALSE, NULL);
+			}
+			else {
+				if (pew->active_count > 0
+						|| xv_get(pew->frame,
+								FRAME_CMD_PIN_STATE) == FRAME_CMD_PIN_IN)
+					xv_set(pew->frame, XV_SHOW, TRUE, NULL);
+			}
+			break;
 	}
-	break;
-    }
-    return notify_next_event_func((Notify_client) parent_win,
-				  (Notify_event) event, arg, type);
+	return notify_next_event_func((Notify_client) parent_win,
+			(Notify_event) event, arg, type);
 }
 
 #endif /*OW_I18N*/
@@ -1943,73 +1936,74 @@ static Xv_opaque canvas_get_attr(Canvas canvas_public, int *stat,
 
 static int canvas_destroy(Canvas canvas_public, Destroy_status stat)
 {
-    Canvas_info    *canvas = CANVAS_PRIVATE(canvas_public);
+	Canvas_info *canvas = CANVAS_PRIVATE(canvas_public);
 
-    if (stat == DESTROY_CLEANUP) {
+	if (stat == DESTROY_CLEANUP) {
 #ifdef OW_I18N
-        /*
-	 * All the canvases under one frame share the preedit window.
-	 * Only when all the canvases have been destroyed, can we
-	 * destroy the preedit window. So, we need to keep count of
-	 * the canvases.
-	 */
-	Canvas_pew	   *pew;
-	Frame		    frame_public;
-
-	if (canvas->ic) {
-	    /*
-	     * Get the pew from frame to make sure, pew is still exist
-	     * or not (when entire frame get destroy, pew may get
-	     * destory first) instead of accessing the private data.
-	     */
-	    frame_public = (Frame) xv_get(canvas_public, WIN_FRAME);
-	    pew = (Canvas_pew *) xv_get(frame_public,
-					XV_KEY_DATA, canvas_pew_key);
-
-	    if (pew != NULL) {
-	        /*
-		 * If the preedit window is still up and not pinned,
-		 * make sure it is unmapped.
-		 */
-		if (status(canvas, preedit_exist)
-	         && (--pew->active_count) <= 0) {
-		    if (xv_get(pew->frame, FRAME_CMD_PIN_STATE)
-						== FRAME_CMD_PIN_OUT) {
-		        xv_set(pew->frame, XV_SHOW, FALSE, NULL);
-		    }
-		}
-
 		/*
-		 * If this is last canvas uses pew, and pew is not
-		 * destoryed yet, let's destory it.
+		 * All the canvases under one frame share the preedit window.
+		 * Only when all the canvases have been destroyed, can we
+		 * destroy the preedit window. So, we need to keep count of
+		 * the canvases.
 		 */
-		if ((--pew->reference_count) <= 0) {
-		    xv_destroy(pew->frame);
-		    /*
-		     * freeing pew itself and setting null to the pew
-		     * will be done in the destroy interpose routine.
-		     */
-		}
-	    }
+		Canvas_pew *pew;
+		Frame frame;
 
-	    /*
-	     * Free the all preedit text cache information.
-	     */
-	    if (canvas->pe_cache) {
-	        if (canvas->pe_cache->text->feedback) {
-		    xv_free(canvas->pe_cache->text->feedback);
-	        }
-	        if (canvas->pe_cache->text->string.wide_char) {
-		    xv_free(canvas->pe_cache->text->string.wide_char);
+		if (canvas->ic) {
+			/*
+			 * Get the pew from frame to make sure, pew is still exist
+			 * or not (when entire frame get destroy, pew may get
+			 * destory first) instead of accessing the private data.
+			 */
+			frame = xv_get(canvas_public, WIN_FRAME);
+			pew = (Canvas_pew *) xv_get(frame, XV_KEY_DATA, canvas_pew_key);
+
+			if (pew != NULL) {
+				/*
+				 * If the preedit window is still up and not pinned,
+				 * make sure it is unmapped.
+				 */
+				if (status(canvas, preedit_exist) && (--pew->active_count) <= 0)
+				{
+					if (xv_get(pew->frame, FRAME_CMD_PIN_STATE)
+							== FRAME_CMD_PIN_OUT) {
+						xv_set(pew->frame, XV_SHOW, FALSE, NULL);
+					}
+				}
+
+				/*
+				 * If this is last canvas uses pew, and pew is not
+				 * destroyed yet, let's destroy it.
+				 */
+				if ((--pew->reference_count) <= 0) {
+					xv_destroy(pew->frame);
+					/*
+					 * freeing pew itself and setting null to the pew
+					 * will be done in the destroy interpose routine.
+					 */
+				}
+			}
+
+			/*
+			 * Free the all preedit text cache information.
+			 */
+			if (canvas->pe_cache) {
+				if (canvas->pe_cache->text->feedback) {
+					xv_free(canvas->pe_cache->text->feedback);
+				}
+				if (canvas->pe_cache->text->string.wide_char) {
+					xv_free(canvas->pe_cache->text->string.wide_char);
+				}
+				xv_free(canvas->pe_cache);
+			}
 		}
-		xv_free(canvas->pe_cache);
-	    }
+#endif /*OW_I18N */
+
+		if (canvas->pan_cursor)
+			xv_destroy(canvas->pan_cursor);
+		xv_free((char *)canvas);
 	}
-#endif /*OW_I18N*/
-	if (canvas->pan_cursor) xv_destroy(canvas->pan_cursor);
-	xv_free((char *) canvas);
-    }
-    return XV_OK;
+	return XV_OK;
 }
 
 #ifdef  OW_I18N
@@ -2294,9 +2288,8 @@ static int canvas_paint_init(Canvas_view view, Canvas_paint_window self,
 	return XV_OK;
 }
 
-
-/*ARGSUSED*/ /*VARARGS*/
-static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public, Attr_avlist avlist)
+static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public,
+									Attr_avlist avlist)
 {
 	Attr_attribute attr;
 	Xv_opaque result = XV_OK;
