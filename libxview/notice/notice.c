@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.11 2025/03/10 20:19:12 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.12 2025/03/18 17:13:56 dra Exp $ ";
 #endif
 #endif
 
@@ -278,8 +278,6 @@ static void notice_draw_polygons(Display *dpy, notice_handle notice,
 	if (transp) func = GXand;
 	else func = GXcopy;
 
-/* fprintf(stderr, "%s-%d: %s bm:%d xid %lx\n", __FILE__,__LINE__,__FUNCTION__, */
-/* 									isbm, d); */
 	switch (quadrant) {
 		case 0:	/* break down and to right */
 			points[0].x = 0;
@@ -3511,9 +3509,13 @@ static int notice_init_internal(Xv_Window client_window, Xv_notice self,
 	notice->client_window = client_window;
 	screen = xv_get(client_window, XV_SCREEN);
 	if (xv_get(screen, SCREEN_ENHANCED_OLWM)) {
+		/* notice according to OL GUI Spec: with an emanation shadow */
     	notice->lock_screen_looking = 1;
 	}
 	else {
+		/* other window managers will not handle the
+		 * emanation shadow correctly
+		 */
     	notice->lock_screen_looking = 0;
 	}
 
