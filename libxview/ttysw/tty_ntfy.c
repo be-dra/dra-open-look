@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.9 2024/12/29 17:29:51 dra Exp $";
+char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.10 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -61,7 +61,7 @@ char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy
 
 static Notify_value ttysw_pty_output_pending(Tty tty_public, int pty);
 static Notify_value ttysw_prioritizer(Tty tty_public, int nfd, fd_set *ibits_ptr, fd_set *obits_ptr, fd_set *ebits_ptr, int nsig, sigset_t *sigbits_ptr, sigset_t *auto_sigbits_ptr, int *event_count_ptr, Notify_event *events, Notify_arg *args);
-Notify_prioritizer_func ttysw_cached_pri;	/* Default prioritizer */
+static Notify_prioritizer_func ttysw_cached_pri;	/* Default prioritizer */
 
 static void cim_resize(Ttysw_view_handle ttysw_view);
 
@@ -332,7 +332,7 @@ Pkg_private void ttysw_display(Ttysw_private ttysw, Event *ie)
 		(void)ttysw_prepair(event_xevent(ie));
 		/* primary selection is repainted in ttysw_prepair. */
 		if (ttysw->sels[TTY_SEL_SECONDARY].sel_made)
-			ttyhiliteselection(ttysw->sels + TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
+			ttyhiliteselection(ttysw, ttysw->sels + TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
 	}
 }
 
@@ -453,7 +453,7 @@ Pkg_private void ttysw_reset_conditions(Ttysw_view_handle ttysw_view)
 	 * Try to optimize displaying by waiting for image to be completely
 	 * filled after being cleared (vi(^F ^B) page) before painting.
 	 */
-	if (!ttysw_getopt(ttysw, TTYOPT_TEXT) && delaypainting)
+	if (!ttysw_getopt(ttysw, TTYOPT_TEXT) && ttysw_delaypainting)
 		notify_set_itimer_func(ttypub, ttysw_itimer_expired,
 				ITIMER_REAL, &ttysw_itimerval, ITIMER_NULL);
 }
@@ -582,8 +582,8 @@ csr_resize(ttysw_view)
     Ttysw_private     ttysw = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
 
     /* Update notion of size */
-    winwidthp = r_new->r_width;
-    winheightp = r_new->r_height;
+    ttysw->winwidthp = r_new->r_width;
+    ttysw->winheightp = r_new->r_height;
     /* Don't currently support selections across size changes */
     ttynullselection(ttysw);
 }
