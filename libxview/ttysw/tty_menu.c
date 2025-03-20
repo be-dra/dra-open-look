@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.7 2025/03/16 13:39:42 dra Exp $";
+char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.8 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -69,7 +69,7 @@ static void ttysw_mode_action(Menu cmd_menu, Menu_item cmd_item);
 
 /* termsw walking menu definitions */
 
-int             ITEM_DATA_KEY;
+static int ITEM_DATA_KEY;
 
 /* ttysw walking menu utilities */
 
