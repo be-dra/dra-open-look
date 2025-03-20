@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.3 2025/03/17 19:49:56 dra Exp $";
+char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.4 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -54,7 +54,7 @@ Pkg_private Xv_window csr_pixwin_get(void)
 /*
  * Character screen initialization
  */
-Pkg_private int wininit(Xv_object win, int *maximagewidth,int *maximageheight)
+Pkg_private int wininit(Ttysw *ttysw, Xv_object win, int *maximagewidth,int *maximageheight)
 {
     struct inputmask im;
     struct rect     rect;
@@ -88,7 +88,7 @@ Pkg_private int wininit(Xv_object win, int *maximagewidth,int *maximageheight)
     rootwindow = (Xv_Window) xv_get(csr_pixwin_get(), XV_ROOT);
     prect = (struct rect *) xv_get(rootwindow, WIN_RECT);
     rect = *prect;
-    *maximagewidth = rect.r_width - chrleftmargin;
+    *maximagewidth = rect.r_width - ttysw->chrleftmargin;
     if (*maximagewidth < 0)
 	*maximagewidth = 0;
     *maximageheight = rect.r_height;
@@ -96,13 +96,13 @@ Pkg_private int wininit(Xv_object win, int *maximagewidth,int *maximageheight)
      * Determine sizes
      */
     win_getsize(win, &rect);
-    winwidthp = rect.r_width;
-    winheightp = rect.r_height;
+    ttysw->winwidthp = rect.r_width;
+    ttysw->winheightp = rect.r_height;
 
     return (1);
 }
 
-Pkg_private void xv_new_tty_chr_font(
+Pkg_private void xv_new_tty_chr_font(Ttysw_private ttysw,
 #ifdef OW_I18N
     Xv_opaque	font
 #else
@@ -111,70 +111,76 @@ Pkg_private void xv_new_tty_chr_font(
 )
 {
 #ifdef OW_I18N
-	wchar_t     dummy_str[2];
-        XRectangle      overall_ink_extents, overall_logical_extents;
-	XFontSet	font_set = (XFontSet)xv_get(font, FONT_SET_ID);
+	wchar_t dummy_str[2];
+	XRectangle overall_ink_extents, overall_logical_extents;
+	XFontSet font_set = (XFontSet) xv_get(font, FONT_SET_ID);
+
 #ifdef FULL_R5
-        Ttysw_private		ttysw_folio;
-        XVaNestedList		va_nested_list;
+	Ttysw_private ttysw_folio;
+	XVaNestedList va_nested_list;
 #endif /* FULL_R5 */
 
-	pixfont = (Pixfont *)font;   /* BUG ALERT: Remove all these globals! */
+	ttysw->pixfont = (Pixfont *) font;
 	/*
-	** Alpha ONLY!!!
-	** We want a better mechanism for
-	** getting this info from XwcTextExtents
-	*/
+	 ** Alpha ONLY!!!
+	 ** We want a better mechanism for
+	 ** getting this info from XwcTextExtents
+	 */
 	dummy_str[0] = (wchar_t)' ';
 	dummy_str[1] = 0;
-        XwcTextExtents(font_set, dummy_str, 1,
+	XwcTextExtents(font_set, dummy_str, 1,
 			&overall_ink_extents, &overall_logical_extents);
 	/*
-	** Alpha ONLY!!!
-	** Horrible hack that fixes single width
-	** character display ONLY!  Need a more
-	** general screen column management scheme!
-	*/
-	chrwidth = overall_logical_extents.width;
-        chrheight = overall_logical_extents.height;
-        chrbase = -overall_logical_extents.y;
+	 ** Alpha ONLY!!!
+	 ** Horrible hack that fixes single width
+	 ** character display ONLY!  Need a more
+	 ** general screen column management scheme!
+	 */
+	ttysw->chrwidth = overall_logical_extents.width;
+	ttysw->chrheight = overall_logical_extents.height;
+	ttysw->chrbase = -overall_logical_extents.y;
+
 #ifdef FULL_R5
-    if (csr_pixwin_get()) { 
-        ttysw_folio = TTY_PRIVATE_FROM_ANY_VIEW(csr_pixwin_get());
-        if (ttysw_folio->ic && (ttysw_folio->xim_style & (XIMPreeditArea | XIMPreeditPosition | XIMPreeditNothing))) {  
-            va_nested_list = XVaCreateNestedList(NULL, 
-					      	 XNLineSpace, overall_logical_extents.y, 
-						 NULL);
-            XSetICValues(ttysw_folio->ic, 
-            		 XNPreeditAttributes, va_nested_list,
-        	         NULL);
-            XFree(va_nested_list);	         
-        }
-    }
-#endif /* FULL_R5 */	
-        
+	if (csr_pixwin_get()) {
+		ttysw_folio = TTY_PRIVATE_FROM_ANY_VIEW(csr_pixwin_get());
+		if (ttysw_folio->ic
+				&& (ttysw_folio->
+						xim_style & (XIMPreeditArea | XIMPreeditPosition |
+								XIMPreeditNothing))) {
+			va_nested_list =
+					XVaCreateNestedList(NULL, XNLineSpace,
+					overall_logical_extents.y, NULL);
+			XSetICValues(ttysw_folio->ic, XNPreeditAttributes, va_nested_list,
+					NULL);
+			XFree(va_nested_list);
+		}
+	}
+#endif /* FULL_R5 */
+
 #else
-    int		    max_char_height;
-    int		    percent;
-    int		    spacing;
-    XFontStruct	   *x_font_info;
+	int max_char_height;
+	int percent;
+	int spacing;
+	XFontStruct *x_font_info;
 
-    pixfont = font;		/* BUG ALERT: Remove all these globals! */
-    x_font_info = (XFontStruct *)xv_get((Xv_opaque)font, FONT_INFO);
-    chrwidth = xv_get((Xv_opaque)font, FONT_DEFAULT_CHAR_WIDTH);
+	ttysw->pixfont = font;
+	x_font_info = (XFontStruct *) xv_get((Xv_opaque) font, FONT_INFO);
+	ttysw->chrwidth = xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_WIDTH);
 
-    percent = defaults_get_integer("text.lineSpacing", "Text.LineSpacing", 0);
-    if (percent > 0) {
-	max_char_height = x_font_info->max_bounds.ascent +
-	    x_font_info->max_bounds.descent;
-	spacing = max_char_height*percent/100;
-	if ((max_char_height*percent)%100 > 0 || spacing == 0)
-	    spacing++;  /* round up, or enforce a minimum of 1 pixel */
-	chrheight = max_char_height + spacing;
-    } else {
-	chrheight = (int) xv_get((Xv_opaque)font, FONT_DEFAULT_CHAR_HEIGHT);
-    }
+	percent = defaults_get_integer("text.lineSpacing", "Text.LineSpacing", 0);
+	if (percent > 0) {
+		max_char_height = x_font_info->max_bounds.ascent +
+				x_font_info->max_bounds.descent;
+		spacing = max_char_height * percent / 100;
+		if ((max_char_height * percent) % 100 > 0 || spacing == 0)
+			spacing++;	/* round up, or enforce a minimum of 1 pixel */
+		ttysw->chrheight = max_char_height + spacing;
+	}
+	else {
+		ttysw->chrheight =
+				(int)xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_HEIGHT);
+	}
 
-    chrbase = x_font_info->ascent;
+	ttysw->chrbase = x_font_info->ascent;
 #endif
 }
