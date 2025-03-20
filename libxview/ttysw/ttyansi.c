@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.4 2024/12/16 22:58:20 dra Exp $";
+char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -29,13 +29,6 @@ char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,
 
 #include <xview/sel_attrs.h>
 
-/*
- * jcb	-- remove continual cursor repaint in shelltool windows also known to
- * tty_main.c
- */
-int             do_cursor_draw = TRUE;
-int             tty_new_cursor_row, tty_new_cursor_col;
-
 extern int dra_tty_debug;  /* in tty_ntfy.c  */
 
 #ifdef DEBUG
@@ -47,10 +40,6 @@ extern int dra_tty_debug;  /* in tty_ntfy.c  */
 #define notcontrol(c)	(((c&0177) >= ' ') && (c != '\177'))
 
 /* Logical state of window */
-int             curscol;	/* cursor column */
-int             cursrow;	/* cursor row */
-int             cursor = BLOCKCURSOR | LIGHTCURSOR;
-/* 0 -> NOCURSOR, 1 -> UNDERCURSOR, 2 -> BLOCKCURSOR */
 
 /* extern  int scroll_disabled_from_menu; */
 static int      prefix;		/* prefix to arg */
@@ -58,11 +47,6 @@ static int      scrlins = 1;	/* How many lines to scroll when you have to */
 static int      fillfunc;	/* 0 -> reverse video */
 static CHAR     strtype;        /* type of ansi string sequence */
 
-/* dimensions of window */
-int             ttysw_top;	/* top row of window (0 for now) */
-int             ttysw_bottom;	/* bottom row of window */
-int             ttysw_left;	/* left column of window (0 for now) */
-int             ttysw_right;	/* right column of window */
 static int send_input_to_textsw(Textsw textsw, register CHAR *buf, register long buf_len, Textsw_index end_transcript);
 static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len);
 static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen);
@@ -718,12 +702,12 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 		}
 		termsw = TERMSW_FOLIO_FOR_VIEW(TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw));
 		if (!ttysw_getopt(ttysw, TTYOPT_TEXT) &&
-				do_cursor_draw /* jcb */ ) {
-			(void)ttysw_removeCursor();
+				ttysw->do_cursor_draw /* jcb */ ) {
+			ttysw_removeCursor(ttysw);
 		}
 	}
-	else if (do_cursor_draw) {	/* jcb */
-		(void)ttysw_removeCursor();
+	else if (ttysw->do_cursor_draw) {	/* jcb */
+		ttysw_removeCursor(ttysw);
 	}
 	for (; len <len0 && !(ttysw->ttysw_flags&TTYSW_FL_FROZEN); len++,addr++) {
 		if (state & S_ESC) {
@@ -755,8 +739,8 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 
 #ifdef OW_I18N
 				case '7':	/* \E7 is save cursor */
-					saved_row = cursrow;
-					saved_col = curscol;
+					saved_row = ttysw->cursrow;
+					saved_col = ttysw->curscol;
 					state &= ~S_ESC;
 					continue;
 
@@ -1132,10 +1116,10 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 							(void)ttysw_blinkscreen();
 							break;
 						case '\b':
-							ttysw_pos(curscol - 1, cursrow);
+							ttysw_pos(ttysw, ttysw->curscol - 1, ttysw->cursrow);
 							break;
 						case '\t':
-							ttysw_pos((curscol & -8) + 8, cursrow);
+							ttysw_pos(ttysw, (ttysw->curscol & -8) + 8, ttysw->cursrow);
 							break;
 						case '\n':	/* linefeed */
 							if (ansi_lf(ttysw_view, addr,
@@ -1143,7 +1127,7 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 								goto ret;
 							break;
 						case CTRL('K'):
-							ttysw_pos(curscol, cursrow - 1);	/* 4014 */
+							ttysw_pos(ttysw, ttysw->curscol, ttysw->cursrow - 1);	/* 4014 */
 							break;
 						case '\f':
 							if ((ttysw->ttysw_opt & (1 << TTYOPT_PAGEMODE)) &&
@@ -1153,8 +1137,8 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 							}
 							ttysw_clear(ttysw);
 						case '\r':
-							/* ttysw_pos(0,cursrow); */
-							curscol = 0;
+							/* ttysw_pos(ttysw, 0,ttysw->cursrow); */
+							ttysw->curscol = 0;
 							break;
 						case CTRL('['):
 							state |= S_ESC;
@@ -1191,104 +1175,112 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 		}
 	}
 	else {
-		if (do_cursor_draw)	/* jcb */
-			(void)ttysw_drawCursor(cursrow, curscol);
+		if (ttysw->do_cursor_draw)	/* jcb */
+			ttysw_drawCursor(ttysw, ttysw->cursrow, ttysw->curscol);
 		else {
-			tty_new_cursor_row = cursrow;
-			tty_new_cursor_col = curscol;
+			ttysw->tty_new_cursor_row = ttysw->cursrow;
+			ttysw->tty_new_cursor_col = ttysw->curscol;
 		}
 	}
 	return (len);
 }
 
 
-Pkg_private void
-ttysw_lighten_cursor()
+Pkg_private void ttysw_lighten_cursor(Ttysw_private ttysw)
 {
-    (void) ttysw_removeCursor();
-    cursor |= LIGHTCURSOR;
-    (void) ttysw_restoreCursor();
+    ttysw_removeCursor(ttysw);
+    ttysw->cursor |= LIGHTCURSOR;
+    ttysw_restoreCursor(ttysw);
 }
 
-Pkg_private void
-ttysw_restore_cursor()
+Pkg_private void ttysw_restore_cursor(Ttysw_private ttysw)
 {
-    (void) ttysw_removeCursor();
-    cursor &= ~LIGHTCURSOR;
-    (void) ttysw_restoreCursor();
+    ttysw_removeCursor(ttysw);
+    ttysw->cursor &= ~LIGHTCURSOR;
+    ttysw_restoreCursor(ttysw);
 }
 
 static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len)
 {
-    register Ttysw_private ttysw = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
-    register int    lfs = scrlins;
-    extern int      delaypainting;
+	register Ttysw_private ttysw = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
+	register int lfs = scrlins;
+	extern int ttysw_delaypainting;
 
 #ifdef OW_I18N
-    if (ttysw->ttysw_lpp >= (SCROLL(scroll_bottom, ttysw_bottom))) {
+	if (ttysw->ttysw_lpp >= (SCROLL(scroll_bottom, ttysw->ttysw_bottom)))
 #else
-    if (ttysw->ttysw_lpp >= ttysw_bottom) {
+	if (ttysw->ttysw_lpp >= ttysw->ttysw_bottom)
 #endif
-	if (ttysw_freeze(ttysw_view, 1))
-	    return (0);
-    }
-#ifdef OW_I18N
-    if (cursrow < (SCROLL(scroll_bottom, ttysw_bottom) - 1)) {
-#else
-    if (cursrow < ttysw_bottom - 1) {
-#endif
-	/* ttysw_pos(curscol, cursrow+1); */
-	cursrow++;
-	if (ttysw->ttysw_opt & (1 << TTYOPT_PAGEMODE))
-	    ttysw->ttysw_lpp++;
-	if (!scrlins)		/* ...clear line */
-	    (void) ttysw_deleteChar(ttysw_left, ttysw_right, cursrow);
-    } else {
-	if (delaypainting)
-	    (void) ttysw_pdisplayscreen(1);
-	if (!scrlins) {		/* Just wrap to top of screen and clr line */
-	    ttysw_pos(curscol, 0);
-	    (void) ttysw_deleteChar(ttysw_left, ttysw_right, cursrow);
-	} else {
-	    if (lfs == 1) {
-		/* Find pending LF's and do them all now */
-                register CHAR  *cp;
-		register int    left_end;
-
-		for (cp = addr + 1, left_end = len; left_end--; cp++) {
-                    if (*cp == (CHAR)'\n')
-			lfs++;
-                    else if (*cp == (CHAR)'\r' || *cp >= (CHAR)' ')
-			continue;
-                    else if (*cp > (CHAR)'\n')
-			break;
-		}
-	    }
-#ifdef OW_I18N
-            if (lfs + ttysw->ttysw_lpp >
-                SCROLL(scroll_bottom, ttysw_bottom))
-                    lfs = SCROLL(scroll_bottom, ttysw_bottom)
-                        - ttysw->ttysw_lpp;
-#else
-	    if (lfs + ttysw->ttysw_lpp > ttysw_bottom)
-		lfs = ttysw_bottom - ttysw->ttysw_lpp;
-#endif
-	    (void) ttysw_cim_scroll(lfs);
-	    if (ttysw->ttysw_opt & (1 << TTYOPT_PAGEMODE))
-		ttysw->ttysw_lpp++;
-	    if (lfs != 1)	/* avoid upsetting <dcok> for nothing */
-		ttysw_pos(curscol, cursrow + 1 - lfs);
+	{
+		if (ttysw_freeze(ttysw_view, 1))
+			return (0);
 	}
-    }
-    return (lfs);
+
+#ifdef OW_I18N
+	if (ttysw->cursrow < (SCROLL(scroll_bottom, ttysw->ttysw_bottom) - 1))
+#else
+	if (ttysw->cursrow < ttysw->ttysw_bottom - 1)
+#endif
+	{
+		/* ttysw_pos(ttysw, ttysw->curscol, ttysw->cursrow+1); */
+		ttysw->cursrow++;
+		if (ttysw->ttysw_opt & (1 << TTYOPT_PAGEMODE))
+			ttysw->ttysw_lpp++;
+		if (!scrlins)	/* ...clear line */
+			ttysw_deleteChar(ttysw, ttysw->ttysw_left, ttysw->ttysw_right,
+					ttysw->cursrow);
+	}
+	else {
+		if (ttysw_delaypainting)
+			ttysw_pdisplayscreen(ttysw, 1);
+		if (!scrlins) {	/* Just wrap to top of screen and clr line */
+			ttysw_pos(ttysw, ttysw->curscol, 0);
+			ttysw_deleteChar(ttysw, ttysw->ttysw_left, ttysw->ttysw_right,
+					ttysw->cursrow);
+		}
+		else {
+			if (lfs == 1) {
+				/* Find pending LF's and do them all now */
+				register CHAR *cp;
+				register int left_end;
+
+				for (cp = addr + 1, left_end = len; left_end--; cp++) {
+					if (*cp == (CHAR) '\n')
+						lfs++;
+					else if (*cp == (CHAR) '\r' || *cp >= (CHAR) ' ')
+						continue;
+					else if (*cp > (CHAR) '\n')
+						break;
+				}
+			}
+
+#ifdef OW_I18N
+			if (lfs + ttysw->ttysw_lpp >
+					SCROLL(scroll_bottom, ttysw->ttysw_bottom))
+				lfs = SCROLL(scroll_bottom, ttysw->ttysw_bottom)
+						- ttysw->ttysw_lpp;
+#else
+			if (lfs + ttysw->ttysw_lpp > ttysw->ttysw_bottom)
+				lfs = ttysw->ttysw_bottom - ttysw->ttysw_lpp;
+#endif
+
+			ttysw_cim_scroll(ttysw, lfs);
+			if (ttysw->ttysw_opt & (1 << TTYOPT_PAGEMODE))
+				ttysw->ttysw_lpp++;
+			if (lfs != 1)	/* avoid upsetting <dcok> for nothing */
+				ttysw_pos(ttysw, ttysw->curscol, ttysw->cursrow + 1 - lfs);
+		}
+	}
+	return (lfs);
 }
 
 static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen)
 {
-    register int    len = olen;
+    Ttysw_private ttysw = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
+    int    len = olen;
     CHAR            buf[300];
     register CHAR   *cp = &buf[0];
-    int             curscolstart = curscol;
+    int             curscolstart = ttysw->curscol;
 #ifdef  OW_I18N
     int             colwidth; /* column width of a char */
 #endif
@@ -1300,24 +1292,24 @@ static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen)
 #endif
 	/* Update cursor position.  Inline for speed. */
 #ifdef  OW_I18N
-        if (curscol < ttysw_right - colwidth)
-            curscol += colwidth;
+        if (ttysw->curscol < ttysw->ttysw_right - colwidth)
+            ttysw->curscol += colwidth;
 #else
-	if (curscol < ttysw_right - 1)
-	    curscol++;
+	if (ttysw->curscol < ttysw->ttysw_right - 1)
+	    ttysw->curscol++;
 #endif
 	else {
 	    /* Wrap to col 1 then pretend LF seen */
 #ifdef OW_I18N
-	    if ( curscol + colwidth > ttysw_right ) {
+	    if ( ttysw->curscol + colwidth > ttysw->ttysw_right ) {
 		*cp--;
 		addr--;
 		len++;
 	    }
 #endif
             *cp = (CHAR)'\0';
-	    (void) ttysw_writePartialLine(buf, curscolstart);
-	    curscol = 0;
+	    ttysw_writePartialLine(ttysw, buf, curscolstart);
+	    ttysw->curscol = 0;
 	    (void) ansi_lf(ttysw_view, addr, len);
 	    return (olen - len);
 	}
@@ -1337,7 +1329,7 @@ static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen)
 	    break;		/* out of for loop */
     }
     *cp = '\0';
-    (void) ttysw_writePartialLine(buf, curscolstart);
+    ttysw_writePartialLine(ttysw, buf, curscolstart);
     return (olen - len);
 }
 
@@ -1368,38 +1360,38 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 			fprintf(stderr, "%s-%d: char %c, ac=%d\n", __FUNCTION__,__LINE__,c,ac);
 		switch (c) {
 			case '@':
-				(void)ttysw_insertChar(curscol, curscol + av0, cursrow);
+				(void)ttysw_insertChar(ttysw, ttysw->curscol, ttysw->curscol + av0, ttysw->cursrow);
 				break;
 			case 'A':
-				ttysw_pos(curscol, cursrow - av0);
+				ttysw_pos(ttysw, ttysw->curscol, ttysw->cursrow - av0);
 				break;
 			case 'B':
-				ttysw_pos(curscol, cursrow + av0);
+				ttysw_pos(ttysw, ttysw->curscol, ttysw->cursrow + av0);
 				break;
 			case 'C':
-				ttysw_pos(curscol + av0, cursrow);
+				ttysw_pos(ttysw, ttysw->curscol + av0, ttysw->cursrow);
 				break;
 			case 'D':
-				ttysw_pos(curscol - av0, cursrow);
+				ttysw_pos(ttysw, ttysw->curscol - av0, ttysw->cursrow);
 				break;
 			case 'E':
-				ttysw_pos(ttysw_left, cursrow + av0);
+				ttysw_pos(ttysw, ttysw->ttysw_left, ttysw->cursrow + av0);
 				break;
 			case 'f':
 			case 'H':
 				if (av[1] <= 0)
 					av[1] = 1;
-				ttysw_pos(av[1] - 1, av0 - 1);
+				ttysw_pos(ttysw, av[1] - 1, av0 - 1);
 				av[1] = 1;
 				break;
 			case 'L':
-				(void)ttysw_insert_lines(cursrow, av0);
+				(void)ttysw_insert_lines(ttysw, ttysw->cursrow, av0);
 				break;
 			case 'M':
-				ttysw_delete_lines(cursrow, av0);
+				ttysw_delete_lines(ttysw, ttysw->cursrow, av0);
 				break;
 			case 'P':
-				(void)ttysw_deleteChar(curscol, curscol + av0, cursrow);
+				ttysw_deleteChar(ttysw, ttysw->curscol, ttysw->curscol + av0, ttysw->cursrow);
 				break;
 			case 'm':
 				if (dra_tty_debug & 4) { /* sah ich nie */
@@ -1416,16 +1408,16 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 				for (i = 0; i < ac; i++) {
 					switch (av[i]) {
 						case 0:
-							ttysw_clear_mode();
+							ttysw_clear_mode(ttysw);
 							break;
 						case 1:
-							ttysw_bold_mode();
+							ttysw_bold_mode(ttysw);
 							break;
 						case 4:
-							ttysw_underscore_mode();
+							ttysw_underscore_mode(ttysw);
 							break;
 						case 7:
-							ttysw_inverse_mode();
+							ttysw_inverse_mode(ttysw);
 							break;
 						case 2:
 						case 3:
@@ -1436,13 +1428,13 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 								int boldstyle = ttysw_getboldstyle();
 
 								if (boldstyle & TTYSW_BOLD_NONE)
-									ttysw_inverse_mode();
+									ttysw_inverse_mode(ttysw);
 								else
-									ttysw_bold_mode();
+									ttysw_bold_mode(ttysw);
 								break;
 							}
 						default:
-							ttysw_clear_mode();
+							ttysw_clear_mode(ttysw);
 							break;
 					}
 				}
@@ -1462,9 +1454,9 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 			case 'r':
 
 #ifdef OW_I18N
-				ttysw_cim_scroll(SCROLL(scroll_bottom, ttysw_bottom) - av[1]);
+				ttysw_cim_scroll(SCROLL(scroll_bottom, ttysw->ttysw_bottom) - av[1]);
 				scroll_bottom = av[1];
-				ttysw_pos(curscol, scroll_bottom - 1);
+				ttysw_pos(ttysw, ttysw->curscol, scroll_bottom - 1);
 #else
 				scrlins = av0;
 #endif
@@ -1472,7 +1464,7 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 				break;
 			case 's':
 				scrlins = 1;
-				(void)ttysw_clear_mode();
+				ttysw_clear_mode(ttysw);
 				break;
 			default:
 				found = FALSE;
@@ -1499,9 +1491,9 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 					}
 				}
 				else {
-					ttysw_delete_lines(cursrow + 1,
-							ttysw_bottom - (cursrow + 1));
-					(void)ttysw_deleteChar(curscol, ttysw_right, cursrow);
+					ttysw_delete_lines(ttysw, ttysw->cursrow + 1,
+							ttysw->ttysw_bottom - (ttysw->cursrow + 1));
+					ttysw_deleteChar(ttysw, ttysw->curscol, ttysw->ttysw_right, ttysw->cursrow);
 				}
 				break;
 			case 'K':	/* clear to end of line */
@@ -1521,7 +1513,7 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 					}
 				}
 				else {
-					(void)ttysw_deleteChar(curscol, ttysw_right, cursrow);
+					ttysw_deleteChar(ttysw, ttysw->curscol, ttysw->ttysw_right, ttysw->cursrow);
 				}
 				break;
 			case 'h':{
@@ -1614,33 +1606,24 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 	return (TTY_DONE);
 }
 
-Pkg_private void
-ttysw_pos(col, row)
-    register int    col, row;
+Pkg_private void ttysw_pos(Ttysw_private ttysw, int col, int row)
 {
 
-    if (col >= ttysw_right)
-	col = ttysw_right - 1;
-    if (col < ttysw_left)
-	col = ttysw_left;
-    if (row >= ttysw_bottom)
-	row = ttysw_bottom - 1;
-    if (row < ttysw_top)
-	row = ttysw_top;
-    cursrow = row;
-    curscol = col;
-    (void) ttysw_vpos(row, col);
+	if (col >= ttysw->ttysw_right) col = ttysw->ttysw_right - 1;
+	if (col < ttysw->ttysw_left) col = ttysw->ttysw_left;
+	if (row >= ttysw->ttysw_bottom) row = ttysw->ttysw_bottom - 1;
+	if (row < ttysw->ttysw_top) row = ttysw->ttysw_top;
+	ttysw->cursrow = row;
+	ttysw->curscol = col;
+	ttysw_vpos(ttysw, row, col);
 }
 
 /* ARGSUSED */
-Pkg_private void
-ttysw_clear(ttysw)
-    Ttysw          *ttysw;
+Pkg_private void ttysw_clear(Ttysw *ttysw)
 {
 	/* jcb	-- insure that the caret is marked cleared if needed */
-	if (TTY_IS_TERMSW(ttysw))
-	termsw_caret_cleared();
+	if (TTY_IS_TERMSW(ttysw)) termsw_caret_cleared();
 
-    ttysw_pos(ttysw_left, ttysw_top);
-    (void) ttysw_cim_clear(ttysw_top, ttysw_bottom);
+    ttysw_pos(ttysw, ttysw->ttysw_left, ttysw->ttysw_top);
+    ttysw_cim_clear(ttysw, ttysw->ttysw_top, ttysw->ttysw_bottom);
 }
