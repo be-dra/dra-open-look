@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.4 2025/03/15 14:16:06 dra Exp $";
+char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -30,21 +30,16 @@ char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_
 #include <xview_private/charscreen.h>
 #include <xview_private/tty_impl.h>
 
-char            ttysw_boldify;
-Xv_private_data int	delaypainting;
+Xv_private_data int	ttysw_delaypainting;
 
-static void ttysw_roll(int first, int mid, int last);
-static void reverse(int a, int b);
-static void ttysw_swap(int a, int b);
+static void ttysw_roll(Ttysw_private ttysw, int first, int mid, int last);
 
 #define JF
 
-Pkg_private void
-ttysw_vpos(row, col)
-    int             row, col;
+Pkg_private void ttysw_vpos(Ttysw_private ttysw, int row, int col)
 {
-    register CHAR  *line = image[row];
-    register char  *bold = screenmode[row];
+    register CHAR  *line = ttysw->image[row];
+    register char  *bold = ttysw->screenmode[row];
     register int    i;
 
 #ifdef OW_I18N
@@ -59,50 +54,45 @@ ttysw_vpos(row, col)
 	line[i] = (CHAR)' ';
     }
 #ifdef OW_I18N
-    setlinelength(line, ((int)LINE_LENGTH(line)));
+    setlinelength(ttysw, line, ((int)LINE_LENGTH(line)));
 #else
-    setlinelength(line, ((int)LINE_LENGTH(line)));
+    setlinelength(ttysw, line, ((int)LINE_LENGTH(line)));
 #endif
 }
 
-Pkg_private void
-ttysw_bold_mode()
+Pkg_private void ttysw_bold_mode(Ttysw_private ttysw)
 {
-    ttysw_boldify |= MODE_BOLD;
+    ttysw->boldify |= MODE_BOLD;
 }
 
-Pkg_private void ttysw_underscore_mode()
+Pkg_private void ttysw_underscore_mode(Ttysw_private ttysw)
 {
-    ttysw_boldify |= MODE_UNDERSCORE;
+    ttysw->boldify |= MODE_UNDERSCORE;
 }
 
-Pkg_private void ttysw_inverse_mode()
+Pkg_private void ttysw_inverse_mode(Ttysw_private ttysw)
 {
-    ttysw_boldify |= MODE_INVERT;
+    ttysw->boldify |= MODE_INVERT;
 }
 
 #ifdef SEEMS_UNUSED
 /* NOT USED */
 ttysw_noinverse_mode()
 {
-    ttysw_boldify &= ~MODE_INVERT;
+    ttysw->boldify &= ~MODE_INVERT;
 }
 #endif /* SEEMS_UNUSED */
 
-Pkg_private void
-ttysw_clear_mode()
+Pkg_private void ttysw_clear_mode(Ttysw_private ttysw)
 {
-    ttysw_boldify = MODE_CLEAR;
+    ttysw->boldify = MODE_CLEAR;
 }
 
-Pkg_private void
-ttysw_writePartialLine(s, curscolStart)
-    CHAR           *s;
-    register int    curscolStart;
+Pkg_private void ttysw_writePartialLine(Ttysw_private ttysw, CHAR *s, int curscolStart)
 {
     register CHAR  *sTmp;
-    register CHAR  *line = image[cursrow];
-    register char  *bold = screenmode[cursrow];
+    register CHAR  *line = ttysw->image[ttysw->cursrow];
+    register char  *bold = ttysw->screenmode[ttysw->cursrow];
     register int    curscolTmp = curscolStart;
 #ifdef  OW_I18N
     int    c_sizefactor;
@@ -117,19 +107,19 @@ ttysw_writePartialLine(s, curscolStart)
 #else
     if ((int)LINE_LENGTH(line) < curscolStart)
 #endif
-	(void) ttysw_vpos(cursrow, curscolStart);
+	ttysw_vpos(ttysw, ttysw->cursrow, curscolStart);
     /*
      * Stick characters in line.
      */
     for (sTmp = s; *sTmp != '\0'; sTmp++) {
 	line[curscolTmp] = *sTmp;
-	bold[curscolTmp] = ttysw_boldify;
+	bold[curscolTmp] = ttysw->boldify;
 #ifdef  OW_I18N
         c_sizefactor = tty_character_size( *sTmp );
         while( --c_sizefactor > 0 ) {
                 curscolTmp++;
                 line[curscolTmp] = TTY_NON_WCHAR;
-                bold[curscolTmp] = ttysw_boldify;
+                bold[curscolTmp] = boldify;
         }
 #endif
 	curscolTmp++;
@@ -142,22 +132,31 @@ ttysw_writePartialLine(s, curscolStart)
 #else
     if ((int)LINE_LENGTH(line) < curscolTmp)
 #endif
-	setlinelength(line, curscolTmp);
+	setlinelength(ttysw, line, curscolTmp);
     /*
      * if (sTmp>(s+3)) printf("%d\n",sTmp-s);
      */
     /* Note: curscolTmp should equal curscol here */
     /*
-     * if (curscolTmp!=curscol) printf("csurscolTmp=%d, curscol=%d\n",
-     * curscolTmp,curscol);
+     * if (curscolTmp!=ttysw->curscol) printf("csurscolTmp=%d, curscol=%d\n",
+     * curscolTmp,ttysw->curscol);
      */
-    (void) ttysw_pstring(s, ttysw_boldify, curscolStart, cursrow, PIX_SRC);
+    ttysw_pstring(ttysw, s, ttysw->boldify, curscolStart, ttysw->cursrow, PIX_SRC);
+}
+
+static void ttysw_swap(Ttysw_private ttysw, int a, int b)
+{
+    CHAR           *tmpline = ttysw->image[a];
+    char           *tmpbold = ttysw->screenmode[a];
+
+    ttysw->image[a] = ttysw->image[b];
+    ttysw->image[b] = tmpline;
+    ttysw->screenmode[a] = ttysw->screenmode[b];
+    ttysw->screenmode[b] = tmpbold;
 }
 
 #ifdef JF
-Pkg_private void
-ttysw_cim_scroll(n)
-    register int    n;
+Pkg_private void ttysw_cim_scroll(Ttysw_private ttysw, int n)
 {
     register int    new;
 
@@ -165,12 +164,12 @@ ttysw_cim_scroll(n)
     printf(" ttysw_cim_scroll(%d)	\n", n);
 #endif
     if (n > 0) {		/* text moves UP screen	 */
-	(void) ttysw_delete_lines(ttysw_top, n);
+	(void) ttysw_delete_lines(ttysw, ttysw->ttysw_top, n);
     } else {			/* (n<0)	text moves DOWN	screen	 */
-	new = ttysw_bottom + n;
-	(void) ttysw_roll(ttysw_top, new, ttysw_bottom);
-	(void) ttysw_pcopyscreen(ttysw_top, ttysw_top - n, new);
-	(void) ttysw_cim_clear(ttysw_top, ttysw_top - n);
+	new = ttysw->ttysw_bottom + n;
+	ttysw_roll(ttysw, ttysw->ttysw_top, new, ttysw->ttysw_bottom);
+	ttysw_pcopyscreen(ttysw, ttysw->ttysw_top, ttysw->ttysw_top - n, new);
+	ttysw_cim_clear(ttysw, ttysw->ttysw_top, ttysw->ttysw_top - n);
     }
 }
 
@@ -185,105 +184,86 @@ Pkg_private void ttysw_cim_scroll(int toy, int fromy)
 {
 
     if (toy < fromy)		/* scrolling up */
-	(void) ttysw_roll(toy, ttysw_bottom, fromy);
+	(void) ttysw_roll(toy, ttysw->ttysw_bottom, fromy);
     else
-	ttysw_swapregions(fromy, toy, ttysw_bottom - toy);
+	ttysw_swapregions(fromy, toy, ttysw->ttysw_bottom - toy);
     if (fromy > toy) {
-	(void) ttysw_pcopyscreen(fromy, toy, ttysw_bottom - fromy);
-	(void) ttysw_cim_clear(ttysw_bottom - (fromy - toy), ttysw_bottom);
+	(void) ttysw_pcopyscreen(fromy, toy, ttysw->ttysw_bottom - fromy);
+	(void) ttysw_cim_clear(ttysw->ttysw_bottom - (fromy - toy), ttysw->ttysw_bottom);
 	/* move text up */
     } else {
-	(void) ttysw_pcopyscreen(fromy, toy, ttysw_bottom - toy);
-	(void) ttysw_cim_clear(fromy, ttysw_bottom - (toy - fromy));	/* down */
+	(void) ttysw_pcopyscreen(fromy, toy, ttysw->ttysw_bottom - toy);
+	(void) ttysw_cim_clear(fromy, ttysw->ttysw_bottom - (toy - fromy));	/* down */
     }
 }
 
 #endif
 
-Pkg_private void ttysw_insert_lines(int where, int n)
+Pkg_private void ttysw_insert_lines(Ttysw_private ttysw, int where, int n)
 {
     register int    new = where + n;
 
 #ifdef DEBUG_LINES
-    printf(" ttysw_insert_lines(%d,%d) ttysw_bottom=%d	\n", where, n, ttysw_bottom);
+    printf(" ttysw_insert_lines(%d,%d) ttysw_bottom=%d	\n", where, n, ttysw->ttysw_bottom);
 #endif
-    if (new > ttysw_bottom)
-	new = ttysw_bottom;
-    (void) ttysw_roll(where, new, ttysw_bottom);
-    (void) ttysw_pcopyscreen(where, new, ttysw_bottom - new);
-    (void) ttysw_cim_clear(where, new);
+    if (new > ttysw->ttysw_bottom)
+	new = ttysw->ttysw_bottom;
+    ttysw_roll(ttysw, where, new, ttysw->ttysw_bottom);
+    (void) ttysw_pcopyscreen(ttysw, where, new, ttysw->ttysw_bottom - new);
+    ttysw_cim_clear(ttysw, where, new);
 }
 
 /* BUG ALERT:  Externally visible procedure without a valid XView prefix. */
-Pkg_private void
-ttysw_delete_lines(where, n)
-    register int    where, n;
+Pkg_private void ttysw_delete_lines(Ttysw_private ttysw, int where, int n)
 {
     register int    new = where + n;
 
 #ifdef DEBUG_LINES
     printf(" ttysw_delete_lines(%d,%d)	\n", where, n);
 #endif
-    if (new > ttysw_bottom) {
-	n -= new - ttysw_bottom;
-	new = ttysw_bottom;
+    if (new > ttysw->ttysw_bottom) {
+	n -= new - ttysw->ttysw_bottom;
+	new = ttysw->ttysw_bottom;
     }
-    (void) ttysw_roll(where, ttysw_bottom - n, ttysw_bottom);
-    (void) ttysw_pcopyscreen(new, where, ttysw_bottom - new);
-    (void) ttysw_cim_clear(ttysw_bottom - n, ttysw_bottom);
+    ttysw_roll(ttysw, where, ttysw->ttysw_bottom - n, ttysw->ttysw_bottom);
+    ttysw_pcopyscreen(ttysw, new, where, ttysw->ttysw_bottom - new);
+    ttysw_cim_clear(ttysw, ttysw->ttysw_bottom - n, ttysw->ttysw_bottom);
 }
 
-static void ttysw_roll(int first, int mid, int last)
+static void reverse(Ttysw_private ttysw, int a, int b)
+{
+    b--;
+    while (a < b) ttysw_swap(ttysw, a++, b--);
+}
+
+static void ttysw_roll(Ttysw_private ttysw, int first, int mid, int last)
 {
 
     /* printf("first=%d, mid=%d, last=%d\n", first, mid, last); */
-    reverse(first, last);
-    reverse(first, mid);
-    reverse(mid, last);
+    reverse(ttysw, first, last);
+    reverse(ttysw, first, mid);
+    reverse(ttysw, mid, last);
 }
 
-static void reverse(int a, int b)
+Pkg_private void ttysw_cim_clear(Ttysw_private ttysw, int a, int b)
 {
+	register int i;
 
-    b--;
-    while (a < b)
-	(void) ttysw_swap(a++, b--);
+	for (i = a; i < b; i++)
+		setlinelength(ttysw, ttysw->image[i], 0);
+	ttysw_pclearscreen(ttysw, a, b);
+	if (a == ttysw->ttysw_top && b == ttysw->ttysw_bottom) {
+		if (ttysw_delaypainting)
+			ttysw_pdisplayscreen(ttysw, 1);
+		else
+			ttysw_delaypainting = 1;
+	}
 }
 
-static void ttysw_swap(int a, int b)
+Pkg_private void ttysw_deleteChar(Ttysw_private ttysw, int fromcol, int tocol, int row)
 {
-    CHAR           *tmpline = image[a];
-    char           *tmpbold = screenmode[a];
-
-    image[a] = image[b];
-    image[b] = tmpline;
-    screenmode[a] = screenmode[b];
-    screenmode[b] = tmpbold;
-}
-
-Pkg_private void
-ttysw_cim_clear(a, b)
-    int             a, b;
-{
-    register int    i;
-
-    for (i = a; i < b; i++)
-	setlinelength(image[i], 0);
-    (void) ttysw_pclearscreen(a, b);
-    if (a == ttysw_top && b == ttysw_bottom) {
-	if (delaypainting)
-	    (void) ttysw_pdisplayscreen(1);
-	else
-	    delaypainting = 1;
-    }
-}
-
-Pkg_private void
-ttysw_deleteChar(fromcol, tocol, row)
-    int             fromcol, tocol, row;
-{
-    CHAR           *line = image[row];
-    char           *bold = screenmode[row];
+    CHAR           *line = ttysw->image[row];
+    char           *bold = ttysw->screenmode[row];
 #ifdef OW_I18N
 #ifndef SVR4
     int             len = LINE_LENGTH(line);
@@ -329,23 +309,19 @@ ttysw_deleteChar(fromcol, tocol, row)
 	    register char  *bm = bold + tocol;
 	    while ((*a++ = *b++)) *am++ = *bm++;
 	}
-	setlinelength(line, len - gap);
-	(void) ttysw_pcopyline(fromcol, tocol, len - tocol, row);
-	(void) ttysw_pclearline(len - gap, len, row);
+	setlinelength(ttysw, line, len - gap);
+	ttysw_pcopyline(ttysw, fromcol, tocol, len - tocol, row);
+	ttysw_pclearline(ttysw, len - gap, len, row);
     } else if (fromcol < len) {
-	setlinelength(line, fromcol);
-	(void) ttysw_pclearline(fromcol, len, row);
+	setlinelength(ttysw, line, fromcol);
+	ttysw_pclearline(ttysw, fromcol, len, row);
     }
 }
 
-Pkg_private void
-ttysw_insertChar(fromcol, tocol, row)
-    int             fromcol;
-    register int    tocol;
-    int             row;
+Pkg_private void ttysw_insertChar(Ttysw_private ttysw, int fromcol, int tocol, int row)
 {
-    register CHAR  *line = image[row];
-    register char  *bold = screenmode[row];
+    register CHAR  *line = ttysw->image[row];
+    register char  *bold = ttysw->screenmode[row];
 #ifdef OW_I18N
     int             len = LINE_LENGTH(line);
 #else
@@ -374,10 +350,10 @@ ttysw_insertChar(fromcol, tocol, row)
 	return;
     delta = tocol - fromcol;
     newlen = len + delta;
-    if (newlen > ttysw_right)
-	newlen = ttysw_right;
-    if (tocol > ttysw_right)
-	tocol = ttysw_right;
+    if (newlen > ttysw->ttysw_right)
+	newlen = ttysw->ttysw_right;
+    if (tocol > ttysw->ttysw_right)
+	tocol = ttysw->ttysw_right;
     for (i = newlen; i >= tocol; i--) {
 	line[i] = line[i - delta];
 	bold[i] = bold[i - delta];
@@ -386,13 +362,13 @@ ttysw_insertChar(fromcol, tocol, row)
 	line[i] = ' ';
 	bold[i] = MODE_CLEAR;
     }
-    setlinelength(line, newlen);
+    setlinelength(ttysw, line, newlen);
     rightextent = len + (tocol - fromcol);
     slug = len - fromcol;
-    if (rightextent > ttysw_right)
-	slug -= rightextent - ttysw_right;
-    (void) ttysw_pcopyline(tocol, fromcol, slug, row);
-    (void) ttysw_pclearline(fromcol, tocol, row);
+    if (rightextent > ttysw->ttysw_right)
+	slug -= rightextent - ttysw->ttysw_right;
+    ttysw_pcopyline(ttysw, tocol, fromcol, slug, row);
+    ttysw_pclearline(ttysw, fromcol, tocol, row);
 }
 
 #ifdef OW_I18N
