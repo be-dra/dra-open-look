@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.4 2024/12/29 17:31:25 dra Exp $";
+char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -61,8 +61,8 @@ typedef struct tty_gc_list {
 #define DEFAULT_GC	1
 #define BACK_GC		2
 
-int TTY_CURRENT_FONT_KEY;
-int TTY_GC_LIST_KEY;
+static int TTY_CURRENT_FONT_KEY;
+static int TTY_GC_LIST_KEY;
 extern int xv_to_xop[16];
 
 /*
@@ -146,13 +146,13 @@ static GC * get_gc_list(Xv_Drawable_info *info)
 /*
  * set the fonts in the GCs to the Pixfont specified. called once only!
  */
-static void setup_font(Xv_opaque window, Xv_opaque pixfont)
+static void setup_font(Xv_opaque window, Xv_opaque pixfnt)
 {
 #ifdef OW_I18N
     XFontSet            font_set;
     XFontSetExtents     *font_set_extents;
 
-    font_set = (XFontSet)xv_get(pixfont, FONT_SET_ID);
+    font_set = (XFontSet)xv_get(pixfnt, FONT_SET_ID);
     font_set_extents = (XFontSetExtents *)XExtentsOfFontSet(font_set);
     font_height = font_set_extents->max_logical_extent.height;
 #else
@@ -164,7 +164,7 @@ static void setup_font(Xv_opaque window, Xv_opaque pixfont)
 
     DRAWABLE_INFO_MACRO(window, info);
     display = xv_display(info);
-    font = (Font) xv_get(pixfont, XV_XID);
+    font = (Font) xv_get(pixfnt, XV_XID);
 
     /* it should always be valid, but be careful */
     if (font != XV_NULL) {
@@ -174,7 +174,7 @@ static void setup_font(Xv_opaque window, Xv_opaque pixfont)
 	XSetFont(display, gc_list[INVERTED_GC], font);
 	
 	/* determine font height -- don't trust globals!! */
-	fontinfo = (XFontStruct *)xv_get(pixfont, FONT_INFO);
+	fontinfo = (XFontStruct *)xv_get(pixfnt, FONT_INFO);
 	
 	font_height = fontinfo->ascent + fontinfo->descent;
     }
@@ -240,7 +240,7 @@ static void firsttime_init(void)
  * the window XID for me to be happy...]
  */
 Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
-								Xv_opaque pixfont, CHAR *string, int len)
+								Xv_opaque pixfnt, CHAR *string, int len)
 {
 	static int old_op = BADVAL;
 	Xv_Drawable_info *info;
@@ -295,10 +295,10 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 	if (!TTY_CURRENT_FONT_KEY)
 		TTY_CURRENT_FONT_KEY = xv_unique_key();
 
-	if (pixfont != (Xv_opaque) xv_get(screen, XV_KEY_DATA, TTY_CURRENT_FONT_KEY)
+	if (pixfnt != (Xv_opaque) xv_get(screen, XV_KEY_DATA, TTY_CURRENT_FONT_KEY)
 			|| old_gc_list != gc_list) {
-		setup_font(window, pixfont);
-		xv_set(screen, XV_KEY_DATA, TTY_CURRENT_FONT_KEY, pixfont, NULL);
+		setup_font(window, pixfnt);
+		xv_set(screen, XV_KEY_DATA, TTY_CURRENT_FONT_KEY, pixfnt, NULL);
 		old_gc_list = gc_list;
 	}
 
@@ -363,7 +363,7 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 	}
 
 #ifdef OW_I18N
-	(void)(*routine) (display, drawable, xv_get(pixfont, FONT_SET_ID),
+	(void)(*routine) (display, drawable, xv_get(pixfnt, FONT_SET_ID),
 			*gc, xbasew, ybasew, string, len);
 #else
 	(*routine) (display, drawable, *gc, xbasew, ybasew, string, len);
