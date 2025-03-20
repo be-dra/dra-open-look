@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.4 2025/03/16 13:48:53 dra Exp $";
+char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -168,8 +168,8 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *
 					columns = textsw_screen_column_count(TTY_PUBLIC(ttysw));
 				}
 				else {
-					rows = y_to_row(winheightp);
-					columns = x_to_col(winwidthp);
+					rows = y_to_row(ttysw->winheightp);
+					columns = x_to_col(ttysw->winwidthp);
 				}
 				(void)sprintf(buf, "\33[8;%d;%dt", rows, columns);
 			}
