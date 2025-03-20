@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.8 2025/03/15 14:16:06 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.9 2025/03/19 21:33:50 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -50,12 +50,10 @@ Xv_private char *xv_shell_prompt;
 
 #define TTYSW_HOME_CHAR	'A'
 
-extern int      cursor;		/* NOCURSOR, UNDERCURSOR, BLOCKCURSOR */
-
 #ifdef OW_I18N
 /* static */ void ttysw_convert_string();
 #endif
-static void ttysw_paintCursor(int op);
+static void ttysw_paintCursor(Ttysw_private ttysw, int op);
 
 static int      caretx, carety, lxhome;
 static short    charcursx, charcursy;
@@ -70,11 +68,6 @@ static short    charcursx, charcursy;
 static  int     curs_width;
 #endif
 
-Xv_private_data int	chrheight, chrwidth, chrbase;
-Xv_private_data int	winheightp, winwidthp;
-Xv_private_data int	chrleftmargin;
-Xv_private_data struct	pixfont *pixfont;
-
 static int      boldstyle, inverse_mode, underline_mode;
 
 static struct timeval  ttysw_bell_tv = {0, 100000};	/* 1/10 second */
@@ -84,7 +77,7 @@ static u_short  ttysw_gray17_data[16] = {	/* really 16-2/3	 */
     0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082, 0x0410, 0x1041
 };
 
-mpr_static(ttysw_gray17_pr, 12, 12, 1, ttysw_gray17_data);
+static mpr_static(ttysw_gray17_pr, 12, 12, 1, ttysw_gray17_data);
 
 /* Note: change to void */
 Pkg_private int ttysw_setboldstyle(int new_boldstyle)
@@ -125,15 +118,21 @@ Pkg_private int ttysw_getboldstyle(void)
 /* } */
 
 
-Pkg_private void ttysw_setleftmargin(int left_margin)
+Pkg_private void ttysw_setleftmrg(Ttysw_private ttysw, int left_margin)
 {
-    chrleftmargin = left_margin > 0 ? left_margin : 0;
+    ttysw->chrleftmargin = left_margin > 0 ? left_margin : 0;
+}
+
+Pkg_private void ttysw_setleftmargin(Tty t, int left_margin)
+{
+	Ttysw_private ttysw = TTY_PRIVATE(t);
+    ttysw->chrleftmargin = left_margin > 0 ? left_margin : 0;
 }
 
 /* NOT USED */
 /* ttysw_getleftmargin() */
 /* { */
-/*     return chrleftmargin; */
+/*     return ttysw->chrleftmargin; */
 /* } */
 
 static void ttysw_fixup_display_mode(char *mode)
@@ -156,7 +155,7 @@ static void ttysw_fixup_display_mode(char *mode)
 }
 
 /* Note: whole string will be diplayed with mode. */
-Pkg_private void ttysw_pstring(CHAR *s,
+Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 				/* dieser Compiler warnt immer ueber 'different width'
 				 * bei formalen Parametern von Typ char....
 				 */
@@ -176,12 +175,12 @@ Pkg_private void ttysw_pstring(CHAR *s,
 	register int x_home;
 	register int y_home;
 	XFontStruct *x_font_info =
-			(XFontStruct *) xv_get((Xv_opaque) pixfont, FONT_INFO);
+			(XFontStruct *) xv_get((Xv_opaque) ttysw->pixfont, FONT_INFO);
 	char mode = (char)parmode;
 
 #ifdef OW_I18N
 	x_home = x_font_info->min_bounds.lbearing;
-	y_home = -chrbase;
+	y_home = -ttysw->chrbase;
 #else
 	x_home = x_font_info->per_char ?
 			x_font_info->per_char[TTYSW_HOME_CHAR -
@@ -204,12 +203,12 @@ Pkg_private void ttysw_pstring(CHAR *s,
 		}
 	}
 
-	if (delaypainting) {
-		if (row == ttysw_bottom)
+	if (ttysw_delaypainting) {
+		if (row == ttysw->ttysw_bottom)
 			/*
-			 * Reached bottom of screen so end delaypainting.
+			 * Reached bottom of screen so end ttysw_delaypainting.
 			 */
-			(void)ttysw_pdisplayscreen(1);
+			ttysw_pdisplayscreen(ttysw, 1);
 		return;
 	}
 	if (s == 0)
@@ -220,93 +219,93 @@ Pkg_private void ttysw_pstring(CHAR *s,
 	ttysw_convert_string(buf, s);
 	if (mode & MODE_BOLD) {
 		/* Clean up first */
-		(void)ttysw_pclearline(col, col + STRLEN(s), row);
+		ttysw_pclearline(ttysw, col, col + STRLEN(s), row);
 
 		/* render the first one, the potential offset of the others */
 		tty_newtext(csr_pixwin_get(),
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op,
-				pixfont, buf, STRLEN(buf));
+				ttysw->pixfont, buf, STRLEN(buf));
 
 		if (boldstyle & TTYSW_BOLD_OFFSET_X)
 			tty_newtext(csr_pixwin_get(),
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, pixfont, buf, STRLEN(buf));
+					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
 		if (boldstyle & TTYSW_BOLD_OFFSET_Y)
 			tty_newtext(csr_pixwin_get(),
 					col_to_x(col) - x_home,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, pixfont, buf, STRLEN(buf));
+					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
 		if (boldstyle & TTYSW_BOLD_OFFSET_XY)
 			tty_newtext(csr_pixwin_get(),
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, pixfont, buf, STRLEN(buf));
+					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
 	}
 	else {
 		tty_newtext(csr_pixwin_get(),
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
-				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op, pixfont, buf,
+				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op, ttysw->pixfont, buf,
 				STRLEN(buf));
 	}
 	if (mode & MODE_UNDERSCORE) {
 		struct pr_size str_size;
 		struct pr_size xv_pf_textwidth_wc();
 
-		str_size = xv_pf_textwidth_wc(STRLEN(buf), pixfont, buf);
+		str_size = xv_pf_textwidth_wc(STRLEN(buf), ttysw->pixfont, buf);
 		tty_background(csr_pixwin_get(),
-				col_to_x(col), row_to_y(row) + chrheight - 1,
+				col_to_x(col), row_to_y(row) + ttysw->chrheight - 1,
 				str_size.x, 1,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : PIX_SRC);
 	}
 #else
 	if (mode & MODE_BOLD) {
 		/* Clean up first */
-		ttysw_pclearline(col, col + (int)strlen(s), row);
+		ttysw_pclearline(ttysw, col, col + (int)strlen(s), row);
 
 		/* render the first one, the potential offset of the others */
 		tty_newtext(csr_pixwin_get(),
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op,
-				(Xv_opaque) pixfont, s, (int)strlen(s));
+				(Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 
 		if (boldstyle & TTYSW_BOLD_OFFSET_X)
 			tty_newtext(csr_pixwin_get(),
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, (Xv_opaque) pixfont, s, (int)strlen(s));
+					PIX_SRC | PIX_DST, (Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 		if (boldstyle & TTYSW_BOLD_OFFSET_Y)
 			tty_newtext(csr_pixwin_get(),
 					col_to_x(col) - x_home,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, (Xv_opaque) pixfont, s, (int)strlen(s));
+					PIX_SRC | PIX_DST, (Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 		if (boldstyle & TTYSW_BOLD_OFFSET_XY)
 			tty_newtext(csr_pixwin_get(),
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, (Xv_opaque) pixfont, s, (int)strlen(s));
+					PIX_SRC | PIX_DST, (Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 	}
 	else {
 		tty_newtext(csr_pixwin_get(),
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op,
-				(Xv_opaque) pixfont, s, (int)strlen(s));
+				(Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 	}
 	if (mode & MODE_UNDERSCORE) {
 		tty_background(csr_pixwin_get(),
-				col_to_x(col), row_to_y(row) + chrheight - 1,
-				(int)strlen(s) * chrwidth, 1,
+				col_to_x(col), row_to_y(row) + ttysw->chrheight - 1,
+				(int)strlen(s) * ttysw->chrwidth, 1,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : PIX_SRC);
 	}
 #endif /*  OW_I18N */
@@ -316,53 +315,45 @@ Pkg_private void ttysw_pstring(CHAR *s,
 #endif
 }
 
-Pkg_private void
-ttysw_pclearline(fromcol, tocol, row)
-    int             fromcol, tocol, row;
+Pkg_private void ttysw_pclearline(Ttysw_private ttysw, int fromcol, int tocol, int row)
 {
     int	klu1284	= (fromcol == 0 ? 1 : 0 );
 
-    if (delaypainting)
-	return;
-    (void) tty_background(csr_pixwin_get(),
+    if (ttysw_delaypainting) return;
+    tty_background(csr_pixwin_get(),
 			  col_to_x(fromcol)-klu1284, row_to_y(row),
 			  col_to_x(tocol) - col_to_x(fromcol)+klu1284,
-			  chrheight, PIX_CLR);
+			  ttysw->chrheight, PIX_CLR);
 }
 
-Pkg_private void
-ttysw_pcopyline(tocol, fromcol, count, row)
-    int             fromcol, tocol, count, row;
+Pkg_private void ttysw_pcopyline(Ttysw_private ttysw, int fromcol, int tocol, int count, int row)
 {
-    int             pix_width = (count * chrwidth);
-    if (delaypainting)
-	return;
+    int             pix_width = (count * ttysw->chrwidth);
+    if (ttysw_delaypainting) return;
     (void) tty_copyarea(csr_pixwin_get(),
-		     col_to_x(fromcol)-1, row_to_y(row), pix_width+1, chrheight,
+		     col_to_x(fromcol)-1, row_to_y(row), pix_width+1, ttysw->chrheight,
 			col_to_x(tocol)-1, row_to_y(row));
     tty_synccopyarea(csr_pixwin_get());
 }
 
-Pkg_private void ttysw_pclearscreen( int fromrow, int torow)
+Pkg_private void ttysw_pclearscreen(Ttysw_private ttysw, int fromrow, int torow)
 {
-    if (delaypainting)
-	return;
-    (void) tty_background(csr_pixwin_get(), col_to_x(ttysw_left)-1,
+    if (ttysw_delaypainting) return;
+    tty_background(csr_pixwin_get(), col_to_x(ttysw->ttysw_left)-1,
 			  row_to_y(fromrow),
-			  winwidthp+1, row_to_y(torow - fromrow), PIX_CLR);
+			  ttysw->winwidthp+1, row_to_y(torow - fromrow), PIX_CLR);
 }
 
-Pkg_private void ttysw_pcopyscreen(int fromrow, int torow, int count)
+Pkg_private void ttysw_pcopyscreen(Ttysw_private ttysw, int fromrow, int torow, int count)
 {
-    if (delaypainting)
-	return;
-    (void) tty_copyarea(csr_pixwin_get(),
-			col_to_x(ttysw_left)-1, row_to_y(fromrow), winwidthp+1, row_to_y(count),
-			col_to_x(ttysw_left)-1, row_to_y(torow));
+    if (ttysw_delaypainting) return;
+    tty_copyarea(csr_pixwin_get(), col_to_x(ttysw->ttysw_left)-1,
+			row_to_y(fromrow), ttysw->winwidthp+1, row_to_y(count),
+			col_to_x(ttysw->ttysw_left)-1, row_to_y(torow));
     tty_synccopyarea(csr_pixwin_get());
 }
 
-static void ttysw_displayrow(int row, int leftcol)
+static void ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 {
 	register int	colstart, blanks, colfirst;
 	register CHAR  *strstart, *strfirst;
@@ -373,7 +364,7 @@ static void ttysw_displayrow(int row, int leftcol)
 	colfirst = 0;
 	colstart = leftcol;
 
-	if ((unsigned char)leftcol < LINE_LENGTH(image[row])) {
+	if ((unsigned char)leftcol < LINE_LENGTH(ttysw->image[row])) {
 #ifdef OW_I18N
 		strfirst = NULL_CHARP;
 #else
@@ -381,8 +372,8 @@ static void ttysw_displayrow(int row, int leftcol)
 #endif
 		modefirst = MODE_CLEAR;
 		blanks = 1;
-		for (strstart = image[row] + leftcol,
-		     modestart = screenmode[row] + leftcol; *strstart;
+		for (strstart = ttysw->image[row] + leftcol,
+		     modestart = ttysw->screenmode[row] + leftcol; *strstart;
 		     strstart++, modestart++, colstart++) {
 		    /*
 		     * Find beginning of bold string
@@ -404,7 +395,7 @@ static void ttysw_displayrow(int row, int leftcol)
 #endif
 			csave = *strstart;
 			*strstart = '\0';
-			ttysw_pstring(strfirst, modefirst, colfirst, row,
+			ttysw_pstring(ttysw, strfirst, modefirst, colfirst, row,
 				       PIX_SRC /* | PIX_DST - jcb */ );
 			*strstart = csave;
 		    }
@@ -418,17 +409,17 @@ static void ttysw_displayrow(int row, int leftcol)
 #else
 		if (strfirst != (caddr_t) 0)
 #endif
-		    ttysw_pstring(strfirst, modefirst, colfirst,
+		    ttysw_pstring(ttysw, strfirst, modefirst, colfirst,
 				   row, PIX_SRC /* | PIX_DST -- jcb */ );
 	}
 }
 
-Pkg_private void ttysw_pdisplayscreen( int dontrestorecursor)
+Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw, int dontrestorecursor)
 {
     struct rect *rect;
     int row;
 
-    delaypainting = 0;
+    ttysw_delaypainting = 0;
     /*
      * refresh the entire image.
      */
@@ -436,14 +427,14 @@ Pkg_private void ttysw_pdisplayscreen( int dontrestorecursor)
     (void) tty_background(csr_pixwin_get(), 0, 0,
 			      rect->r_width+1, rect->r_height, PIX_CLR);
 
-    for (row = ttysw_top; row < ttysw_bottom; row++)
-		ttysw_displayrow(row, 0);
+    for (row = ttysw->ttysw_top; row < ttysw->ttysw_bottom; row++)
+		ttysw_displayrow(ttysw, row, 0);
 
     if (!dontrestorecursor)
 	/*
 	 * The following has effect of restoring cursor.
 	 */
-	(void) ttysw_removeCursor();
+	ttysw_removeCursor(ttysw);
 }
 
 /* ARGSUSED */
@@ -470,21 +461,21 @@ Pkg_private void ttysw_prepair(XEvent *eventp)
 	 * in the lines above and below the cursrow
 	 * so these lines have to be checked too.
 	 */
-	if(leftcol <= curscol+1) {
+	if(leftcol <= ttysw->curscol+1) {
 	  /*
 	   * cheak and use one column to right and left of curscol because
 	   * unhilighted cursor actually overlaps into adjoining columns.
 	   * Need to repaint these characters so they look right after
 	   * erasing with ttysw_paintCursor().
 	   */
-	  leftcol = MIN(leftcol, curscol-1);
+	  leftcol = MIN(leftcol, ttysw->curscol-1);
 	  leftcol = MAX(leftcol, 0);
-	  if ((exposed->line_exposed[cursrow]) ||
-	     (((cursor & LIGHTCURSOR) && exposed->line_exposed[cursrow+1]) ||
-	      (cursrow > 0 && exposed->line_exposed[cursrow-1]))) {
+	  if ((exposed->line_exposed[ttysw->cursrow]) ||
+	     (((ttysw->cursor & LIGHTCURSOR) && exposed->line_exposed[ttysw->cursrow+1]) ||
+	      (ttysw->cursrow > 0 && exposed->line_exposed[ttysw->cursrow-1]))) {
 
-			ttysw_paintCursor(PIX_CLR);
-			exposed->line_exposed[cursrow] = TRUE;
+			ttysw_paintCursor(ttysw, PIX_CLR);
+			exposed->line_exposed[ttysw->cursrow] = TRUE;
 			display_cursor = TRUE;
 	  }
 	}
@@ -516,20 +507,20 @@ Pkg_private void ttysw_prepair(XEvent *eventp)
 				break;
 			}
 
-		for (row = ttysw_top; row < ttysw_bottom; row++) {
+		for (row = ttysw->ttysw_top; row < ttysw->ttysw_bottom; row++) {
 			if((selected_lines_damaged &&
 			   (row >= begin->tsp_row) && (row <= end->tsp_row)) ||
-			   (row == cursrow)) {
+			   (row == ttysw->cursrow)) {
 				/* because of xor, the line is cleared */
-				ttysw_pclearline(0, (int)STRLEN(image[row])+1, row);
-				ttysw_displayrow(row, 0);
+				ttysw_pclearline(ttysw, 0, (int)STRLEN(ttysw->image[row])+1, row);
+				ttysw_displayrow(ttysw, row, 0);
 			} else
 			if(exposed->line_exposed[row])
-				ttysw_displayrow(row, leftcol);
+				ttysw_displayrow(ttysw, row, leftcol);
 		}
 
-		if(selected_lines_damaged)
-			ttyhiliteselection(&ttysw->sels[TTY_SEL_PRIMARY], TTY_SEL_PRIMARY);
+		if (selected_lines_damaged)
+			ttyhiliteselection(ttysw, &ttysw->sels[TTY_SEL_PRIMARY], TTY_SEL_PRIMARY);
 		/* secondary selection is painted in caller */
 
 
@@ -537,20 +528,20 @@ Pkg_private void ttysw_prepair(XEvent *eventp)
 
 		/* The easy case: no selection, just repaint damaged lines. */
 
-		for (row = ttysw_top; row < ttysw_bottom; row++) {
+		for (row = ttysw->ttysw_top; row < ttysw->ttysw_bottom; row++) {
 		    if(exposed->line_exposed[row])
-				ttysw_displayrow(row, leftcol);
+				ttysw_displayrow(ttysw, row, leftcol);
 		}
 	}
 
 	if(display_cursor)
-		(void) ttysw_removeCursor();
+		ttysw_removeCursor(ttysw);
 
 	tty_clear_clip_rectangles(csr_pixwin_get());
 
 }
 
-Pkg_private void ttysw_drawCursor(int yChar, int xChar)
+Pkg_private void ttysw_drawCursor(Ttysw_private ttysw, int yChar, int xChar)
 {
 #ifdef  OW_I18N
     int         offset;
@@ -565,53 +556,52 @@ Pkg_private void ttysw_drawCursor(int yChar, int xChar)
      *  ascii or not , so we cannot put cursor out of range.
      */
 
-    if( xChar >= ttysw_right )
-        xChar = ttysw_right-1;
-    if( xChar < ttysw_left )
-        xChar = ttysw_left;
-    if( yChar >= ttysw_bottom )
-        yChar = ttysw_bottom-1;
-    if( yChar < ttysw_top )
-        yChar = ttysw_top;
+    if( xChar >= ttysw->ttysw_right )
+        xChar = ttysw->ttysw_right-1;
+    if( xChar < ttysw->ttysw_left )
+        xChar = ttysw->ttysw_left;
+    if( yChar >= ttysw->ttysw_bottom )
+        yChar = ttysw->ttysw_bottom-1;
+    if( yChar < ttysw->ttysw_top )
+        yChar = ttysw->ttysw_top;
 #endif
     charcursx = xChar;
     charcursy = yChar;
     caretx = col_to_x(xChar);
     carety = row_to_y(yChar);
-    if (delaypainting || cursor == NOCURSOR)
-	return;
+    if (ttysw_delaypainting || ttysw->cursor == NOCURSOR) return;
 #ifdef  OW_I18N
 /*
  *    Setup appropriate Cursor-width and originated pixrect address
  *    according as the character size
  */
     tty_column_wchar_type( xChar , yChar , &curs_width , &offset );
-    curs_width *= chrwidth;
-    caretx     -= offset*chrwidth;
+    curs_width *= ttysw->chrwidth;
+    caretx     -= offset*ttysw->chrwidth;
     (void) tty_background(csr_pixwin_get(),
-             caretx-lxhome, carety, curs_width, chrheight, PIX_NOT(PIX_DST));
+             caretx-lxhome, carety, curs_width, ttysw->chrheight, PIX_NOT(PIX_DST));
 #else
     (void) tty_background(csr_pixwin_get(),
-		     caretx-lxhome, carety, chrwidth, chrheight, PIX_NOT(PIX_DST));
+		     caretx-lxhome, carety, ttysw->chrwidth, ttysw->chrheight, PIX_NOT(PIX_DST));
 #endif
-    if (cursor & LIGHTCURSOR) {
+    if (ttysw->cursor & LIGHTCURSOR) {
 #ifdef  OW_I18N
         (void) tty_background(csr_pixwin_get(),
                               caretx - lxhome - 1, carety - 1, curs_width + 2,
-                              chrheight + 2, PIX_NOT(PIX_DST));
+                              ttysw->chrheight + 2, PIX_NOT(PIX_DST));
 #else
 	(void) tty_background(csr_pixwin_get(),
-			      caretx - lxhome - 1, carety - 1, chrwidth + 2,
-			      chrheight + 2, PIX_NOT(PIX_DST));
+			      caretx - lxhome - 1, carety - 1, ttysw->chrwidth + 2,
+			      ttysw->chrheight + 2, PIX_NOT(PIX_DST));
 #endif
-	(void) ttysw_pos(xChar, yChar);
+	ttysw_pos(ttysw, xChar, yChar);
     }
 #ifdef FULL_R5
 #ifdef OW_I18N
     if (ttysw_folio->ic && (ttysw_folio->xim_style & XIMPreeditPosition)) {
         /*loc.x = (short)caretx + (curs_width/2);*/
         loc.x = (short)caretx;
-        loc.y = (short)(carety + chrbase);
+        loc.y = (short)(carety + ttysw->chrbase);
         va_nested_list = XVaCreateNestedList(NULL,
 					     XNSpotLocation, &loc,
 					     NULL);
@@ -624,7 +614,7 @@ Pkg_private void ttysw_drawCursor(int yChar, int xChar)
 
 }
 
-static void ttysw_paintCursor(int op)
+static void ttysw_paintCursor(Ttysw_private ttysw, int op)
 {
 	int y;
 	int height;
@@ -633,7 +623,7 @@ static void ttysw_paintCursor(int op)
 	 */
 
 	y = carety-1;
-	height = chrheight + 2;
+	height = ttysw->chrheight + 2;
 	if(y<0) {
 		/* work around xnews server bug. */
 		y=0;
@@ -646,33 +636,31 @@ static void ttysw_paintCursor(int op)
 			      op);
 #else
 	(void) tty_background(csr_pixwin_get(),
-			      caretx - lxhome - 1, y, chrwidth + 2, height,
+			      caretx - lxhome - 1, y, ttysw->chrwidth + 2, height,
 			      op);
 #endif
 }
 
-Pkg_private void ttysw_removeCursor(void)
+Pkg_private void ttysw_removeCursor(Ttysw_private ttysw)
 {
-    if (delaypainting || cursor == NOCURSOR)
-	return;
+    if (ttysw_delaypainting || ttysw->cursor == NOCURSOR) return;
 #ifdef  OW_I18N
 /*
  *      caretx and curs_width are stored in global and those values
  *      represent the location and width of the cursor.
  */
     (void) tty_background(csr_pixwin_get(),
-             caretx-lxhome, carety, curs_width, chrheight, PIX_NOT(PIX_DST));
+             caretx-lxhome, carety, curs_width, ttysw->chrheight, PIX_NOT(PIX_DST));
 #else
     (void) tty_background(csr_pixwin_get(),
-		     caretx-lxhome, carety, chrwidth, chrheight, PIX_NOT(PIX_DST));
+		     caretx-lxhome, carety, ttysw->chrwidth, ttysw->chrheight, PIX_NOT(PIX_DST));
 #endif
-    if (cursor & LIGHTCURSOR)
-	ttysw_paintCursor(PIX_NOT(PIX_DST));
+    if (ttysw->cursor & LIGHTCURSOR) ttysw_paintCursor(ttysw, PIX_NOT(PIX_DST));
 }
 
-Pkg_private void ttysw_restoreCursor(void)	/* BUG ALERT: unnecessary routine */
+Pkg_private void ttysw_restoreCursor(Ttysw_private ttysw)	/* BUG ALERT: unnecessary routine */
 {
-    (void) ttysw_removeCursor();
+    ttysw_removeCursor(ttysw);
 }
 
 Pkg_private void ttysw_screencomp(void)	/* BUG ALERT: unnecessary routine */
