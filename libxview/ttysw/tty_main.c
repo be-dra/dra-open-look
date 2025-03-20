@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.12 2025/03/15 14:16:06 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.13 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -99,10 +99,6 @@ extern int dra_tty_debug;  /* in tty_ntfy.c  */
  * jcb	-- remove continual cursor repaint in shelltool windows also known to
  * ttyansi.c
  */
-
-extern int      do_cursor_draw;
-extern int      tty_new_cursor_row, tty_new_cursor_col;
-extern int	tty_has_new_bufmod;
 
 /* shorthand */
 #define	iwbp	ttysw->ttysw_ibuf.cb_wbp
@@ -670,7 +666,7 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 				if ((oebp - owbp) - mb_buf_length <= 4)
 					goto process_mb_buf;
 
-				if (!tty_has_new_bufmod) {
+				{
 					struct strpeek peek;
 					char byte;
 
@@ -749,7 +745,7 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 				 *
 				 *
 				 */
-				if (!tty_has_new_bufmod) {
+				{
 					struct strpeek peek;
 					char byte;
 
@@ -1058,8 +1054,8 @@ Pkg_private void ttysw_consume_output(Ttysw_view_handle ttysw_view)
 
 	/* cache the cursor removal and re-render once in this set -- jcb */
 	if ((is_not_text = !ttysw_getopt(ttysw, TTYOPT_TEXT))) {
-		ttysw_removeCursor();
-		do_cursor_draw = FALSE;
+		ttysw_removeCursor(ttysw);
+		ttysw->do_cursor_draw = FALSE;
 	}
 	while (owbp > orbp && !(ttysw->ttysw_flags & TTYSW_FL_FROZEN)) {
 		if (is_not_text) {
@@ -1069,10 +1065,10 @@ Pkg_private void ttysw_consume_output(Ttysw_view_handle ttysw_view)
 #endif
 
 				if (ttysw->sels[TTY_SEL_PRIMARY].sel_made) {
-					ttysel_deselect(ttysw->sels+TTY_SEL_PRIMARY, TTY_SEL_PRIMARY);
+					ttysel_deselect(ttysw, ttysw->sels+TTY_SEL_PRIMARY, TTY_SEL_PRIMARY);
 				}
 				if (ttysw->sels[TTY_SEL_SECONDARY].sel_made) {
-					ttysel_deselect(ttysw->sels+TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
+					ttysel_deselect(ttysw, ttysw->sels+TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
 				}
 
 #ifdef OW_I18N
@@ -1103,15 +1099,15 @@ Pkg_private void ttysw_consume_output(Ttysw_view_handle ttysw_view)
 	}
 
 	if (is_not_text) {
-		(void)ttysw_drawCursor(tty_new_cursor_row, tty_new_cursor_col);
-		do_cursor_draw = TRUE;
+		(void)ttysw_drawCursor(ttysw, ttysw->tty_new_cursor_row, ttysw->tty_new_cursor_col);
+		ttysw->do_cursor_draw = TRUE;
 
 #ifdef  OW_I18N
 		if (ttysw->im_store) {
 			int len;
 
-			ttysw->im_first_col = curscol;
-			ttysw->im_first_row = cursrow;
+			ttysw->im_first_col = ttysw->curscol;
+			ttysw->im_first_row = ttysw->cursrow;
 			if ((len = wslen(ttysw->im_store)) > 0) {
 				tty_preedit_put_wcs(ttysw, ttysw->im_store, ttysw->im_attr,
 						ttysw->im_first_col, ttysw->im_first_row,
@@ -1335,12 +1331,12 @@ Pkg_private int ttysw_input_it_wcs(Ttysw_private ttysw, CHAR *addr, register int
 Pkg_private void ttysw_handle_itimer(Ttysw_private ttysw)
 {
 	if (ttysw->sels[TTY_SEL_PRIMARY].sel_made) {
-		ttysel_deselect(ttysw->sels + TTY_SEL_PRIMARY, TTY_SEL_PRIMARY);
+		ttysel_deselect(ttysw, ttysw->sels + TTY_SEL_PRIMARY, TTY_SEL_PRIMARY);
 	}
 	if (ttysw->sels[TTY_SEL_SECONDARY].sel_made) {
-		ttysel_deselect(ttysw->sels + TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
+		ttysel_deselect(ttysw, ttysw->sels + TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
 	}
-	ttysw_pdisplayscreen(0);
+	ttysw_pdisplayscreen(ttysw, 0);
 }
 
 /* This could be a public ttysw view or termsw view */
@@ -1367,11 +1363,11 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 					}
 #endif
 
-					ttysw_restore_cursor();
+					ttysw_restore_cursor(ttysw);
 					(void)frame_kbd_use(frame_public, tty_public, tty_public);
 					return TTY_DONE;
 				case KBD_DONE:
-					ttysw_lighten_cursor();
+					ttysw_lighten_cursor(ttysw);
 					(void)frame_kbd_done(frame_public, tty_public);
 					XX("KBD_DONE\n");
 					return TTY_DONE;
@@ -1654,42 +1650,36 @@ Pkg_private void xv_tty_new_size(Ttysw_private ttysw, int cols,int lines)
 /*
  * Freeze tty output.
  */
-Pkg_private int
-ttysw_freeze(ttysw_view, on)
-    Ttysw_view_handle ttysw_view;
-    int             on;
+Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on)
 {
-    register Ttysw_private ttysw = ttysw_view->folio;
-    register Tty_view ttysw_view_public = TTY_PUBLIC(ttysw_view);
-    extern Xv_Cursor ttysw_cursor;
-    extern Xv_Cursor ttysw_stop_cursor;
+	register Ttysw_private ttysw = ttysw_view->folio;
+	register Tty_view ttysw_view_public = TTY_PUBLIC(ttysw_view);
 
-    if (!ttysw_cursor)
-	ttysw_cursor = xv_get(ttysw_view_public, WIN_CURSOR);
-    if (!(ttysw->ttysw_flags & TTYSW_FL_FROZEN) && on) {
-	/*
-	 * Inspect the current tty modes without disturbing other state.  The
-	 * fact that this circumlocution is necessary is an indication that
-	 * interfaces haven't been defined cleanly here.
-	 */
-	Ttysw	tmp;
+	if (!ttysw_view->ttysw_cursor)
+		ttysw_view->ttysw_cursor = xv_get(ttysw_view_public, WIN_CURSOR);
+	if (!(ttysw->ttysw_flags & TTYSW_FL_FROZEN) && on) {
+		/*
+		 * Inspect the current tty modes without disturbing other state.  The
+		 * fact that this circumlocution is necessary is an indication that
+		 * interfaces haven't been defined cleanly here.
+		 */
+		Ttysw tmp;
 
-	(void) tty_getmode(ttysw->ttysw_tty, (tty_mode_t *)&tmp.tty_mode);
-	if (tty_iscanon(&tmp)) {
-	    xv_set(ttysw_view_public,
-		   WIN_CURSOR, ttysw_stop_cursor,
-		   NULL);
-	    ttysw->ttysw_flags |= TTYSW_FL_FROZEN;
-	} else
-	    ttysw->ttysw_lpp = 0;
-    } else if ((ttysw->ttysw_flags & TTYSW_FL_FROZEN) && !on) {
-	xv_set(ttysw_view_public,
-	       WIN_CURSOR, ttysw_cursor,
-	       NULL);
-	ttysw->ttysw_flags &= ~TTYSW_FL_FROZEN;
-	ttysw->ttysw_lpp = 0;
-    }
-    return ((ttysw->ttysw_flags & TTYSW_FL_FROZEN) != 0);
+		(void)tty_getmode(ttysw->ttysw_tty, (tty_mode_t *) & tmp.tty_mode);
+		if (tty_iscanon(&tmp)) {
+			xv_set(ttysw_view_public,
+					WIN_CURSOR, ttysw_view->ttysw_stop_cursor, NULL);
+			ttysw->ttysw_flags |= TTYSW_FL_FROZEN;
+		}
+		else
+			ttysw->ttysw_lpp = 0;
+	}
+	else if ((ttysw->ttysw_flags & TTYSW_FL_FROZEN) && !on) {
+		xv_set(ttysw_view_public, WIN_CURSOR, ttysw_view->ttysw_cursor, NULL);
+		ttysw->ttysw_flags &= ~TTYSW_FL_FROZEN;
+		ttysw->ttysw_lpp = 0;
+	}
+	return ((ttysw->ttysw_flags & TTYSW_FL_FROZEN) != 0);
 }
 
 /*
