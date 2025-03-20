@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.3 2025/03/08 13:21:40 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.4 2025/03/19 09:32:14 dra Exp $ ";
 #endif
 #endif
 
@@ -37,9 +37,6 @@ xv_popup_frame_initializer_t xv_set_popup_frame_initializer(xv_popup_frame_initi
 	return old;
 }
 
-/*  static void     cmd_warp_pointer();  */
-
-/* ARGSUSED */
 static int frame_cmd_init(Xv_Window owner, Frame frame_public,
 						Attr_attribute avlist[], int *u)
 {
@@ -142,9 +139,6 @@ Pkg_private Notify_value frame_cmd_input(Frame frame_public, Notify_event ev,
 		case ACTION_PINOUT:
 			status_set(frame, pushpin_in, FALSE);	/* old attr */
 			break;
-		case WIN_MAP_NOTIFY:
-			/* cmd_warp_pointer(frame_public); */
-			break;
 		case WIN_UNMAP_NOTIFY:
 			/*
 			 * reset the warp_pointer flag so when the user invokes the popup
@@ -157,33 +151,8 @@ Pkg_private Notify_value frame_cmd_input(Frame frame_public, Notify_event ev,
 	return notify_next_event_func(frame_public, ev, arg, type);
 }
 
-/*
- * Make sure the window is viewable before warping the pointer.  To do this,
- * wait for a WIN_REPAINT before setting the kbd focus.
- */
-/* static void
-cmd_warp_pointer(frame_public)
-    Frame           frame_public;
-{
-    Frame_cmd_info *frame = FRAME_CMD_PRIVATE(frame_public);
-    Rect           *item_rect;
-    Panel_item      default_panel_item;
-
-    if (!status_get(frame, warp_pointer))
-	return;
-
-    default_panel_item = (Panel_item) xv_get(frame->panel, PANEL_DEFAULT_ITEM);
-    if (default_panel_item == NULL)
-	return;
-
-    item_rect = (Rect *) xv_get(default_panel_item, PANEL_ITEM_RECT);
-    (void) win_setmouseposition(frame->panel, item_rect->r_left + item_rect->r_width / 2,
-				item_rect->r_top + item_rect->r_height / 2);
-    status_set(frame, warp_pointer, FALSE);
-}  */
-
-const Xv_pkg          xv_frame_cmd_pkg = {
-    "Frame_cmd", (Attr_pkg) ATTR_PKG_FRAME,
+const Xv_pkg xv_frame_cmd_pkg = {
+    "Frame_cmd", ATTR_PKG_FRAME,
     sizeof(Xv_frame_cmd),
     &xv_frame_class_pkg,
     frame_cmd_init,
