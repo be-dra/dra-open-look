@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.11 2025/03/16 13:39:42 dra Exp $";
+char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.12 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -100,24 +100,11 @@ static void ttysw_parseargs(struct ttysw_createoptions *opts, int *argcptr, char
 extern Xv_opaque xv_pf_open(const char *, Xv_server);
 Xv_private char *xv_font_monospace(void);
 
-/*
- * global which can be used to make a shell tool which doesn't talk to the
- * service
- */
-int             ttysel_use_seln_service = 1;
-
-
-int	tty_has_new_bufmod;	/* used to defeat 5.0 user-land pty buffering hack */
-
-
 struct ttysw_createoptions {
     int             becomeconsole;	/* be the console */
     char          **argv;	/* args to be used in exec */
     char           *args[4];	/* scratch array if need to build argv */
 };
-
-Xv_Cursor       ttysw_cursor;	/* default (text) cursor) */
-Xv_Cursor       ttysw_stop_cursor;	/* stop sign cursor (i.e., CTRL-S) */
 
 static Defaults_pairs bold_style[] = {
     { "None", TTYSW_BOLD_NONE },
@@ -194,14 +181,14 @@ Pkg_private Xv_opaque ttysw_init_view_internal(Tty parent, Tty_view tty_view_pub
 	}
 	/* create stop cursor but don't show it */
 	DRAWABLE_INFO_MACRO(tty_view_public, info);	/* define info */
-	ttysw_stop_cursor = xv_get(xv_server(info), XV_KEY_DATA, CURSOR_STOP_PTR);
-	if (!ttysw_stop_cursor) {
-		ttysw_stop_cursor = xv_create(tty_view_public, CURSOR,
+	ttysw_view->ttysw_stop_cursor = xv_get(xv_server(info), XV_KEY_DATA, CURSOR_STOP_PTR);
+	if (!ttysw_view->ttysw_stop_cursor) {
+		ttysw_view->ttysw_stop_cursor = xv_create(tty_view_public, CURSOR,
 				CURSOR_SRC_CHAR, OLC_STOP_PTR,
 				CURSOR_MASK_CHAR, 0,
 				NULL);
 		xv_set(xv_server(info),
-				XV_KEY_DATA, CURSOR_STOP_PTR, ttysw_stop_cursor,
+				XV_KEY_DATA, CURSOR_STOP_PTR, ttysw_view->ttysw_stop_cursor,
 				NULL);
 	}
 	xv_set(tty_view_public,
@@ -281,7 +268,7 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 	ttysw_new_sel_init(ttysw);
 
 	/* initialize selection service code */
-	(void)ttysw_setopt(ttysw, TTYOPT_SELSVC, ttysel_use_seln_service);
+	(void)ttysw_setopt(ttysw, TTYOPT_SELSVC, 0);
 	if (ttysw_getopt(ttysw, TTYOPT_SELSVC)) {
 		ttysel_init_client(ttysw);
 	}
@@ -389,12 +376,12 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 	ttysw->implicit_commit = 0;
 #endif
 
-	xv_new_tty_chr_font((Pixfont *)font);
+	xv_new_tty_chr_font(ttysw, (Pixfont *)font);
 
 	/* Set WIN_ROW_HEIGHT so that xv_set of WIN_ROWS will work when
 	 * Text.LineSpacing is set to a nonzero value.
 	 */
-	xv_set(tty_public, WIN_ROW_HEIGHT, chrheight, NULL);
+	xv_set(tty_public, WIN_ROW_HEIGHT, ttysw->chrheight, NULL);
 
 	return ((Xv_opaque) ttysw);
 }
