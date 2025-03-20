@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.3 2024/11/22 22:13:51 dra Exp $ ";
+static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.4 2025/03/19 09:32:14 dra Exp $ ";
 #endif
 #endif
 
@@ -314,8 +314,6 @@ Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public, Attr_attribute av
 						/* This deals with the problem where someone does an
 						 * XV_SHOW TRUE in the xv_create call.  In this
 						 * case the panel has not been created yet, so we do
-
-
 						 * so here.
 						 */
 						if (!frame->panel) {
@@ -326,8 +324,7 @@ Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public, Attr_attribute av
 							sprintf(panelname, "%sCmdPanel",
 									framename ? framename : "FrameCmd");
 							if (frame->panel_bordered) {
-								frame->panel =
-										xv_create(frame_public, PANEL,
+								frame->panel = xv_create(frame_public, PANEL,
 											XV_INSTANCE_NAME, panelname,
 											PANEL_BORDER, TRUE,
 											XV_USE_DB,
@@ -337,10 +334,10 @@ Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public, Attr_attribute av
 											NULL);
 							}
 							else {
-								frame->panel =
-										xv_create(frame_public, PANEL,
+								frame->panel = xv_create(frame_public, PANEL,
 											XV_INSTANCE_NAME, panelname,
-											PANEL_BACKGROUND_PROC, xv_ol_default_background,
+											PANEL_BACKGROUND_PROC,
+													xv_ol_default_background,
 											XV_USE_DB,
 												PANEL_ITEM_X_GAP, 8,
 												PANEL_ITEM_Y_GAP, 13,
