@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.4 2025/01/04 21:19:44 dra Exp $";
+char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*
@@ -55,8 +55,6 @@ int             ttysw_waiting_for_pty_input;
 
 void ttysw_cooked_echo(Ttysw_view_handle ttysw_view, int old_cooked_echo, int new_cooked_echo);
 
-extern CHAR    **image;
-extern char    **screenmode;
 #ifdef SVR4
 extern int doremote;
 #endif
@@ -112,7 +110,7 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 	csr_pixwin_set((Xv_Window) ttysw->current_view_public);
 	csr_resize(ttysw_view);
 	/* Cannot call cim_resize(ttysw), call xv_tty_image*() instead. */
-	xv_tty_free_image_and_mode();
+	xv_tty_free_image_and_mode(ttysw);
 	xv_tty_imagealloc(ttysw, FALSE);	/* Damn globals! */
 
 	if (ttysw->remote) {
@@ -150,13 +148,13 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 #  endif /* XV_USE_TERMIOS */
 #endif /* XV_USE_SVR4_PTYS */
 
-	ttysw_drawCursor(0, 0);	/* Ensure cursor at upper-left. */
+	ttysw_drawCursor(ttysw, 0, 0);	/* Ensure cursor at upper-left. */
 
 	if (xv_get(TTY_PUBLIC(ttysw), WIN_KBD_FOCUS)) {
-		ttysw_restore_cursor();
+		ttysw_restore_cursor(ttysw);
 	}
 	else {
-		ttysw_lighten_cursor();
+		ttysw_lighten_cursor(ttysw);
 	}
 
 	if (!ttysw_waiting_for_pty_input) {
@@ -165,7 +163,7 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 		/* Wait for child process to die */
 		ttysw_waiting_for_pty_input = 1;
 	}
-	ttysw_pdisplayscreen(FALSE);
+	ttysw_pdisplayscreen(ttysw, FALSE);
 
 	termsw->ttysw_resized = 0;
 
