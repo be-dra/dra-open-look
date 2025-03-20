@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.21 2025/03/17 19:51:54 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.22 2025/03/19 21:33:50 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -30,6 +30,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/es.h>
 #include <xview/sel_pkg.h>
+#include <xview/cursor.h>
 
 #define TTY_PRIVATE(_t)      XV_PRIVATE(Ttysw, Xv_tty, _t)
 #define TTY_PUBLIC(_tty_folio)     XV_PUBLIC(_tty_folio)
@@ -208,13 +209,30 @@ typedef struct ttysubwindow {
 	/* formerly static variables */
 	int point_down_within_selection;
 	short dnd_last_click_x, dnd_last_click_y;
+
+	/* formerly GLOBAL variables */
+	CHAR **image;
+	char **screenmode;
+	int	ttysw_top, ttysw_bottom, ttysw_left, ttysw_right;
+	int	cursrow, curscol;
+	int do_cursor_draw;
+	int cursor;
+	int	chrheight, chrwidth, chrbase;
+	int	winheightp, winwidthp;
+	int	chrleftmargin;
+	char boldify;
+	struct pixfont *pixfont;
+	int tty_new_cursor_row, tty_new_cursor_col;
 }   Ttysw;
 
 typedef Ttysw		*Ttysw_private;
 
 typedef struct ttysw_view_object {
     Tty_view		public_self;
-    Ttysw_private		folio;
+    Ttysw_private	folio;
+	Xv_Cursor       ttysw_stop_cursor;	/* stop sign cursor (i.e., CTRL-S) */
+	Xv_Cursor       ttysw_cursor;	/* stop sign cursor (i.e., CTRL-S) */
+	struct pixfont *pixfont;
 } Ttysw_view_object;
 
 typedef Ttysw_view_object* 	Ttysw_view_handle;
@@ -339,7 +357,7 @@ struct _Termsw_folio_object;
 
 /*** Package private routines ***/
 
-Pkg_private void ttysw_restore_cursor(void);
+Pkg_private void ttysw_restore_cursor(Ttysw_private ttysw);
 Pkg_private void ttysw_clear( Ttysw *ttysw);
 Pkg_private void termsw_caret_cleared(void);
 Pkg_private void ttysw_interpose(Ttysw_private ttysw_folio);
@@ -351,7 +369,7 @@ Pkg_private void ttysel_destroy(struct ttysubwindow *ttysw);
 Pkg_private void ttysel_make(struct ttysubwindow *ttysw, struct inputevent *event, int multi);
 Pkg_private void ttysel_finish(Ttysw_private priv, Event *ev);
 Pkg_private void ttysel_adjust(struct ttysubwindow *ttysw, struct inputevent *event, int multi, int ok_to_extend);
-Pkg_private void ttysel_deselect(struct ttyselection *ttysel, int rank);
+Pkg_private void ttysel_deselect(Ttysw_private ttysw, struct ttyselection *ttysel, int rank);
 Pkg_private void ttynullselection(struct ttysubwindow *ttysw);
 Pkg_private int ttysw_do_copy(Ttysw_private ttysw);
 Pkg_private int ttysw_do_paste(Ttysw_private ttysw);
@@ -367,42 +385,42 @@ Pkg_private void ttysw_doing_pty_insert(Textsw textsw, struct _Termsw_folio_obje
 Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie);
 
 Pkg_private void
-	ttysw_delete_lines(int where, int n),
+	ttysw_delete_lines(Ttysw_private ttysw, int where, int n),
 	ttysel_getselection(Xv_opaque UNKNOWN),
 	ttysel_nullselection(Xv_opaque UNKNOWN),
 	ttysel_setselection(Xv_opaque UNKNOWN),
 	ttysw_ansiinit(struct ttysubwindow *ttysw),
 	ttysw_blinkscreen(void),
-	ttysw_bold_mode(void),
-	ttysw_cim_clear(int a, int b),
-	ttysw_cim_scroll(int n),
-	ttysw_clear_mode(void),
-	ttysw_deleteChar( int fromcol,int tocol, int row),
-	ttysw_drawCursor(int yChar, int xChar),
+	ttysw_bold_mode(Ttysw_private ttysw),
+	ttysw_cim_clear(Ttysw_private ttysw, int a, int b),
+	ttysw_cim_scroll(Ttysw_private ttysw, int n),
+	ttysw_clear_mode(Ttysw_private ttysw),
+	ttysw_deleteChar(Ttysw_private ttysw, int fromcol, int tocol, int row),
+	ttysw_drawCursor(Ttysw_private ttysw, int yChar, int xChar),
 	ttysw_imagerepair(Ttysw_view_handle ttysw_view),
 	ttysw_implicit_commit(Xv_opaque UNKNOWN),
-	ttysw_insertChar (int fromcol, int tocol, int row),
-	ttysw_insert_lines( int where, int n),
+	ttysw_insertChar(Ttysw_private ttysw, int fromcol, int tocol, int row),
+	ttysw_insert_lines(Ttysw_private ttysw, int where, int n),
 	ttysw_interpose_on_textsw(Xv_opaque UNKNOWN),
-	ttysw_inverse_mode(void),
-	ttysw_pcopyscreen(int fromrow, int torow, int count),
-	ttysw_pdisplayscreen( int dontrestorecursor),
-	ttysw_pos(int, int),
+	ttysw_inverse_mode(Ttysw_private ttysw),
+	ttysw_pcopyscreen(Ttysw_private ttysw, int fromrow, int torow, int count),
+	ttysw_pdisplayscreen(Ttysw_private ttysw, int dontrestorecursor),
+	ttysw_pos(Ttysw_private ttysw, int, int),
 	ttysw_prepair(XEvent *eventp),
-/* 	ttysw_pselectionhilite (struct rect *r, enum __seln_rank sel_rank), */
 	ttysw_pselectionhilite (struct rect *r, int sel_rank),
-	ttysw_removeCursor(void),
-	ttysw_restoreCursor(void),	/* BUG ALERT: unnecessary routine */
+	ttysw_removeCursor(Ttysw_private ttysw),
+	ttysw_restoreCursor(Ttysw_private ttysw),/* BUG ALERT: unnecessary routine*/
 	ttysw_saveCursor(Xv_opaque UNKNOWN),	/* BUG ALERT: unnecessary routine */
 	ttysw_screencomp(void),	/* BUG ALERT: unnecessary routine */
 	ttysw_set_inverse_mode(int new_inverse_mode),
 	ttysw_set_menu(Xv_opaque UNKNOWN),
 	ttysw_set_underline_mode( int new_underline_mode),
-	ttysw_setleftmargin(int left_margin),
-	xv_tty_free_image_and_mode(void),
+	ttysw_setleftmargin(Tty tty, int left_margin),
+	ttysw_setleftmrg(Ttysw_private ttysw, int left_margin),
+	xv_tty_free_image_and_mode(Ttysw_private ttysw),
 	xv_tty_imagealloc(Ttysw *ttysw, int for_temp);
 
-Pkg_private void xv_new_tty_chr_font(
+Pkg_private void xv_new_tty_chr_font(Ttysw_private ttysw,
 #ifdef OW_I18N
     Xv_opaque	font
 #else
@@ -422,11 +440,11 @@ Pkg_private void ttysw_sendsig(Ttysw_private ttysw, Xv_window termswview,int sig
 
 Pkg_private void ttysw_sigwinch(Ttysw_private ttysw);
 Pkg_private void ttysw_setopt(Ttysw_private ttysw_folio_or_view, int opt, int on);
-Pkg_private void ttysw_lighten_cursor(void);
+Pkg_private void ttysw_lighten_cursor(Ttysw_private ttysw);
 
-Pkg_private void ttysw_writePartialLine(CHAR *s, int curscolStart);
-Pkg_private void ttysw_underscore_mode(void);
-Pkg_private void ttysw_vpos(int row, int col);
+Pkg_private void ttysw_writePartialLine(Ttysw_private ttysw, CHAR *s, int curscolStart);
+Pkg_private void ttysw_underscore_mode(Ttysw_private ttysw);
+Pkg_private void ttysw_vpos(Ttysw_private ttysw, int row, int col);
 Pkg_private void xv_tty_new_size(Ttysw_private ttysw, int cols, int lines);
 
 #ifdef OW_I18N
@@ -453,7 +471,7 @@ Pkg_private int
 	ttysw_getboldstyle(void),
 	ttysw_setboldstyle(int new_boldstyle),
 	ttytlsw_string(Tty ttysw_public, CHAR type, CHAR c),
-	wininit(Xv_object win, int *maximagewidth, int *maximageheight);
+	wininit(Ttysw *, Xv_object win, int *,int *);
 
 Pkg_private int ttysw_copy_to_input_buffer(Ttysw_private ttysw, CHAR *addr, int len);
 Xv_public Notify_value ttysw_event(Tty_view ttysw_view_public, Notify_event ev, Notify_arg arg, Notify_event_type type);
@@ -484,7 +502,8 @@ Pkg_private int
 
 /* Pkg_private void ttyhiliteselection(struct ttyselection *ttysel, */
 /* 										enum __seln_rank rank); */
-Pkg_private void ttyhiliteselection(struct ttyselection *ttysel, int rank);
+Pkg_private void ttyhiliteselection(Ttysw_private ttysw,
+							struct ttyselection *ttysel, int rank);
 Pkg_private Notify_value ttysw_itimer_expired(Tty tty_public, int which);
 Pkg_private Notify_value ttysw_text_event(Xv_window textsw,
     				Notify_event ev, Notify_arg arg, Notify_event_type type);
