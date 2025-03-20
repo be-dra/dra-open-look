@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.11 2025/03/16 14:43:25 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.12 2025/03/19 21:33:50 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -29,6 +29,7 @@ char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.11 2025/
 #include <xview/defaults.h>
 #include <xview_private/term_impl.h>
 #include <xview_private/charscreen.h>
+#include <xview_private/ttyansi.h>
 #include <xview_private/svr_impl.h>
 
 #ifdef SVR4
@@ -108,6 +109,13 @@ static int tty_folio_init(Xv_Window parent, Tty tty_public,
 	ttysw->eight_bit_output = (int)defaults_get_boolean("ttysw.eightBitOutput",
 			"Ttysw.EightBitOutput", TRUE);
 
+	/*
+	 * jcb	-- remove continual cursor repaint in shelltool windows also
+	 * known to tty_main.c
+	 */
+	ttysw->do_cursor_draw = TRUE;
+	/* 0 -> NOCURSOR, 1 -> UNDERCURSOR, 2 -> BLOCKCURSOR */
+	ttysw->cursor = BLOCKCURSOR | LIGHTCURSOR;
 	ttysw->hdrstate = HS_BEGIN;
 	ttysw->ttysw_stringop = ttytlsw_string;
 	ttysw->ttysw_escapeop = ttytlsw_escape;
@@ -151,7 +159,11 @@ static int tty_view_init(Xv_Window parent,	Tty_view tty_view_public, Attr_attrib
     if (IS_TTY_VIEW(tty_view_public))
 #endif
 #endif
-        (void) ttysw_drawCursor(0, 0);
+	{
+		Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(parent);
+        ttysw_drawCursor(ttysw, 0, 0);
+	}
+
     return (XV_OK);
 }
 
@@ -237,8 +249,7 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 
 			case TTY_PAGE_MODE:
 				ttysw_setopt(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw),
-						TTYOPT_PAGEMODE, (int)
-						(attrs[1]));
+						TTYOPT_PAGEMODE, (int)attrs[1]);
 				break;
 
 			case TTY_QUIT_ON_CHILD_DEATH:
@@ -278,10 +289,10 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 					 * Cursor for the original font has been drawn, so take
 					 * down
 					 */
-					ttysw_removeCursor();
-					xv_new_tty_chr_font((Pixfont *) attrs[1]);
+					ttysw_removeCursor(ttysw);
+					xv_new_tty_chr_font(ttysw, (Pixfont *) attrs[1]);
 					/* after changing font size, cursor needs to be re-drawn */
-					(void)ttysw_drawCursor(0, 0);
+					(void)ttysw_drawCursor(ttysw, 0, 0);
 				}
 				else if (attrs[1])
 					change_font = (Pixfont *) attrs[1];
@@ -331,10 +342,10 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 					ttysw_resize(ttysw->view);
 
 				if (change_font) {
-					ttysw_removeCursor();
-					xv_new_tty_chr_font((Pixfont *) change_font);
+					ttysw_removeCursor(ttysw);
+					xv_new_tty_chr_font(ttysw, (Pixfont *) change_font);
 					/* after changing font size, cursor needs to be re-drawn */
-					(void)ttysw_drawCursor(0, 0);
+					ttysw_drawCursor(ttysw, 0, 0);
 					change_font = NULL;
 				}
 
