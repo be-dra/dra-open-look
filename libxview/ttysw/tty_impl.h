@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.22 2025/03/19 21:33:50 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.23 2025/03/21 20:02:14 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -404,7 +404,8 @@ Pkg_private void
 	ttysw_interpose_on_textsw(Xv_opaque UNKNOWN),
 	ttysw_inverse_mode(Ttysw_private ttysw),
 	ttysw_pcopyscreen(Ttysw_private ttysw, int fromrow, int torow, int count),
-	ttysw_pdisplayscreen(Ttysw_private ttysw, int dontrestorecursor),
+	ttysw_pdisplayscreen(Ttysw_private ttysw, int dontrestorecursor,
+											int allowclearareawhenempty),
 	ttysw_pos(Ttysw_private ttysw, int, int),
 	ttysw_prepair(XEvent *eventp),
 	ttysw_pselectionhilite (struct rect *r, int sel_rank),
@@ -504,7 +505,6 @@ Pkg_private int
 /* 										enum __seln_rank rank); */
 Pkg_private void ttyhiliteselection(Ttysw_private ttysw,
 							struct ttyselection *ttysel, int rank);
-Pkg_private Notify_value ttysw_itimer_expired(Tty tty_public, int which);
 Pkg_private Notify_value ttysw_text_event(Xv_window textsw,
     				Notify_event ev, Notify_arg arg, Notify_event_type type);
 
