@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
+char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.6 2025/03/21 20:03:20 dra Exp $";
 #endif
 
 /*
@@ -163,7 +163,7 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 		/* Wait for child process to die */
 		ttysw_waiting_for_pty_input = 1;
 	}
-	ttysw_pdisplayscreen(ttysw, FALSE);
+	ttysw_pdisplayscreen(ttysw, FALSE, FALSE);
 
 	termsw->ttysw_resized = 0;
 
@@ -209,6 +209,15 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 	return (0);
 }
 
+static Notify_value itimer_expired(Tty tty_public, int which)
+{
+	SERVERTRACE((567, "%s\n", __FUNCTION__));
+    notify_set_itimer_func(tty_public, NOTIFY_TIMER_FUNC_NULL, ITIMER_REAL,
+					(struct itimerval *) 0, (struct itimerval *) 0);
+    ttysw_handle_itimer(TTY_PRIVATE_FROM_ANY_PUBLIC(tty_public));
+    return NOTIFY_DONE;
+}
+
 /*
  * sw should currently be a ttysw, but need not be if a shelltool has been
  * started in an environment that has termsw TERM&TERMCAP entries.
@@ -243,12 +252,13 @@ Pkg_private int ttysw_be_termsw(Ttysw_view_handle ttysw_view)
 		/* see also in tty_ntfy.c */
 #define	TTYSW_USEC_DELAY 100000
 		static struct itimerval ival = {
-			{9999 /* linux-bug */ , 0},
-			{0, TTYSW_USEC_DELAY}
+			{ 9999 /* linux-bug, seems to be ignored */ , 0},
+			{ 0, TTYSW_USEC_DELAY}
 		};
 
-		/* ttysw_itimer_expired expects a Tty... */
-		notify_set_itimer_func(TTY_PUBLIC(ttysw), ttysw_itimer_expired,
+		SERVERTRACE((567, "%s: start timer\n", __FUNCTION__));
+		/* itimer_expired expects a Tty... */
+		notify_set_itimer_func(TTY_PUBLIC(ttysw), itimer_expired,
 				ITIMER_REAL, &ival, NULL);
 	}
 
