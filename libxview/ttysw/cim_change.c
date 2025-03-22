@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
+char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.6 2025/03/21 20:03:08 dra Exp $";
 #endif
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -254,7 +254,7 @@ Pkg_private void ttysw_cim_clear(Ttysw_private ttysw, int a, int b)
 	ttysw_pclearscreen(ttysw, a, b);
 	if (a == ttysw->ttysw_top && b == ttysw->ttysw_bottom) {
 		if (ttysw_delaypainting)
-			ttysw_pdisplayscreen(ttysw, 1);
+			ttysw_pdisplayscreen(ttysw, TRUE, FALSE);
 		else
 			ttysw_delaypainting = 1;
 	}
