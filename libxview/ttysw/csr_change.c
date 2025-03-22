@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.9 2025/03/19 21:33:50 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.10 2025/03/21 20:02:55 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -208,7 +208,7 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 			/*
 			 * Reached bottom of screen so end ttysw_delaypainting.
 			 */
-			ttysw_pdisplayscreen(ttysw, 1);
+			ttysw_pdisplayscreen(ttysw, TRUE, FALSE);
 		return;
 	}
 	if (s == 0)
@@ -353,13 +353,14 @@ Pkg_private void ttysw_pcopyscreen(Ttysw_private ttysw, int fromrow, int torow, 
     tty_synccopyarea(csr_pixwin_get());
 }
 
-static void ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
+/* return value means "row is empty" */
+static int ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 {
-	register int	colstart, blanks, colfirst;
-	register CHAR  *strstart, *strfirst;
-	register char	modefirst;
-	register char  *modestart;
-	CHAR		csave;
+	register int colstart, blanks, colfirst;
+	register CHAR *strstart, *strfirst;
+	register char modefirst;
+	register char *modestart;
+	CHAR csave;
 
 	colfirst = 0;
 	colstart = leftcol;
@@ -373,68 +374,97 @@ static void ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 		modefirst = MODE_CLEAR;
 		blanks = 1;
 		for (strstart = ttysw->image[row] + leftcol,
-		     modestart = ttysw->screenmode[row] + leftcol; *strstart;
-		     strstart++, modestart++, colstart++) {
-		    /*
-		     * Find beginning of bold string
-		     */
-		    if (*modestart != modefirst) {
-			goto Flush;
+				modestart = ttysw->screenmode[row] + leftcol; *strstart;
+				strstart++, modestart++, colstart++) {
 			/*
-			 * Find first non-blank char
+			 * Find beginning of bold string
 			 */
-		    } else if (blanks && (*strstart != ' '))
-			goto Flush;
-		    else
-			continue;
-	    Flush:
+			if (*modestart != modefirst) {
+				goto Flush;
+				/*
+				 * Find first non-blank char
+				 */
+			}
+			else if (blanks && (*strstart != ' '))
+				goto Flush;
+			else
+				continue;
+		  Flush:
+
 #ifdef OW_I18N
-                    if (strfirst != NULL_CHARP) {
+			if (strfirst != NULL_CHARP)
 #else
-		    if (strfirst != (caddr_t) 0) {
+			if (strfirst != (caddr_t) 0)
 #endif
-			csave = *strstart;
-			*strstart = '\0';
-			ttysw_pstring(ttysw, strfirst, modefirst, colfirst, row,
-				       PIX_SRC /* | PIX_DST - jcb */ );
-			*strstart = csave;
-		    }
-		    colfirst = colstart;
-		    strfirst = strstart;
-		    modefirst = *modestart;
-		    blanks = 0;
+
+			{
+				csave = *strstart;
+				*strstart = '\0';
+				ttysw_pstring(ttysw, strfirst, modefirst, colfirst, row,
+						PIX_SRC /* | PIX_DST - jcb */ );
+				*strstart = csave;
+			}
+			colfirst = colstart;
+			strfirst = strstart;
+			modefirst = *modestart;
+			blanks = 0;
 		}
+
 #ifdef OW_I18N
-                if (strfirst != NULL_CHARP)
+		if (strfirst != NULL_CHARP)
 #else
 		if (strfirst != (caddr_t) 0)
 #endif
-		    ttysw_pstring(ttysw, strfirst, modefirst, colfirst,
-				   row, PIX_SRC /* | PIX_DST -- jcb */ );
+		{
+			ttysw_pstring(ttysw, strfirst, modefirst, colfirst,
+					row, PIX_SRC /* | PIX_DST -- jcb */ );
+		}
+
+		return FALSE;
 	}
+	return (LINE_LENGTH(ttysw->image[row]) == 0);
 }
 
-Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw, int dontrestorecursor)
+Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw,
+						int dontrestorecursor, int allowclearareawhenempty)
 {
-    struct rect *rect;
-    int row;
+/* 	struct rect *rect; */
+	int row, all_empty = TRUE;;
+	Xv_window view = csr_pixwin_get();
 
-    ttysw_delaypainting = 0;
-    /*
-     * refresh the entire image.
-     */
-    rect = (struct rect *) xv_get(csr_pixwin_get(), WIN_RECT);
-    (void) tty_background(csr_pixwin_get(), 0, 0,
-			      rect->r_width+1, rect->r_height, PIX_CLR);
-
-    for (row = ttysw->ttysw_top; row < ttysw->ttysw_bottom; row++)
-		ttysw_displayrow(ttysw, row, 0);
-
-    if (!dontrestorecursor)
+	ttysw_delaypainting = 0;
 	/*
-	 * The following has effect of restoring cursor.
+	 * refresh the entire image.
 	 */
-	ttysw_removeCursor(ttysw);
+	SERVERTRACE((567, "%s: view clearing\n", __FUNCTION__));
+#ifdef THIS_CLEARS_THE_WHOLE_WINDOW_WICH_CAN_BE_DONE_EASIER
+	rect = (struct rect *)xv_get(csr_pixwin_get(), WIN_RECT);
+	tty_background(view, 0, 0,
+			rect->r_width + 1, rect->r_height, PIX_CLR);
+#else
+	XClearArea((Display *)xv_get(view, XV_DISPLAY),
+					xv_get(view, XV_XID), 0, 0, 0, 0, TRUE);
+#endif
+
+	SERVERTRACE((567, "%s: top %d to bottom %d\n", __FUNCTION__,
+							ttysw->ttysw_top, ttysw->ttysw_bottom));
+	for (row = ttysw->ttysw_top; row < ttysw->ttysw_bottom; row++) {
+		all_empty = (all_empty && ttysw_displayrow(ttysw, row, 0));
+	}
+
+	SERVERTRACE((567, "%s(allowclearareawhenempty=%d, all_empty=%d)\n", __FUNCTION__,allowclearareawhenempty, all_empty));
+	if (allowclearareawhenempty && all_empty) {
+		SERVERTRACE((567, "%s: calling XClearArea\n", __FUNCTION__));
+		XClearArea((Display *)xv_get(view, XV_DISPLAY),
+					xv_get(view, XV_XID), 0, 0, 0, 0, TRUE);
+	}
+	if (!dontrestorecursor) {
+		/*
+		 * The following has effect of restoring cursor.
+		 */
+		SERVERTRACE((567, "%s: ttysw_removeCursor\n", __FUNCTION__));
+		ttysw_removeCursor(ttysw);
+	}
 }
 
 /* ARGSUSED */
@@ -649,7 +679,7 @@ Pkg_private void ttysw_removeCursor(Ttysw_private ttysw)
  *      caretx and curs_width are stored in global and those values
  *      represent the location and width of the cursor.
  */
-    (void) tty_background(csr_pixwin_get(),
+    tty_background(csr_pixwin_get(),
              caretx-lxhome, carety, curs_width, ttysw->chrheight, PIX_NOT(PIX_DST));
 #else
     (void) tty_background(csr_pixwin_get(),
