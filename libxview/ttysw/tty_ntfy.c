@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.10 2025/03/19 21:33:50 dra Exp $";
+char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.12 2025/03/21 21:16:25 dra Exp $";
 #endif
 
 /*
@@ -47,6 +47,7 @@ char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy
 #include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
 #include <xview_private/txt_impl.h>
+#include <xview_private/svr_impl.h>
 #include <xview_private/ultrix_cpt.h>
 
 #define PTY_OFFSET	(int) &(((Ttysw_private)0)->ttysw_pty)
@@ -56,7 +57,6 @@ char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy
 #undef length
 #define ITIMER_NULL   ((struct itimerval *)0)
 
-#define	TTYSW_USEC_DELAY 100000
 /* Duplicate of what's in ttysw_tio.c */
 
 static Notify_value ttysw_pty_output_pending(Tty tty_public, int pty);
@@ -64,10 +64,6 @@ static Notify_value ttysw_prioritizer(Tty tty_public, int nfd, fd_set *ibits_ptr
 static Notify_prioritizer_func ttysw_cached_pri;	/* Default prioritizer */
 
 static void cim_resize(Ttysw_view_handle ttysw_view);
-
-int dra_tty_debug = 0x800;
-#define XX(_a_) if (dra_tty_debug&1) fprintf(stderr, "%s`%s-%d: %s", __FILE__,__FUNCTION__,__LINE__,_a_)
-#define XXX(_a_) if (dra_tty_debug&16) fprintf(stderr, "%s`%s-%d: %s", __FILE__,__FUNCTION__,__LINE__,_a_)
 
 /*
  * These three procedures are no longer needed because the pty driver bug
@@ -98,13 +94,6 @@ Pkg_private void ttysw_interpose(Ttysw_private ttysw_folio)
     ttysw_waiting_for_pty_input = 1;
     ttysw_cached_pri = notify_set_prioritizer_func(ttysw_folio_public,
 											ttysw_prioritizer);
-	if (dra_tty_debug & 0x800) {
-		char *e = getenv("DRA_XVIEW_TTY_DEBUG");
-
-		if (e && *e) dra_tty_debug = atoi(e);
-		else dra_tty_debug = 0;
-	}
-	XX("notify_set_prioritizer_func\n");
 }
 
 
@@ -136,8 +125,7 @@ Pkg_private int ttysw_destroy(Tty self, Destroy_status status)
 		 * causes the ttysw to lock up is fixed.
 		 * ttysw_remove_pty_timer(ttysw);
 
-		 notify_set_itimer_func((Notify_client) (self),
-		 ttysw_itimer_expired,
+		 notify_set_itimer_func(self, itimer_expired,
 		 ITIMER_REAL, (struct itimerval *) 0, ITIMER_NULL);
 		 */
 
@@ -348,13 +336,13 @@ Pkg_private Notify_value ttysw_pty_input_pending(Tty tty_public, int pty)
     return NOTIFY_DONE;
 }
 
-/* ARGSUSED */
-Pkg_private Notify_value ttysw_itimer_expired(Tty tty_public, int which)
+static Notify_value itimer_expired(Tty tty_public, int which)
 {
+	SERVERTRACE((567, "%s\n", __FUNCTION__));
     notify_set_itimer_func(tty_public, NOTIFY_TIMER_FUNC_NULL, ITIMER_REAL,
 					(struct itimerval *) 0, (struct itimerval *) 0);
     ttysw_handle_itimer(TTY_PRIVATE_FROM_ANY_PUBLIC(tty_public));
-    return (NOTIFY_DONE);
+    return NOTIFY_DONE;
 }
 
 static Termsw_folio from_ttysw_folio(Ttysw_private ttysw)
@@ -386,6 +374,9 @@ static Termsw_folio from_ttysw_folio(Ttysw_private ttysw)
 	/* damit stuerzt vitool nicht gleich beim Starten ab */
 	return NULL;
 }
+
+#define	TTYSW_USEC_DELAY 100000
+
 /*
  * Conditionally set conditions
  */
@@ -393,9 +384,6 @@ Pkg_private void ttysw_reset_conditions(Ttysw_view_handle ttysw_view)
 {
 	static int ttysw_waiting_for_pty_output;
 	register Ttysw_private ttysw = ttysw_view->folio;
-	static struct itimerval ttysw_itimerval = { {9999 /* linux-bug */ , 0},
-												{0, TTYSW_USEC_DELAY}
-											};
 	register int pty = ttysw->ttysw_pty;
 	Tty ttypub = TTY_PUBLIC(ttysw);
 	Termsw_folio termsw;
@@ -412,7 +400,6 @@ Pkg_private void ttysw_reset_conditions(Ttysw_view_handle ttysw_view)
 		if (!ttysw_waiting_for_pty_output) {
 			/* Wait for output to complete on pty */
 
-			XXX("notify_set_output_func on\n");
 			notify_set_output_func(ttypub, ttysw_pty_output_pending, pty);
 			ttysw_waiting_for_pty_output = 1;
 			/*
@@ -429,7 +416,6 @@ Pkg_private void ttysw_reset_conditions(Ttysw_view_handle ttysw_view)
 	else {
 		if (ttysw_waiting_for_pty_output) {
 			/* Don't wait for output to complete on pty any more */
-			XXX("notify_set_output_func off\n");
 			notify_set_output_func(ttypub, NOTIFY_IO_FUNC_NULL, pty);
 			ttysw_waiting_for_pty_output = 0;
 		}
@@ -437,14 +423,12 @@ Pkg_private void ttysw_reset_conditions(Ttysw_view_handle ttysw_view)
 	/* Set pty input pending */
 	if (owbp == orbp) {
 		if (!ttysw_waiting_for_pty_input) {
-			XX("notify_set_input_func on\n");
 			notify_set_input_func(ttypub, ttysw_pty_input_pending, pty);
 			ttysw_waiting_for_pty_input = 1;
 		}
 	}
 	else {
 		if (ttysw_waiting_for_pty_input) {
-			XX("notify_set_input_func off\n");
 			notify_set_input_func(ttypub, NOTIFY_IO_FUNC_NULL, pty);
 			ttysw_waiting_for_pty_input = 0;
 		}
@@ -453,9 +437,15 @@ Pkg_private void ttysw_reset_conditions(Ttysw_view_handle ttysw_view)
 	 * Try to optimize displaying by waiting for image to be completely
 	 * filled after being cleared (vi(^F ^B) page) before painting.
 	 */
-	if (!ttysw_getopt(ttysw, TTYOPT_TEXT) && ttysw_delaypainting)
-		notify_set_itimer_func(ttypub, ttysw_itimer_expired,
-				ITIMER_REAL, &ttysw_itimerval, ITIMER_NULL);
+	if (!ttysw_getopt(ttysw, TTYOPT_TEXT) && ttysw_delaypainting) {
+		static struct itimerval timer = {
+			{ 9999 /* linux-bug, seems to be ignored */ , 0 },
+			{ 0, 3 * TTYSW_USEC_DELAY }
+		};
+		SERVERTRACE((567, "%s: start timer\n", __FUNCTION__));
+		notify_set_itimer_func(ttypub, itimer_expired,
+							ITIMER_REAL, &timer, ITIMER_NULL);
+	}
 }
 
 
@@ -475,19 +465,16 @@ static Notify_value ttysw_prioritizer(Tty tty_public, int nfd,
 
 /* 	fprintf(stderr, "%s-%d: tty_public is a %s\n", __FUNCTION__,__LINE__, */
 /* 				((Xv_pkg *)xv_get(tty_public, XV_TYPE))->name); */
-	XX("ttysw_prioritizer\n");
 
 	ttysw->ttysw_flags |= TTYSW_FL_IN_PRIORITIZER;
 	if (*auto_sigbits_ptr) {
 		/* Send itimers */
 		if (*auto_sigbits_ptr & SIG_BIT(SIGALRM)) {
-			XXX("auto_sigbits\n");
 			notify_itimer(tty_public, ITIMER_REAL);
 			*auto_sigbits_ptr &= ~SIG_BIT(SIGALRM);
 		}
 	}
 	if (FD_ISSET(ttysw->ttysw_tty, obits_ptr)) {
-		XXX("tty out\n");
 		notify_output(tty_public, ttysw->ttysw_tty);
 		FD_CLR(ttysw->ttysw_tty, obits_ptr);
 	}
@@ -495,12 +482,10 @@ static Notify_value ttysw_prioritizer(Tty tty_public, int nfd,
 	 * Post events. This is done in place of calling notify_input with wfd's
 	 */
 	for (i = 0; i < count; i++) {
-		XX("event\n");
 		notify_event(tty_public, events[i], args[i]);
 	}
 
 	if (FD_ISSET(pty, obits_ptr)) {
-		XXX("pty out\n");
 		notify_output(tty_public, pty);
 		FD_CLR(pty, obits_ptr);
 		/*
@@ -515,7 +500,6 @@ static Notify_value ttysw_prioritizer(Tty tty_public, int nfd,
 				&& (ttysw_getopt(ttysw, TTYOPT_TEXT))) {
 			textsw_flush_std_caches(TTY_VIEW_PUBLIC(ttysw_view));
 		}
-		XX("pty in\n");
 		notify_input(tty_public, pty);
 		FD_CLR(pty, ibits_ptr);
 	}
