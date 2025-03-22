@@ -1,5 +1,5 @@
 #ifndef lint
-char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.3 2024/12/16 22:54:33 dra Exp $";
+char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.4 2025/03/21 21:16:39 dra Exp $";
 #endif
 
 /*
@@ -66,8 +66,6 @@ extern int      dtablesize_cache;
 #define	iwbp	ttysw->ttysw_ibuf.cb_wbp
 #define	iebp	ttysw->ttysw_ibuf.cb_ebp
 #define	ibuf	ttysw->ttysw_ibuf.cb_buf
-
-extern int dra_tty_debug;  /* in tty_ntfy.c  */
 
 /* #ifdef TERMSW */
 static Textsw_index find_and_remove_mark(Textsw textsw, Textsw_mark mark)
@@ -717,9 +715,6 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 	textsw_checkpoint_undo(textsw, termsw->next_undo_point);
 	/* Stop this insertion from triggering the cmd scanner! */
 	ttysw_doing_pty_insert(textsw, termsw, TRUE);
-	if (dra_tty_debug & 32)
-		fprintf(stderr, "%s-%d: '%s', %d\n", __FUNCTION__, __LINE__,
-						buf, buflen);
 	textsw_insert(textsw, buf, buflen);
 	ttysw_doing_pty_insert(textsw, termsw, FALSE);
 	ttysw_scan_for_completed_commands(ttysw_view, (int)insert_at, TRUE);
