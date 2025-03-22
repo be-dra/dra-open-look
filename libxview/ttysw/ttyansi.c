@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
+char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.7 2025/03/21 21:16:33 dra Exp $";
 #endif
 
 /*
@@ -28,8 +28,6 @@ char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,
 #include <xview_private/ttyansi.h>
 
 #include <xview/sel_attrs.h>
-
-extern int dra_tty_debug;  /* in tty_ntfy.c  */
 
 #ifdef DEBUG
 #define ERROR_RETURN(val)	abort();	/* val */
@@ -234,9 +232,6 @@ static int send_input_to_textsw(Textsw textsw, register CHAR *buf, register long
 				(size_t)(expanded_size - buf_len));
 		buf_len = expanded_size;
 	}
-	if (dra_tty_debug & 32)
-		fprintf(stderr, "%s-%d: %d %d '%s', %ld\n", __FUNCTION__, __LINE__,
-						pty_insert, last_plus_one, buf, buf_len);
 	if ((status = local_replace_bytes(textsw, pty_insert, last_plus_one,
 							buf, buf_len))) {
 		add_newline = 0;
@@ -338,9 +333,6 @@ static int erase_chars(Textsw textsw, Textsw_index pty_insert,
 	register Termsw_folio termsw =
 			TERMSW_FOLIO_FOR_VIEW(TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw));
 
-	if (dra_tty_debug & 4)
-		fprintf(stderr, "%s-%d: %d %d\n", __FUNCTION__, __LINE__,
-						pty_insert, end_span);
 	if (pty_insert < 0)
 		pty_insert = 0;
 	if (end_span <= pty_insert)
@@ -366,9 +358,6 @@ static int erase_chars(Textsw textsw, Textsw_index pty_insert,
 						cmd_start : TEXTSW_INFINITY - 1),
 				TEXTSW_MARK_READ_ONLY);
 	}
-	if (dra_tty_debug & 8) {
-		abort();
-	}
 	return status;
 }
 
@@ -388,9 +377,6 @@ static int replace_chars(Textsw textsw, Textsw_index start_span, Textsw_index en
     }
     ttysw_doing_pty_insert(textsw, termsw, TRUE);
 
-	if (dra_tty_debug & 32)
-		fprintf(stderr, "%s-%d: %d %d '%s', %ld\n", __FUNCTION__, __LINE__,
-						start_span, end_span, buf, buflen);
     status = local_replace_bytes(textsw, start_span, end_span, buf, buflen);
 
     ttysw_doing_pty_insert(textsw, termsw, FALSE);
@@ -688,8 +674,6 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 						* das ueberschriebene Byte war sowieso 0.
 	                    */
 
-	if (dra_tty_debug & 2) debug_nondangerous((unsigned char *)addr);
-
 	if (TTY_IS_TERMSW(ttysw)) {
 		textsw = (Textsw) TTY_PUBLIC(ttysw);
 		{
@@ -760,9 +744,6 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 
 				default:
 					state &= ~S_ESC;
-					if (dra_tty_debug & 4)
-						fprintf(stderr, "%s-%d: switch off esc at %c\n",
-										__FUNCTION__, __LINE__, *addr);
 					continue;
 			}
 		}
@@ -819,9 +800,6 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 					ttysw_handlestring(ttysw, (int)strtype, *addr);
 				}
 				else if (*addr == CTRL('[')) {
-					if (dra_tty_debug & 64)
-						fprintf(stderr, "%s-%d: ESC%-13.13s\n",
-											__FUNCTION__, __LINE__, addr+1);
 					state |= S_ESC;
 				}
 				break;
@@ -833,9 +811,6 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 					switch (*addr) {
 						case CTRL('['):	/* Escape */
 							state |= S_ESC;
-							if (dra_tty_debug & 64)
-								fprintf(stderr, "%s-%d: ESC%-24.24s\n",
-											__FUNCTION__, __LINE__, addr+1);
 							/* spit out what we have so far */
 							cp = from_pty_to_textsw(textsw, cp, buf);
 							if (TTY_IS_TERMSW(ttysw)) {
@@ -1142,9 +1117,6 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 							break;
 						case CTRL('['):
 							state |= S_ESC;
-							if (dra_tty_debug & 64)
-								fprintf(stderr, "%s-%d: ESC%-13.13s\n",
-											__FUNCTION__, __LINE__, addr+1);
 							break;
 						case DEL:	/* ignored */
 							break;
@@ -1216,6 +1188,7 @@ static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len)
 			return (0);
 	}
 
+
 #ifdef OW_I18N
 	if (ttysw->cursrow < (SCROLL(scroll_bottom, ttysw->ttysw_bottom) - 1))
 #else
@@ -1232,7 +1205,7 @@ static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len)
 	}
 	else {
 		if (ttysw_delaypainting)
-			ttysw_pdisplayscreen(ttysw, 1);
+			ttysw_pdisplayscreen(ttysw, TRUE, FALSE);
 		if (!scrlins) {	/* Just wrap to top of screen and clr line */
 			ttysw_pos(ttysw, ttysw->curscol, 0);
 			ttysw_deleteChar(ttysw, ttysw->ttysw_left, ttysw->ttysw_right,
@@ -1243,7 +1216,6 @@ static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len)
 				/* Find pending LF's and do them all now */
 				register CHAR *cp;
 				register int left_end;
-
 				for (cp = addr + 1, left_end = len; left_end--; cp++) {
 					if (*cp == (CHAR) '\n')
 						lfs++;
@@ -1351,13 +1323,9 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 		av0 = 1;
 
 	if (ttysw_getopt(ttysw, TTYOPT_TEXT)) {
-		if (dra_tty_debug & 4)
-			fprintf(stderr, "%s-%d: char %c, ac=%d\n", __FUNCTION__,__LINE__,c,ac);
 		found = FALSE;
 	}
 	else {
-		if (dra_tty_debug & 4)
-			fprintf(stderr, "%s-%d: char %c, ac=%d\n", __FUNCTION__,__LINE__,c,ac);
 		switch (c) {
 			case '@':
 				(void)ttysw_insertChar(ttysw, ttysw->curscol, ttysw->curscol + av0, ttysw->cursrow);
@@ -1394,17 +1362,6 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 				ttysw_deleteChar(ttysw, ttysw->curscol, ttysw->curscol + av0, ttysw->cursrow);
 				break;
 			case 'm':
-				if (dra_tty_debug & 4) { /* sah ich nie */
-					if (ac == 1) {
-						fprintf(stderr, "%s-%d: av=%d\n", __FUNCTION__,__LINE__,av[0]);
-					}
-					else if (ac == 2) {
-						fprintf(stderr, "%s-%d: av=%d,%d\n", __FUNCTION__,__LINE__,av[0],av[1]);
-					}
-					else {
-						fprintf(stderr, "%s-%d: av=%d,%d,%d...\n", __FUNCTION__,__LINE__,av[0],av[1],av[2]);
-					}
-				}
 				for (i = 0; i < ac; i++) {
 					switch (av[i]) {
 						case 0:
@@ -1500,9 +1457,6 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 				if (ttysw_getopt(ttysw, TTYOPT_TEXT)) {
 					textsw = TTY_PUBLIC(ttysw);
 					if (termsw) {
-						if (dra_tty_debug & 4)
-							fprintf(stderr, "%s-%d: K in termsw %p mode\n",
-										__FUNCTION__, __LINE__, termsw);
 						if (erase_chars(textsw,
 										textsw_find_mark_i18n(textsw,
 												termsw->pty_mark),
@@ -1586,17 +1540,6 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
 			 * Derzeit (23.12.220) kein Plan, hier bunt zu werden....
 			 */
 			case 'm':	/* coloring ??? \E[0m black   \E[34m blue */
-				if (dra_tty_debug & 4) { /* sah ich nie */
-					if (ac == 1) {
-						fprintf(stderr, "%s-%d: av=%d\n", __FUNCTION__,__LINE__,av[0]);
-					}
-					else if (ac == 2) {
-						fprintf(stderr, "%s-%d: av=%d,%d\n", __FUNCTION__,__LINE__,av[0],av[1]);
-					}
-					else {
-						fprintf(stderr, "%s-%d: av=%d,%d,%d...\n", __FUNCTION__,__LINE__,av[0],av[1],av[2]);
-					}
-				}
 				break;
 
 			default:	/* X3.64 says ignore if we don't know */
