@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.13 2025/03/19 21:33:50 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.15 2025/03/21 21:16:35 dra Exp $";
 #endif
 
 /*
@@ -91,9 +91,6 @@ int     committed_left = 0;
 #ifdef OW_I18N
 extern Textsw_index textsw_insert_wcs();
 #endif
-
-extern int dra_tty_debug;  /* in tty_ntfy.c  */
-#define XX(_a_) if (dra_tty_debug&1) fprintf(stderr, "%s`%s-%d: %s", __FILE__,__FUNCTION__,__LINE__,_a_)
 
 /*
  * jcb	-- remove continual cursor repaint in shelltool windows also known to
@@ -360,6 +357,7 @@ ttysw_mbs_write(pty, mbs, nbytes)
 }
 #else
 
+#ifdef DEBUG
 static void ttysw_print_debug_string(char *cp, int len)
 {
     int		    i;
@@ -383,6 +381,7 @@ static void ttysw_print_debug_string(char *cp, int len)
     }
     printf("\"\n");
 }
+#endif /* DEBUG */
 
 Pkg_private void ttysw_pty_output(Ttysw_private ttysw, int pty)
 {
@@ -514,10 +513,6 @@ static void ttysw_process_STI(register Ttysw_private ttysw, register char *cp,
 	 */
 	while (cc > 0) {
 		post_id = (short)(*cp);
-		if (dra_tty_debug & 4) {
-			fprintf(stderr, "%s-%d: win_post_id(%d)\n", __FUNCTION__, __LINE__,
-											post_id);
-		}
 		(void)win_post_id(textsw_view, post_id, NOTIFY_SAFE);
 		cp++;
 		cc--;
@@ -727,11 +722,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 				owbp += wc_nchar;
 #else /* OW_I18N */
 
-				if (dra_tty_debug & 2) {
-					printf("read from pty: ");
-					ttysw_print_debug_string(owbp, databuf.len);
-				}
-
 				owbp += databuf.len;
 
 				/*
@@ -928,10 +918,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 
 	cc = readv(pty, iov, 2);
 
-	if (dra_tty_debug & 2) {
-		fprintf(stderr, "%s-%d: readv returns %d\n", __FUNCTION__,__LINE__,cc);
-	}
-
 #ifdef OW_I18N
 	mb_buf_p[cc - 1 + rest_of_nchar] = 0;
 	{
@@ -987,19 +973,9 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 	if (cc > 0) {
 		int_ucntl = (unsigned)ucntl;
 
-		if (dra_tty_debug & 2) {
-			printf("read from pty(%d, len=%d): ", int_ucntl, cc-1);
-			ttysw_print_debug_string(owbp, cc-1);
-		}
-
 		if (int_ucntl != 0 && ttysw_getopt(ttysw, TTYOPT_TEXT)) {
 			unsigned tiocsti = TIOCSTI;
 
-			if (dra_tty_debug & 4) {
-				fprintf(stderr, "%s-%d: %x <-> %x\n", __FUNCTION__, __LINE__,
-										int_ucntl, (tiocsti & 0xff));
-			}
-	
 			if (int_ucntl == (tiocsti & 0xff)) {
 				ttysw_process_STI(ttysw, owbp, cc - 1);
 			}
@@ -1253,7 +1229,6 @@ Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 		free(wcs_buf);
 		return (wc_nchar);
 #else
-		XX("textsw_insert\n");
 		textsw_insert(textsw, addr, len);
 		return (len);
 #endif
@@ -1265,7 +1240,6 @@ Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 		bytes_copied = ttysw_copy_to_input_buffer(ttysw, wcs_buf, wc_nchar);
 		free(wcs_buf);
 #else
-		XX("ttysw_copy_to_input_buffer\n");
 		bytes_copied = ttysw_copy_to_input_buffer(ttysw, addr, len);
 #endif
 
@@ -1280,11 +1254,9 @@ Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 			ttysw->ttysw_lpp = 0;	/* reset page mode counter */
 			ttysw_view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw);
 			if (ttysw->ttysw_flags & TTYSW_FL_FROZEN) {
-				XX("ttysw_freeze\n");
 				ttysw_freeze(ttysw_view, 0);
 			}
 			if (!(ttysw->ttysw_flags & TTYSW_FL_IN_PRIORITIZER)) {
-				XX("ttysw_reset_conditions\n");
 				ttysw_reset_conditions(ttysw_view);
 			}
 		}
@@ -1336,7 +1308,8 @@ Pkg_private void ttysw_handle_itimer(Ttysw_private ttysw)
 	if (ttysw->sels[TTY_SEL_SECONDARY].sel_made) {
 		ttysel_deselect(ttysw, ttysw->sels + TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
 	}
-	ttysw_pdisplayscreen(ttysw, 0);
+	SERVERTRACE((567, "%s\n", __FUNCTION__));
+	ttysw_pdisplayscreen(ttysw, FALSE, TRUE);
 }
 
 /* This could be a public ttysw view or termsw view */
@@ -1369,7 +1342,6 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 				case KBD_DONE:
 					ttysw_lighten_cursor(ttysw);
 					(void)frame_kbd_done(frame_public, tty_public);
-					XX("KBD_DONE\n");
 					return TTY_DONE;
 			}
 		case WIN_REPAINT:
