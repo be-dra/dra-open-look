@@ -1,4 +1,4 @@
-/*      @(#)ndet.h 20.13 93/06/28 SMI   DRA: $Id: ndet.h,v 4.1 2024/03/28 18:09:08 dra Exp $      */
+/*      @(#)ndet.h 20.13 93/06/28 SMI   DRA: $Id: ndet.h,v 4.2 2025/03/22 18:55:50 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -247,6 +247,11 @@ extern int ndet_check_status(Destroy_status  status);
 extern NTFY_ENUM ndet_immediate_destroy(NTFY_CLIENT *client,
     NTFY_CONDITION *condition,
     NTFY_ENUM_DATA  context);
+
+extern NTFY_ENUM ntfy_new_enum_conditions(NTFY_CNDTBL *cnd_list,
+					NTFY_ENUM_FUNC  enum_func, NTFY_ENUM_DATA  context);
+extern NTFY_ENUM ntfy_new_paranoid_enum_conditions(NTFY_CNDTBL *cnd_list,
+					NTFY_ENUM_FUNC enum_func, NTFY_ENUM_DATA context);
 
 /*
  * NDET_ENUM_SEND is used to send the results of select around to conditions.
