@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.2 2024/11/30 13:02:13 dra Exp $ ";
+static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.3 2025/03/22 18:56:12 dra Exp $ ";
 #endif
 #endif
 
@@ -30,8 +30,6 @@ static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro 
 #include <stdio.h>		/* For temp debugging */
 #include <rpc/rpc.h>
 
-pkg_private     NTFY_ENUM ntfy_new_enum_conditions(NTFY_CNDTBL    *cnd_list, NTFY_ENUM_FUNC  enum_func, NTFY_ENUM_DATA  context);
-pkg_private     NTFY_ENUM ntfy_new_paranoid_enum_conditions(NTFY_CNDTBL *cnd_list, NTFY_ENUM_FUNC enum_func, NTFY_ENUM_DATA context);
 pkg_private_data u_int ndet_flags = 0;
 pkg_private_data NTFY_CLIENT *ndet_clients = 0;
 pkg_private_data NTFY_CLIENT *ndet_client_latest = 0;
