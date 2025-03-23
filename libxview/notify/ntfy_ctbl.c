@@ -1,10 +1,11 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ntfy_ctbl.c 1.22 93/06/28  DRA: $Id: ntfy_ctbl.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)ntfy_ctbl.c 1.22 93/06/28  DRA: $Id: ntfy_ctbl.c,v 4.2 2025/03/22 18:56:51 dra Exp $ ";
 #endif
 #endif
 
 #include <xview_private/ntfy.h>
+#include <xview_private/ndet.h>
 #include <stdio.h>
 #include <signal.h>
 
@@ -17,78 +18,118 @@ NTFY_CNDTBL *ntfy_cndtbl[NTFY_LAST_CND];
 /* #define DRA_FIND_TIMER_BUG 1 */
 /* #define DUMP_notdef 1 */
 
-pkg_private void
-ntfy_add_to_table(NTFY_CLIENT *client, NTFY_CONDITION *condition, int type)
+#ifdef DRA_FIND_TIMER_BUG
+static NTFY_CLIENT *last_same_client = NULL;
+static NTFY_CONDITION *last_same_condition = NULL;
+#endif /* DRA_FIND_TIMER_BUG */
+
+
+pkg_private void ntfy_add_to_table(NTFY_CLIENT *client,
+							NTFY_CONDITION *condition, int type)
 {
-    NTFY_CNDTBL    *cnd_list = ntfy_cndtbl[type];
+	NTFY_CNDTBL *cnd_list = ntfy_cndtbl[type];
 
 #ifdef DRA_FIND_TIMER_BUG
-	if (ntfy_cndtbl[(int) NTFY_REAL_ITIMER] && type == NTFY_REAL_ITIMER)
-	fprintf(stderr, "%s-%d: add_to_table: head=%lx, next=%lx\n",
-						__FILE__, __LINE__,
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next);
+	if (type == NTFY_REAL_ITIMER) {
+		if (cnd_list) {
+			fprintf(stderr, "%s-%d: add_to_table(%p, %p): head=%p, next=%p\n",
+				__FILE__, __LINE__, client, condition,
+				cnd_list, cnd_list->next);
+		}
+		else {
+			fprintf(stderr, "%s-%d: add_to_table(%p, %p): head=%p\n",
+				__FILE__, __LINE__, client, condition, cnd_list);
+		}
+	}
 #endif /* DRA_FIND_TIMER_BUG */
-    NTFY_BEGIN_CRITICAL;
-    if (!cnd_list) {
-	/* Create the head, which is never used */
-	cnd_list = (NTFY_CNDTBL *) xv_malloc(sizeof(NTFY_CNDTBL));
-	cnd_list->client = (NTFY_CLIENT *) NULL;
-	cnd_list->condition = (NTFY_CONDITION *) NULL;
-	cnd_list->next = (NTFY_CNDTBL *) NULL;
-	ntfy_cndtbl[type] = cnd_list;
 
-	/*
-	 * Create the first clt/cnd in the list, along with ptrs back to the
-	 * actual clt and condition
-	 */
+	NTFY_BEGIN_CRITICAL;
+	if (!cnd_list) {
+		/* Create the head, which is never used */
+		cnd_list = (NTFY_CNDTBL *) xv_malloc(sizeof(NTFY_CNDTBL));
+		cnd_list->client = (NTFY_CLIENT *) NULL;
+		cnd_list->condition = (NTFY_CONDITION *) NULL;
+		cnd_list->next = (NTFY_CNDTBL *) NULL;
+		ntfy_cndtbl[type] = cnd_list;
+
+		/*
+		 * Create the first clt/cnd in the list, along with ptrs back to the
+		 * actual clt and condition
+		 */
+		cnd_list = (NTFY_CNDTBL *) xv_malloc(sizeof(NTFY_CNDTBL));
+		cnd_list->client = client;
+		cnd_list->condition = condition;
+		cnd_list->next = ntfy_cndtbl[type]->next;
+		ntfy_cndtbl[type]->next = cnd_list;
+		NTFY_END_CRITICAL;
+
+#ifdef DRA_FIND_TIMER_BUG
+		if (type == NTFY_REAL_ITIMER) {
+			fprintf(stderr, "first new cond of type %d\n", type);
+			fprintf(stderr, "%s-%d: added       : head=%lx, next=%lx\n",
+					__FILE__, __LINE__,
+					ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
+					ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
+		}
+#endif /* DRA_FIND_TIMER_BUG */
+
+		return;
+	}
+	/* See if a particular client already has registered this condition. */
+	cnd_list = cnd_list->next;
+	while (cnd_list) {
+		ntfy_assert(cnd_list->condition->type == condition->type, 25
+				/* Found wrong condition type in condition table */ );
+		if ((cnd_list->client == client) && (cnd_list->condition == condition)) {
+#ifdef DRA_FIND_TIMER_BUG
+			if (type == NTFY_REAL_ITIMER) {
+				fprintf(stderr, "%s-%d: already here: cl=%p, cond=%p ================\n",
+						__FILE__, __LINE__, client, condition);
+
+				/* who is adding the same thing twice? */
+				/* answer:
+						ntfy_add_to_table (ntfy_ctbl.c:84)
+						notify_set_itimer_func (ndetsitimr.c:52)
+						ndet_itimer_expired (ndetitimer.c:176)
+						ndet_poll_send (ndet_loop.c:967)
+						ndet_poll_send (ndet_loop.c:957)
+						ntfy_enum_conditions (ntfy_cond.c:221)
+						notify_start (ndet_loop.c:412)
+				*/
+
+				/* remember: I have not really added anything */
+				last_same_client = client;
+				last_same_condition = condition;
+			}
+#endif /* DRA_FIND_TIMER_BUG */
+			NTFY_END_CRITICAL;
+			return;
+		}
+#ifdef DRA_FIND_TIMER_BUG
+		last_same_client = NULL;
+		last_same_condition = NULL;
+#endif /* DRA_FIND_TIMER_BUG */
+		cnd_list = cnd_list->next;
+	}
+
 	cnd_list = (NTFY_CNDTBL *) xv_malloc(sizeof(NTFY_CNDTBL));
 	cnd_list->client = client;
 	cnd_list->condition = condition;
 	cnd_list->next = ntfy_cndtbl[type]->next;
 	ntfy_cndtbl[type]->next = cnd_list;
-	NTFY_END_CRITICAL;
-#ifdef DRA_FIND_TIMER_BUG
-	if (type == NTFY_REAL_ITIMER) {
-		fprintf(stderr, "first new cond of type %d\n", type);
-		fprintf(stderr, "%s-%d: added       : head=%lx, next=%lx\n",
-						__FILE__, __LINE__,
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next);
-	}
-#endif /* DRA_FIND_TIMER_BUG */
-	return;
-    }
-    /* See if a particular client already has registered this condition. */
-    cnd_list = cnd_list->next;
-    while (cnd_list) {
-	ntfy_assert(cnd_list->condition->type == condition->type, 25
-		    /* Found wrong condition type in condition table */);
-	if ((cnd_list->client == client) &&
-	    (cnd_list->condition == condition)) {
-	    NTFY_END_CRITICAL;
-	    return;
-	}
-	cnd_list = cnd_list->next;
-    }
 
-    cnd_list = (NTFY_CNDTBL *) xv_malloc(sizeof(NTFY_CNDTBL));
-    cnd_list->client = client;
-    cnd_list->condition = condition;
-    cnd_list->next = ntfy_cndtbl[type]->next;
-    ntfy_cndtbl[type]->next = cnd_list;
 #ifdef DRA_FIND_TIMER_BUG
-	if (ntfy_cndtbl[(int) NTFY_REAL_ITIMER] && type == NTFY_REAL_ITIMER)
-	{
-	fprintf(stderr, "new cond of type %d\n", type);
+	if (ntfy_cndtbl[(int)NTFY_REAL_ITIMER] && type == NTFY_REAL_ITIMER) {
+		fprintf(stderr, "new cond of type %d\n", type);
 		fprintf(stderr, "%s-%d: added       : head=%lx, next=%lx\n",
-						__FILE__, __LINE__,
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next);
+				__FILE__, __LINE__,
+				ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
+				ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
 	}
 #endif /* DRA_FIND_TIMER_BUG */
-    NTFY_END_CRITICAL;
-    return;
+
+	NTFY_END_CRITICAL;
+	return;
 }
 
 /*
@@ -98,47 +139,58 @@ ntfy_add_to_table(NTFY_CLIENT *client, NTFY_CONDITION *condition, int type)
 
 pkg_private void ntfy_remove_from_table(NTFY_CLIENT *client, NTFY_CONDITION *condition)
 {
-    NTFY_CNDTBL    *cnd_list, *last_cnd;
+	NTFY_CNDTBL *cnd_list, *last_cnd;
 
-    if ((int) condition->type >= NTFY_LAST_CND)
-	return;
+	if ((int)condition->type >= NTFY_LAST_CND) return;
 
 #ifdef DRA_FIND_TIMER_BUG
-	if (condition->type == NTFY_REAL_ITIMER)
-	fprintf(stderr, "%s-%d: remove_from_table: head=%lx, next=%lx\n",
-						__FILE__, __LINE__,
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next);
-#endif /* DRA_FIND_TIMER_BUG */
-    NTFY_BEGIN_CRITICAL;
-    cnd_list = last_cnd = ntfy_cndtbl[(int) condition->type];
-
-    ntfy_assert(cnd_list, 26 /* Condition list has a NULL head */);
-
-    cnd_list = cnd_list->next;
-    while (cnd_list) {
-	ntfy_assert(cnd_list->condition->type == condition->type, 27
-		    /* Found wrong condition type in condition table */);
-	if ((cnd_list->client == client) &&
-	    (cnd_list->condition == condition)) {
-	    last_cnd->next = cnd_list->next;
-	    free(cnd_list);
-	    NTFY_END_CRITICAL;
-#ifdef DRA_FIND_TIMER_BUG
-		if (condition->type == NTFY_REAL_ITIMER) {
-		fprintf(stderr, "remove cond of type %d\n", condition->type);
-		fprintf(stderr, "%s-%d: rmove         : head=%lx, next=%lx\n",
-						__FILE__, __LINE__,
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next);
-		}
-#endif /* DRA_FIND_TIMER_BUG */
-	    return;
+	/* remember: I have not really added anything */
+	if (last_same_client == client && last_same_condition == condition) {
+		fprintf(stderr,
+				"%s-%d: remove_from_table(%p, %p): NO!!!\n",
+				__FILE__, __LINE__, client, condition);
+		last_same_client = NULL;
+		last_same_condition = NULL;
+		return;
 	}
-	last_cnd = cnd_list;
+
+	if (condition->type == NTFY_REAL_ITIMER)
+		fprintf(stderr,
+				"%s-%d: remove_from_table(%p, %p): head=%lx, next=%lx\n",
+				__FILE__, __LINE__, client, condition,
+				ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
+				ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
+#endif /* DRA_FIND_TIMER_BUG */
+
+	NTFY_BEGIN_CRITICAL;
+	cnd_list = last_cnd = ntfy_cndtbl[(int)condition->type];
+
+	ntfy_assert(cnd_list, 26 /* Condition list has a NULL head */ );
+
 	cnd_list = cnd_list->next;
-    }
-    NTFY_END_CRITICAL;
+	while (cnd_list) {
+		ntfy_assert(cnd_list->condition->type == condition->type, 27
+				/* Found wrong condition type in condition table */ );
+		if ((cnd_list->client == client) && (cnd_list->condition == condition)) {
+			last_cnd->next = cnd_list->next;
+			free(cnd_list);
+			NTFY_END_CRITICAL;
+
+#ifdef DRA_FIND_TIMER_BUG
+			if (condition->type == NTFY_REAL_ITIMER) {
+				fprintf(stderr, "%s-%d: remove         : head=%lx, next=%lx\n",
+						__FILE__, __LINE__,
+						ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
+						ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
+			}
+#endif /* DRA_FIND_TIMER_BUG */
+
+			return;
+		}
+		last_cnd = cnd_list;
+		cnd_list = cnd_list->next;
+	}
+	NTFY_END_CRITICAL;
 }
 
 /* VARARGS2 */
@@ -177,8 +229,8 @@ pkg_private     NTFY_ENUM ntfy_new_enum_conditions(NTFY_CNDTBL    *cnd_list, NTF
 	    break;
 	  case NTFY_ENUM_TERM:
 	    return (NTFY_ENUM_TERM);
-	  default:{
-	    }
+	  default:
+	     break;
 	}
 #ifdef DRA_FIND_TIMER_BUG
 	if ((long)cnd_list->next == 0x10) {
@@ -198,7 +250,7 @@ pkg_private     NTFY_ENUM ntfy_new_enum_conditions(NTFY_CNDTBL    *cnd_list, NTF
 		/* sorry, but this only prevents us from dying here - 
 		 * we die in ntfy_new_paranoid_enum_conditions
 		 */
-		cnd_list = 0;
+		cnd_list = NULL;
 	}
 	else {
 		cnd_list = cnd_list->next;
@@ -217,61 +269,62 @@ static NTFY_CONDITION *ntfy_enum_condition;
 static NTFY_CONDITION *ntfy_enum_condition_next;
 static int ntfy_paranoid_count;
 
-pkg_private     NTFY_ENUM ntfy_new_paranoid_enum_conditions(NTFY_CNDTBL    *cnd_list, NTFY_ENUM_FUNC  enum_func, NTFY_ENUM_DATA  context)
+pkg_private NTFY_ENUM ntfy_new_paranoid_enum_conditions(NTFY_CNDTBL *cnd_list,
+						NTFY_ENUM_FUNC  enum_func, NTFY_ENUM_DATA  context)
 {
-    extern NTFY_CLIENT *ntfy_enum_client;
-    extern NTFY_CLIENT *ntfy_enum_client_next;
-    NTFY_ENUM       return_code = NTFY_ENUM_NEXT;
-    extern sigset_t    ndet_sigs_managing;
-    sigset_t oldmask, newmask;
-    newmask = ndet_sigs_managing;  /* assume interesting < 32 */
-    sigprocmask(SIG_BLOCK, &newmask , &oldmask);
+	extern NTFY_CLIENT *ntfy_enum_client;
+	extern NTFY_CLIENT *ntfy_enum_client_next;
+	NTFY_ENUM return_code = NTFY_ENUM_NEXT;
+	extern sigset_t ndet_sigs_managing;
+	sigset_t oldmask, newmask;
 
-    /*
-     * Blocking signals because async signal sender uses this paranoid
-     * enumerator.
-     */
+	newmask = ndet_sigs_managing;	/* assume interesting < 32 */
+	sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
-    ntfy_assert(!NTFY_IN_PARANOID, 28
-		/* More then 1 paranoid using enumerator */);
-    NTFY_BEGIN_PARANOID;
+	/*
+	 * Blocking signals because async signal sender uses this paranoid
+	 * enumerator.
+	 */
 
-    if (!cnd_list)
-	goto Done;
+	ntfy_assert(!NTFY_IN_PARANOID, 28
+			/* More then 1 paranoid using enumerator */ );
+	NTFY_BEGIN_PARANOID;
 
-    cnd_list = cnd_list->next;
+	if (!cnd_list)
+		goto Done;
+
+	cnd_list = cnd_list->next;
 
 #ifdef DUMP_notdef
-    if (cnd_list)
-	dump_table(cnd_list->condition->type);
+	if (cnd_list)
+		dump_table(cnd_list->condition->type);
 #endif
 
-    while (cnd_list) {
-	ntfy_enum_client = cnd_list->client;
-	ntfy_enum_condition = cnd_list->condition;
-	switch (enum_func(ntfy_enum_client, ntfy_enum_condition,
-			  context)) {
-	  case NTFY_ENUM_SKIP:
-	    break;
-	  case NTFY_ENUM_TERM:
-	    return_code = NTFY_ENUM_TERM;
-	    goto Done;
-	  default:
-	    if (ntfy_enum_client == NTFY_CLIENT_NULL)
-		goto BreakOut;
+	while (cnd_list) {
+		ntfy_enum_client = cnd_list->client;
+		ntfy_enum_condition = cnd_list->condition;
+		switch (enum_func(ntfy_enum_client, ntfy_enum_condition, context)) {
+			case NTFY_ENUM_SKIP:
+				break;
+			case NTFY_ENUM_TERM:
+				return_code = NTFY_ENUM_TERM;
+				goto Done;
+			default:
+				if (ntfy_enum_client == NTFY_CLIENT_NULL)
+					goto BreakOut;
+		}
+		cnd_list = cnd_list->next;
 	}
-	cnd_list = cnd_list->next;
-    }
-BreakOut:
-    {
-    }
-Done:
-    /* Reset global state */
-    ntfy_enum_client = ntfy_enum_client_next = NTFY_CLIENT_NULL;
-    ntfy_enum_condition = ntfy_enum_condition_next = NTFY_CONDITION_NULL;
-    NTFY_END_PARANOID;
-    sigprocmask(SIG_SETMASK, &oldmask, (sigset_t *) 0);
-    return (return_code);
+  BreakOut:
+	{
+	}
+  Done:
+	/* Reset global state */
+	ntfy_enum_client = ntfy_enum_client_next = NTFY_CLIENT_NULL;
+	ntfy_enum_condition = ntfy_enum_condition_next = NTFY_CONDITION_NULL;
+	NTFY_END_PARANOID;
+	sigprocmask(SIG_SETMASK, &oldmask, (sigset_t *) 0);
+	return (return_code);
 }
 
 #ifdef DUMP_notdef
