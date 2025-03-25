@@ -33,12 +33,10 @@
 #include <xview/process.h>
 #include <xview_private/i18n_impl.h>
 
-char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.4 2025/03/08 13:37:48 dra Exp $";
+char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.5 2025/03/24 12:22:37 dra Exp $";
 
 typedef enum { NOT_RUNNING, IS_ALIVE, MAYBE_DEAD, IS_DEAD, IS_DONE } chstat_t;
 
-typedef void (*io_proc_t) (Process, char *, int, int);
-typedef void (*exit_proc_t) (Process, int, int *);
 typedef int (*child_proc_t)(Process);
 
 typedef struct {
@@ -50,8 +48,8 @@ typedef struct {
 	int             *output_fd_ptr, *error_fd_ptr, pid;
 	int             nice, outpipe, errpipe;
 	child_proc_t	childproc;
-	io_proc_t       outproc, errproc;
-	exit_proc_t     exitproc;
+	process_io_proc_t       outproc, errproc;
+	process_exit_proc_t     exitproc;
 	Xv_opaque       client_data;
 	Process_status  status;
 	int             draErrno;
@@ -547,13 +545,13 @@ static Xv_opaque process_set(Process self, Attr_avlist avlist)
 			priv->wait_for_exec = FALSE;
 			ADONE;
 		case PROCESS_OUTPUT_PROC:
-			priv->outproc = (io_proc_t)A1;
+			priv->outproc = (process_io_proc_t)A1;
 			ADONE;
 		case PROCESS_ERROR_PROC:
-			priv->errproc = (io_proc_t)A1;
+			priv->errproc = (process_io_proc_t)A1;
 			ADONE;
 		case PROCESS_EXIT_PROC:
-			priv->exitproc = (exit_proc_t)A1;
+			priv->exitproc = (process_exit_proc_t)A1;
 			ADONE;
 		case PROCESS_OUTPUT_IS_ERROR:
 			priv->out_is_err = (char)A1;
