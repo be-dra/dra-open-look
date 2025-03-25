@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.4 2025/03/19 09:32:14 dra Exp $ ";
+static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.5 2025/03/24 13:35:33 dra Exp $ ";
 #endif
 #endif
 
@@ -23,6 +23,8 @@ static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,
 #include <xview/defaults.h>
 
 static int update_default_pin_state(Frame_cmd_info *frame, Xv_opaque server_public);
+
+extern char *xv_app_name;
 
 /* This function can be used as PANEL_BACKGROUND_PROC if you want a 
  * control area behave as specified in the OLSpec: mouse events fall through
@@ -472,73 +474,6 @@ static int update_default_pin_state(Frame_cmd_info *frame, Xv_opaque server_publ
 	return retval;
 }
 
-typedef struct {
-	xv_soon_proc_t proc;
-	Xv_opaque cldt;
-} soon_t;
-
-static Notify_value do_soon(Notify_client wpipptr, int fd)
-{
-	soon_t soon;
-	int len;
-
-	len = read(fd, (char *)&soon, sizeof(soon_t));
-	if (len < 0) {
-		if (errno == EINTR) return do_soon(wpipptr, fd);
-	}
-	if (len < (int)sizeof(soon_t)) {
-		perror("read from 'soon pipe'");
-		return NOTIFY_DONE;
-	}
-
-	if (soon.proc) (*soon.proc)(soon.cldt);
-	return NOTIFY_DONE;
-}
-
-Xv_public void xv_perform_soon(Xv_opaque cldt, xv_soon_proc_t func)
-{
-	soon_t soon;
-	static int wpip = -1;
-
-	if (wpip < 0) {
-		int pip[2];
-
-		pipe(pip);
-		wpip = pip[1];
-		notify_set_input_func((Notify_client)&wpip, do_soon, pip[0]);
-	}
-
-	soon.proc = func;
-	soon.cldt = cldt;
-	write(wpip, (char *)&soon, sizeof(soon_t));
-}
-
-static Notify_value note_later(Notify_client xpwp, int unused)
-{
-	soon_t *soon = (soon_t *)xpwp;
-
-	notify_set_itimer_func(xpwp, NOTIFY_TIMER_FUNC_NULL, ITIMER_REAL,
-							(struct itimerval *)0, (struct itimerval *)0);
-	if (soon->proc) (*soon->proc)(soon->cldt);
-	xv_free(soon);
-	return NOTIFY_DONE;
-}
-
-Xv_public void xv_perform_later(Xv_opaque cldt, xv_soon_proc_t func, int usec)
-{
-	struct itimerval timer;
-	soon_t *soon = xv_malloc(sizeof(soon_t));
-
-	timer.it_value.tv_sec = 0;
-	timer.it_value.tv_usec = usec;
-	timer.it_interval.tv_sec = 0;
-	timer.it_interval.tv_usec = 0;
-	soon->proc = func;
-	soon->cldt = cldt;
-	notify_set_itimer_func((Notify_client)soon, note_later, ITIMER_REAL,
-								&timer, (struct itimerval *) 0);
-}
-
 /**********************************************************/
 /**           (command) frame resizing                   **/
 /**********************************************************/
@@ -841,4 +776,129 @@ Xv_public void xv_set_frame_resizing(Frame frame, int resize_width,
 void xv_activate_resizing(void)
 {
 	interpose_me(XV_NULL);
+}
+
+/*********************************************************
+ *    The following was too much work for almost nothing.
+ *    My first "local XView class".
+ *********************************************************/
+
+#define SOON_OBJECT	&xv_soon_pkg
+typedef Xv_opaque Xv_soon;
+
+typedef struct  {
+    Xv_generic_struct	parent_data;
+    /* not used here: Xv_opaque	private_data; */
+	xv_soon_proc_t proc;
+	Xv_opaque cldt;
+} Xv_soon_struct;
+
+static Xv_opaque soon_set_avlist(Xv_soon sn, Attr_attribute *avlist);
+
+static const Xv_pkg xv_soon_pkg = {
+	"SoonObject",
+	ATTR_PKG_HELP,
+	sizeof(Xv_soon_struct),
+	&xv_generic_pkg,		/* subclass of generic */
+	NULL,
+	soon_set_avlist,
+	NULL,
+	NULL,
+	NULL
+};
+
+#define SOON_ATTR(type, ordinal)	ATTR(ATTR_PKG_HELP, type, ordinal)
+typedef enum {
+	SOON_CLIENT_DATA = SOON_ATTR(ATTR_OPAQUE, 1),
+	SOON_EVENT_PROC	 = SOON_ATTR(ATTR_FUNCTION_PTR, 2)
+} Soon_attribute;
+#define ADONE ATTR_CONSUME(avlist[0]);break
+
+static Xv_opaque soon_set_avlist(Xv_soon sn, Attr_attribute *avlist)
+{
+	Xv_soon_struct *soon = (Xv_soon_struct *)sn;
+
+	for (; *avlist; avlist = attr_next(avlist)) switch (avlist[0]) {
+		case SOON_CLIENT_DATA:
+			soon->cldt = (Xv_opaque)avlist[1];
+			ADONE;
+		case SOON_EVENT_PROC:
+			soon->proc = (xv_soon_proc_t)avlist[1];
+			ADONE;
+		default:
+			xv_check_bad_attr(SOON_OBJECT, avlist[0]);
+			break;
+	}
+	return XV_OK;
+}
+
+static Notify_value do_soon(Notify_client cl, int fd)
+{
+	Xv_soon sn;
+	Xv_soon_struct *soon;
+	int len;
+
+	len = read(fd, (char *)&sn, sizeof(sn));
+	if (len < 0) {
+		if (errno == EINTR) return do_soon(cl, fd);
+	}
+	if (len < (int)sizeof(sn)) {
+		perror("read from 'soon pipe'");
+		return NOTIFY_DONE;
+	}
+
+	soon = (Xv_soon_struct *)sn;
+	if (soon->proc) (*soon->proc)(soon->cldt);
+
+	xv_destroy(sn);
+	return NOTIFY_DONE;
+}
+
+Xv_public void xv_perform_soon(Xv_opaque cldt, xv_soon_proc_t func)
+{
+	Xv_soon soon;
+	static int wpip = -1;
+
+	if (wpip < 0) {
+		int pip[2];
+
+		pipe(pip);
+		wpip = pip[1];
+		notify_set_input_func((Notify_client)&wpip, do_soon, pip[0]);
+	}
+
+	soon = xv_create(XV_NULL, SOON_OBJECT,
+				SOON_CLIENT_DATA, cldt,
+				SOON_EVENT_PROC, func,
+				NULL);
+
+	write(wpip, (char *)&soon, sizeof(soon));
+}
+
+static Notify_value note_later(Notify_client sn, int unused)
+{
+	Xv_soon_struct *soon = (Xv_soon_struct *)sn;
+
+	notify_set_itimer_func(sn, NOTIFY_TIMER_FUNC_NULL, ITIMER_REAL,
+							(struct itimerval *)0, (struct itimerval *)0);
+	(*soon->proc)(soon->cldt);
+	xv_destroy(sn);
+	return NOTIFY_DONE;
+}
+
+Xv_public void xv_perform_later(Xv_opaque cldt, xv_soon_proc_t func, int usec)
+{
+	struct itimerval timer;
+	Xv_soon soon = xv_create(XV_NULL, SOON_OBJECT,
+				SOON_CLIENT_DATA, cldt,
+				SOON_EVENT_PROC, func,
+				NULL);
+
+	timer.it_value.tv_sec = 0;
+	timer.it_value.tv_usec = usec;
+	timer.it_interval.tv_sec = 0;
+	timer.it_interval.tv_usec = 0;
+
+	notify_set_itimer_func(soon, note_later, ITIMER_REAL, &timer,
+									(struct itimerval *) 0);
 }
