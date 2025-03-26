@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.26 2025/03/09 22:37:26 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.28 2025/03/25 20:12:03 dra Exp $";
 #endif
 
 /*
@@ -37,7 +37,8 @@ extern wchar_t *xv_app_name_wcs;
 
 Xv_private void xv_help_save_image(Xv_Window pw,
 		int client_width, int unused_client_height, int mouse_x, int mouse_y);
-Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data, Event *client_event);
+Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
+									Event *client_event);
 
 /*
  * There is a maximum of 10 lines of text of 50 chars each visible in the
@@ -343,6 +344,14 @@ Xv_private void xv_help_save_image(Xv_Window pw,
 				HELP_IMAGE_X, HELP_IMAGE_Y);
 }
 
+/* we need this in the context of olwmslave because we do not
+ * want the behaviour of frame_default_done_func in frame_init.c
+ */
+static void help_done(Frame fr)
+{
+	xv_set(fr, XV_SHOW, FALSE, NULL);
+}
+
 Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 									Event *client_event)
 {
@@ -475,11 +484,8 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 				char *an = (char *)xv_get(server, XV_APP_NAME);
 
 				/* mae hynny yn digwydd mewn olwmslave...
-				 * dydw i ddim yn gweld a neges yma
 				 */
-/* 				fprintf(stderr, "%s`%s-%d: cannor find a FRAME\n", */
-/* 									__FILE__, __FUNCTION__, __LINE__); */
-				application_name = xv_strsave(an);;
+				application_name = xv_strsave(an);
 			}
 		}
 	}
@@ -518,6 +524,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 #else
 					XV_LABEL, client_name,
 #endif /* OW_I18N */
+					FRAME_DONE_PROC, help_done,
 					NULL);
 		help_frame_rect = *(Rect *) xv_get(help_info->help_frame, XV_RECT);
 		help_frame_rect.r_left = 0;
