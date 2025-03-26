@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.8 2025/03/11 17:46:52 dra Exp $";
+static char     sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.9 2025/03/25 11:37:57 dra Exp $";
 #endif
 #endif
 
@@ -638,8 +638,8 @@ Pkg_private void panel_refont(Panel_info *panel, int arg)
 	x_gap = (int)xv_get(panel_public, PANEL_ITEM_X_GAP);
 	if (x_gap < 4) x_gap = 4;
 
-	left_margin = (int)xv_get(panel_public, WIN_LEFT_MARGIN);
-	top_margin = (int)xv_get(panel_public, WIN_TOP_MARGIN);
+	left_margin = (int)xv_get(panel_public, XV_LEFT_MARGIN);
+	top_margin = (int)xv_get(panel_public, XV_TOP_MARGIN);
 
 	PANEL_EACH_ITEM(panel_public, item)
 		ip = ITEM_PRIVATE(item);
