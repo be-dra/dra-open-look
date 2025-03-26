@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ntfy_ctbl.c 1.22 93/06/28  DRA: $Id: ntfy_ctbl.c,v 4.2 2025/03/22 18:56:51 dra Exp $ ";
+static char     sccsid[] = "@(#)ntfy_ctbl.c 1.22 93/06/28  DRA: $Id: ntfy_ctbl.c,v 4.3 2025/03/25 14:40:20 dra Exp $ ";
 #endif
 #endif
 
@@ -19,6 +19,7 @@ NTFY_CNDTBL *ntfy_cndtbl[NTFY_LAST_CND];
 /* #define DUMP_notdef 1 */
 
 #ifdef DRA_FIND_TIMER_BUG
+#include <xview/pkg_public.h>
 static NTFY_CLIENT *last_same_client = NULL;
 static NTFY_CONDITION *last_same_condition = NULL;
 #endif /* DRA_FIND_TIMER_BUG */
@@ -66,7 +67,7 @@ pkg_private void ntfy_add_to_table(NTFY_CLIENT *client,
 #ifdef DRA_FIND_TIMER_BUG
 		if (type == NTFY_REAL_ITIMER) {
 			fprintf(stderr, "first new cond of type %d\n", type);
-			fprintf(stderr, "%s-%d: added       : head=%lx, next=%lx\n",
+			fprintf(stderr, "%s-%d: added       : head=%p, next=%p\n",
 					__FILE__, __LINE__,
 					ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
 					ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
@@ -100,6 +101,12 @@ pkg_private void ntfy_add_to_table(NTFY_CLIENT *client,
 				/* remember: I have not really added anything */
 				last_same_client = client;
 				last_same_condition = condition;
+				{
+					Notify_client cl = client->nclient;
+					Xv_base *obj = (Xv_base *)cl;
+
+					fprintf(stderr, "%s-%d: %ld = 0x%lx\n", __FILE__, __LINE__, obj->seal, obj->seal);
+				}
 			}
 #endif /* DRA_FIND_TIMER_BUG */
 			NTFY_END_CRITICAL;
@@ -121,7 +128,7 @@ pkg_private void ntfy_add_to_table(NTFY_CLIENT *client,
 #ifdef DRA_FIND_TIMER_BUG
 	if (ntfy_cndtbl[(int)NTFY_REAL_ITIMER] && type == NTFY_REAL_ITIMER) {
 		fprintf(stderr, "new cond of type %d\n", type);
-		fprintf(stderr, "%s-%d: added       : head=%lx, next=%lx\n",
+		fprintf(stderr, "%s-%d: added       : head=%p, next=%p\n",
 				__FILE__, __LINE__,
 				ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
 				ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
@@ -156,7 +163,7 @@ pkg_private void ntfy_remove_from_table(NTFY_CLIENT *client, NTFY_CONDITION *con
 
 	if (condition->type == NTFY_REAL_ITIMER)
 		fprintf(stderr,
-				"%s-%d: remove_from_table(%p, %p): head=%lx, next=%lx\n",
+				"%s-%d: remove_from_table(%p, %p): head=%p, next=%p\n",
 				__FILE__, __LINE__, client, condition,
 				ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
 				ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
@@ -178,7 +185,7 @@ pkg_private void ntfy_remove_from_table(NTFY_CLIENT *client, NTFY_CONDITION *con
 
 #ifdef DRA_FIND_TIMER_BUG
 			if (condition->type == NTFY_REAL_ITIMER) {
-				fprintf(stderr, "%s-%d: remove         : head=%lx, next=%lx\n",
+				fprintf(stderr, "%s-%d: remove         : head=%p, next=%p\n",
 						__FILE__, __LINE__,
 						ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
 						ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
@@ -193,71 +200,73 @@ pkg_private void ntfy_remove_from_table(NTFY_CLIENT *client, NTFY_CONDITION *con
 	NTFY_END_CRITICAL;
 }
 
-/* VARARGS2 */
-pkg_private     NTFY_ENUM ntfy_new_enum_conditions(NTFY_CNDTBL    *cnd_list, NTFY_ENUM_FUNC  enum_func, NTFY_ENUM_DATA  context)
+pkg_private NTFY_ENUM ntfy_new_enum_conditions(NTFY_CNDTBL *cnd_list,
+						NTFY_ENUM_FUNC enum_func, NTFY_ENUM_DATA context)
 {
-    if (!cnd_list)
-	return (NTFY_ENUM_NEXT);
+	if (!cnd_list)
+		return (NTFY_ENUM_NEXT);
 
-    cnd_list = cnd_list->next;
+	cnd_list = cnd_list->next;
 
 #ifdef DRA_FIND_TIMER_BUG
-	fprintf(stderr, "%s-%d: new_enum_cond: head=%lx, next=%lx\n",
-						__FILE__, __LINE__,
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next);
+	fprintf(stderr, "%s-%d: new_enum_cond: head=%p\n",
+			__FILE__, __LINE__, ntfy_cndtbl[(int)NTFY_REAL_ITIMER]);
+
+/* 						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next); */
 #endif /* DRA_FIND_TIMER_BUG */
 
 #ifdef DUMP_notdef
-    if (cnd_list)
-	dump_table(cnd_list->condition->type);
+	if (cnd_list)
+		dump_table(cnd_list->condition->type);
 #endif
 
-    while (cnd_list) {
+	while (cnd_list) {
 #ifdef DRA_FIND_TIMER_BUG
-		fprintf(stderr, "%s-%d: --------------  cnd_list=%lx\n", __FILE__, __LINE__,cnd_list);
+		fprintf(stderr, "%s-%d: --------------  cnd_list=%p\n", __FILE__,
+				__LINE__, cnd_list);
 #endif /* DRA_FIND_TIMER_BUG */
-	switch (enum_func(cnd_list->client, cnd_list->condition,
-			  context)) {
-	  case NTFY_ENUM_SKIP:
+
+		switch (enum_func(cnd_list->client, cnd_list->condition, context)) {
+			case NTFY_ENUM_SKIP:
 #ifdef DRA_FIND_TIMER_BUG
-		fprintf(stderr, "%s-%d: NTFY_ENUM_SKIP: head=%lx, next=%lx\n",
+				fprintf(stderr, "%s-%d: NTFY_ENUM_SKIP: head=%p, next=%p\n",
 						__FILE__, __LINE__,
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-						ntfy_cndtbl[(int) NTFY_REAL_ITIMER]->next);
+						ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
+						ntfy_cndtbl[(int)NTFY_REAL_ITIMER]->next);
 #endif /* DRA_FIND_TIMER_BUG */
-	    break;
-	  case NTFY_ENUM_TERM:
-	    return (NTFY_ENUM_TERM);
-	  default:
-	     break;
-	}
+				break;
+			case NTFY_ENUM_TERM:
+				return (NTFY_ENUM_TERM);
+			default:
+				break;
+		}
+
 #ifdef DRA_FIND_TIMER_BUG
-	if ((long)cnd_list->next == 0x10) {
-		fprintf(stderr, "\n                       2 gleich krachts\n\n");
-		fprintf(stderr, "cnd_list before = %lx\n", cnd_list);
-	}
-	cnd_list = cnd_list->next;
-#else /* DRA_FIND_TIMER_BUG */
-	/* the problem seems to be that somebody calls ntfy_add_to_table
-	 * (maybe from within the 'enum_func' ?!?) for a client/condition pair
-	 * that is already there (so no real adding takes place) and immediately
-	 * afterwards calls  ntfy_remove_from_table, which really does the
-	 * removing - so the current cnd_list is being freed ....
-	 * don't know where the 0x10 comes from, but we never saw something else
-	 */
-	if ((long)cnd_list->next == 0x10) {
-		/* sorry, but this only prevents us from dying here - 
-		 * we die in ntfy_new_paranoid_enum_conditions
-		 */
-		cnd_list = NULL;
-	}
-	else {
+		if ((long)cnd_list->next == 0x10) {
+			fprintf(stderr, "\n                       2 gleich krachts\n\n");
+			fprintf(stderr, "cnd_list before = %p\n", cnd_list);
+		}
 		cnd_list = cnd_list->next;
-	}
+#else /* DRA_FIND_TIMER_BUG */
+		/* the problem seems to be that somebody calls ntfy_add_to_table
+		 * (maybe from within the 'enum_func' ?!?) for a client/condition pair
+		 * that is already there (so no real adding takes place) and immediately
+		 * afterwards calls  ntfy_remove_from_table, which really does the
+		 * removing - so the current cnd_list is being freed ....
+		 * don't know where the 0x10 comes from, but we never saw something else
+		 */
+		if ((long)cnd_list->next == 0x10) {
+			/* sorry, but this only prevents us from dying here - 
+			 * we die in ntfy_new_paranoid_enum_conditions
+			 */
+			cnd_list = NULL;
+		}
+		else {
+			cnd_list = cnd_list->next;
+		}
 #endif /* DRA_FIND_TIMER_BUG */
-    }
-    return (NTFY_ENUM_NEXT);
+	}
+	return (NTFY_ENUM_NEXT);
 }
 
 #define NTFY_BEGIN_PARANOID     ntfy_paranoid_count++
