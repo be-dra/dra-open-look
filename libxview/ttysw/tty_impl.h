@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.23 2025/03/21 20:02:14 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.24 2025/03/25 11:50:32 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -416,8 +416,6 @@ Pkg_private void
 	ttysw_set_inverse_mode(int new_inverse_mode),
 	ttysw_set_menu(Xv_opaque UNKNOWN),
 	ttysw_set_underline_mode( int new_underline_mode),
-	ttysw_setleftmargin(Tty tty, int left_margin),
-	ttysw_setleftmrg(Ttysw_private ttysw, int left_margin),
 	xv_tty_free_image_and_mode(Ttysw_private ttysw),
 	xv_tty_imagealloc(Ttysw *ttysw, int for_temp);
 
