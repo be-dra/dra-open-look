@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.3 2025/03/22 18:56:12 dra Exp $ ";
+static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.4 2025/03/25 14:40:26 dra Exp $ ";
 #endif
 #endif
 
@@ -659,59 +659,59 @@ static void ndet_update_itimer(NDET_ENUM_ITIMER *enum_itimer)
 static NTFY_ENUM ndet_itimer_change( NTFY_CLIENT    *client,
     NTFY_CONDITION *condition, NTFY_ENUM_DATA  context)
 {
-    struct timeval  local_min;
-    register NDET_ENUM_ITIMER *enum_itimer = (NDET_ENUM_ITIMER *) context;
-    register NTFY_ITIMER *n_itimer;
+	struct timeval local_min;
+	register NDET_ENUM_ITIMER *enum_itimer = (NDET_ENUM_ITIMER *) context;
+	register NTFY_ITIMER *n_itimer;
 
-    switch (condition->type) {
-      case NTFY_VIRTUAL_ITIMER:
-      case NTFY_REAL_ITIMER:
-	n_itimer = condition->data.ntfy_itimer;
-	if (condition->type != enum_itimer->type)
-	    break;
-	/* See if polling itimer */
-	if (ndet_tv_polling(n_itimer->itimer.it_value))
-	    ndet_flags |= enum_itimer->polling_bit;
-	else {
-	    /* Figure time to go until expiration for this client */
-	    local_min = enum_itimer->min_func(n_itimer,
-					      enum_itimer->current_tv);
-	    /* See if expired */
-	    if (!timerisset(&local_min)) {
-		/*
-		 * Dispatch notification, reset itimer value, remove if
-		 * nothing to wait for (returns !0).
-		 */
-		ndet_flags |= NDET_ITIMER_ENQ;
-		if (ndet_itimer_expired(client, condition)) {
-		    /*
-		     * Know can skip rest of clients conditions because only
-		     * one itimer of each type is allowed per client.
-		     */
-		    return (NTFY_ENUM_SKIP);
-		}
-		/* Else update local_min and set time */
-		local_min = n_itimer->itimer.it_value;
-		n_itimer->set_tv = enum_itimer->current_tv;
-	    }
-	    /* Figure global minimum time to go until expiration */
-	    enum_itimer->min_tv = ndet_tv_min(local_min,
-					      enum_itimer->min_tv);
-	    /*
-	     * Tell automatic signal mechanism to watch for this kind of
-	     * interval timer expiration.
-	     */
-	    sigaddset( &ndet_sigs_auto, enum_itimer->signal );
+	switch (condition->type) {
+		case NTFY_VIRTUAL_ITIMER:
+		case NTFY_REAL_ITIMER:
+			n_itimer = condition->data.ntfy_itimer;
+			if (condition->type != enum_itimer->type)
+				break;
+			/* See if polling itimer */
+			if (ndet_tv_polling(n_itimer->itimer.it_value))
+				ndet_flags |= enum_itimer->polling_bit;
+			else {
+				/* Figure time to go until expiration for this client */
+				local_min = enum_itimer->min_func(n_itimer,
+						enum_itimer->current_tv);
+				/* See if expired */
+				if (!timerisset(&local_min)) {
+					/*
+					 * Dispatch notification, reset itimer value, remove if
+					 * nothing to wait for (returns !0).
+					 */
+					ndet_flags |= NDET_ITIMER_ENQ;
+					if (ndet_itimer_expired(client, condition)) {
+						/*
+						 * Know can skip rest of clients conditions because only
+						 * one itimer of each type is allowed per client.
+						 */
+						return (NTFY_ENUM_SKIP);
+					}
+					/* Else update local_min and set time */
+					local_min = n_itimer->itimer.it_value;
+					n_itimer->set_tv = enum_itimer->current_tv;
+				}
+				/* Figure global minimum time to go until expiration */
+				enum_itimer->min_tv = ndet_tv_min(local_min,
+						enum_itimer->min_tv);
+				/*
+				 * Tell automatic signal mechanism to watch for this kind of
+				 * interval timer expiration.
+				 */
+				sigaddset(&ndet_sigs_auto, enum_itimer->signal);
+			}
+			/*
+			 * Know can skip rest of clients conditions because only one itimer
+			 * of each type is allowed per client.
+			 */
+			return (NTFY_ENUM_SKIP);
+		default:
+			break;
 	}
-	/*
-	 * Know can skip rest of clients conditions because only one itimer
-	 * of each type is allowed per client.
-	 */
-	return (NTFY_ENUM_SKIP);
-      default:{
-	}
-    }
-    return (NTFY_ENUM_NEXT);
+	return (NTFY_ENUM_NEXT);
 }
 
 /* Update every virtual itimer's set_tv field */
@@ -803,41 +803,42 @@ ndet_fig_sig_change()
  */
 pkg_private void ndet_enable_sig(int sig)
 {
-    if (!sigismember( &ndet_sigs_managing, sig )) {
-	int             n;
+	if (!sigismember(&ndet_sigs_managing, sig)) {
+		int n;
 
-	/* Arrange to catch this signal, currently we are not */
+		/* Arrange to catch this signal, currently we are not */
+
 #if !defined(SVR4) && !defined(__linux)
-	n = sigvec(sig, &ndet_sigvec, &ndet_prev_sigvec[sig]);
-	/* SYSTEM CALL */
-	ntfy_assert(n == 0, 8 /* Unexpected error: sigvec */);
-#else  /* SVR4 */
-        n = sigaction(sig, &ndet_sigvec, &ndet_prev_sigvec[sig]);
-	/* SYSTEM CALL */
-	ntfy_assert(n == 0, 9 /* Unexpected error: sigaction */);
-#endif  /* SVR4 */
-	sigaddset( &ndet_sigs_managing, sig );
-    }
+		n = sigvec(sig, &ndet_sigvec, &ndet_prev_sigvec[sig]);
+		/* SYSTEM CALL */
+		ntfy_assert(n == 0, 8 /* Unexpected error: sigvec */ );
+#else /* SVR4 */
+		n = sigaction(sig, &ndet_sigvec, &ndet_prev_sigvec[sig]);
+		/* SYSTEM CALL */
+		ntfy_assert(n == 0, 9 /* Unexpected error: sigaction */ );
+#endif /* SVR4 */
+
+		sigaddset(&ndet_sigs_managing, sig);
+	}
 }
 
-pkg_private void
-ndet_send_delayed_sigs(void)
+pkg_private void ndet_send_delayed_sigs(void)
 {
-    sigset_t    newmask, oldmask, sigs;
+	sigset_t newmask, oldmask, sigs;
 
-    ntfy_assert((!NTFY_IN_INTERRUPT || NTFY_DEAF_INTERRUPT), 10
-		/* Tried send delayed sig in interrupt */);
-    ntfy_assert(!NTFY_IN_CRITICAL, 11
-		/* Tried send delayed sig when protected */);
-    /* Don't need to enter critical section because blocking signals. */
-    /* Carefully reset ntfy_sigs_delayed so don't loose signal. */
-    newmask = ndet_sigs_managing;
-    sigprocmask(SIG_BLOCK, &newmask, &oldmask);
-    sigs = ntfy_sigs_delayed;
-    sigemptyset( &ntfy_sigs_delayed );
-    /* Send delayed signals */
-    ndet_send_async_sigs(&sigs);
-    sigprocmask(SIG_SETMASK, &oldmask, (sigset_t *) 0);
+	ntfy_assert((!NTFY_IN_INTERRUPT || NTFY_DEAF_INTERRUPT), 10
+			/* Tried send delayed sig in interrupt */ );
+	ntfy_assert(!NTFY_IN_CRITICAL, 11
+			/* Tried send delayed sig when protected */ );
+	/* Don't need to enter critical section because blocking signals. */
+	/* Carefully reset ntfy_sigs_delayed so don't loose signal. */
+	newmask = ndet_sigs_managing;
+	sigprocmask(SIG_BLOCK, &newmask, &oldmask);
+	sigs = ntfy_sigs_delayed;
+	sigemptyset(&ntfy_sigs_delayed);
+	/* Send delayed signals */
+	ndet_send_async_sigs(&sigs);
+	sigprocmask(SIG_SETMASK, &oldmask, (sigset_t *) 0);
 }
 
 static void notify_merge_sigsets(sigset_t *sigs1, sigset_t *sigs2)
