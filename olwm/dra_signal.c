@@ -21,14 +21,12 @@
 #define SET_SIGNAL(s,f) signal(s, f);
 #endif
 
-char dra_signal_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_signal.c,v 1.8 2024/07/04 18:59:54 dra Exp $";
+char dra_signal_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_signal.c,v 1.9 2025/03/25 18:51:44 dra Exp $";
 
 typedef struct {
 	int signal;
 	pid_t pid;
 	int status;
-/* 	int pid; */
-/* 	union wait status; */
 } pipe_mess_t;
 
 static int writepipe;
@@ -70,7 +68,6 @@ static void handleChildSignal(int s)
 }
 
 static int readpipe = -1;
-static int slavePid = -1;
 static int wspPid = -1;
 
 extern Window NoFocusWin;
@@ -110,8 +107,7 @@ void dra_dispatch_signal(Display *dpy)
 	dra_olwm_trace(66, "len=%d, requested=%d\n", len, sizeof(mess));
 	if (len == sizeof(mess)) {
 		if (mess.signal == SIGCHLD) {
-			if (mess.pid == slavePid) 
-				SlaveStopped();
+			SlaveStopped(mess.pid);
 
 			if (mess.pid == wspPid) {
 				dra_olwm_trace(66, "olws_props exit detected\n");
@@ -143,11 +139,10 @@ int dra_get_pipe(void)
 	return readpipe;
 }
 
-void dra_init_signals(int slave)
+void dra_init_signals(void)
 {
 	int pip[2];
 
-	slavePid = slave;
 	pipe(pip);
 	readpipe = pip[0];
 	writepipe = pip[1];
