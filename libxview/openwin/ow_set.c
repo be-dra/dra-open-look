@@ -1,5 +1,5 @@
 #ifndef lint
-char     ow_set_c_sccsid[] = "@(#)ow_set.c 1.49 91/05/23 DRA: $Id: ow_set.c,v 4.3 2025/03/08 12:47:02 dra Exp $ ";
+char     ow_set_c_sccsid[] = "@(#)ow_set.c 1.49 91/05/23 DRA: $Id: ow_set.c,v 4.4 2025/03/25 11:37:19 dra Exp $ ";
 #endif
 
 /*
@@ -545,8 +545,8 @@ static void ow_set_width(Xv_openwin_info *owin, int ncols)	/* number of columns 
 		sb_width = 0;
 	width = (int)xv_cols(VIEW_PUBLIC(owin->views), ncols) +
 			(STATUS(owin, no_margin) ? 0 :
-			(int)xv_get(owin_public, WIN_LEFT_MARGIN) +
-			(int)xv_get(owin_public, WIN_RIGHT_MARGIN)) +
+			(int)xv_get(owin_public, XV_LEFT_MARGIN) +
+			(int)xv_get(owin_public, XV_RIGHT_MARGIN)) +
 			sb_width +
 			2 * owin->margin +
 			2 * openwin_border_width(owin_public, VIEW_PUBLIC(owin->views));
