@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.26 2025/03/07 21:55:27 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.27 2025/03/25 17:45:15 dra Exp $";
 #endif
 #endif
 
@@ -225,7 +225,6 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 					|| event_is_quick_duplicate(event)) 
 				{
 					/* do not handle LOC_WINEXIT */
-fprintf(stderr, "%s`%s-%d: LOC_WINEXIT is quick\n", __FILE__, __FUNCTION__, __LINE__);
 					return NOTIFY_DONE;
 				}
 				if (panel->current) {
