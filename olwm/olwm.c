@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.5 2025/03/09 19:29:17 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.6 2025/03/25 18:50:43 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -148,8 +148,6 @@ static	XrmOptionDescRec	optionTable[] = {
 extern char *DRA_CHANGED_setlocale(int cat, char *val);
 
 /* Child Process Handling */
-
-static int slavePid = -1;
 
 void ReapChildren();		/* public -- called from events.c */
 
@@ -324,10 +322,9 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 	    DragDropStartDSDM(DefDpy);
 
  	/* Start olwmslave - using the same args we got. */
-	if (GRV.RunSlaveProcess)
-	    slavePid = SlaveStart(argVec);
+	if (GRV.RunSlaveProcess) SlaveStart(argVec);
 
-	dra_init_signals(slavePid);
+	dra_init_signals();
 
 	/* Beep to indicate that we're ready. */
 	if (GRV.Beep != BeepNever)
