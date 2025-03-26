@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.11 2025/03/19 21:33:50 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.12 2025/03/25 11:51:19 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -108,7 +108,7 @@ static void termsw_register_view(Termsw termsw_public, Xv_Window termsw_view_pub
 		ttymargin += (int)xv_get(termsw_public, TEXTSW_RIGHT_MARGIN);
 
 		/* Misc other setup */
-		ttysw_setleftmrg(TTY_PRIVATE_TERMSW(termsw_public), ttymargin);	/* BUG need attr */
+		xv_set(termsw_public, TTY_LEFT_MARGIN, ttymargin, NULL);
 
 		termsw_folio->next_undo_point = textsw_checkpoint_undo(termsw_public,
 				(caddr_t) TEXTSW_INFINITY);
