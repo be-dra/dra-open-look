@@ -1,5 +1,5 @@
 /*
- * @(#)tty.h 20.18 93/06/28 SMI RCS: $Id: tty.h,v 4.4 2025/03/08 13:18:09 dra Exp $
+ * @(#)tty.h 20.18 93/06/28 SMI RCS: $Id: tty.h,v 4.5 2025/03/25 11:42:55 dra Exp $
  *
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL NOTICE 
@@ -84,9 +84,10 @@ typedef enum {
 	TTY_CONSOLE		= TTY_ATTR(ATTR_BOOLEAN,	 5),
 	TTY_INPUT		= TTY_ATTR(ATTR_BUF_LEN_USED,	10),
 	TTY_OUTPUT		= TTY_ATTR(ATTR_BUF_LEN_USED,	15),
-	TTY_PAGE_MODE		= TTY_ATTR(ATTR_BOOLEAN,	20),
+	TTY_PAGE_MODE	= TTY_ATTR(ATTR_BOOLEAN,	20),
 	TTY_QUIT_ON_CHILD_DEATH
 				= TTY_ATTR(ATTR_BOOLEAN,	25),
+	TTY_LEFT_MARGIN	= TTY_ATTR(ATTR_INT,		26),
 	/*
 	 * Private attributes 
 	 */
