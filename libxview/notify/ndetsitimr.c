@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndetsitimr.c 20.13 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ndetsitimr.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)ndetsitimr.c 20.13 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ndetsitimr.c,v 4.2 2025/03/25 14:40:13 dra Exp $ ";
 #endif
 #endif
 
@@ -30,8 +30,7 @@ Notify_timer_func notify_set_itimer_func(Notify_client nclient,
 
 	NTFY_BEGIN_CRITICAL;
 	/* Check arguments */
-	if (ndet_check_which(which, &type))
-		goto Done;
+	if (ndet_check_which(which, &type)) goto Done;
 	/* Allow null value */
 	if (value == NTFY_ITIMER_NULL)
 		value = &NOTIFY_NO_ITIMER;
