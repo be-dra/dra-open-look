@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.15 2025/03/08 13:08:26 dra Exp $";
+static char     sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.16 2025/03/25 11:38:35 dra Exp $";
 #endif
 #endif
 
@@ -152,8 +152,8 @@ static int panel_init(Xv_Window parent, Xv_window panel_public, Attr_avlist     
     panel->layout_proc = (window_layout_proc_t)xv_get(panel_public, WIN_LAYOUT_PROC);
 
     xv_set(panel_public,
-		  WIN_TOP_MARGIN, scalesizes[scal].y_start,
-		  WIN_LEFT_MARGIN, scalesizes[scal].x_start,
+		  XV_TOP_MARGIN, scalesizes[scal].y_start,
+		  XV_LEFT_MARGIN, scalesizes[scal].x_start,
 		  WIN_ROW_GAP, scalesizes[scal].y_gap,
 		  WIN_LAYOUT_PROC, panel_layout,
 		  XV_HELP_DATA, "xview:panel",
