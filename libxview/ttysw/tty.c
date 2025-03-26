@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.12 2025/03/19 21:33:50 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.13 2025/03/25 11:51:10 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -192,6 +192,7 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 	char *buf;
 	int *buf_used;
 	int buf_len;
+	int m;
 	Xv_Drawable_info *info;
 
 #ifdef OW_I18N
@@ -205,6 +206,7 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 				do_fork = TRUE;
 				argv_set = 1;
 				argv = (char **)attrs[1];
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_CONSOLE:
@@ -238,6 +240,7 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 #endif
 #endif
 				};
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_INPUT:
@@ -245,19 +248,23 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 				buf_len = (int)attrs[2];
 				buf_used = (int *)attrs[3];
 				*buf_used = ttysw_input_it(ttysw, buf, buf_len);
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_PAGE_MODE:
 				ttysw_setopt(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw),
 						TTYOPT_PAGEMODE, (int)attrs[1]);
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_QUIT_ON_CHILD_DEATH:
 				quit_tool = (int)attrs[1];
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_BOLDSTYLE:
 				(void)ttysw_setboldstyle((int)attrs[1]);
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_BOLDSTYLE_NAME:
@@ -266,10 +273,12 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 					(void)ttysw_print_bold_options();
 				else
 					(void)ttysw_setboldstyle(bold_style);
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_INVERSE_MODE:
 				(void)ttysw_set_inverse_mode((int)attrs[1]);
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_PID:
@@ -277,10 +286,12 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 				/* TEXTSW_INFINITY ==> no child process, 0 ==> we want one */
 				/* BUG ALERT: need validity check on (int)attrs[1]. */
 				ttysw->ttysw_pidchild = (int)attrs[1];
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case TTY_UNDERLINE_MODE:
 				(void)ttysw_set_underline_mode((int)attrs[1]);
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case XV_FONT:
@@ -296,6 +307,12 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 				}
 				else if (attrs[1])
 					change_font = (Pixfont *) attrs[1];
+				break;
+
+			case TTY_LEFT_MARGIN:
+				m = (int)attrs[1];
+    			ttysw->chrleftmargin = m > 0 ? m : 0;
+				ATTR_CONSUME(attrs[0]);
 				break;
 
 			case WIN_SET_FOCUS:{
