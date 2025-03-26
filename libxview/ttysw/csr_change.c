@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.10 2025/03/21 20:02:55 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.11 2025/03/25 11:50:54 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -117,17 +117,6 @@ Pkg_private int ttysw_getboldstyle(void)
 /*     return underline_mode; */
 /* } */
 
-
-Pkg_private void ttysw_setleftmrg(Ttysw_private ttysw, int left_margin)
-{
-    ttysw->chrleftmargin = left_margin > 0 ? left_margin : 0;
-}
-
-Pkg_private void ttysw_setleftmargin(Tty t, int left_margin)
-{
-	Ttysw_private ttysw = TTY_PRIVATE(t);
-    ttysw->chrleftmargin = left_margin > 0 ? left_margin : 0;
-}
 
 /* NOT USED */
 /* ttysw_getleftmargin() */
