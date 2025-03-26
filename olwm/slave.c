@@ -1,5 +1,5 @@
 /* #ident	"@(#)slave.c	26.13	93/06/28 SMI" */
-char slave_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: slave.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char slave_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: slave.c,v 2.2 2025/03/25 18:51:16 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -134,8 +134,10 @@ void SlaveStop(void)
 /* ----------------------------------------------------------------------
  *	SlaveStopped	- called when Slave process has died
  * ---------------------------------------------------------------------*/
-void SlaveStopped(void)
+void SlaveStopped(int pid)
 {
+	if (pid != slaveInfo.pid) return;
+
 	SetCmdStream((FILE *)0,(FILE *)0);
 	slaveInfo.pid  = -1;
 }
