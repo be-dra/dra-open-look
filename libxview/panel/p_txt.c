@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.40 2025/03/08 13:08:26 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.41 2025/03/26 22:11:27 dra Exp $";
 #endif
 #endif
 
@@ -2463,6 +2463,11 @@ static void text_accept_key(Panel_item item_public, register Event *event)
 
 				if (event_is_down(event)) {
 					/* now the whole system is in "quick mode" */
+					/* try to remove the caret: */
+					/* but this seems to be a big secret... */
+/* no effect			paint_caret(ip, FALSE); */
+/* no effect			panel_text_caret_on(panel, FALSE); */
+/* no effect   			if (ip->panel->status.painted) paint_caret(ip, FALSE); */
 					return;
 				}
 				break;
@@ -2775,8 +2780,7 @@ static void text_yield_kbd_focus(Panel_item item_public)
 {
     Item_info      *ip = ITEM_PRIVATE(item_public);
 
-    if (ip->panel->status.painted)
-	paint_caret(ip, FALSE);
+    if (ip->panel->status.painted) paint_caret(ip, FALSE);
 }
 
 
