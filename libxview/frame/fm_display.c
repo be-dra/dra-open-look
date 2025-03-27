@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.2 2025/03/06 20:51:47 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.3 2025/03/27 14:45:32 dra Exp $ ";
 #endif
 #endif
 
@@ -105,6 +105,14 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 						 */
 	Frame_rescale_state scale;
 
+	if (frame->footer_proc) {
+		/* Do we need to call the proc ???
+		 * Probably not: the application created footer window has to deal
+		 * with WIN_REPAINT - and should react immediately when called
+		 * with FRAME_FOOTER_LEFT of FRAME_FOOTER_RIGHT.
+		 */
+		return;
+	}
 	DRAWABLE_INFO_MACRO(frame->footer, info);
 
 	/*
