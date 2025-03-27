@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.6 2025/03/17 19:40:40 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.7 2025/03/27 14:45:07 dra Exp $ ";
 #endif
 #endif
 
@@ -136,6 +136,7 @@ typedef	struct	{
 
 	/* footer text coordinates, set in frame_display_footer */
 	int left_x, right_x;
+	frame_footer_proc_t	footer_proc;
 
     struct {
 	BIT_FIELD(bndrymgr);		/* movable borders between subwindows */
