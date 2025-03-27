@@ -33,17 +33,17 @@ Apart from the sources there are also files ow_noarch_*.tar.xz, ow_aarch64_*.tar
 
 They contain pretty much everything from my /usr/openwin: especially the libraries and quite a few applications like
 
-fileman
-calman
-mailtool
-olws_props
-texted
-vkbd
+* fileman
+* calman
+* mailtool
+* olws_props
+* texted
+* vkbd
 
 etc.
 
 Depending on your machine type, you need 
-ow_noarch_*.tar.xz and either ow_x86_64_*.tar.xz or ow_aarch64_*.tar.xz.
+ow_noarch_\*.tar.xz and either ow_x86_64_\*.tar.xz or ow_aarch64\_*.tar.xz.
 
 
 
