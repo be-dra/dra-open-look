@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.27 2025/03/25 17:45:15 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.29 2025/03/26 22:11:57 dra Exp $";
 #endif
 #endif
 
@@ -344,7 +344,16 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 				)
 			)
 		{
-			panel_cancel(ITEM_PUBLIC(panel->current), event);
+			if (event_action(event) == ACTION_PASTE) {
+				/* this panel_cancel has the consequence that the
+				 * SECONDARY selection is lost if a "quick operation"
+				 * takes place within **one** panel.
+				 * We try to avoid this...
+				 */
+			}
+			else {
+				panel_cancel(ITEM_PUBLIC(panel->current), event);
+			}
 		}
 		panel->current = newip;
 	}
@@ -853,7 +862,8 @@ Xv_public void panel_default_handle_event(Panel_item client_object,Event *event)
 				 * is not already there.
 				 */
 				if (event_is_button(event)
-					&& (event_is_quick_move(event)||event_is_quick_duplicate(event))
+					&& !event_is_quick_move(event)
+					&& !event_is_quick_duplicate(event)
 					&& panel->kbd_focus_item != ip
 					&& wants_key(ip)
 					&& !hidden(ip)
