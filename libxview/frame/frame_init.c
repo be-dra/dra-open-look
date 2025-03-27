@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.11 2025/03/11 17:28:12 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.12 2025/03/27 14:46:01 dra Exp $ ";
 #endif
 #endif
 
@@ -83,7 +83,8 @@ Pkg_private int frame_gravity_from_flags(int flags)
 
 int dra_frame_debug = -1;
 
-static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist, int *dummy)
+static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
+								int *dummy)
 {
 	Xv_frame_class *frame_object = (Xv_frame_class *) frame_public;
 	Frame_class_info *frame;
@@ -215,7 +216,11 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist, i
 	 */
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch ((int)*attrs) {
-
+			case FRAME_FOOTER_PROC:
+				frame->footer_proc = (frame_footer_proc_t)attrs[1];
+				status_set(frame, show_footer, TRUE);
+				ATTR_CONSUME(*attrs);
+				break;
 			case FRAME_CLOSED:
 				status_set(frame, iconic, (int)attrs[1]);
 				status_set(frame, initial_state, (int)attrs[1]);
@@ -371,40 +376,49 @@ Pkg_private Xv_window frame_create_footer(Frame_class_info *frame)
 	screen_ui_style_t ui_style;
 	int three_d;
 
-	scale = xv_get(xv_get(frame_public, XV_FONT), FONT_SCALE);
+	if (frame->footer_proc) {
+		footer = XV_NULL;
 
-	hlp = (char *)xv_get(frame_public, XV_HELP_DATA);
-	if (hlp && *hlp) {
-		hlpbuf = malloc(strlen(hlp) + 10);
-		sprintf(hlpbuf, "%s_footer", hlp);
+		/* the application has to handle EVERYTHING - especially the creation */
+		(frame->footer_proc)(frame_public, &footer, FRAME_FOOTER_CREATE, NULL);
 	}
 	else {
-		hlpbuf = xv_strsave("xview:frame_footer");
-	}
 
-	footer = xv_create(frame_public, WINDOW,
-			WIN_NOTIFY_SAFE_EVENT_PROC, frame_footer_input,
-			WIN_NOTIFY_IMMEDIATE_EVENT_PROC, frame_footer_input,
-			WIN_BIT_GRAVITY, (long)ForgetGravity,
-			/* Originally (XView 3.2), the footer didn't select any events,
-			 * so, mouse events 'fell through' to the window decoration.
-			 * When we implemented quick duplicate on frame footers, we
-			 * had to select for mouse events.
-			 * However, all "non-quick" events are still supposed to
-			 * to fall through to the WM. We use xv_ol_default_background
-			 * for this purpose, see fmcmd_set.c
-			 */
-			WIN_CONSUME_EVENTS,
-				(long)WIN_MOUSE_BUTTONS,
-				(long)LOC_DRAG,
-				(long)ACTION_HELP,
-				NULL,
-			WIN_INHERIT_COLORS, (long)TRUE,
-			XV_HEIGHT, (long)frame_footer_height(scale),
-			XV_KEY_DATA, FRAME_FOOTER_WINDOW, TRUE,
-			XV_HELP_DATA, hlpbuf,
-			XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help,
-			NULL);
+		scale = xv_get(xv_get(frame_public, XV_FONT), FONT_SCALE);
+
+		hlp = (char *)xv_get(frame_public, XV_HELP_DATA);
+		if (hlp && *hlp) {
+			hlpbuf = malloc(strlen(hlp) + 10);
+			sprintf(hlpbuf, "%s_footer", hlp);
+		}
+		else {
+			hlpbuf = xv_strsave("xview:frame_footer");
+		}
+
+		footer = xv_create(frame_public, WINDOW,
+				WIN_NOTIFY_SAFE_EVENT_PROC, frame_footer_input,
+				WIN_NOTIFY_IMMEDIATE_EVENT_PROC, frame_footer_input,
+				WIN_BIT_GRAVITY, (long)ForgetGravity,
+				/* Originally (XView 3.2), the footer didn't select any events,
+				 * so, mouse events 'fell through' to the window decoration.
+				 * When we implemented quick duplicate on frame footers, we
+				 * had to select for mouse events.
+				 * However, all "non-quick" events are still supposed to
+				 * to fall through to the WM. We use xv_ol_default_background
+				 * for this purpose, see fmcmd_set.c
+				 */
+				WIN_CONSUME_EVENTS,
+					(long)WIN_MOUSE_BUTTONS,
+					(long)LOC_DRAG,
+					(long)ACTION_HELP,
+					NULL,
+				WIN_INHERIT_COLORS, (long)TRUE,
+				XV_HEIGHT, (long)frame_footer_height(scale),
+				XV_KEY_DATA, FRAME_FOOTER_WINDOW, TRUE,
+				XV_HELP_DATA, hlpbuf,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help,
+				NULL);
+	}
 
 	ui_style = (screen_ui_style_t)xv_get(XV_SCREEN_FROM_WINDOW(footer),
 											SCREEN_UI_STYLE);
