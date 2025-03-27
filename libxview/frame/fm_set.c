@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.2 2025/03/06 20:51:34 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.4 2025/03/27 14:47:59 dra Exp $ ";
 #endif
 #endif
 
@@ -593,7 +593,10 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public, Attr_attribute *avlis
           /* ACC_XVIEW */
 
 	  case FRAME_SHOW_FOOTER:
-		{
+		if (! frame->footer_proc) {
+			/* if an application has provided a FRAME_FOOTER_PROC, we
+			 * we force the show_footer attribute to TRUE
+			 */
 			int show_footer;
 
 			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
@@ -623,6 +626,7 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public, Attr_attribute *avlis
 				status_set(frame, show_footer, show_footer);
 			}
 		}
+		ATTR_CONSUME(attrs[0]);
 	    break;
 		
 	  case FRAME_LEFT_FOOTER:
@@ -632,25 +636,30 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public, Attr_attribute *avlis
 		if (status_get(frame, show_footer))
 		  paint_footers = TRUE;
 #else
-	    {
-		int length;
+		{
+			int length;
 
-		*attrs = (Frame_attribute)ATTR_NOP(*attrs);
-		if ((char *)attrs[1] == (char *)NULL)
-		  length = -1;
-		else
-		  length = strlen((char *)attrs[1]);
-		if (frame->left_footer)
-		  free(frame->left_footer);
-		if (length != -1) {
-		    frame->left_footer = (char *)xv_malloc((unsigned long)length + 1);
-		    strcpy(frame->left_footer, (char *)attrs[1]);
-		} else {
-		    frame->left_footer = NULL;
+			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
+			if ((char *)attrs[1] == (char *)NULL)
+				length = -1;
+			else
+				length = strlen((char *)attrs[1]);
+			if (frame->left_footer)
+				free(frame->left_footer);
+			if (length != -1) {
+				frame->left_footer = (char *)xv_malloc((unsigned long)length + 1);
+				strcpy(frame->left_footer, (char *)attrs[1]);
+				if (frame->footer_proc) {
+					(frame->footer_proc)(frame_public, &frame->footer, 
+									FRAME_FOOTER_LEFT, frame->left_footer);
+				}
+			}
+			else {
+				frame->left_footer = NULL;
+			}
+			if (status_get(frame, show_footer))
+				paint_footers = TRUE;
 		}
-		if (status_get(frame, show_footer))
-		  paint_footers = TRUE;
-	    }
 #endif /* OW_I18N */
 	    break;
 		
@@ -661,25 +670,30 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public, Attr_attribute *avlis
 		if (status_get(frame, show_footer))
 		  paint_footers = TRUE;
 #else
-	    {
-		int length;
-		
-		*attrs = (Frame_attribute)ATTR_NOP(*attrs);
-		if ((char *)attrs[1] == (char *)NULL)
-		  length = -1;
-		else
-		  length = strlen((char *)attrs[1]);
-		if (frame->right_footer)
-		  free(frame->right_footer);
-		if (length != -1) {
-		    frame->right_footer = (char *)xv_malloc((unsigned long)length + 1);
-		    strcpy(frame->right_footer, (char *)attrs[1]);
-		} else {
-		    frame->right_footer = NULL;
+		{
+			int length;
+
+			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
+			if ((char *)attrs[1] == (char *)NULL)
+				length = -1;
+			else
+				length = strlen((char *)attrs[1]);
+			if (frame->right_footer)
+				free(frame->right_footer);
+			if (length != -1) {
+				frame->right_footer = (char *)xv_malloc((unsigned long)length + 1);
+				strcpy(frame->right_footer, (char *)attrs[1]);
+				if (frame->footer_proc) {
+					(frame->footer_proc) (frame_public, &frame->footer,
+							FRAME_FOOTER_RIGHT, frame->right_footer);
+				}
+			}
+			else {
+				frame->right_footer = NULL;
+			}
+			if (status_get(frame, show_footer))
+				paint_footers = TRUE;
 		}
-		if (status_get(frame, show_footer))
-		  paint_footers = TRUE;
-	    }
 #endif /* OW_I18N */
 	    break;
 
