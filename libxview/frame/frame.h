@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.6 2025/03/08 13:21:40 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.7 2025/03/27 14:44:31 dra Exp $ ";
 #endif
 #endif
 
@@ -157,6 +157,14 @@ typedef enum {    /* do not change this order */
     FRAME_CMD_PIN_IN
 } Frame_cmd_pin_state;
 
+typedef enum {
+	FRAME_FOOTER_CREATE,
+	FRAME_FOOTER_LEFT,
+	FRAME_FOOTER_RIGHT
+} Frame_footer_state;
+typedef void (*frame_footer_proc_t)(Frame, Xv_window *footer,
+								Frame_footer_state, char *);
+
 typedef void (*frame_accel_notify_func)(Xv_opaque, Event *);
 
 typedef struct frame_accelerator {
@@ -265,7 +273,10 @@ typedef enum {
 	FRAME_COMPOSE_STATE	= FRAME_ATTR(ATTR_BOOLEAN,               235),
 	FRAME_WINTYPE       = FRAME_ATTR(ATTR_LONG, 236),
 	FRAME_FOOTER_HELP_KEY	= FRAME_ATTR(ATTR_INT, 232), 
-	
+
+	/* see OL GUI Spec, p 55 */
+	FRAME_FOOTER_PROC       = FRAME_ATTR(ATTR_FUNCTION_PTR, 123),/* C-- */
+
 	/* begin property frame: */
 	FRAME_PROPS_APPLY_PROC          = FRAME_ATTR(ATTR_FUNCTION_PTR,86),/* CSG */
 	FRAME_PROPS_RESET_PROC          = FRAME_ATTR(ATTR_FUNCTION_PTR,87),/* CSG */
