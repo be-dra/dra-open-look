@@ -29,7 +29,7 @@ It consists of (directories) with the sources for
 * olwm
 
 
-Apart from the sources there are also files ow_noarch_*.tar.xz, ow_aarch64_*.tar.xz and ow_x86_64_*.tar.xz.
+Apart from the sources there are also files ow_noarch_\*.tar.xz, ow_aarch64_\*.tar.xz and ow_x86_64_\*.tar.xz.
 
 They contain pretty much everything from my /usr/openwin: especially the libraries and quite a few applications like
 
