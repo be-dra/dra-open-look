@@ -282,8 +282,9 @@ static Pixmap createNetPixmapInternal(Display *dpy, Window clwin,
 	XImage *xima;
 	Pixmap pix;
 	int r, c;
+	int red_is_small = True;
 	char *pixdata;
-	unsigned long len, rest;
+	unsigned long len, rest, *h;
 	unsigned long *data = GetWindowProperty(dpy, clwin, Atom_NET_WM_ICON, 
 							offset, length, XA_CARDINAL, 32, &len, &rest);
 	xsiz = (int)data[0];
@@ -297,10 +298,37 @@ static Pixmap createNetPixmapInternal(Display *dpy, Window clwin,
     				ZPixmap, 0, pixdata, xsiz, ysiz, BitmapPad(dpy), 0);
 
 	data += 2;
+	h = data;
+	for (c = 0; c < xsiz; c++) {
+		for (r = 0; r < ysiz; r++) {
+			if (c < 9) {
+				if (r == c)  {
+					/* for firefox, the red component was less than 5 */
+					int redcomp = (0xff0000 & *h) >> 16;
+/* 					fprintf(stderr, "%s-%d: pixel value %d: %06lx\n", */
+/* 									__FILE__,__LINE__,c,*h); */
+
+					red_is_small = red_is_small && (redcomp <= 4);
+				}
+			}
+			else {
+				c = xsiz;
+				r = ysiz;
+			}
+		}
+	}
+	dra_olwm_trace(121, "red_is_small %d\n", red_is_small);
+
 	for (c = 0; c < xsiz; c++) {
 		for (r = 0; r < ysiz; r++) {
 			/* ignore the alpha channel */
-			XPutPixel(xima, r, c, 0xffffff & *data++);
+			if (red_is_small) {
+				XPutPixel(xima, r, c, 0xffffff & *data++);
+
+			}
+			else {
+				XPutPixel(xima, r, c, 0xffffff - (0xffffff & *data++));
+			}
 		}
 	}
 	XPutImage(dpy, pix, scr->gc[ROOT_GC], xima, 0, 0, 0, 0, xsiz, ysiz);
@@ -342,8 +370,8 @@ static Pixmap createNetPixmap(Display *dpy, Window clwin, ScreenInfo *scr,
 	/* now xsiz == preferredsize. In many cases (firefox, gimp)
 	 * the resulting pixmap was *sometimes* 'dirty', with wrong colors
 	 * and text fragments. I wonder whether there is a bug in either
-	 * XChangeProperty or XGetWindiowProperty or the X server (I never
-	 * encountered dirty firefox icons in the conext of Xvnc...).
+	 * XChangeProperty or XGetWindowProperty or the X server (I never
+	 * encountered dirty firefox icons in the context of Xvnc...).
 	 * Let's try the following: we use the 'big data' to find out whether
 	 * a suitable icon size is available and then perform a SMALLER
 	 * XGetWindowProperty for the pixmap data.
