@@ -305,8 +305,7 @@ static Pixmap createNetPixmapInternal(Display *dpy, Window clwin,
 				if (r == c)  {
 					/* for firefox, the red component was less than 5 */
 					int redcomp = (0xff0000 & *h) >> 16;
-/* 					fprintf(stderr, "%s-%d: pixel value %d: %06lx\n", */
-/* 									__FILE__,__LINE__,c,*h); */
+					dra_olwm_trace(222, "pixel value %d: %06lx\n", c,*h);
 
 					red_is_small = red_is_small && (redcomp <= 4);
 				}
@@ -315,9 +314,10 @@ static Pixmap createNetPixmapInternal(Display *dpy, Window clwin,
 				c = xsiz;
 				r = ysiz;
 			}
+			++h;
 		}
 	}
-	dra_olwm_trace(121, "red_is_small %d\n", red_is_small);
+	dra_olwm_trace(222, "red_is_small %d\n", red_is_small);
 
 	for (c = 0; c < xsiz; c++) {
 		for (r = 0; r < ysiz; r++) {
@@ -509,6 +509,14 @@ WinIconPane * MakeIconPane(Client *cli, WinGeneric *par, XWMHints *wmHints,
 			size = 48;
 			netpix = createNetPixmap(dpy, clwin, cli->scrInfo,
 								netIcon, netIconLength, size);
+		}
+
+		/* anyway: this is a huge waste of server memory ... */
+		{
+			Atom at = XA_PIXMAP;
+
+			XChangeProperty(dpy, clwin, Atom_NET_WM_ICON, XA_CARDINAL,
+						32, PropModeReplace, (unsigned char *)&at, 1);
 		}
 
 		if (netpix != None) {
