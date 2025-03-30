@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ninti_wait.c 20.12 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ninti_wait.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)ninti_wait.c 20.12 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ninti_wait.c,v 4.2 2025/03/29 20:38:45 dra Exp $ ";
 #endif
 #endif
 
@@ -18,10 +18,12 @@ static char     sccsid[] = "@(#)ninti_wait.c 20.12 93/06/28 Copyr 1985 Sun Micro
 #include <xview_private/ndet.h>
 #include <xview_private/nint.h>
 
-Notify_error notify_interpose_wait3_func(Notify_client nclient, Notify_func func, int pid)
+Notify_error notify_interpose_wait3_func(Notify_client nclient,
+										Notify_func func, int pid)
 {
 	/* Check arguments */
 	if (ndet_check_pid(pid)) return notify_errno;
-	return (nint_interpose_func(nclient, func, NTFY_WAIT3,
-					(NTFY_DATA) pid, NTFY_USE_DATA));
+
+	return nint_interpose_func(nclient, func, NTFY_WAIT3,
+					(NTFY_DATA)((long)pid), NTFY_USE_DATA);
 }
