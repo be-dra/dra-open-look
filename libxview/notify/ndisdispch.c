@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndisdispch.c 20.22 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ndisdispch.c,v 4.2 2024/11/30 13:02:13 dra Exp $ ";
+static char     sccsid[] = "@(#)ndisdispch.c 20.22 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ndisdispch.c,v 4.3 2025/03/29 21:01:10 dra Exp $ ";
 #endif
 #endif
 
@@ -93,7 +93,7 @@ pkg_private Notify_error ndis_enqueue(NTFY_CLIENT *ndet_client,
 	switch (condition->type) {
 		case NTFY_REAL_ITIMER:
 		case NTFY_VIRTUAL_ITIMER:
-			condition->data.an_u_int = 0;
+			condition->data.an_u_long = 0;
 			break;
 		case NTFY_WAIT3:
 			if ((condition->data.wait3 =
@@ -104,7 +104,7 @@ pkg_private Notify_error ndis_enqueue(NTFY_CLIENT *ndet_client,
 			*condition->data.wait3 = *ndet_condition->data.wait3;
 			break;
 		default:
-			condition->data.an_u_int = ndet_condition->data.an_u_int;
+			condition->data.an_u_long = ndet_condition->data.an_u_long;
 			break;
 	}
 	condition->func_count = ndet_condition->func_count;
@@ -542,8 +542,8 @@ static Notify_error ndis_send_func(Notify_client   nclient,
     *func_ptr = nint_push_callout(client, condition);
     /* Snatch condition data and null it */
     if (data_ptr) {
-	*data_ptr = (NTFY_DATA)((long) condition->data.an_u_int);
-	condition->data.an_u_int = 0;
+	*data_ptr = (NTFY_DATA)((long) condition->data.an_u_long);
+	condition->data.an_u_long = 0;
     }
     /* Remember release function so can use later and null it */
     if (release_func_ptr) {
