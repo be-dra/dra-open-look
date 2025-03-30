@@ -1,4 +1,4 @@
-/*      @(#)ntfy.h 20.22 93/06/28 SMI   DRA: $Id: ntfy.h,v 4.2 2024/11/30 12:42:03 dra Exp $      */
+/*      @(#)ntfy.h 20.22 93/06/28 SMI   DRA: $Id: ntfy.h,v 4.3 2025/03/29 21:01:15 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -133,7 +133,8 @@ typedef struct ntfy_condition {
 		int	fd;		/* NTFY_INPUT, NTFY_OUTPUT,
 					   NTFY_EXCEPTION */
 		int	signal;		/* NTFY_*_SIGNAL */
-		u_long an_u_int; /* Generic unsigned long used for instance matching */
+		u_long an_u_long; /* Generic unsigned long used for instance matching */
+						/* this was originally a u_int - not good in 64bit */
 		Notify_event event;	/* NTFY_*_EVENT */
 		Destroy_status status;	/* NTFY_DESTROY */
 		struct	ntfy_itimer *ntfy_itimer;
@@ -336,7 +337,7 @@ extern	NTFY_CONDITION *ntfy_find_condition(NTFY_CONDITION *condition_list,
 					    NTFY_DATA data, int use_data); /* Finds the 1st condition of
 					   type.  If use_data then use data to
 					   refine the match by comparing with
-					   data.an_u_int.
+					   data.an_u_long.
 					    */
 extern	NTFY_CONDITION *ntfy_new_condition(NTFY_CONDITION **condition_list,
 					    NTFY_TYPE type,
