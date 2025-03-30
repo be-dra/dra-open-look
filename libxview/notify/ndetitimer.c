@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndetitimer.c 20.17 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndetitimer.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)ndetitimer.c 20.17 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndetitimer.c,v 4.2 2025/03/29 21:09:17 dra Exp $ ";
 #endif
 #endif
 
@@ -27,6 +27,8 @@ static char     sccsid[] = "@(#)ndetitimer.c 20.17 93/06/28 Copyr 1985 Sun Micro
 
 extern struct itimerval NOTIFY_NO_ITIMER;
 extern struct itimerval NOTIFY_POLLING_ITIMER;
+
+/* #define DRA_FIND_TIMER_BUG 1 */
 
 /*
  * General utilities:
@@ -172,7 +174,12 @@ pkg_private int ndet_itimer_expired(NTFY_CLIENT *client, NTFY_CONDITION *conditi
 		 * Enumerator (which is calling this) is designed to survive having
 		 * condition disappear in middle of enumeration.
 		 */
-/* 	fprintf(stderr, "\n\n--------- suspect this is dangerous-------\n\n"); */
+#ifdef DRA_FIND_TIMER_BUG
+		/* actually, this is the only place where notify_set_itimer_func
+		 * is called from WITHIN the notifier....
+		 */
+		fprintf(stderr, "\n\n%s-%d:--------- suspect this is dangerous-------\n\n", __FILE__, __LINE__);
+#endif
 		func = (Notify_func)notify_set_itimer_func(client->nclient, NOTIFY_TIMER_FUNC_NULL,
 				(condition->type == NTFY_REAL_ITIMER) ? ITIMER_REAL :
 				ITIMER_VIRTUAL, &NOTIFY_NO_ITIMER, (struct itimerval *)0);
