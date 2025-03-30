@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.4 2025/03/25 14:40:26 dra Exp $ ";
+static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.5 2025/03/29 21:08:56 dra Exp $ ";
 #endif
 #endif
 
@@ -29,6 +29,8 @@ static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro 
 #endif  /* SVR4 */
 #include <stdio.h>		/* For temp debugging */
 #include <rpc/rpc.h>
+
+/* #define DRA_FIND_TIMER_BUG 1 */
 
 pkg_private_data u_int ndet_flags = 0;
 pkg_private_data NTFY_CLIENT *ndet_clients = 0;
@@ -621,35 +623,41 @@ pkg_private void ndet_update_real_itimer(void)
 static struct timeval NDET_END_OF_TIME = {100000000, 0};
 
 /* For explanation of why 100000000, see ndet_check_tv */
+extern char *xv_app_name;
 
 static void ndet_update_itimer(NDET_ENUM_ITIMER *enum_itimer)
 {
-    sigset_t         sigs_tmp;
-    struct itimerval process_itimer;
-    int             n;
+	sigset_t sigs_tmp;
+	struct itimerval process_itimer;
+	int n;
 
-    /* Remember bits of notifier auto signal catcher */
-    sigs_tmp = ndet_sigs_auto;
-    /* Zero out polling bit */
-    ndet_flags &= ~enum_itimer->polling_bit;
-    sigdelset( &ndet_sigs_auto, enum_itimer->signal );
-    /* Recompute interval timer */
-    enum_itimer->min_tv = NDET_END_OF_TIME;
-    (void) ntfy_new_enum_conditions(ntfy_cndtbl[(int) NTFY_VIRTUAL_ITIMER],
-			  ndet_itimer_change, (NTFY_ENUM_DATA) enum_itimer);
-    (void) ntfy_new_enum_conditions(ntfy_cndtbl[(int) NTFY_REAL_ITIMER],
-			  ndet_itimer_change, (NTFY_ENUM_DATA) enum_itimer);
-    /* Toggle notifier auto signal catching if situation changed */
-    ndet_toggle_auto(&sigs_tmp, enum_itimer->signal);
-    /* Set interval timer */
-    timerclear(&process_itimer.it_interval);
-    if (ndet_tv_equal(enum_itimer->min_tv, NDET_END_OF_TIME))
-	/* No one reset min_tv */
-	timerclear(&enum_itimer->min_tv);
-    process_itimer.it_value = enum_itimer->min_tv;
-    n = setitimer(enum_itimer->which, &process_itimer,	/* SYSTEM CALL */
-		  (struct itimerval *) 0);
-    ntfy_assert(n == 0, 5 /* Unexpected error: setitimer */);
+	/* Remember bits of notifier auto signal catcher */
+	sigs_tmp = ndet_sigs_auto;
+	/* Zero out polling bit */
+	ndet_flags &= ~enum_itimer->polling_bit;
+	sigdelset(&ndet_sigs_auto, enum_itimer->signal);
+	/* Recompute interval timer */
+	enum_itimer->min_tv = NDET_END_OF_TIME;
+	(void)ntfy_new_enum_conditions(ntfy_cndtbl[(int)NTFY_VIRTUAL_ITIMER],
+			ndet_itimer_change, (NTFY_ENUM_DATA) enum_itimer);
+	(void)ntfy_new_enum_conditions(ntfy_cndtbl[(int)NTFY_REAL_ITIMER],
+			ndet_itimer_change, (NTFY_ENUM_DATA) enum_itimer);
+	/* Toggle notifier auto signal catching if situation changed */
+	ndet_toggle_auto(&sigs_tmp, enum_itimer->signal);
+	/* Set interval timer */
+	timerclear(&process_itimer.it_interval); /* never use it_interval here */
+	if (ndet_tv_equal(enum_itimer->min_tv, NDET_END_OF_TIME)) {
+		/* No one reset min_tv */
+		timerclear(&enum_itimer->min_tv);
+	}
+	process_itimer.it_value = enum_itimer->min_tv;
+#ifdef DRA_FIND_TIMER_BUG
+	fprintf(stderr, "%s: %s: val=%ld:%ld\n", xv_app_name, __FUNCTION__,
+			process_itimer.it_value.tv_sec, process_itimer.it_value.tv_usec);
+#endif /* DRA_FIND_TIMER_BUG */
+	n = setitimer(enum_itimer->which, &process_itimer,	/* SYSTEM CALL */
+			(struct itimerval *)0);
+	ntfy_assert(n == 0, 5 /* Unexpected error: setitimer */ );
 }
 
 /*
