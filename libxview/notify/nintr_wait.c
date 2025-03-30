@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)nintr_wait.c 20.12 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nintr_wait.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)nintr_wait.c 20.12 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nintr_wait.c,v 4.2 2025/03/29 20:48:51 dra Exp $ ";
 #endif
 #endif
 
@@ -18,13 +18,10 @@ static char     sccsid[] = "@(#)nintr_wait.c 20.12 93/06/28 Copyr 1985 Sun Micro
 #include <xview_private/ndet.h>
 #include <xview_private/nint.h>
 
-extern          Notify_error
-notify_remove_wait3_func(nclient, func, pid)
-    Notify_client   nclient;
-    Notify_func     func;
-    int             pid;
+Notify_error notify_remove_wait3_func(Notify_client nclient, Notify_func func,
+										int pid)
 {
     /* Don't check pid because may be gone by now */
     return (nint_remove_func(nclient, func, NTFY_WAIT3,
-			     (NTFY_DATA) pid, NTFY_USE_DATA));
+			     (NTFY_DATA)((long)pid), NTFY_USE_DATA));
 }
