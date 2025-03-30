@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)nintideath.c 20.14 93/06/28  DRA: $Id: nintideath.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)nintideath.c 20.14 93/06/28  DRA: $Id: nintideath.c,v 4.2 2025/03/29 20:43:29 dra Exp $ ";
 #endif
 #endif
 
@@ -18,6 +18,10 @@ static char     sccsid[] = "@(#)nintideath.c 20.14 93/06/28  DRA: $Id: nintideat
 #include <xview_private/ndet.h>
 #include <xview_private/nint.h>
 
+
+/* nowhere a prototype ??? - but also nowhere called.... */
+Notify_func notify_set_destroy_interposer(Notify_func func);
+
 /*
  * Following indirection added to allow XView to redefine
  * notify_interpose_destroy_func() when Notifier used as just a part of
@@ -33,7 +37,7 @@ static dstr_intrps nint_destroy_interposer = default_interpose_destroy_func;
 
 Notify_error notify_interpose_destroy_func(Notify_client nclient, Notify_destroy_func func)
 {
-    return nint_destroy_interposer(nclient, (Notify_func)func);
+    return nint_destroy_interposer(nclient, func);
 }
 
 Notify_func notify_set_destroy_interposer(Notify_func func)
