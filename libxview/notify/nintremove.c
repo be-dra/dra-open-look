@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)nintremove.c 20.13 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nintremove.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)nintremove.c 20.13 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nintremove.c,v 4.2 2025/03/29 20:50:18 dra Exp $ ";
 #endif
 #endif
 
@@ -58,8 +58,7 @@ nint_remove_func(nclient, func, type, data, use_data)
 		    cond->callout.functions[j + 1];
 	    }
 	    /* Let's be tidy */
-	    cond->callout.functions[--cond->func_count] =
-		NOTIFY_FUNC_NULL;
+	    cond->callout.functions[(int)(--cond->func_count)] = NOTIFY_FUNC_NULL;
 	    /* Exit external loop */
 	    break;
 	}
