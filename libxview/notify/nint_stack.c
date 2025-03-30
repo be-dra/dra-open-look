@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)nint_stack.c 20.16 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nint_stack.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)nint_stack.c 20.16 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nint_stack.c,v 4.2 2025/03/29 21:02:13 dra Exp $ ";
 #endif
 #endif
 
@@ -63,7 +63,7 @@ pkg_private Notify_func nint_push_callout(NTFY_CLIENT *client,
      * jam client->nclient into the data field in order to do some
      * consistency checking later.
      */
-    stack_cond->data.an_u_int = (u_int) client->nclient;
+    stack_cond->data.an_u_long = (u_long) client->nclient;
     stack_cond->next = NTFY_CONDITION_NULL;
     /* Bump stack pointer */
     nint_stack_next++;
