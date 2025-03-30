@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)nint_next.c 20.12 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nint_next.c,v 4.1 2024/03/28 18:09:08 dra Exp $ ";
+static char     sccsid[] = "@(#)nint_next.c 20.12 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: nint_next.c,v 4.2 2025/03/29 21:01:37 dra Exp $ ";
 #endif
 #endif
 
@@ -36,7 +36,7 @@ pkg_private Notify_func nint_next_callout(Notify_client nclient, NTFY_TYPE type)
 			stack_cond->func_next > stack_cond->func_count ||
 			stack_cond->func_next + 1 > NTFY_FUNCS_MAX ||
 			stack_cond->type != type ||
-			stack_cond->data.an_u_int != (u_int) nclient) {
+			stack_cond->data.an_u_long != (u_long) nclient) {
 		ntfy_set_errno(NOTIFY_INVAL);
 		goto Error;
 	}
