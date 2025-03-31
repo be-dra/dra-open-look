@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.20 2025/03/07 19:54:13 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.22 2025/03/30 09:17:13 dra Exp $ ";
 #endif
 #endif
 
@@ -47,10 +47,11 @@ static int frame_set_focus(Xv_Window sw)
 }
 
 
-Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
-						Notify_arg arg, Notify_event_type type)
+Pkg_private Notify_value frame_input(Frame fp, Notify_event nev,
+							Notify_arg arg, Notify_event_type type)
 {
-	Frame_class_info *frame = FRAME_CLASS_PRIVATE(frame_public);
+	Event *event = (Event *)nev;
+	Frame_class_info *frame = FRAME_CLASS_PRIVATE(fp);
 	unsigned int action = event_action(event);
 	char *help_data;
 
@@ -62,10 +63,10 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 		case ACTION_CUT:
 		case ACTION_FIND_FORWARD:
 		case ACTION_FIND_BACKWARD:
-			fprintf(stderr, "\n\n%s-%d: WE REALLY COME HERE !!!\n\n\n",
+			fprintf(stderr, "\n\n%s-%d: UNEXPECTED: WE REALLY COME HERE !!!\n\n\n",
 						__FILE__, __LINE__);
-/* 			selection report event(XV_SERVER_FROM_WINDOW(frame_public), */
-/* 							(Seln_client) frame_public, event); */
+/* 			selection report event(XV_SERVER_FROM_WINDOW(fp), */
+/* 							(Seln_client) fp, event); */
 			break;
 		default:
 			break;
@@ -74,7 +75,7 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 		case ACTION_CUT:
 			/* only want up of function keys */
 			if (event_is_down(event))
-				goto Done;
+				return notify_next_event_func(fp, nev, arg, type);
 			break;
 
 		case ACTION_HELP:
@@ -83,21 +84,21 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 		case ACTION_MORE_TEXT_HELP:
 		case ACTION_INPUT_FOCUS_HELP:
 			if (event_is_down(event)) {
-				help_data = (char *)xv_get(frame_public, XV_HELP_DATA);
+				help_data = (char *)xv_get(fp, XV_HELP_DATA);
 				if (help_data) {
-					xv_help_show(frame_public, help_data, event);
+					xv_help_show(fp, help_data, event);
 				}
 			}
 			return NOTIFY_DONE;
 
 		case ACTION_RESCALE:
 			SERVERTRACE((790, "rescale to %ld\n", arg));
-			frame_rescale_subwindows(frame_public, (int)arg);
-			goto Done;
+			frame_rescale_subwindows(fp, (int)arg);
+			return notify_next_event_func(fp, nev, arg, type);
 
 		case WIN_RESIZE:
 
-			(void)win_getsize(frame_public, &frame->rectcache);
+			(void)win_getsize(fp, &frame->rectcache);
 
 			/* Set width and height size hints for backwards 
 			 * compatibility with pre-ICCCM window managers  */
@@ -106,7 +107,7 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 				XSizeHints sizeHints;
 				Xv_Drawable_info *info;
 
-				DRAWABLE_INFO_MACRO(frame_public, info);
+				DRAWABLE_INFO_MACRO(fp, info);
 				sizeHints.flags = PSize;
 				sizeHints.width = frame->rectcache.r_width;
 				sizeHints.height = frame->rectcache.r_height;
@@ -136,8 +137,8 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 						XV_Y, frame->rectcache.r_height -
 						xv_get(frame->footer, XV_HEIGHT), NULL);
 			}
-			(void)frame_layout_subwindows(frame_public);
-			goto Done;
+			(void)frame_layout_subwindows(fp);
+			return notify_next_event_func(fp, nev, arg, type);
 
 		case ACTION_TAKE_FOCUS:
 			{
@@ -156,8 +157,8 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 					}
 				FRAME_END_EACH
 				if (!subw_found) {
-					if (frame_set_focus(frame_public) == XV_OK) {
-						goto Done;
+					if (frame_set_focus(fp) == XV_OK) {
+						return notify_next_event_func(fp, nev, arg, type);
 					}
 				}
 
@@ -179,19 +180,19 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 				/* Priority 1: Most recent primary focus subwindow */
 				if (frame->primary_focus_sw &&
 						frame_set_focus(frame->primary_focus_sw) == XV_OK)
-					goto Done;
+					return notify_next_event_func(fp, nev, arg, type);
 
 				/* Priority 2: First primary focus subwindow */
 				FRAME_EACH_CHILD(frame->first_subwindow, child)
 					if (xv_get(child, XV_FOCUS_RANK) == XV_FOCUS_PRIMARY &&
 						frame_set_focus(child) == XV_OK)
-					goto Done;
+					return notify_next_event_func(fp, nev, arg, type);
 				FRAME_END_EACH
 
 				/* Priority 3: Most recent ordinary focus subwindow */
 				if (frame->focus_subwindow &&
 					frame_set_focus(frame->focus_subwindow) == XV_OK)
-					goto Done;
+					return notify_next_event_func(fp, nev, arg, type);
 
 				/* Priority 4: First ordinary focus subwindow.
 				 *
@@ -201,12 +202,12 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 				 */
 				FRAME_EACH_CHILD(frame->first_subwindow, child)
 					if (xv_get(child, WIN_KBD_FOCUS) == (Xv_opaque) TRUE)
-						goto Done;
+						return notify_next_event_func(fp, nev, arg, type);
 				FRAME_END_EACH
 
 				FRAME_EACH_CHILD(frame->first_subwindow, child)
 					if (xv_set(child, WIN_SET_FOCUS, NULL) == XV_OK)
-						goto Done;
+						return notify_next_event_func(fp, nev, arg, type);
 				FRAME_END_EACH
 
 				/*
@@ -218,8 +219,8 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 				 */
 				if (frame->menu_accelerators || frame->accelerators ||
 						status_get(frame, accept_default_focus)) {
-					if (frame_set_focus(frame_public) == XV_OK) {
-						goto Done;
+					if (frame_set_focus(fp) == XV_OK) {
+						return notify_next_event_func(fp, nev, arg, type);
 					}
 				}
 			}
@@ -228,7 +229,7 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 		default:
 			/* Cannot ignore up events. Forward it */
 			if (event_is_up(event))
-				goto Done;
+				return notify_next_event_func(fp, nev, arg, type);
 			break;
 	}
 
@@ -257,13 +258,13 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 		case ACTION_DISMISS:
 			status_set(frame, dismiss, TRUE);
 			if (frame->done_proc)
-				(void)(frame->done_proc) (frame_public);
+				(void)(frame->done_proc) (fp);
 			else
-				(void)(frame->default_done_proc) (frame_public);
+				(void)(frame->default_done_proc) (fp);
 			break;
 
 		case ACTION_PROPS:
-			frame_handle_props(frame_public);
+			frame_handle_props(fp);
 			break;
 
 		case ACTION_PININ:	/* reset dismiss state, if in it */
@@ -271,12 +272,9 @@ Pkg_private Notify_value frame_input(Frame frame_public, Event *event,
 			break;
 	}
 
-  Done:
-	return notify_next_event_func((Notify_client) frame_public,
-			(Notify_event) event, arg, type);
+	return notify_next_event_func(fp, nev, arg, type);
 }
 
-/*ARGSUSED*/
 Pkg_private void frame_focus_win_event_proc(Xv_Window window, Event *event, Notify_arg arg)
 {
     Frame_focus_direction focus_direction;
@@ -484,16 +482,24 @@ Pkg_private Notify_value frame_footer_input(Xv_Window footer, Event *ev,
 
 		case ACTION_HELP:
 			if (event_is_down(ev)) {
-				char *help_data = (char *)xv_get(footer, XV_HELP_DATA);
-				if (help_data) {
-					/* we try footer help */
-					if (XV_ERROR == xv_help_show(footer, help_data, ev)) {
-						Frame f = xv_get(footer, WIN_PARENT);
+				Frame f = xv_get(footer, WIN_PARENT);
+				char *help_data;
 
-						/* no footer help, try the frame help */
-						help_data = (char *)xv_get(f, XV_HELP_DATA);
-						if (help_data) {
-							xv_help_show(f, help_data, ev);
+				help_data = (char *)xv_get(f,XV_KEY_DATA,FRAME_FOOTER_HELP_KEY);
+				if (help_data) {
+					xv_help_show(f, help_data, ev);
+				}
+				else {
+					help_data = (char *)xv_get(footer, XV_HELP_DATA);
+					if (help_data) {
+						/* we try footer help */
+						if (XV_ERROR == xv_help_show(footer, help_data, ev)) {
+
+							/* no footer help, try the frame help */
+							help_data = (char *)xv_get(f, XV_HELP_DATA);
+							if (help_data) {
+								xv_help_show(f, help_data, ev);
+							}
 						}
 					}
 				}
