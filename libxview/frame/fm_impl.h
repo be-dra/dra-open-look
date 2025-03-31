@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.7 2025/03/27 14:45:07 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.8 2025/03/30 09:06:10 dra Exp $ ";
 #endif
 #endif
 
@@ -238,7 +238,7 @@ Pkg_private int frame_destroy(Frame frame_public, Destroy_status status);
 Pkg_private int frame_is_exposed(Frame frame);
 
 /* frame_input.c */
-Pkg_private Notify_value frame_input(Frame, Event *, Notify_arg, Notify_event_type);
+Pkg_private Notify_value frame_input(Frame, Notify_event, Notify_arg, Notify_event_type);
 Pkg_private Notify_value frame_footer_input(Xv_Window footer, Event *event, Notify_arg arg, Notify_event_type type);
 #ifdef OW_I18N
 Pkg_private Notify_value frame_IMstatus_input(void);
