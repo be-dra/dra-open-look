@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
+char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.6 2025/03/31 19:38:57 dra Exp $";
 #endif
 
 /*
@@ -31,13 +31,15 @@ char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.5 
 #endif
 #include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
+#include <xview_private/txt_impl.h>
 #include <xview_private/charscreen.h>
 #include <xview_private/win_info.h>
+#include <xview_private/fm_impl.h>
 
 
 /* BUG ALERT: This entire procedure should be rewritten! */
 /* BUG ALERT: No XView prefix */
-Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *av)
+Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, int c, int ac, int *av)
 {
 	Tty ttysw_public;
 	Xv_object frame_public;
@@ -134,7 +136,7 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *
 			rect.r_width = frame_width_from_columns(av[2]);
 
 			rect.r_height = frame_height_from_lines(av[1],
-					xv_get(frame_public, FRAME_SHOW_LABEL));
+								(int)xv_get(frame_public, FRAME_SHOW_LABEL));
 #endif
 
 			if (!xv_get(frame_public, FRAME_CLOSED))
@@ -150,20 +152,20 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *
 			(void)ttysw_input_it(ttysw, p, 4);
 			break;
 		case 13:	/* report position */
-			(void)win_getrect(frame_public, &rect);
-			(void)sprintf(buf, "\33[3;%d;%dt", rect.r_top, rect.r_left);
-			(void)ttysw_input_it(ttysw, buf, strlen(buf));
+			win_getrect(frame_public, &rect);
+			sprintf(buf, "\33[3;%d;%dt", rect.r_top, rect.r_left);
+			ttysw_input_it(ttysw, buf, (int)strlen(buf));
 			break;
 		case 14:	/* report size */
-			(void)win_getrect(frame_public, &rect);
-			(void)sprintf(buf, "\33[4;%d;%dt", rect.r_height, rect.r_width);
-			(void)ttysw_input_it(ttysw, buf, strlen(buf));
+			win_getrect(frame_public, &rect);
+			sprintf(buf, "\33[4;%d;%dt", rect.r_height, rect.r_width);
+			ttysw_input_it(ttysw, buf, (int)strlen(buf));
 			break;
 		case 18:	/* report size in chars */
 			{
 				int rows, columns;
 
-				if (ttysw_getopt((caddr_t) ttysw, TTYOPT_TEXT)) {
+				if (ttysw_getopt(ttysw, TTYOPT_TEXT)) {
 					rows = textsw_screen_line_count(TTY_PUBLIC(ttysw));
 					columns = textsw_screen_column_count(TTY_PUBLIC(ttysw));
 				}
@@ -173,7 +175,7 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *
 				}
 				(void)sprintf(buf, "\33[8;%d;%dt", rows, columns);
 			}
-			(void)ttysw_input_it(ttysw, buf, strlen(buf));
+			ttysw_input_it(ttysw, buf, (int)strlen(buf));
 			break;
 		case 20:{
 				/* report icon label */
@@ -186,15 +188,15 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *
 					text = (char *)xv_get(frame_public, FRAME_LABEL);
 				}
 				if (text)
-					(void)ttysw_input_it(ttysw, text, strlen(text));
+					ttysw_input_it(ttysw, text, (int)strlen(text));
 				(void)ttysw_input_it(ttysw, "\33\\", 2);
 				break;
 			}
 		case 21:	/* report name stripe */
-			(void)ttysw_input_it(ttysw, "\33]l", 3);
-			if (text = (char *)xv_get(frame_public, FRAME_LABEL))
-				(void)ttysw_input_it(ttysw, text, strlen(text));
-			(void)ttysw_input_it(ttysw, "\33\\", 2);
+			ttysw_input_it(ttysw, "\33]l", 3);
+			if ((text = (char *)xv_get(frame_public, FRAME_LABEL)))
+				ttysw_input_it(ttysw, text, (int)strlen(text));
+			ttysw_input_it(ttysw, "\33\\", 2);
 			break;
 		default:
 			return (TTY_OK);
@@ -203,7 +205,7 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *
 }
 
 /* BUG ALERT: No XView prefix */
-Pkg_private int ttytlsw_string(Tty ttysw_public, CHAR type, CHAR c)
+Pkg_private int ttytlsw_string(Tty ttysw_public, int type, int c)
 {
 	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw_public);
 	Ttysw *ttytlsw = ttysw;
