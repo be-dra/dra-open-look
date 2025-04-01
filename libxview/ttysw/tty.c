@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.13 2025/03/25 11:51:10 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.14 2025/03/31 19:39:10 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -252,8 +252,9 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 				break;
 
 			case TTY_PAGE_MODE:
-				ttysw_setopt(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw),
-						TTYOPT_PAGEMODE, (int)attrs[1]);
+				/* idiotic interface */
+				ttysw_setopt((Ttysw_private)(ttysw->view),
+									TTYOPT_PAGEMODE, (int)attrs[1]);
 				ATTR_CONSUME(attrs[0]);
 				break;
 
@@ -320,8 +321,7 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 
 					ATTR_CONSUME(avlist[0]);
 
-					win = TTY_VIEW_PUBLIC(TTY_VIEW_HANDLE_FROM_TTY_FOLIO
-							(ttysw));
+					win = TTY_VIEW_PUBLIC(ttysw->view);
 					DRAWABLE_INFO_MACRO(win, info);
 					if (win_getinputcodebit(
 									(Inputmask *) xv_get(win, WIN_INPUT_MASK),
@@ -460,52 +460,58 @@ static Xv_opaque ttysw_view_set(Tty_view ttysw_view_public, Attr_attribute avlis
 /*****************************************************************************/
 /* ttysw_get_internal        				                     */
 /*****************************************************************************/
-static Xv_opaque ttysw_get_internal(Tty tty_public, int *status,
+static Xv_opaque ttysw_get_internal(Ttysw_private ttysw, int *status,
 					Attr_attribute attr, va_list args)
 {
-    Ttysw_private     ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(tty_public);
+	switch (attr) {
+		case OPENWIN_VIEW_CLASS:
+			return ((Xv_opaque) TTY_VIEW);
 
-    switch (attr) {
-      case OPENWIN_VIEW_CLASS:
-	return ((Xv_opaque) TTY_VIEW);
+		case TTY_PAGE_MODE:
+			return (Xv_opaque) ttysw_getopt(ttysw, TTYOPT_PAGEMODE);
 
-      case TTY_PAGE_MODE:
-	return (Xv_opaque) ttysw_getopt(ttysw, TTYOPT_PAGEMODE);
+		case TTY_QUIT_ON_CHILD_DEATH:
+			return (Xv_opaque) 0;
 
-      case TTY_QUIT_ON_CHILD_DEATH:
-	return (Xv_opaque) 0;
+		case TTY_PID:
+			return (Xv_opaque) ttysw->ttysw_pidchild;
 
-      case TTY_PID:
-	return (Xv_opaque) ttysw->ttysw_pidchild;
+		case TTY_PTY_FD:
+			return (Xv_opaque) ttysw->ttysw_pty;
 
-      case TTY_PTY_FD:
-	return (Xv_opaque) ttysw->ttysw_pty;
+		case TTY_TTY_FD:
+			return (Xv_opaque) ttysw->ttysw_tty;
 
-      case TTY_TTY_FD:
-	return (Xv_opaque) ttysw->ttysw_tty;
+		case WIN_TYPE:	/* SunView1.X compatibility */
+			return (Xv_opaque) TTY_TYPE;
 
-      case WIN_TYPE:		/* SunView1.X compatibility */
-	return (Xv_opaque) TTY_TYPE;
-
-      default:
-	if (xv_check_bad_attr(TTY, attr) == XV_ERROR) {
-	    *status = XV_ERROR;
+		default:
+			if (xv_check_bad_attr(TTY, attr) == XV_ERROR) {
+				*status = XV_ERROR;
+			}
+			return ((Xv_opaque) 0);
 	}
-	return ((Xv_opaque) 0);
-    }
 }
 
 
-static Xv_opaque ttysw_folio_get(Tty ttysw_folio_public, int *status, Attr_attribute attr, va_list args)
+static Xv_opaque ttysw_folio_get(Tty ttysw_folio_public, int *status,
+							Attr_attribute attr, va_list args)
 {
-    return (ttysw_get_internal(ttysw_folio_public, status, attr, args));
+    Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_FOLIO(ttysw_folio_public);
 
+	return ttysw_get_internal(ttysw, status, attr, args);
 }
 
-static Xv_opaque ttysw_view_get(Tty_view ttysw_view_public, int *status, Attr_attribute attr, va_list args)
+static Xv_opaque ttysw_view_get(Tty_view ttysw_view_public, int *status,
+									Attr_attribute attr, va_list args)
 {
-    return (ttysw_get_internal(ttysw_view_public, status, attr, args));
+	/* this is again an example of that funny mixture of Tty and Tty_view:
+	 * I'm asking for view attributesa (if any), but get the answer from 
+	 * the tty....
+	 */
+    Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_VIEW(ttysw_view_public);
 
+    return ttysw_get_internal(ttysw, status, attr, args);
 }
 
 static void tty_quit_on_death(Notify_client client, int pid, int *status,
