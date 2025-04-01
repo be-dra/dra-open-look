@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.8 2025/03/19 21:33:50 dra Exp $";
+char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.9 2025/03/31 19:38:50 dra Exp $";
 #endif
 
 /*
@@ -705,7 +705,7 @@ Pkg_private void ttysw_set_menu(Termsw termsw_public)
 			XV_HELP_DATA, "textsw:mdisscroll",
 			NULL);
 
-	(void)xv_set(termsw_folio->text_menu,
+	xv_set(termsw_folio->text_menu,
 			MENU_TITLE_ITEM, XV_MSG("Term Pane"),
 			MENU_APPEND_ITEM, history_item,
 			MENU_APPEND_ITEM, edit_item,
@@ -797,14 +797,13 @@ static void ttysw_enable_scrolling(Menu menu, Menu_item mi)
 	}
 }
 
-/* ARGSUSED */
 static void ttysw_disable_scrolling(Menu cmd_menu, Menu_item cmd_item)
 {
 	/* The textsw handle is really a termsw handle */
-	Textsw textsw = (Textsw) (xv_get(cmd_item, MENU_CLIENT_DATA));
-	/*Textsw    textsw = (Textsw) (menu_get(cmd_item, MENU_CLIENT_DATA)); */
-	Ttysw_view_handle ttysw_view = TTY_VIEW_PRIVATE_FROM_ANY_PUBLIC(textsw);
-	Ttysw_private ttysw_folio = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
+	Textsw textsw = xv_get(cmd_item, MENU_CLIENT_DATA);
+	Termsw_view vpub = xv_get(cmd_menu, XV_KEY_DATA, TEXTSW_MENU_DATA_KEY);
+	Ttysw_view_handle ttysw_view = TTY_VIEW_PRIVATE(vpub);
+	Ttysw_private ttysw_folio = ttysw_view->folio;
 	Xv_Notice tty_notice;
 
 	if (ttysw_getopt(ttysw_folio, TTYOPT_TEXT)) {
