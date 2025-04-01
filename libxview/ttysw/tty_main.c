@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.15 2025/03/21 21:16:35 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.16 2025/03/31 19:39:01 dra Exp $";
 #endif
 
 /*
@@ -1004,7 +1004,7 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 #endif
 
 /* END DRA_CHANGED according to linux patch */
-			ttysw_getp(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw));	/* jcb for nng */
+			ttysw_getp(ttysw->view);	/* jcb for nng */
 		}
 		else
 
@@ -1252,7 +1252,7 @@ Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 			Ttysw_view_handle ttysw_view;
 
 			ttysw->ttysw_lpp = 0;	/* reset page mode counter */
-			ttysw_view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw);
+			ttysw_view = ttysw->view;
 			if (ttysw->ttysw_flags & TTYSW_FL_FROZEN) {
 				ttysw_freeze(ttysw_view, 0);
 			}
@@ -1318,6 +1318,7 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 	Frame frame_public;
 	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_VIEW(ttysw_view_public);
 	Tty tty_public = TTY_PUBLIC(ttysw);
+	Ttysw_view_handle vpriv = TTY_VIEW_PRIVATE(ttysw_view_public);
 
 	switch (event_action(ie)) {
 		case KBD_USE:
@@ -1337,11 +1338,11 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 #endif
 
 					ttysw_restore_cursor(ttysw);
-					(void)frame_kbd_use(frame_public, tty_public, tty_public);
+					frame_kbd_use(frame_public, tty_public, tty_public);
 					return TTY_DONE;
 				case KBD_DONE:
 					ttysw_lighten_cursor(ttysw);
-					(void)frame_kbd_done(frame_public, tty_public);
+					frame_kbd_done(frame_public, tty_public);
 					return TTY_DONE;
 			}
 		case WIN_REPAINT:
@@ -1351,9 +1352,7 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 						TERMSW_VIEW_PRIVATE_FROM_TTY_PRIVATE(ttysw);
 
 				if (termsw->folio->cmd_started) {
-					(void)ttysw_scan_for_completed_commands
-							(TTY_VIEW_PRIVATE_FROM_ANY_PUBLIC
-							(ttysw_view_public), -1, 0);
+					ttysw_scan_for_completed_commands(vpriv, -1, 0);
 				}
 			}
 			ttysw_display(ttysw, ie);
@@ -1372,7 +1371,7 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 			return (TTY_DONE);
 
 		case WIN_RESIZE:
-			ttysw_resize(TTY_VIEW_PRIVATE_FROM_ANY_PUBLIC(ttysw_view_public));
+			ttysw_resize(vpriv);
 
 #ifdef  OW_I18N
 			if (ttysw->preedit_state) {
@@ -1671,7 +1670,7 @@ Pkg_private void ttysw_setopt(Ttysw_private ttysw_folio_or_view, int opt, int on
 	}
 	else {
 		ttysw_folio = (Ttysw_private) ttysw_folio_or_view;
-		ttysw_view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw_folio);
+		ttysw_view = ttysw_folio->view;
 	}
 
 	switch (opt) {
