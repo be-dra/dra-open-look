@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.12 2025/03/25 11:51:19 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.13 2025/03/31 19:38:45 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -653,45 +653,38 @@ static Xv_opaque termsw_set(Termsw termsw_folio_public, Attr_avlist avlist)
 	int buf_len;
 
 	/* First do termsw set */
-	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
-		switch ((int)attrs[0]) {
-			case TTY_INPUT:{
-					Ttysw_view_handle ttysw_view = TTY_VIEW_PRIVATE_FROM_TERMSW
-							(termsw_folio_public);
-					Termsw_folio termsw_folio =
-							TERMSW_PRIVATE(termsw_folio_public);
-					Ttysw_private ttysw =
-							TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
+	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)attrs[0]) {
+		case TTY_INPUT:
+			{
+				Ttysw_private ttysw = TTY_PRIVATE_TERMSW(termsw_folio_public);
+				Ttysw_view_handle ttysw_view = ttysw->view;
+				Termsw_folio termsw_folio =
+						TERMSW_PRIVATE(termsw_folio_public);
 
-					if (ttysw_getopt(ttysw, TTYOPT_TEXT) &&
-							termsw_folio->cooked_echo) {
-						buf = (char *)attrs[1];
-						buf_len = (int)attrs[2];
-						buf_used = (int *)attrs[3];
+				if (ttysw_getopt(ttysw, TTYOPT_TEXT) &&
+						termsw_folio->cooked_echo) {
+					buf = (char *)attrs[1];
+					buf_len = (int)attrs[2];
+					buf_used = (int *)attrs[3];
 
-						*buf_used =
-								ttysw_cooked_echo_cmd(ttysw_view, buf, buf_len);
-						ATTR_CONSUME(*attrs);
-					}
-				}	/* else let tty's set do the work */
-				break;
-			case TERMSW_MODE:{
-					Ttysw_view_handle ttysw_view =
-							TTY_VIEW_PRIVATE_FROM_ANY_PUBLIC
-							(termsw_folio_public);
-					Ttysw_private ttysw =
-							TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
-
-					ttysw_setopt(ttysw, TTYOPT_TEXT,
-							((Termsw_mode) attrs[1] == TERMSW_MODE_TYPE));
+					*buf_used =
+							ttysw_cooked_echo_cmd(ttysw_view, buf, buf_len);
 					ATTR_CONSUME(*attrs);
 				}
-				break;
+			}	/* else let tty's set do the work */
+			break;
+		case TERMSW_MODE:{
+				Ttysw_private ttysw = TTY_PRIVATE_TERMSW(termsw_folio_public);
 
-			default:
-				(void)xv_check_bad_attr(TERMSW, attrs[0]);
-				break;
-		}
+				ttysw_setopt(ttysw, TTYOPT_TEXT,
+						((Termsw_mode) attrs[1] == TERMSW_MODE_TYPE));
+				ATTR_CONSUME(*attrs);
+			}
+			break;
+
+		default:
+			(void)xv_check_bad_attr(TERMSW, attrs[0]);
+			break;
 	}
 
 	/* Next do textsw set */
