@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.24 2025/03/25 11:50:32 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.25 2025/03/31 19:38:37 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -47,9 +47,6 @@
 /* BUG: This could be made cleaner.  See
  * TERMSW_FOLIO_FROM_TERMSW_VIEW_HANDLE in termsw_impl.h
  */
-#define TTY_VIEW_HANDLE_FROM_TTY_FOLIO(_tty_folio_private) \
-	 ((Ttysw_view_handle)(((Ttysw_private)_tty_folio_private)->view))
-
 #define TTY_FOLIO_FROM_TTY_VIEW_HANDLE(_tty_view_private) \
 	 ((Ttysw_private)(((Ttysw_view_handle)_tty_view_private)->folio))
 
@@ -123,7 +120,7 @@ enum ttysw_hdrstate { HS_BEGIN, HS_HEADER, HS_ICON, HS_ICONFILE, HS_FLUSH };
 
 typedef struct ttysubwindow {
     Tty			public_self;		/* Back pointer to the object*/
-    struct ttysw_view_object			/* View window */
+    struct ttysw_view_object 			/* View window */
     			*view;			/* (Pure tty has only one view) */
     Tty_view	current_view_public; /* This keep trace of the view become ttysw */
     unsigned	ttysw_flags;
@@ -168,8 +165,8 @@ typedef struct ttysubwindow {
     int                 ttysw_butdown;		/* which button is down */
     struct ttyselection	sels[NBR_TTY_SELECTIONS];
     /* replaceable ops (return TTY_OK or TTY_DONE) */
-    int                 (*ttysw_escapeop) (Tty_view, char, int, int *);	/* handle escape sequences */
-    int                 (*ttysw_stringop) (Tty, char, char);	/* handle accumulated string */
+    int                 (*ttysw_escapeop) (Tty_view, int, int, int *);	/* handle escape sequences */
+    int                 (*ttysw_stringop) (Tty, int, int);	/* handle accumulated string */
     int                 (*ttysw_eventop) (Tty, Event *);	/* handle input event */
     /* kbd translation */
     struct keymaptab    ttysw_kmt[3 * 16 + 2];	/* Key map list */
@@ -453,7 +450,7 @@ Pkg_private void tty_column_wchar_type(int xChar, int yChar,
 #endif
 
 Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on);
-Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c, int ac, int *av);
+Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, int c, int ac, int *av);
 Pkg_private int ttysw_input_it(Ttysw_private ttysw, char *addr, int len);
 Pkg_private int tty_getmode(int fd, tty_mode_t	*mode);
 Pkg_private int ttysw_lookup_boldstyle(char *str);
@@ -469,7 +466,7 @@ Pkg_private int
 	ttysw_fork_it(Ttysw_private ttysw0, char **argv, int unused),
 	ttysw_getboldstyle(void),
 	ttysw_setboldstyle(int new_boldstyle),
-	ttytlsw_string(Tty ttysw_public, CHAR type, CHAR c),
+	ttytlsw_string(Tty ttysw_public, int type, int c),
 	wininit(Ttysw *, Xv_object win, int *,int *);
 
 Pkg_private int ttysw_copy_to_input_buffer(Ttysw_private ttysw, CHAR *addr, int len);
@@ -482,11 +479,11 @@ Pkg_private int ttysw_restoreparms(int ttyfd);
 Pkg_private void ttysw_done(Ttysw_private ttysw_folio_private);
 Pkg_private int ttysw_getopt(Ttysw_private ttysw, int opt);
 Pkg_private int ttysw_output_it (Ttysw_view_handle ttysw_view, CHAR *addr, int len0);
-Pkg_private int ttysw_ansi_string (Tty data, char type, char c);
+Pkg_private int ttysw_ansi_string (Tty data, int type, int c);
 
 Pkg_private int xv_tty_imageinit(Ttysw *ttysw, Xv_object window);
 
-Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, char c, int ac, int *av);
+Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, int c, int ac, int *av);
 
 Pkg_private void ttysw_pty_output(Ttysw_private ttysw, int pty);
 Pkg_private Notify_value ttysw_pty_input_pending(Tty tty_public, int pty);
