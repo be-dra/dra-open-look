@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.12 2025/03/21 21:16:25 dra Exp $";
+char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.13 2025/03/31 19:38:52 dra Exp $";
 #endif
 
 /*
@@ -457,7 +457,9 @@ static Notify_value ttysw_prioritizer(Tty tty_public, int nfd,
 /* Called directly from notify_client(), so tty_public may be termsw! */
 {
 	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(tty_public);
-	Ttysw_view_handle ttysw_view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw);
+    Tty_view viewpub = xv_get(tty_public, OPENWIN_NTH_VIEW, 0);
+/* 	Ttysw_view_handle ttysw_view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw); */
+	Ttysw_view_handle ttysw_view = ttysw->view;
 	register int pty = ttysw->ttysw_pty;
 	register int i;
 	int count = *event_count_ptr;
@@ -498,7 +500,7 @@ static Notify_value ttysw_prioritizer(Tty tty_public, int nfd,
 
 		if (IS_TERMSW(tty_public)
 				&& (ttysw_getopt(ttysw, TTYOPT_TEXT))) {
-			textsw_flush_std_caches(TTY_VIEW_PUBLIC(ttysw_view));
+			textsw_flush_std_caches(viewpub);
 		}
 		notify_input(tty_public, pty);
 		FD_CLR(pty, ibits_ptr);
