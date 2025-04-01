@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_mapkey_c_sccsid[] = "@(#)tty_mapkey.c 20.41 93/06/28 DRA: $Id: tty_mapkey.c,v 4.9 2025/01/16 19:54:16 dra Exp $";
+char tty_mapkey_c_sccsid[] = "@(#)tty_mapkey.c 20.41 93/06/28 DRA: $Id: tty_mapkey.c,v 4.10 2025/03/31 19:39:15 dra Exp $";
 #endif
 
 /*
@@ -136,8 +136,7 @@ static void ttysw_doset(struct ttysubwindow *ttysw, char *var)
 
     /* XXX - for now */
     if (strcmp(var, "pagemode") == 0)
-/*	(void) ttysw_setopt(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw), TTYOPT_PAGEMODE, 1); */
-	(void) ttysw_setopt(ttysw, TTYOPT_PAGEMODE, 1);
+		ttysw_setopt(ttysw, TTYOPT_PAGEMODE, 1);
 }
 
 static int ttysw_mapkey(Ttysw *ttysw, char *key, char *to, int output)
@@ -256,19 +255,17 @@ Pkg_private int ttysw_domap(Ttysw_private ttysw, Event *ie)
 				len_wcs = mbstowcs(kmt_to_wcs, kmt->kmt_to, len);
 
 				if (kmt->kmt_output)
-					(void)ttysw_output_it(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw),
-							kmt_to_wcs, len_wcs);
+					ttysw_output_it(ttysw->view, kmt_to_wcs, len_wcs);
 				else
-					(void)ttysw_input_it_wcs(ttysw, kmt_to_wcs, len_wcs);
+					ttysw_input_it_wcs(ttysw, kmt_to_wcs, len_wcs);
 
 				if (len >= 256)
 					free(kmt_to_wcs);
 #else
 				if (kmt->kmt_output)
-					(void)ttysw_output_it(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw),
-							kmt->kmt_to, len);
+					ttysw_output_it(ttysw->view, kmt->kmt_to, len);
 				else
-					(void)ttysw_input_it(ttysw, kmt->kmt_to, len);
+					ttysw_input_it(ttysw, kmt->kmt_to, len);
 #endif
 
 				return (TTY_DONE);
