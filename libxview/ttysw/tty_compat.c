@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_compat_c_sccsid[] = "@(#)tty_compat.c 20.21 93/06/28 RCS: $Id: tty_compat.c,v 4.2 2024/03/31 17:36:22 dra Exp $";
+char     tty_compat_c_sccsid[] = "@(#)tty_compat.c 20.21 93/06/28 RCS: $Id: tty_compat.c,v 4.3 2025/03/31 19:38:59 dra Exp $";
 #endif
 
 /*
@@ -22,10 +22,14 @@ char     tty_compat_c_sccsid[] = "@(#)tty_compat.c 20.21 93/06/28 RCS: $Id: tty_
 #include <xview/xv_i18n.h>
 #endif
 
-Sv1_public void ttysw_becomeconsole(caddr_t ttysw0)
+extern void ttysw_becomeconsole(Tty ttysw0);
+
+Sv1_public void ttysw_becomeconsole(Tty ttysw0)
 {
-    xv_set((Xv_opaque)ttysw0, TTY_CONSOLE, TRUE, NULL);
+    xv_set(ttysw0, TTY_CONSOLE, TRUE, NULL);
 }
+
+extern int ttysw_cmd(caddr_t ttysw_opaque, char *buf, int buflen);
 
 /* NOT USED */
 int ttysw_cmd(caddr_t ttysw_opaque, char *buf, int buflen)
@@ -35,6 +39,8 @@ int ttysw_cmd(caddr_t ttysw_opaque, char *buf, int buflen)
     (void) xv_set((Xv_opaque)ttysw_opaque, TTY_INPUT, buf, buflen, &result, NULL);
     return (result);
 }
+
+extern  int ttysw_input(caddr_t ttysw0, char *addr, int len);
 
 Xv_public int ttysw_input(caddr_t ttysw0, char *addr, int len)
 {
