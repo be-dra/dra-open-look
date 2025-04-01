@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.35 2025/03/19 21:33:50 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.37 2025/03/31 19:39:12 dra Exp $";
 #endif
 
 /*
@@ -1220,7 +1220,7 @@ Pkg_private void ttysw_event_paste_up(Ttysw_private priv, struct timeval *t)
 	 */
 
 	ttysw_input_it(priv, string, (int)strlen(string));
-	ttysw_reset_conditions(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(priv));
+	ttysw_reset_conditions(priv->view);
 	free((char *)string);
 }
 
@@ -1267,19 +1267,19 @@ Pkg_private void ttysw_event_cut_up(Ttysw_private priv, Event *ev)
 			 */
 
 			ttysw_input_it(priv, string, (int)strlen(string));
-			ttysw_reset_conditions(TTY_VIEW_HANDLE_FROM_TTY_FOLIO(priv));
+			ttysw_reset_conditions(priv->view);
 		}
 	}
 	else {
-		/* no, it was NOT a quick duplicate */
+		/* no, it was NOT a quick move */
 		if (string) xv_free(string);
 		string = NULL;
 
 		/* it must have been a 'simple CUT' - however, we do not
-		 * support CUT in a TTYSW - so: do nothing
+		 * support CUT in a TTYSW - so: do nothing, just beep
 		 */
 
-		/* INCOMPLETE: maybe we should beep ? */
+		xv_set(tty, WIN_ALARM, NULL);
 	}
 }
 
