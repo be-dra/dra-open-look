@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.7 2025/03/21 21:16:33 dra Exp $";
+char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.8 2025/03/31 19:38:54 dra Exp $";
 #endif
 
 /*
@@ -301,7 +301,7 @@ ttysw_ansiinit(ttysw)
 }
 
 /* ARGSUSED */
-Pkg_private int ttysw_ansi_string(Tty data, char type, char c)
+Pkg_private int ttysw_ansi_string(Tty data, int type, int c)
 {
     return TTY_OK;
 }
@@ -613,29 +613,6 @@ ttysw_output_wcs(ttysw_public, addr, len0)
 #endif
 
 
-static void debug_nondangerous(unsigned char *p)
-{
-	char buf[1000], *t;
-
-	t = buf;
-	for (; *p; ++p) {
-		if (*p < ' ') {
-			if (*p == '\n') {
-				strcpy(t, "\\n");
-				fprintf(stderr, "%s\n", buf);
-				t = buf;
-			}
-			else {
-				sprintf(t, "\\%03o", *p);
-				t += strlen(t);
-			}
-		}
-		else *t++ = *p;
-	}
-	*t = '\0';
-	if (t != buf) fprintf(stderr, "%s\n", buf);
-}
-
 Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 									register CHAR *addr, int len0)
 {
@@ -736,7 +713,7 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 
 				case '\\':	/* ANSI string terminator */
 					if (state == (S_STRING | S_ESC)) {
-						ttysw_handlestring(ttysw, strtype, 0);
+						ttysw_handlestring(ttysw, (int)strtype, 0);
 						state = S_ALPHA;
 						continue;
 					}
@@ -768,7 +745,7 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 					/* XXX - should only terminate on valid end char */
 					av[ac] |= prefix << 24;
 					ac++;
-					switch (ttysw_handleescape(ttysw_view, *addr, ac, av)) {
+					switch (ttysw_handleescape(ttysw_view, (int)*addr, ac, av)) {
 						case TTY_OK:
 							state = S_SKIPPING;
 							break;
@@ -1305,7 +1282,8 @@ static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen)
     return (olen - len);
 }
 
-Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, CHAR c,
+/* c was originally of type CHAR */
+Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, int c,
 									int ac, int *av)
 {
 	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw_view_public);
