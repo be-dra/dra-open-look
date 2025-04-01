@@ -1,5 +1,5 @@
 /*
- * @(#)termsw.h 20.18 93/06/28 SMI RCS: $Id: termsw.h,v 4.3 2025/03/08 13:18:09 dra Exp $      
+ * @(#)termsw.h 20.18 93/06/28 SMI RCS: $Id: termsw.h,v 4.4 2025/03/31 15:05:40 dra Exp $      
  *
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL NOTICE 
@@ -63,8 +63,8 @@ typedef struct {
 	/*
 	 * This isn't really a textsw, only shares few attrs 
 	 */
-        Xv_textsw		parent_data; 
-        Xv_opaque    		private_data;
+	Xv_textsw		parent_data; 
+	Xv_opaque    	private_data;
 	Xv_opaque		private_text;
 	Xv_opaque		private_tty;
 } Xv_termsw;
@@ -73,9 +73,9 @@ typedef struct {
 	/*
 	 * This isn't really a textsw view, only shares few attrs 
 	 */
-        Xv_textsw_view    	parent_data; 
-        Xv_opaque  		private_data;
-        Xv_opaque		private_text;
+	Xv_textsw_view  parent_data; 
+	Xv_opaque  		private_data;
+	Xv_opaque		private_text;
 	Xv_opaque		private_tty;
 } Xv_termsw_view;
 
