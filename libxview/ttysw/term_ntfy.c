@@ -1,5 +1,5 @@
 #ifndef lint
-char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.4 2025/03/21 21:16:39 dra Exp $";
+char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.5 2025/04/01 12:50:18 dra Exp $";
 #endif
 
 /*
@@ -11,37 +11,13 @@ char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_n
 /*
  * Notifier related routines for the termsw.
  */
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <stdio.h>
 #include <ctype.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <pixrect/pixrect.h>
-#include <pixrect/pixfont.h>
-#include <xview_private/i18n_impl.h>
-#include <xview/frame.h>
 #include <xview/notice.h>
-#include <xview/notify.h>
-#include <xview/rect.h>
-#include <xview/rectlist.h>
-#include <xview/win_input.h>
-#include <xview/win_notify.h>
 #include <xview/ttysw.h>
 #include <xview/termsw.h>
-#include <xview/window.h>
 #include <xview/help.h>
-#include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
 #include <xview_private/txt_impl.h>
-#include <xview_private/ultrix_cpt.h>
-
-#define PTY_OFFSET	(int) &(((Ttysw_private)0)->ttysw_pty)
 
 #ifdef DEBUG
 #define ERROR_RETURN(val)	abort();	/* val */
@@ -67,7 +43,6 @@ extern int      dtablesize_cache;
 #define	iebp	ttysw->ttysw_ibuf.cb_ebp
 #define	ibuf	ttysw->ttysw_ibuf.cb_buf
 
-/* #ifdef TERMSW */
 static Textsw_index find_and_remove_mark(Textsw textsw, Textsw_mark mark)
 {
 	Textsw_index result;
@@ -513,19 +488,19 @@ static Notify_value ttysw_cr(Tty tty_public, int tty)
 
 static void ttysw_reset_column(Ttysw_private ttysw)
 {
-    Tty             tty_public = TTY_PUBLIC(ttysw);
+	Tty tty_public = TTY_PUBLIC(ttysw);
 
-    /* BUG ALERT accessing field of termsw */
-    if ((tty_gettabs(ttysw))
-	&& notify_get_output_func((Notify_client) (tty_public),
-				  ttysw->ttysw_tty) != ttysw_cr) {
-	if (notify_set_output_func((Notify_client) (tty_public),
-			  ttysw_cr, ttysw->ttysw_tty) == NOTIFY_IO_FUNC_NULL) {
-	    fprintf(stderr,
-		    XV_MSG("cannot set output func on ttysw %p, tty fd %d\n"),
-		    ttysw, ttysw->ttysw_tty);
+	/* BUG ALERT accessing field of termsw */
+	if ((tty_gettabs(ttysw))
+			&& notify_get_output_func((Notify_client) (tty_public),
+					ttysw->ttysw_tty) != ttysw_cr) {
+		if (notify_set_output_func((Notify_client) (tty_public),
+						ttysw_cr, ttysw->ttysw_tty) == NOTIFY_IO_FUNC_NULL) {
+			fprintf(stderr,
+					XV_MSG("cannot set output func on ttysw %p, tty fd %d\n"),
+					ttysw, ttysw->ttysw_tty);
+		}
 	}
-    }
 }
 
 /* Public handle */
@@ -568,7 +543,8 @@ static void ttysw_post_error(Xv_opaque public_folio_or_view, char *msg1, char *m
 }
 
 
-Pkg_private int ttysw_scan_for_completed_commands(Ttysw_view_handle ttysw_view, int start_from, int maybe_partial)
+Pkg_private int ttysw_scan_for_completed_commands(Ttysw_view_handle ttysw_view,
+									int start_from, int maybe_partial)
 {
 	Ttysw_private ttysw = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
 	register Textsw textsw = TEXTSW_FROM_TTY(ttysw);
