@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.13 2025/03/31 19:38:45 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.14 2025/04/01 12:51:07 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -166,6 +166,12 @@ static int termsw_layout(Termsw termsw_public, Xv_Window termsw_view_public, Win
 						d1, d2, d3, d4, d5);
 	else
 		return TRUE;
+}
+
+static void ttysw_interpose_on_textsw(Termsw_view t)
+{
+    notify_interpose_event_func(t, ttysw_text_event, NOTIFY_SAFE);
+    notify_interpose_event_func(t, ttysw_text_event, NOTIFY_IMMEDIATE);
 }
 
 /*
