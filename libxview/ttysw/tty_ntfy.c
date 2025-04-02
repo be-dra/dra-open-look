@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.13 2025/03/31 19:38:52 dra Exp $";
+char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.14 2025/04/01 12:51:21 dra Exp $";
 #endif
 
 /*
@@ -96,21 +96,6 @@ Pkg_private void ttysw_interpose(Ttysw_private ttysw_folio)
 											ttysw_prioritizer);
 }
 
-
-Pkg_private void
-ttysw_interpose_on_textsw(textsw)
-    Textsw_view     textsw;	/* This is really a termsw view public */
-{
-    (void) notify_interpose_event_func(
-		     (Notify_client) textsw, ttysw_text_event, NOTIFY_SAFE);
-    (void) notify_interpose_event_func(
-		(Notify_client) textsw, ttysw_text_event, NOTIFY_IMMEDIATE);
-#ifdef SUNVIEW1
-	extern Notify_value ttysw_text_destroy();	/* Destroy func for termsw */
-    (void) notify_interpose_destroy_func(
-				(Notify_client) textsw, ttysw_text_destroy);
-#endif
-}
 
 Pkg_private int ttysw_destroy(Tty self, Destroy_status status)
 {
