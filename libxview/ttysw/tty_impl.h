@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.25 2025/03/31 19:38:37 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.26 2025/04/01 12:51:12 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -398,7 +398,6 @@ Pkg_private void
 	ttysw_implicit_commit(Xv_opaque UNKNOWN),
 	ttysw_insertChar(Ttysw_private ttysw, int fromcol, int tocol, int row),
 	ttysw_insert_lines(Ttysw_private ttysw, int where, int n),
-	ttysw_interpose_on_textsw(Xv_opaque UNKNOWN),
 	ttysw_inverse_mode(Ttysw_private ttysw),
 	ttysw_pcopyscreen(Ttysw_private ttysw, int fromrow, int torow, int count),
 	ttysw_pdisplayscreen(Ttysw_private ttysw, int dontrestorecursor,
