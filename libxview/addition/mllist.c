@@ -31,9 +31,10 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/attr_impl.h>
 #include <xview_private/panel_impl.h>
+#include <xview_private/svr_impl.h>
 
 #ifndef lint
-char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.35 2025/03/08 13:37:48 dra Exp $";
+char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.36 2025/04/01 19:55:08 dra Exp $";
 #endif
 
 /*******************************************************************
@@ -74,7 +75,7 @@ typedef struct {
 	Menu                    levelmenu;
 	level_descr            *levelstack;
 	int                     stackptr;
-	mllist_ptr              root, double_click;
+	mllist_ptr              root;
 	int                     double_time, sbstate;
 	Graphics_info           *ginfo;
 	Display                 *dpy;
@@ -83,6 +84,7 @@ typedef struct {
 	Server_image            dot, nodot;
 	Window_rescale_state    scale;
 	Xv_font                 listfont;
+	time_t                  lasttime;
 	/* the window for the horizontal title line that hides the 
 	 * top border of the PANEL_LIST and the bottom border of the
 	 * self-drawn title box. Yes, this seems a little complicated,
@@ -412,9 +414,7 @@ static void update_list(MultiLevelList_private *priv, int paint_panel)
 	}
 	attrs[i++] = XV_NULL;
 
-	priv->double_click = (mllist_ptr)0;
 	xv_set_avlist(priv->list, attrs);
-	priv->double_click = (mllist_ptr)0;
 	xv_free((char *)attrs);
 
 	priv->sbstate = (sp > 0 ? 0 : NO_BWD);
@@ -669,14 +669,6 @@ static void update_levels_menu_from_delete(MultiLevelList_private *priv, mllist_
 	}
 }
 
-static Notify_value double_timer(MultiLevelList_private *priv)
-{
-	priv->double_click = (mllist_ptr)0;
-	notify_set_itimer_func((Notify_client)priv, NOTIFY_TIMER_FUNC_NULL,
-				ITIMER_REAL, (struct itimerval *)0, (struct itimerval *)0);
-	return NOTIFY_DONE;
-}
-
 static int call_appl_verify(MultiLevelList_private *priv, mllist_ptr cur, Proplist_verify_op op, mllist_ptr orig)
 {
 	if (! priv->appl_verify) return XV_OK;
@@ -689,7 +681,6 @@ static void one_level_down(MultiLevelList_private *priv, mllist_ptr p)
 	level_descr *stack = priv->levelstack;
 	int sp = priv->stackptr;
 
-	priv->double_click = (mllist_ptr)0;
 	save_current_level(priv);
 
 	if (stack[sp+1].parent_of_level == p) {
@@ -725,6 +716,7 @@ static int note_verify(Property_list list, mllist_ptr cur, Proplist_verify_op op
 
 	switch (op) {
 		case PROPLIST_APPLY:
+			priv->lasttime = 0L;
 			if (call_appl_verify(priv, cur, op, orig) != XV_OK) return XV_ERROR;
 			if (cur->has_sublevel) {
 				if (orig->has_sublevel) {
@@ -748,33 +740,31 @@ static int note_verify(Property_list list, mllist_ptr cur, Proplist_verify_op op
 			break;
 
 		case PROPLIST_INSERT:
+			priv->lasttime = 0L;
 			return call_appl_verify(priv, cur, op, orig);
 
 		case PROPLIST_CONVERT:
+			priv->lasttime = 0L;
 			return call_appl_verify(priv, cur, op, orig);
 
 		case PROPLIST_USE_IN_PANEL:
 			if (cur->has_sublevel) {
-				if (priv->double_click == cur) {
+				Panel pan = xv_get(priv->list, XV_OWNER);
+				Xv_server srv = XV_SERVER_FROM_WINDOW(pan);
+				time_t now = server_get_timestamp(srv);
+				time_t double_ms = priv->double_time * 100;
+
+				if (now - priv->lasttime <= double_ms) {
+					priv->lasttime = 0L;
 					one_level_down(priv, cur);
 					return XV_OK;
 				}
-				else {
-					struct itimerval timer;
-
-					timer.it_value.tv_sec = 0;
-					timer.it_value.tv_usec = priv->double_time * 100000;
-					timer.it_interval.tv_sec = 9999; /* linux-bug */
-					timer.it_interval.tv_usec = 0;
-					notify_set_itimer_func((Notify_client)priv,
-								(Notify_timer_func)double_timer,
-								ITIMER_REAL, &timer, (struct itimerval *)0);
-					priv->double_click = cur;
-				}
+				priv->lasttime = now;
 			}
 			return call_appl_verify(priv, cur, op, orig);
 
 		case PROPLIST_CREATE_GLYPH:
+			priv->lasttime = 0L;
 			if (cur->has_sublevel)
 				cur->mllist_private[PL_GLYPH_INDEX] = priv->dot;
 			else cur->mllist_private[PL_GLYPH_INDEX] = priv->nodot;
@@ -785,10 +775,12 @@ static int note_verify(Property_list list, mllist_ptr cur, Proplist_verify_op op
 		case PROPLIST_DELETE_OLD_CHANGED:
 		case PROPLIST_DELETE_FROM_RESET:
 		case PROPLIST_DELETE:
+			priv->lasttime = 0L;
 			update_levels_menu_from_delete(priv, cur);
 			return call_appl_verify(priv, cur, op, orig);
 
 		case PROPLIST_LIST_CHANGED:
+			priv->lasttime = 0L;
 			(void)call_appl_verify(priv, cur, op, orig);
 			num = (int)xv_get(priv->list, PANEL_LIST_NROWS);
 			for (i = 0; i < num; i++) {
