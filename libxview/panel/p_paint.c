@@ -1,8 +1,4 @@
-#ifndef lint
-#ifdef sccs
-static char     sccsid[] = "@(#)p_paint.c 20.26 89/11/30 Copyr 1984 Sun Micro DRA: $Id: p_paint.c,v 4.1 2024/03/28 09:12:09 dra Exp $";
-#endif
-#endif
+char p_paint_sccsid[] = "@(#)p_paint.c 20.26 89/11/30 Copyr 1984 Sun Micro DRA: $Id: p_paint.c,v 4.2 2025/04/03 06:22:56 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
