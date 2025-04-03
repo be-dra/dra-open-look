@@ -1,8 +1,4 @@
-#ifndef lint
-#ifdef sccs
-static char     sccsid[] = "@(#)p_public.c 20.14 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_public.c,v 4.1 2024/03/28 09:12:09 dra Exp $";
-#endif
-#endif
+char p_public_sccsid[] = "@(#)p_public.c 20.14 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_public.c,v 4.2 2025/04/03 06:23:37 dra Exp $";
 
 /*****************************************************************************/
 /* panel_public.c                                  */
