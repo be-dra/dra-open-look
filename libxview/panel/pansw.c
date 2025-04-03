@@ -26,11 +26,7 @@
 #include <xview/scrollbar.h>
 #include <xview_private/panel_impl.h>
 
-#ifndef lint
-#ifdef sccs
-static char pansw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pansw.c,v 4.3 2025/03/08 13:08:26 dra Exp $";
-#endif
-#endif
+char pansw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pansw.c,v 4.4 2025/04/03 06:23:44 dra Exp $";
 
 typedef void (*notify_t)(Panel_item, int, int*);
 typedef struct {
