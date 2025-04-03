@@ -1,8 +1,4 @@
-#ifndef lint
-#ifdef sccs
-static char     sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.4 2025/03/08 13:08:26 dra Exp $";
-#endif
-#endif
+char p_gauge_sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.5 2025/04/03 06:20:04 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
