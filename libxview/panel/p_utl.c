@@ -1,8 +1,4 @@
-#ifndef lint
-#ifdef sccs
-static char     sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.11 2025/03/08 13:08:26 dra Exp $";
-#endif
-#endif
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.13 2025/04/03 06:21:22 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -1574,6 +1570,7 @@ void panel_buttons_to_menu(Panel pan)
 					MENU_ITEM,
 						MENU_STRING, strdup(label),
 						MENU_PULLRIGHT, buttonmenu,
+						XV_KEY_DATA, button_menu_key, it,
 						NULL,
 					NULL);
 		}
