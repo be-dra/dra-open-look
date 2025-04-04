@@ -1,4 +1,4 @@
-/* @(#)term_impl.h 20.32 93/06/28 SMI dra: $Id: term_impl.h,v 4.5 2024/12/27 21:34:31 dra Exp $ */
+/* @(#)term_impl.h 20.32 93/06/28 SMI dra: $Id: term_impl.h,v 4.6 2025/04/03 14:12:01 dra Exp $ */
 
 /****************************************************************************/
 /*
@@ -221,6 +221,8 @@ typedef Termsw_view_object	*Termsw_view_handle;
 
 #define	Termsw_private		Termsw_view_object
 
+Pkg_private Notify_value termsw_text_event(Termsw_view view, Notify_event ev,
+									Notify_arg arg, Notify_event_type type);
 
 #define TERMSW_FOLIO_FOR_VIEW(_termsw_view_handle)   	\
 			TERMSW_FOLIO_FROM_TERMSW_VIEW_HANDLE(_termsw_view_handle)
