@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.11 2025/03/25 11:50:54 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.12 2025/04/03 08:31:30 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -160,6 +160,7 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 	 */
 	CHAR buf[BUFSIZE];
 #endif
+	Xv_window csrwin = csr_pixwin_get();
 
 	register int x_home;
 	register int y_home;
@@ -184,10 +185,10 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 	/* possibly use escape sequences ? */
 
 	SERVERTRACE((44, "SERVER_JOURNALLING?\n"));
-	if (xv_get(XV_SERVER_FROM_WINDOW(csr_pixwin_get()), SERVER_JOURNALLING)) {
+	if (xv_get(XV_SERVER_FROM_WINDOW(csrwin), SERVER_JOURNALLING)) {
 		if (INDEX(s, xv_shell_prompt[0])) {
 			SERVERTRACE((44, " YES \n"));
-			xv_set(XV_SERVER_FROM_WINDOW(csr_pixwin_get()),
+			xv_set(XV_SERVER_FROM_WINDOW(csrwin),
 					SERVER_JOURNAL_SYNC_EVENT, 1, NULL);
 		}
 	}
@@ -211,33 +212,33 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 		ttysw_pclearline(ttysw, col, col + STRLEN(s), row);
 
 		/* render the first one, the potential offset of the others */
-		tty_newtext(csr_pixwin_get(),
+		tty_newtext(csrwin,
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op,
 				ttysw->pixfont, buf, STRLEN(buf));
 
 		if (boldstyle & TTYSW_BOLD_OFFSET_X)
-			tty_newtext(csr_pixwin_get(),
+			tty_newtext(csrwin,
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
 					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
 		if (boldstyle & TTYSW_BOLD_OFFSET_Y)
-			tty_newtext(csr_pixwin_get(),
+			tty_newtext(csrwin,
 					col_to_x(col) - x_home,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
 					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
 		if (boldstyle & TTYSW_BOLD_OFFSET_XY)
-			tty_newtext(csr_pixwin_get(),
+			tty_newtext(csrwin,
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
 					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
 	}
 	else {
-		tty_newtext(csr_pixwin_get(),
+		tty_newtext(csrwin,
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op, ttysw->pixfont, buf,
@@ -248,7 +249,7 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 		struct pr_size xv_pf_textwidth_wc();
 
 		str_size = xv_pf_textwidth_wc(STRLEN(buf), ttysw->pixfont, buf);
-		tty_background(csr_pixwin_get(),
+		tty_background(csrwin,
 				col_to_x(col), row_to_y(row) + ttysw->chrheight - 1,
 				str_size.x, 1,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : PIX_SRC);
@@ -259,40 +260,40 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 		ttysw_pclearline(ttysw, col, col + (int)strlen(s), row);
 
 		/* render the first one, the potential offset of the others */
-		tty_newtext(csr_pixwin_get(),
+		tty_newtext(csrwin,
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op,
 				(Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 
 		if (boldstyle & TTYSW_BOLD_OFFSET_X)
-			tty_newtext(csr_pixwin_get(),
+			tty_newtext(csrwin,
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
 					PIX_SRC | PIX_DST, (Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 		if (boldstyle & TTYSW_BOLD_OFFSET_Y)
-			tty_newtext(csr_pixwin_get(),
+			tty_newtext(csrwin,
 					col_to_x(col) - x_home,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
 					PIX_SRC | PIX_DST, (Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 		if (boldstyle & TTYSW_BOLD_OFFSET_XY)
-			tty_newtext(csr_pixwin_get(),
+			tty_newtext(csrwin,
 					col_to_x(col) - x_home + 1,
 					row_to_y(row) - y_home + 1,
 					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
 					PIX_SRC | PIX_DST, (Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 	}
 	else {
-		tty_newtext(csr_pixwin_get(),
+		tty_newtext(csrwin,
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op,
 				(Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 	}
 	if (mode & MODE_UNDERSCORE) {
-		tty_background(csr_pixwin_get(),
+		tty_background(csrwin,
 				col_to_x(col), row_to_y(row) + ttysw->chrheight - 1,
 				(int)strlen(s) * ttysw->chrwidth, 1,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : PIX_SRC);
@@ -307,9 +308,10 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 Pkg_private void ttysw_pclearline(Ttysw_private ttysw, int fromcol, int tocol, int row)
 {
     int	klu1284	= (fromcol == 0 ? 1 : 0 );
+	Xv_window csrwin = csr_pixwin_get();
 
     if (ttysw_delaypainting) return;
-    tty_background(csr_pixwin_get(),
+    tty_background(csrwin,
 			  col_to_x(fromcol)-klu1284, row_to_y(row),
 			  col_to_x(tocol) - col_to_x(fromcol)+klu1284,
 			  ttysw->chrheight, PIX_CLR);
@@ -317,29 +319,32 @@ Pkg_private void ttysw_pclearline(Ttysw_private ttysw, int fromcol, int tocol, i
 
 Pkg_private void ttysw_pcopyline(Ttysw_private ttysw, int fromcol, int tocol, int count, int row)
 {
+	Xv_window csrwin = csr_pixwin_get();
     int             pix_width = (count * ttysw->chrwidth);
     if (ttysw_delaypainting) return;
-    (void) tty_copyarea(csr_pixwin_get(),
+    (void) tty_copyarea(csrwin,
 		     col_to_x(fromcol)-1, row_to_y(row), pix_width+1, ttysw->chrheight,
 			col_to_x(tocol)-1, row_to_y(row));
-    tty_synccopyarea(csr_pixwin_get());
+    tty_synccopyarea(csrwin);
 }
 
 Pkg_private void ttysw_pclearscreen(Ttysw_private ttysw, int fromrow, int torow)
 {
+	Xv_window csrwin = csr_pixwin_get();
     if (ttysw_delaypainting) return;
-    tty_background(csr_pixwin_get(), col_to_x(ttysw->ttysw_left)-1,
+    tty_background(csrwin, col_to_x(ttysw->ttysw_left)-1,
 			  row_to_y(fromrow),
 			  ttysw->winwidthp+1, row_to_y(torow - fromrow), PIX_CLR);
 }
 
 Pkg_private void ttysw_pcopyscreen(Ttysw_private ttysw, int fromrow, int torow, int count)
 {
+	Xv_window csrwin = csr_pixwin_get();
     if (ttysw_delaypainting) return;
-    tty_copyarea(csr_pixwin_get(), col_to_x(ttysw->ttysw_left)-1,
+    tty_copyarea(csrwin, col_to_x(ttysw->ttysw_left)-1,
 			row_to_y(fromrow), ttysw->winwidthp+1, row_to_y(count),
 			col_to_x(ttysw->ttysw_left)-1, row_to_y(torow));
-    tty_synccopyarea(csr_pixwin_get());
+    tty_synccopyarea(csrwin);
 }
 
 /* return value means "row is empty" */
@@ -427,7 +432,7 @@ Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw,
 	 */
 	SERVERTRACE((567, "%s: view clearing\n", __FUNCTION__));
 #ifdef THIS_CLEARS_THE_WHOLE_WINDOW_WICH_CAN_BE_DONE_EASIER
-	rect = (struct rect *)xv_get(csr_pixwin_get(), WIN_RECT);
+	rect = (struct rect *)xv_get(view, WIN_RECT);
 	tty_background(view, 0, 0,
 			rect->r_width + 1, rect->r_height, PIX_CLR);
 #else
@@ -459,8 +464,9 @@ Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw,
 /* ARGSUSED */
 Pkg_private void ttysw_prepair(XEvent *eventp)
 {
+	Xv_window csrwin = csr_pixwin_get();
 	Tty_exposed_lines *exposed;
-	Ttysw_private	ttysw = TTY_PRIVATE_FROM_ANY_VIEW(csr_pixwin_get());
+	Ttysw_private	ttysw = TTY_PRIVATE_FROM_ANY_VIEW(csrwin);
 	register int	row;
 	int		leftcol;
 	int		display_cursor = FALSE;
@@ -470,7 +476,7 @@ Pkg_private void ttysw_prepair(XEvent *eventp)
 	 */
 
 	/* Get the expose events, ignore textsw caret checking with -10000 */
-	exposed = tty_calc_exposed_lines(csr_pixwin_get(), eventp, -10000);
+	exposed = tty_calc_exposed_lines(csrwin, eventp, -10000);
 
 	leftcol = x_to_col(exposed->leftmost);
 
@@ -556,16 +562,16 @@ Pkg_private void ttysw_prepair(XEvent *eventp)
 	if(display_cursor)
 		ttysw_removeCursor(ttysw);
 
-	tty_clear_clip_rectangles(csr_pixwin_get());
+	tty_clear_clip_rectangles(csrwin);
 
 }
 
 Pkg_private void ttysw_drawCursor(Ttysw_private ttysw, int yChar, int xChar)
 {
+	Xv_window csrwin = csr_pixwin_get();
 #ifdef  OW_I18N
     int         offset;
 #ifdef FULL_R5
-    Ttysw_private		ttysw_folio = TTY_PRIVATE_FROM_ANY_VIEW(csr_pixwin_get());
     XPoint		loc;
     XVaNestedList	va_nested_list;
 #endif /* FULL_R5 */
@@ -597,19 +603,19 @@ Pkg_private void ttysw_drawCursor(Ttysw_private ttysw, int yChar, int xChar)
     tty_column_wchar_type( xChar , yChar , &curs_width , &offset );
     curs_width *= ttysw->chrwidth;
     caretx     -= offset*ttysw->chrwidth;
-    (void) tty_background(csr_pixwin_get(),
+    (void) tty_background(csrwin,
              caretx-lxhome, carety, curs_width, ttysw->chrheight, PIX_NOT(PIX_DST));
 #else
-    (void) tty_background(csr_pixwin_get(),
+    (void) tty_background(csrwin,
 		     caretx-lxhome, carety, ttysw->chrwidth, ttysw->chrheight, PIX_NOT(PIX_DST));
 #endif
     if (ttysw->cursor & LIGHTCURSOR) {
 #ifdef  OW_I18N
-        (void) tty_background(csr_pixwin_get(),
+        (void) tty_background(csrwin,
                               caretx - lxhome - 1, carety - 1, curs_width + 2,
                               ttysw->chrheight + 2, PIX_NOT(PIX_DST));
 #else
-	(void) tty_background(csr_pixwin_get(),
+	(void) tty_background(csrwin,
 			      caretx - lxhome - 1, carety - 1, ttysw->chrwidth + 2,
 			      ttysw->chrheight + 2, PIX_NOT(PIX_DST));
 #endif
@@ -617,14 +623,14 @@ Pkg_private void ttysw_drawCursor(Ttysw_private ttysw, int yChar, int xChar)
     }
 #ifdef FULL_R5
 #ifdef OW_I18N
-    if (ttysw_folio->ic && (ttysw_folio->xim_style & XIMPreeditPosition)) {
+    if (ttysw->ic && (ttysw->xim_style & XIMPreeditPosition)) {
         /*loc.x = (short)caretx + (curs_width/2);*/
         loc.x = (short)caretx;
         loc.y = (short)(carety + ttysw->chrbase);
         va_nested_list = XVaCreateNestedList(NULL,
 					     XNSpotLocation, &loc,
 					     NULL);
-        XSetICValues(ttysw_folio->ic, XNPreeditAttributes, va_nested_list,
+        XSetICValues(ttysw->ic, XNPreeditAttributes, va_nested_list,
         	     NULL);
         XFree(va_nested_list);
     }
@@ -635,6 +641,7 @@ Pkg_private void ttysw_drawCursor(Ttysw_private ttysw, int yChar, int xChar)
 
 static void ttysw_paintCursor(Ttysw_private ttysw, int op)
 {
+	Xv_window csrwin = csr_pixwin_get();
 	int y;
 	int height;
 	/*
@@ -650,28 +657,29 @@ static void ttysw_paintCursor(Ttysw_private ttysw, int op)
 	}
 
 #ifdef  OW_I18N
-        (void) tty_background(csr_pixwin_get(),
+        (void) tty_background(csrwin,
                               caretx - lxhome - 1, y, curs_width + 2, height,
 			      op);
 #else
-	(void) tty_background(csr_pixwin_get(),
-			      caretx - lxhome - 1, y, ttysw->chrwidth + 2, height,
-			      op);
+	tty_background(csrwin, caretx - lxhome - 1, y, ttysw->chrwidth + 2,
+							height, op);
 #endif
 }
 
 Pkg_private void ttysw_removeCursor(Ttysw_private ttysw)
 {
+	Xv_window csrwin = csr_pixwin_get();
+
     if (ttysw_delaypainting || ttysw->cursor == NOCURSOR) return;
 #ifdef  OW_I18N
 /*
  *      caretx and curs_width are stored in global and those values
  *      represent the location and width of the cursor.
  */
-    tty_background(csr_pixwin_get(),
+    tty_background(csrwin,
              caretx-lxhome, carety, curs_width, ttysw->chrheight, PIX_NOT(PIX_DST));
 #else
-    (void) tty_background(csr_pixwin_get(),
+    (void) tty_background(csrwin,
 		     caretx-lxhome, carety, ttysw->chrwidth, ttysw->chrheight, PIX_NOT(PIX_DST));
 #endif
     if (ttysw->cursor & LIGHTCURSOR) ttysw_paintCursor(ttysw, PIX_NOT(PIX_DST));
@@ -686,30 +694,30 @@ Pkg_private void ttysw_screencomp(void)	/* BUG ALERT: unnecessary routine */
 {
 }
 
-Pkg_private void ttysw_blinkscreen(void)
+Pkg_private void ttysw_blinkscreen(Xv_window window)
 {
-    struct timeval  now;
-    static struct timeval lastblink;
+	struct timeval now;
+	static struct timeval lastblink;
 
-    (void) gettimeofday(&now, (struct timezone *) 0);
-    if (now.tv_sec - lastblink.tv_sec > 1) {
-	Xv_object       window = (Xv_object) csr_pixwin_get();
-	win_bell(window, ttysw_bell_tv, csr_pixwin_get());
-	lastblink = now;
-    }
+	gettimeofday(&now, (struct timezone *)0);
+	if (now.tv_sec - lastblink.tv_sec > 1) {
+		win_bell(window, ttysw_bell_tv, window);
+		lastblink = now;
+	}
 }
 
 Pkg_private void ttysw_pselectionhilite (struct rect *r, int sel_rank)
 {
+	Xv_window csrwin = csr_pixwin_get();
     struct rect     rectlock;
 
     rectlock = *r;
     rect_marginadjust(&rectlock, 1);
     if (sel_rank == TTY_SEL_PRIMARY)
-	(void) tty_background(csr_pixwin_get(), r->r_left, r->r_top,
+	(void) tty_background(csrwin, r->r_left, r->r_top,
 			      r->r_width, r->r_height, PIX_NOT(PIX_DST));
     else
-	(void) xv_replrop(csr_pixwin_get(),
+	(void) xv_replrop(csrwin,
 			  r->r_left, r->r_top,
 			  r->r_width, r->r_height,
 			  PIX_SRC | PIX_DST, &ttysw_gray17_pr, 0, 0);
