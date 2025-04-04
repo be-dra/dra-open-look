@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.9 2025/03/31 19:38:50 dra Exp $";
+char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.10 2025/04/03 08:30:30 dra Exp $";
 #endif
 
 /*
@@ -801,9 +801,11 @@ static void ttysw_disable_scrolling(Menu cmd_menu, Menu_item cmd_item)
 {
 	/* The textsw handle is really a termsw handle */
 	Textsw textsw = xv_get(cmd_item, MENU_CLIENT_DATA);
+	/* this is REALLY a Termsw_view! */
 	Termsw_view vpub = xv_get(cmd_menu, XV_KEY_DATA, TEXTSW_MENU_DATA_KEY);
-	Ttysw_view_handle ttysw_view = TTY_VIEW_PRIVATE(vpub);
-	Ttysw_private ttysw_folio = ttysw_view->folio;
+	/* so, this should really be a Termsw: */
+	Termsw term = xv_get(vpub, XV_OWNER);
+	Ttysw_private ttysw_folio = TTY_PRIVATE_TERMSW(term);
 	Xv_Notice tty_notice;
 
 	if (ttysw_getopt(ttysw_folio, TTYOPT_TEXT)) {
