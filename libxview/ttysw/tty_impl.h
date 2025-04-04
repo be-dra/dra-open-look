@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.26 2025/04/01 12:51:12 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.28 2025/04/03 14:11:50 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -225,6 +225,7 @@ typedef struct ttysubwindow {
 typedef Ttysw		*Ttysw_private;
 
 typedef struct ttysw_view_object {
+	long unsigned	magic;
     Tty_view		public_self;
     Ttysw_private	folio;
 	Xv_Cursor       ttysw_stop_cursor;	/* stop sign cursor (i.e., CTRL-S) */
@@ -387,7 +388,7 @@ Pkg_private void
 	ttysel_nullselection(Xv_opaque UNKNOWN),
 	ttysel_setselection(Xv_opaque UNKNOWN),
 	ttysw_ansiinit(struct ttysubwindow *ttysw),
-	ttysw_blinkscreen(void),
+	ttysw_blinkscreen(Xv_window window),
 	ttysw_bold_mode(Ttysw_private ttysw),
 	ttysw_cim_clear(Ttysw_private ttysw, int a, int b),
 	ttysw_cim_scroll(Ttysw_private ttysw, int n),
@@ -499,8 +500,6 @@ Pkg_private int
 /* 										enum __seln_rank rank); */
 Pkg_private void ttyhiliteselection(Ttysw_private ttysw,
 							struct ttyselection *ttysel, int rank);
-Pkg_private Notify_value ttysw_text_event(Xv_window textsw,
-    				Notify_event ev, Notify_arg arg, Notify_event_type type);
 
 Pkg_private Xv_opaque ttysw_init_view_internal(Tty parent, Tty_view tty_view_public);
 Pkg_private Xv_opaque ts_create(Ttysw *ttysw, Es_handle original, Es_handle scratch);
