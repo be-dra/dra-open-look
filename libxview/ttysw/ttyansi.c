@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.8 2025/03/31 19:38:54 dra Exp $";
+char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.9 2025/04/03 08:29:30 dra Exp $";
 #endif
 
 /*
@@ -800,14 +800,9 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 								return (0);
 							}
 							break;
-						case CTRL('G'):{
-								Xv_Window tmp_pixwin = csr_pixwin_get();
-
-								csr_pixwin_set(textsw);
-								ttysw_blinkscreen();
-								csr_pixwin_set(tmp_pixwin);
-								break;
-							}
+						case CTRL('G'):
+							ttysw_blinkscreen(textsw);
+							break;
 						case NUL:	/* ignored */
 						case DEL:	/* ignored */
 							break;
@@ -1065,7 +1060,7 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 				else {	/* if (! TTYOPT_TEXT) */
 					switch (*addr) {
 						case CTRL('G'):
-							(void)ttysw_blinkscreen();
+							ttysw_blinkscreen(ttysw->current_view_public);
 							break;
 						case '\b':
 							ttysw_pos(ttysw, ttysw->curscol - 1, ttysw->cursrow);
