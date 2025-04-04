@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.14 2025/04/01 12:51:21 dra Exp $";
+char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.15 2025/04/03 14:12:52 dra Exp $";
 #endif
 
 /*
@@ -12,55 +12,26 @@ char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy
  * Notifier related routines for the ttysw.
  */
 
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <stdio.h>
-#include <errno.h>
-#include <ctype.h>
 #ifdef __linux
 #  ifndef TIOCSTI
 #    include <sys/ioctl.h>
 #  endif
 #endif /* __linux */
-#include <pixrect/pixrect.h>
-#include <pixrect/pixfont.h>
-
-#include <xview_private/portable.h>
-
-#include <xview_private/i18n_impl.h>
 #include <xview/notify.h>
-#include <xview/rect.h>
-#include <xview/rectlist.h>
-#include <xview/win_input.h>
-#include <xview/win_notify.h>
-#include <xview/defaults.h>
-#include <xview/ttysw.h>
-#include <xview/notice.h>
-#include <xview/frame.h>
-#include <xview/termsw.h>
-#include <xview/window.h>
 #include <xview/ttysw.h>
 #include <xview_private/tty_impl.h>
+#include <xview/openmenu.h>
 #include <xview_private/term_impl.h>
 #include <xview_private/txt_impl.h>
 #include <xview_private/svr_impl.h>
-#include <xview_private/ultrix_cpt.h>
-
-#define PTY_OFFSET	(int) &(((Ttysw_private)0)->ttysw_pty)
-
-#include <xview_private/charimage.h>
 #include <xview_private/charscreen.h>
+
 #undef length
 #define ITIMER_NULL   ((struct itimerval *)0)
 
 /* Duplicate of what's in ttysw_tio.c */
 
 static Notify_value ttysw_pty_output_pending(Tty tty_public, int pty);
-static Notify_value ttysw_prioritizer(Tty tty_public, int nfd, fd_set *ibits_ptr, fd_set *obits_ptr, fd_set *ebits_ptr, int nsig, sigset_t *sigbits_ptr, sigset_t *auto_sigbits_ptr, int *event_count_ptr, Notify_event *events, Notify_arg *args);
 static Notify_prioritizer_func ttysw_cached_pri;	/* Default prioritizer */
 
 static void cim_resize(Ttysw_view_handle ttysw_view);
@@ -85,6 +56,66 @@ Xv_private int             ttysw_waiting_for_pty_input;
 #define	owbp	ttysw->ttysw_obuf.cb_wbp
 #define	orbp	ttysw->ttysw_obuf.cb_rbp
 
+static Notify_value ttysw_prioritizer(Tty tty_public, int nfd,
+			fd_set *ibits_ptr, fd_set *obits_ptr, fd_set *ebits_ptr,
+			int nsig, sigset_t *xsigbits_ptr, sigset_t *xauto_sigbits_ptr,
+			int *event_count_ptr, Notify_event *events, Notify_arg *args)
+/* Called directly from notify_client(), so tty_public may be termsw! */
+{
+	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(tty_public);
+    Tty_view viewpub = xv_get(tty_public, OPENWIN_NTH_VIEW, 0);
+	Ttysw_view_handle ttysw_view = ttysw->view;
+	register int pty = ttysw->ttysw_pty;
+	register int i;
+	int count = *event_count_ptr;
+	int *auto_sigbits_ptr = (int *)xauto_sigbits_ptr;
+
+	ttysw->ttysw_flags |= TTYSW_FL_IN_PRIORITIZER;
+	if (*auto_sigbits_ptr) {
+		/* Send itimers */
+		if (*auto_sigbits_ptr & SIG_BIT(SIGALRM)) {
+			notify_itimer(tty_public, ITIMER_REAL);
+			*auto_sigbits_ptr &= ~SIG_BIT(SIGALRM);
+		}
+	}
+	if (FD_ISSET(ttysw->ttysw_tty, obits_ptr)) {
+		notify_output(tty_public, ttysw->ttysw_tty);
+		FD_CLR(ttysw->ttysw_tty, obits_ptr);
+	}
+	/*
+	 * Post events. This is done in place of calling notify_input with wfd's
+	 */
+	for (i = 0; i < count; i++) {
+		notify_event(tty_public, events[i], args[i]);
+	}
+
+	if (FD_ISSET(pty, obits_ptr)) {
+		notify_output(tty_public, pty);
+		FD_CLR(pty, obits_ptr);
+		/*
+		 * Pty timer is no longer needed because the
+		 * (void)ttysw_remove_pty_timer(ttysw);
+		 */
+	}
+	if (FD_ISSET(pty, ibits_ptr)) {
+		/* This is aviod the race condition, created by the timer flush */
+
+		if (IS_TERMSW(tty_public)
+				&& (ttysw_getopt(ttysw, TTYOPT_TEXT))) {
+			textsw_flush_std_caches(viewpub);
+		}
+		notify_input(tty_public, pty);
+		FD_CLR(pty, ibits_ptr);
+	}
+	ttysw_cached_pri(tty_public, nfd, ibits_ptr, obits_ptr, ebits_ptr,
+			nsig, xsigbits_ptr, (sigset_t *) auto_sigbits_ptr, event_count_ptr,
+			events, args);
+	ttysw_reset_conditions(ttysw_view);
+	ttysw->ttysw_flags &= ~TTYSW_FL_IN_PRIORITIZER;
+
+	return NOTIFY_DONE;
+}
+
 Pkg_private void ttysw_interpose(Ttysw_private ttysw_folio)
 {
     Tty ttysw_folio_public = TTY_PUBLIC(ttysw_folio);
@@ -99,7 +130,7 @@ Pkg_private void ttysw_interpose(Ttysw_private ttysw_folio)
 
 Pkg_private int ttysw_destroy(Tty self, Destroy_status status)
 {
-	Ttysw_private priv = TTY_PRIVATE_FROM_ANY_PUBLIC(self);
+	Ttysw_private priv = TTY_PRIVATE(self);
 
 	if ((status != DESTROY_CHECKING) && (status != DESTROY_SAVE_YOURSELF)) {
 		Menu mymenu;
@@ -196,7 +227,7 @@ Pkg_private void ttysw_sigwinch(Ttysw_private ttysw)
 
 Pkg_private void ttysw_sendsig(Ttysw_private ttysw, Termsw_view tswv, int sig)
 {
-    int             control_pg;
+    int control_pg;
 
     /* if no child, then just return. */
     if (ttysw->ttysw_pidchild==TEXTSW_INFINITY) {
@@ -249,22 +280,9 @@ Pkg_private void ttysw_sendsig(Ttysw_private ttysw, Termsw_view tswv, int sig)
     }
 	else {
 		perror(XV_MSG("ioctl TIOCGPGRP"));
-#ifndef DRA_TIOCREMOTE
-/* 		{ */
-/* #include <sys/stat.h> */
-/* 			struct stat sb; */
-/*  */
-/* 			fprintf(stderr, "ttysw_tty = %d\n", ttysw->ttysw_tty); */
-/* 			if (fstat(ttysw->ttysw_tty, &sb)) perror(" my fstat"); */
-/* 			else { */
-/* 				fprintf(stderr, "mode=0%o, dev=0x%x\n", sb.st_mode, sb.st_dev); */
-/* 			} */
-/* 		} */
-#endif /* DRA_TIOCREMOTE */
 	}
 }
 
-/* ARGSUSED */
 /* BUG ALERT: Why was this marked Xv_public in V3.0?  Should be Pkg_private. */
 Xv_public Notify_value ttysw_event(Tty_view ttysw_view_public, Notify_event ev,
 							Notify_arg arg, Notify_event_type type)
@@ -434,70 +452,6 @@ Pkg_private void ttysw_reset_conditions(Ttysw_view_handle ttysw_view)
 }
 
 
-
-static Notify_value ttysw_prioritizer(Tty tty_public, int nfd,
-			fd_set *ibits_ptr, fd_set *obits_ptr, fd_set *ebits_ptr,
-			int nsig, sigset_t *xsigbits_ptr, sigset_t *xauto_sigbits_ptr,
-			int *event_count_ptr, Notify_event *events, Notify_arg *args)
-/* Called directly from notify_client(), so tty_public may be termsw! */
-{
-	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(tty_public);
-    Tty_view viewpub = xv_get(tty_public, OPENWIN_NTH_VIEW, 0);
-/* 	Ttysw_view_handle ttysw_view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw); */
-	Ttysw_view_handle ttysw_view = ttysw->view;
-	register int pty = ttysw->ttysw_pty;
-	register int i;
-	int count = *event_count_ptr;
-	int *auto_sigbits_ptr = (int *)xauto_sigbits_ptr;
-
-/* 	fprintf(stderr, "%s-%d: tty_public is a %s\n", __FUNCTION__,__LINE__, */
-/* 				((Xv_pkg *)xv_get(tty_public, XV_TYPE))->name); */
-
-	ttysw->ttysw_flags |= TTYSW_FL_IN_PRIORITIZER;
-	if (*auto_sigbits_ptr) {
-		/* Send itimers */
-		if (*auto_sigbits_ptr & SIG_BIT(SIGALRM)) {
-			notify_itimer(tty_public, ITIMER_REAL);
-			*auto_sigbits_ptr &= ~SIG_BIT(SIGALRM);
-		}
-	}
-	if (FD_ISSET(ttysw->ttysw_tty, obits_ptr)) {
-		notify_output(tty_public, ttysw->ttysw_tty);
-		FD_CLR(ttysw->ttysw_tty, obits_ptr);
-	}
-	/*
-	 * Post events. This is done in place of calling notify_input with wfd's
-	 */
-	for (i = 0; i < count; i++) {
-		notify_event(tty_public, events[i], args[i]);
-	}
-
-	if (FD_ISSET(pty, obits_ptr)) {
-		notify_output(tty_public, pty);
-		FD_CLR(pty, obits_ptr);
-		/*
-		 * Pty timer is no longer needed because the
-		 * (void)ttysw_remove_pty_timer(ttysw);
-		 */
-	}
-	if (FD_ISSET(pty, ibits_ptr)) {
-		/* This is aviod the race condition, created by the timer flush */
-
-		if (IS_TERMSW(tty_public)
-				&& (ttysw_getopt(ttysw, TTYOPT_TEXT))) {
-			textsw_flush_std_caches(viewpub);
-		}
-		notify_input(tty_public, pty);
-		FD_CLR(pty, ibits_ptr);
-	}
-	ttysw_cached_pri(tty_public, nfd, ibits_ptr, obits_ptr, ebits_ptr,
-			nsig, xsigbits_ptr, (sigset_t *) auto_sigbits_ptr, event_count_ptr,
-			events, args);
-	ttysw_reset_conditions(ttysw_view);
-	ttysw->ttysw_flags &= ~TTYSW_FL_IN_PRIORITIZER;
-
-	return NOTIFY_DONE;
-}
 
 Pkg_private void ttysw_resize(Ttysw_view_handle ttysw_view)
 {
