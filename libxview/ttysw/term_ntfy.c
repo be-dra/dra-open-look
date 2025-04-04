@@ -1,5 +1,5 @@
 #ifndef lint
-char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.5 2025/04/01 12:50:18 dra Exp $";
+char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.6 2025/04/03 14:12:28 dra Exp $";
 #endif
 
 /*
@@ -61,7 +61,7 @@ Pkg_private void ttysw_move_mark(Textsw textsw, Textsw_mark *mark,
 }
 
 /* This is really a public termsw view */
-Pkg_private Notify_value ttysw_text_event(Xv_window termsw_view,
+Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
     Notify_event ev, Notify_arg arg, Notify_event_type type)
 {
 	Event *event = (Event *) ev;
