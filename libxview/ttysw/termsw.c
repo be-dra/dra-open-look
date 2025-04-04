@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.14 2025/04/01 12:51:07 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.16 2025/04/03 14:12:06 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -170,8 +170,8 @@ static int termsw_layout(Termsw termsw_public, Xv_Window termsw_view_public, Win
 
 static void ttysw_interpose_on_textsw(Termsw_view t)
 {
-    notify_interpose_event_func(t, ttysw_text_event, NOTIFY_SAFE);
-    notify_interpose_event_func(t, ttysw_text_event, NOTIFY_IMMEDIATE);
+    notify_interpose_event_func(t, termsw_text_event, NOTIFY_SAFE);
+    notify_interpose_event_func(t, termsw_text_event, NOTIFY_IMMEDIATE);
 }
 
 /*
@@ -880,7 +880,7 @@ static int termsw_view_init(Xv_Window parent, Termsw_view termsw_view_public, At
 	view_object->private_data = (Xv_opaque) view;
 	view->public_self = termsw_view_public;
 	view->folio = TERMSW_PRIVATE(parent);
-	view->magic = 0xf011affe;
+	view->magic = 0xF011AFFE; /* compare textsw_view: magic 0xF0110A0A */
 
 
 	/* Initialized to textsw_view */
