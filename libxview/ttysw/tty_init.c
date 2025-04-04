@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.12 2025/03/19 21:33:50 dra Exp $";
+char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.13 2025/04/03 08:31:10 dra Exp $";
 #endif
 
 /*
@@ -167,6 +167,7 @@ Pkg_private Xv_opaque ttysw_init_view_internal(Tty parent, Tty_view tty_view_pub
 		return ((Xv_opaque) NULL);
 
 	((Xv_tty_view *) tty_view_public)->private_data = (Xv_opaque) ttysw_view;
+	ttysw_view->magic = 0xF011B0B0; /* compare textsw_view: magic 0xF0110A0A */
 	ttysw_view->public_self = (Tty_view) tty_view_public;
 	ttysw_view->folio = TTY_PRIVATE_FROM_ANY_PUBLIC(parent);
 	ttysw_view->folio->current_view_public = tty_view_public;
