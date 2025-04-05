@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.16 2025/03/31 19:39:01 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.18 2025/04/04 19:59:05 dra Exp $";
 #endif
 
 /*
@@ -13,13 +13,7 @@ char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v
  * Very active terminal emulator subwindow pty code.
  */
 
-#include <errno.h>
-#include <signal.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <ctype.h>
-#include <string.h>
-
 #include <xview_private/portable.h>
 
 #ifdef	XV_USE_SVR4_PTYS
@@ -38,26 +32,13 @@ char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v
 #endif /* __linux */
 
 #include <xview_private/i18n_impl.h>
-#include <xview/notify.h>
-#include <xview/win_struct.h>
 #include <xview/win_input.h>
 #include <xview/win_notify.h>
-#include <xview/cursor.h>
-#include <pixrect/pixrect.h>
-#include <xview/pixwin.h>
-#include <xview/icon.h>
 #include <xview/ttysw.h>
 #include <xview/notice.h>
-#include <xview/frame.h>
-
-#include <pixrect/pixfont.h>
-#define _NOTIFY_MIN_SYMBOLS
-#include <xview/notify.h>
-#undef _NOTIFY_MIN_SYMBOLS
 #include <xview_private/tty_impl.h>
 #include <xview_private/svr_impl.h>
 #include <xview_private/term_impl.h>
-#include <xview_private/draw_impl.h>
 
 #ifdef OW_I18N
 #ifdef sun
@@ -67,7 +48,6 @@ char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v
 #endif
 #include <wctype.h>
 #include <stdlib.h>
-#include <xview_private/charimage.h>
 #ifdef FULL_R5
 #include <X11/Xlib.h>
 #endif /* FULL_R5 */
