@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.6 2025/03/21 20:03:20 dra Exp $";
+char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.8 2025/04/04 20:16:04 dra Exp $";
 #endif
 
 /*
