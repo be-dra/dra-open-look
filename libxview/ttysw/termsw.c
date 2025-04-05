@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.16 2025/04/03 14:12:06 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.18 2025/04/04 20:13:22 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -12,30 +12,12 @@ char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.
 /*****************************************************************/
 
 #include <xview_private/i18n_impl.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <xview/sun.h>
-#include <xview/frame.h>
-#include <xview/tty.h>
 #include <xview/ttysw.h>
-#include <xview/textsw.h>
 #include <xview/termsw.h>
-#include <xview/font.h>
 #include <xview/defaults.h>
 #include <xview_private/term_impl.h>
-#include <xview_private/portable.h>
-#include <xview/scrollbar.h>
-#include <xview_private/charscreen.h>
-#include <X11/Xlib.h>
 #include <xview_private/txt_impl.h>
 #include <xview_private/font_impl.h>
-
-#define	_NOTIFY_MIN_SYMBOLS
-#include <xview/notify.h>
-#undef	_NOTIFY_MIN_SYMBOLS
 
 #define HELP_INFO(s) XV_HELP_DATA, s,
 
