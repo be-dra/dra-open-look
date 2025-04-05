@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_again_c_sccsid[] = "@(#)txt_again.c 20.43 93/06/28 DRA: $Id: txt_again.c,v 4.6 2024/12/19 14:22:40 dra Exp $";
+char     txt_again_c_sccsid[] = "@(#)txt_again.c 20.43 93/06/28 DRA: $Id: txt_again.c,v 4.7 2025/04/04 18:15:49 dra Exp $";
 #endif
 
 /*
@@ -28,10 +28,10 @@ Pkg_private int textsw_match_selection_and_normalize(Textsw_view_private view, C
 string_t        null_string = {0, 0, 0};
 
 #define	TEXT_DELIMITER	"\\"
-char           *text_delimiter = TEXT_DELIMITER;
+static char *text_delimiter = TEXT_DELIMITER;
 
 #ifdef OW_I18N
-CHAR            text_delimiter_wc[2] = {'\\','\0'};
+static CHAR text_delimiter_wc[2] = {'\\','\0'};
 #endif
 
 typedef enum {
@@ -47,7 +47,7 @@ typedef enum {
     NULL_TOKEN
 }               Token;
 
-char           *cmd_tokens[] = {
+static char *cmd_tokens[] = {
     "CARET", "DELETE", "EDIT", "EXTRAS", "FIELD", "FILTER", "FIND", "INSERT", "MENU", NULL
 };
 
@@ -58,10 +58,10 @@ typedef enum {
     EMPTY_DIR
 }               Direction;
 
-char           *direction_tokens[] = {
+static char *direction_tokens[] = {
     "FORWARD", "BACKWARD", TEXT_DELIMITER, "", NULL
 };
-char           *edit_tokens[] = {
+static char *edit_tokens[] = {
     "CHAR", "WORD", "LINE", NULL
 };
 
@@ -69,7 +69,7 @@ char           *edit_tokens[] = {
 #define WORD_TOKEN	1
 #define LINE_TOKEN	2
 
-char           *text_tokens[] = {
+static char *text_tokens[] = {
     "PIECES", "TRASHBIN", TEXT_DELIMITER, NULL
 };
 
