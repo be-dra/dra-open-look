@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.9 2025/04/03 08:29:30 dra Exp $";
+char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.11 2025/04/04 20:13:10 dra Exp $";
 #endif
 
 /*
@@ -11,14 +11,7 @@ char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,
 #ifdef OW_I18N
 #include <xview/xv_i18n.h>
 #endif
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/signal.h>
-#include <xview/win_struct.h>
 #include <xview/ttysw.h>
-#include <xview/termsw.h>
-#include <xview/textsw.h>
 #include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
 #include <xview_private/txt_impl.h>  	/* BUG ALERT: Modularity violation */
@@ -26,8 +19,6 @@ char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,
 #include <xview_private/ev_impl.h>
 #undef CTRL
 #include <xview_private/ttyansi.h>
-
-#include <xview/sel_attrs.h>
 
 #ifdef DEBUG
 #define ERROR_RETURN(val)	abort();	/* val */
