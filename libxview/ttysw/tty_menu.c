@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.10 2025/04/03 08:30:30 dra Exp $";
+char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.12 2025/04/04 20:13:02 dra Exp $";
 #endif
 
 /*
@@ -12,32 +12,14 @@ char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu
  * Ttysw menu initialization and call-back procedures
  */
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/signal.h>
-
-#include <stdio.h>
-#include <ctype.h>
-
-#include <pixrect/pixrect.h>
-#include <pixrect/pixfont.h>
-#include <xview_private/i18n_impl.h>
-#include <xview/win_input.h>
 #include <xview/frame.h>
-#include <xview/scrollbar.h>
 #include <xview/ttysw.h>
-#include <xview/termsw.h>
-#include <xview/textsw.h>
 #include <xview/notice.h>
 #include <xview/openmenu.h>
-#include <xview/selection.h>
-#include <xview/server.h>
 #include <xview_private/win_info.h>
 #include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
 #include <xview_private/txt_impl.h>
-#include <xview_private/svr_impl.h>
-#include <xview/svrimage.h>
 
 #define HELP_INFO(s) XV_HELP_DATA,s
 
