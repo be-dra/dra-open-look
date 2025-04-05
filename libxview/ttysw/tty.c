@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.14 2025/03/31 19:39:10 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.15 2025/04/04 16:22:17 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -11,37 +11,18 @@ char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.14 2025/
  */
 /*****************************************************************/
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-#include <pixrect/pixrect.h>
-#include <pixrect/pixfont.h>
-#include <xview_private/i18n_impl.h>
-#include <xview_private/portable.h>
-#include <xview/sun.h>
-#include <xview/frame.h>
-#include <xview/tty.h>
 #include <xview/ttysw.h>
-#include <xview/openmenu.h>
 #include <xview_private/tty_impl.h>
 #include <xview/defaults.h>
 #include <xview_private/term_impl.h>
-#include <xview_private/charscreen.h>
 #include <xview_private/ttyansi.h>
 #include <xview_private/svr_impl.h>
+#include <xview_private/draw_impl.h>
 
 #ifdef SVR4
 #include <sys/suntty.h>
 #include <sys/strredir.h>
 #endif
-
-#define	_NOTIFY_MIN_SYMBOLS
-#include <xview/notify.h>
-#undef	_NOTIFY_MIN_SYMBOLS
-
-#include <xview_private/draw_impl.h>
 
 #define HELP_INFO(s) XV_HELP_DATA, s,
 
@@ -568,11 +549,20 @@ static void tty_handle_death(Notify_client client, int pid,
 static int ttysw_view_destroy(Tty_view ttysw_view_public, Destroy_status status)
 {
     Ttysw_view_handle ttysw_view_private =
-    TTY_VIEW_PRIVATE_FROM_ANY_VIEW(ttysw_view_public);
+    						TTY_VIEW_PRIVATE_FROM_ANY_VIEW(ttysw_view_public);
+	Xv_window v;
 
 
     if ((status != DESTROY_CHECKING) && (status != DESTROY_SAVE_YOURSELF)) {
+		Openwin ow = xv_get(ttysw_view_public, XV_OWNER);
+
 		csr_pixwin_set(XV_NULL);
+		OPENWIN_EACH_VIEW(ow, v)
+			if (v != ttysw_view_public) {
+				csr_pixwin_set(v);
+				break;
+			}
+		OPENWIN_END_EACH
 		free((char *) ttysw_view_private);
     }
     return (XV_OK);
