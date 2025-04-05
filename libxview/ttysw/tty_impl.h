@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.28 2025/04/03 14:11:50 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.30 2025/04/04 19:55:10 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
