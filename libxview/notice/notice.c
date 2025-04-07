@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.12 2025/03/18 17:13:56 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.13 2025/04/06 08:35:39 dra Exp $ ";
 #endif
 #endif
 
@@ -10,8 +10,6 @@ static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c
  *	file for terms of the license.
  */
 
-#include <stdio.h>
-#include <X11/Xlib.h>
 #include <xview/notice.h>
 #include <olgx/olgx.h>
 #include <xview_private/i18n_impl.h>
