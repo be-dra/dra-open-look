@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.4 2025/03/19 21:33:50 dra Exp $";
+char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.5 2025/04/06 08:05:25 dra Exp $";
 #endif
 
 /*
@@ -13,36 +13,24 @@ char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init
  */
 
 #include <xview_private/i18n_impl.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/time.h>
-#include <signal.h>
-#include <pixrect/pixrect.h>
-#include <pixrect/pixfont.h>
-#include <xview/pkg.h>
-#include <xview/attrol.h>
-#include <xview/rect.h>
-#include <xview/rectlist.h>
 #include <xview/defaults.h>
-#include <xview/pixwin.h>
-#include <xview/win_struct.h>
-#include <xview/win_input.h>
-#include <xview/window.h>
 #include <xview/font.h>
-#include <xview_private/charimage.h>
-#include <xview_private/charscreen.h>
-#ifdef OW_I18N
-#ifdef FULL_R5
-#include <xview_private/term_impl.h>
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 #include <xview_private/tty_impl.h>
 #include <xview_private/win_info.h>
-	
+#include <xview_private/svr_impl.h>
+
 static Xv_Window csr_pixwin = XV_NULL;
 
 Pkg_private void csr_pixwin_set(Xv_window w)
 {
+	if (w) {
+		Xv_base *b = (Xv_base *)w;
+
+		SERVERTRACE((80, "%s %ld '%s'\n", __FUNCTION__, w, b->pkg->name));
+	}
+	else {
+		SERVERTRACE((80, "%s XV_NULL\n", __FUNCTION__));
+	}
 	csr_pixwin = w;
 }
 
