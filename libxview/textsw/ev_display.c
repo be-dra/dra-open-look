@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_display_c_sccsid[] = "@(#)ev_display.c 20.60 93/06/28 DRA: $Id: ev_display.c,v 4.7 2025/01/02 09:12:37 dra Exp $";
+char     ev_display_c_sccsid[] = "@(#)ev_display.c 20.60 93/06/28 DRA: $Id: ev_display.c,v 4.8 2025/04/07 18:46:07 dra Exp $";
 #endif
 
 /*
@@ -1029,41 +1029,39 @@ TryRead:
  * completely.  on first call to ev_op_bdry_info_merge, range->next_i isn't
  * even set.
  */
-Pkg_private	void
-ev_range_info(op_bdry, pos, range)
-    Ev_line_table   op_bdry;
-    Es_index        pos;
-    register struct range *range;
+Pkg_private	void ev_range_info(Ev_line_table op_bdry, Es_index pos,
+								struct range *range)
 {
-    register unsigned op_bdry_state;	/* Optimization  */
-    register int    ei_op;	/* temporaries */
+	register unsigned op_bdry_state;	/* Optimization  */
+	register int ei_op;	/* temporaries */
 
-    if (pos == ES_INFINITY) {
-	op_bdry_state = ev_op_bdry_info_merge(
-	      op_bdry, range->next_i, &range->next_i, range->op_bdry_state);
-    } else
-	op_bdry_state = ev_op_bdry_info(op_bdry, pos, &range->next_i);
-    ei_op = 0;
-    if (op_bdry_state & EV_SEL_PRIMARY)
-	/* invert destination (primary) selection */
-	ei_op |= EI_OP_INVERT;
-    else if (op_bdry_state & EV_SEL_PD_SECONDARY)
-	/* strike-through Quick Move source (secondary) selection */
-	ei_op |= EI_OP_STRIKE_THRU;
-    else if (op_bdry_state & EV_SEL_SECONDARY)
-	/* underline Quick Copy source (secondary) selection */
-	ei_op |= EI_OP_STRIKE_UNDER;
-    if (op_bdry_state & EV_SEL_PD_PRIMARY)
-	ei_op |= EI_OP_INVERT;
-    if (op_bdry_state & EV_BDRY_OVERLAY)
-	ei_op |= EI_OP_EV_OVERLAY;
-    range->op_bdry_state = op_bdry_state;
-    range->ei_op = ei_op;
-    if (range->next_i < op_bdry.last_plus_one)
-	range->last_plus_one =
-	    ft_position_for_index(op_bdry, range->next_i);
-    else
-	range->last_plus_one = ES_INFINITY;
+	if (pos == ES_INFINITY) {
+		op_bdry_state = ev_op_bdry_info_merge(op_bdry, range->next_i,
+										&range->next_i, range->op_bdry_state);
+	}
+	else op_bdry_state = ev_op_bdry_info(op_bdry, pos, &range->next_i);
+
+	ei_op = 0;
+
+	if (op_bdry_state & EV_SEL_PRIMARY)
+		/* invert destination (primary) selection */
+		ei_op |= EI_OP_INVERT;
+	else if (op_bdry_state & EV_SEL_PD_SECONDARY)
+		/* strike-through Quick Move source (secondary) selection */
+		ei_op |= EI_OP_STRIKE_THRU;
+	else if (op_bdry_state & EV_SEL_SECONDARY)
+		/* underline Quick Duplicate source (secondary) selection */
+		ei_op |= EI_OP_STRIKE_UNDER;
+	if (op_bdry_state & EV_SEL_PD_PRIMARY)
+		ei_op |= EI_OP_INVERT;
+	if (op_bdry_state & EV_BDRY_OVERLAY)
+		ei_op |= EI_OP_EV_OVERLAY;
+	range->op_bdry_state = op_bdry_state;
+	range->ei_op = ei_op;
+	if (range->next_i < op_bdry.last_plus_one)
+		range->last_plus_one = ft_position_for_index(op_bdry, range->next_i);
+	else
+		range->last_plus_one = ES_INFINITY;
 }
 
 /*
