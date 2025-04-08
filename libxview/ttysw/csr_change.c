@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.12 2025/04/03 08:31:30 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.13 2025/04/07 19:25:34 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -71,13 +71,6 @@ static  int     curs_width;
 static int      boldstyle, inverse_mode, underline_mode;
 
 static struct timeval  ttysw_bell_tv = {0, 100000};	/* 1/10 second */
-
-static u_short  ttysw_gray17_data[16] = {	/* really 16-2/3	 */
-    0x8208, 0x2082, 0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082,
-    0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082, 0x0410, 0x1041
-};
-
-static mpr_static(ttysw_gray17_pr, 12, 12, 1, ttysw_gray17_data);
 
 /* Note: change to void */
 Pkg_private int ttysw_setboldstyle(int new_boldstyle)
@@ -704,23 +697,6 @@ Pkg_private void ttysw_blinkscreen(Xv_window window)
 		win_bell(window, ttysw_bell_tv, window);
 		lastblink = now;
 	}
-}
-
-Pkg_private void ttysw_pselectionhilite (struct rect *r, int sel_rank)
-{
-	Xv_window csrwin = csr_pixwin_get();
-    struct rect     rectlock;
-
-    rectlock = *r;
-    rect_marginadjust(&rectlock, 1);
-    if (sel_rank == TTY_SEL_PRIMARY)
-	(void) tty_background(csrwin, r->r_left, r->r_top,
-			      r->r_width, r->r_height, PIX_NOT(PIX_DST));
-    else
-	(void) xv_replrop(csrwin,
-			  r->r_left, r->r_top,
-			  r->r_width, r->r_height,
-			  PIX_SRC | PIX_DST, &ttysw_gray17_pr, 0, 0);
 }
 
 #ifdef OW_I18N
