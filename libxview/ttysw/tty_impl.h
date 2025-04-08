@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.30 2025/04/04 19:55:10 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.31 2025/04/07 19:25:12 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -360,6 +360,7 @@ Pkg_private void ttysw_clear( Ttysw *ttysw);
 Pkg_private void termsw_caret_cleared(void);
 Pkg_private void ttysw_interpose(Ttysw_private ttysw_folio);
 Pkg_private void ttysw_display(Ttysw_private ttysw, Event *ie);
+Pkg_private void ttysw_underline(Xv_window win, int x1, int x2, int y);
 
 Pkg_private void csr_resize(Ttysw_view_handle ttysw_view);/* BUG ALERT: No XView prefix */
 Pkg_private void ttysel_init_client(Ttysw_private ttysw);
@@ -405,7 +406,6 @@ Pkg_private void
 											int allowclearareawhenempty),
 	ttysw_pos(Ttysw_private ttysw, int, int),
 	ttysw_prepair(XEvent *eventp),
-	ttysw_pselectionhilite (struct rect *r, int sel_rank),
 	ttysw_removeCursor(Ttysw_private ttysw),
 	ttysw_restoreCursor(Ttysw_private ttysw),/* BUG ALERT: unnecessary routine*/
 	ttysw_saveCursor(Xv_opaque UNKNOWN),	/* BUG ALERT: unnecessary routine */
