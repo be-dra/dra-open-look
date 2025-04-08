@@ -1,5 +1,5 @@
 #ifndef lint
-char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.3 2025/03/14 10:13:33 dra Exp $";
+char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.4 2025/04/07 18:46:07 dra Exp $";
 #endif
 
 /*
@@ -802,72 +802,59 @@ static void paint_batch(op, rop, pw, rect, run, run_length, bounds, font)
 #else
 static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *run, int run_length, struct rect *bounds, Pixfont *font)
 #endif
-
 {
 #define EI_OP_CLEAR_ALL (EI_OP_CLEAR_FRONT|EI_OP_CLEAR_INTERIOR|EI_OP_CLEAR_BACK)
-    int             temp;
-    extern int      xv_textsw_doing_refresh;
+	int temp;
+	int bounds_right, bottom, middle;
+	extern int xv_textsw_doing_refresh;
 
-    if ((op & EI_OP_CLEAR_ALL) &&
-	((op & EI_OP_INVERT) || !xv_textsw_doing_refresh)) {
-#define bounds_right	temp
-	bounds_right = bounds->r_left + bounds->r_width;
-
-	/* these are only (?) needed for textedit operations now.. */
-	if (op & EI_OP_CLEAR_FRONT)
-	    (void) tty_background(pw,
-				  rect->r_left, bounds->r_top,
-			          bounds_right - rect->r_left, bounds->r_height,
-				  PIX_CLR);
-	if (op & EI_OP_CLEAR_INTERIOR)
-	    (void) tty_background(pw,
-				  bounds->r_left, bounds->r_top,
-				  bounds->r_width, bounds->r_height,
-				  PIX_CLR);
-	if (op & EI_OP_CLEAR_BACK)
-	    (void) tty_background(pw,
-				  bounds_right, bounds->r_top,
- 				  rect->r_left + rect->r_width - bounds_right,
-				  bounds->r_height,
-				  PIX_CLR);
-
-#undef	bounds_right
-    }
-    /* this outputs all the stuff! */
-    for (temp = 0; temp < run_length; temp++, run++)
+	if ((op & EI_OP_CLEAR_ALL) &&
+			((op & EI_OP_INVERT) || !xv_textsw_doing_refresh))
 	{
-	 /* jcb */ tty_newtext(pw, run->x, run->y, rop, (Xv_opaque)font,
-			       run->chars, run->len);
+		bounds_right = bounds->r_left + bounds->r_width;
+
+		/* these are only (?) needed for textedit operations now.. */
+		if (op & EI_OP_CLEAR_FRONT)
+			tty_background(pw,
+					rect->r_left, bounds->r_top,
+					bounds_right - rect->r_left, bounds->r_height, PIX_CLR);
+		if (op & EI_OP_CLEAR_INTERIOR)
+			tty_background(pw,
+					bounds->r_left, bounds->r_top,
+					bounds->r_width, bounds->r_height, PIX_CLR);
+		if (op & EI_OP_CLEAR_BACK)
+			tty_background(pw,
+					bounds_right, bounds->r_top,
+					rect->r_left + rect->r_width - bounds_right,
+					bounds->r_height, PIX_CLR);
+	}
+	/* this outputs all the stuff! */
+	for (temp = 0; temp < run_length; temp++, run++) {
+		/* jcb */ tty_newtext(pw, run->x, run->y, rop, (Xv_opaque) font,
+				run->chars, run->len);
 	}
 
-    if (op & EI_OP_LIGHT_GRAY)
-	(void) xv_replrop(pw,
-			  bounds->r_left, bounds->r_top,
-			  bounds->r_width, bounds->r_height,
-			  PIX_SRC | PIX_DST, &gray17_pr, 0, 0);
-    if (op & EI_OP_STRIKE_UNDER) {
-#define bottom	temp
-	bottom = rect_bottom(bounds);
-	(void) pw_vector(pw,
-		     bounds->r_left, bottom, rect_right(bounds), bottom,
-			 PIX_SET, 0);
+	if (op & EI_OP_LIGHT_GRAY)
+		xv_replrop(pw,
+				bounds->r_left, bounds->r_top,
+				bounds->r_width, bounds->r_height,
+				PIX_SRC | PIX_DST, &gray17_pr, 0, 0);
+	if (op & EI_OP_STRIKE_UNDER) {
+		bottom = rect_bottom(bounds);
+		pw_vector(pw,
+				bounds->r_left, bottom, rect_right(bounds), bottom, PIX_SET, 0);
 
-#undef	bottom
-    }
-    if (op & EI_OP_STRIKE_THRU) {
-#define middle	temp
-	middle = bounds->r_top + bounds->r_height / 2;
-	(void) pw_vector(pw,
-		     bounds->r_left, middle, rect_right(bounds), middle,
-			 PIX_SET, 0);
-#undef middle
-    }
-    if (op & EI_OP_INVERT)
-	 /* jcb */ (void) tty_background(pw,
-					 bounds->r_left, bounds->r_top,
-					 bounds->r_width, bounds->r_height,
-					 PIX_NOT(PIX_DST));
-    /* PIX_NOT(PIX_SRC) ^ PIX_DST ); */
+	}
+	if (op & EI_OP_STRIKE_THRU) {
+		middle = bounds->r_top + bounds->r_height / 2;
+		pw_vector(pw,
+				bounds->r_left, middle, rect_right(bounds), middle, PIX_SET, 0);
+	}
+	if (op & EI_OP_INVERT)
+		/* jcb */ tty_background(pw,
+				bounds->r_left, bounds->r_top,
+				bounds->r_width, bounds->r_height, PIX_NOT(PIX_DST));
+	/* PIX_NOT(PIX_SRC) ^ PIX_DST ); */
 }
 
 static caddr_t ei_plain_text_get(Ei_handle eih, int attr)
