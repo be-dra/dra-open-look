@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.5 2025/03/19 21:33:50 dra Exp $";
+char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.6 2025/04/07 19:24:44 dra Exp $";
 #endif
 
 /*
@@ -402,6 +402,17 @@ Xv_private void tty_background(Xv_opaque window, int x, int y, int w, int h, int
 	SERVERTRACE((567, "tty_background(op=%d, [%d, %d, %d, %d]\n",
 						op, x, y, w, h));
     XFillRectangle(display,drawable, gc_list[BACK_GC], x, y, (unsigned)w, (unsigned)h);
+}
+
+Pkg_private void ttysw_underline(Xv_window win, int x1, int x2, int y)
+{
+    Xv_Drawable_info *info;
+    GC *gc_list;
+
+    DRAWABLE_INFO_MACRO(win, info);
+    gc_list = get_gc_list(info);
+
+	XDrawLine(xv_display(info), xv_xid(info), gc_list[DEFAULT_GC],x1, y, x2, y);
 }
 
 /*
