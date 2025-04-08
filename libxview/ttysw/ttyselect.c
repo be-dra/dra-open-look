@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.37 2025/03/31 19:39:12 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.38 2025/04/07 19:25:40 dra Exp $";
 #endif
 
 /*
@@ -21,6 +21,8 @@ char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttysele
 #include <xview_private/svr_impl.h>
 #include <xview_private/charimage.h>
 #include <xview_private/charscreen.h>
+#include <pixrect/memvar.h>
+#include <xview/pixwin.h>
 
 extern char *xv_app_name;
 
@@ -41,6 +43,13 @@ static struct ttyselection ttysw_nullttysel = {
 };
 
 static struct timeval maxinterval = {0, 400000};	/* XXX - for now */
+
+static u_short  ttysw_gray17_data[16] = {	/* really 16-2/3	 */
+    0x8208, 0x2082, 0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082,
+    0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082, 0x0410, 0x1041
+};
+
+static mpr_static(ttysw_gray17_pr, 12, 12, 1, ttysw_gray17_data);
 
 static int ttysel_key = 0;
 
@@ -870,6 +879,24 @@ static void my_write_string(Ttysw_private ttysw, int start,int end,int row)
 	ttysw_pstring(ttysw, (str + start), ttysw->boldify, start, row, PIX_SRC);
 
 	if (temp_char != '\0') str[end + 1] = temp_char;
+}
+
+static void ttysw_pselectionhilite(struct rect *r, int sel_rank)
+{
+	Xv_window csrwin = csr_pixwin_get();
+	struct rect rectlock;
+
+	rectlock = *r;
+	rect_marginadjust(&rectlock, 1);
+	if (sel_rank == TTY_SEL_PRIMARY)
+		tty_background(csrwin, r->r_left, r->r_top, r->r_width, r->r_height,
+									PIX_NOT(PIX_DST));
+	else {
+		/* I want the secondary selection to be displayed as an underline -
+		 * exactly as everywhere else....
+		 */
+		ttysw_underline(csrwin, r->r_left, rect_right(r), rect_bottom(r));
+	}
 }
 
 static void ttyhiliteline(Ttysw_private ttysw, int start, int finish, int row, void *xc, struct ttyselection *ttysel)
