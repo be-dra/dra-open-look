@@ -1,5 +1,5 @@
 #ifndef lint
-char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.4 2025/04/07 18:46:07 dra Exp $";
+char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.5 2025/04/08 18:21:23 dra Exp $";
 #endif
 
 /*
@@ -403,7 +403,7 @@ static u_short  gray17_data[16] = {	/* really 16-2/3	 */
     0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082, 0x0410, 0x1041
 };
 
-mpr_static(gray17_pr, 12, 12, 1, gray17_data);
+static mpr_static(gray17_pr, 12, 12, 1, gray17_data);
 
 typedef struct run {
     CHAR           *chars;	/* Pointer to characters to be painted */
