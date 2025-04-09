@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.38 2025/04/07 19:25:40 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.39 2025/04/08 18:19:50 dra Exp $";
 #endif
 
 /*
@@ -43,13 +43,6 @@ static struct ttyselection ttysw_nullttysel = {
 };
 
 static struct timeval maxinterval = {0, 400000};	/* XXX - for now */
-
-static u_short  ttysw_gray17_data[16] = {	/* really 16-2/3	 */
-    0x8208, 0x2082, 0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082,
-    0x0410, 0x1041, 0x4104, 0x0820, 0x8208, 0x2082, 0x0410, 0x1041
-};
-
-static mpr_static(ttysw_gray17_pr, 12, 12, 1, ttysw_gray17_data);
 
 static int ttysel_key = 0;
 
