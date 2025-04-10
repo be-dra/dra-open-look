@@ -608,11 +608,11 @@ GETTEXT.H		= gettext.h
 GETTEXT.C		= gettext.c
 GETTEXT.O		= gettext.o
 
-HDRSPUBLIC=cms_grays.h cms_mono.h cmsrainbow.h cms_rgb.h sun.h window_hs.h expandname.h xv_c_types.h attrol.h db.h 		xv_c_types.h xv_i18n.h xv_version.h xview.h
+HDRSPUBLIC=cms_grays.h cms_mono.h cmsrainbow.h cms_rgb.h sun.h window_hs.h expandname.h xv_c_types.h attrol.h db.h xv_c_types.h xv_i18n.h xv_version.h xview.h regexpr.h
 
 HDRSPRIVATE=bitmask.h hashfn.h i18n_impl.h portable.h ${GETTEXT.H}
 
-SRCS =demorandom.c getlogindr.c expandname.c expandpath.c bitmask.c hashfn.c db_conv.c ${GETTEXT.C} quark.c setlocale.c windowloop.c xv_deaf.c xv_util.c xv_version.c xv_win_lp.c drop.c  xv_casecmp.c ${CFILES.misc.3} ${CFILES.misc.4}
+SRCS =demorandom.c getlogindr.c expandname.c expandpath.c bitmask.c hashfn.c db_conv.c ${GETTEXT.C} quark.c setlocale.c windowloop.c xv_deaf.c xv_util.c xv_version.c xv_win_lp.c drop.c  xv_casecmp.c regexpr.c ${CFILES.misc.3} ${CFILES.misc.4}
 OBJS=$(SRCS:.c=.o)
 
 LIBTARGET = xview
@@ -1819,6 +1819,36 @@ xv_casecmp.o: xv_casecmp.c /usr/include/stdc-predef.h \
  /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
  /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h
+regexpr.o: regexpr.c /usr/include/stdc-predef.h \
+ ../../build/include/xview/regexpr.h \
+ ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
+ /usr/include/stdlib.h /usr/include/bits/libc-header-start.h \
+ /usr/include/features.h /usr/include/features-time64.h \
+ /usr/include/bits/wordsize.h /usr/include/bits/timesize.h \
+ /usr/include/sys/cdefs.h /usr/include/bits/long-double.h \
+ /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h \
+ /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h \
+ /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
+ /usr/include/bits/floatn.h /usr/include/bits/floatn-common.h \
+ /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
+ /usr/include/sys/types.h /usr/include/bits/types.h \
+ /usr/include/bits/typesizes.h /usr/include/bits/time64.h \
+ /usr/include/bits/types/clock_t.h /usr/include/bits/types/clockid_t.h \
+ /usr/include/bits/types/time_t.h /usr/include/bits/types/timer_t.h \
+ /usr/include/bits/stdint-intn.h /usr/include/endian.h \
+ /usr/include/bits/endian.h /usr/include/bits/endianness.h \
+ /usr/include/bits/byteswap.h /usr/include/bits/uintn-identity.h \
+ /usr/include/sys/select.h /usr/include/bits/select.h \
+ /usr/include/bits/types/sigset_t.h /usr/include/bits/types/__sigset_t.h \
+ /usr/include/bits/types/struct_timeval.h \
+ /usr/include/bits/types/struct_timespec.h \
+ /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
+ /usr/include/bits/pthreadtypes-arch.h \
+ /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
+ /usr/include/bits/struct_rwlock.h /usr/include/alloca.h \
+ /usr/include/bits/stdlib-float.h /usr/include/string.h \
+ /usr/include/strings.h /usr/include/regex.h \
+ /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h
 convdup.o: convdup.c /usr/include/stdc-predef.h
 wckind.o: wckind.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h /usr/include/features.h \
