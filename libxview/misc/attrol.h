@@ -1,4 +1,4 @@
-/*	@(#)attrol.h 20.11 88/09/05	DRA: RCS: $Id: attrol.h,v 4.4 2025/03/06 15:52:35 dra Exp $ */
+/*	@(#)attrol.h 20.11 88/09/05	DRA: RCS: $Id: attrol.h,v 4.5 2025/04/10 15:50:42 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -87,6 +87,8 @@
 #define ATTR_PKG_MLLIST             (ATTR_PKG_LAST_VALUE+43)
 #define ATTR_PKG_QUICK              (ATTR_PKG_LAST_VALUE+44)
 #define ATTR_PKG_TALK               (ATTR_PKG_LAST_VALUE+45)
+#define ATTR_PKG_DIR                (ATTR_PKG_LAST_VALUE+46)
+#define ATTR_PKG_FILEMGR            (ATTR_PKG_LAST_VALUE+47)
 
 
 #endif /* ~xview_attrol_DEFINED */
