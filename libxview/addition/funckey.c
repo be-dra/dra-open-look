@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.16 2025/03/08 13:37:48 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.17 2025/04/10 16:14:40 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -818,7 +818,8 @@ static void register_new(Funckey_private *priv, Attr_avlist avlist)
 			if (priv->installed) {
 				char buf[200];
 
-				sprintf(buf, "new code '%s' after FUNCKEY_INSTALL:\nToo late!",
+				sprintf(buf,
+					XV_MSG("new code '%s' after FUNCKEY_INSTALL:\nToo late!"),
 						nr->code);
 				xv_error(FKPUB(priv),
 					ERROR_PKG, FUNCTION_KEYS,
@@ -871,7 +872,7 @@ static void register_new(Funckey_private *priv, Attr_avlist avlist)
 		xv_error(FKPUB(priv),
 			ERROR_PKG, FUNCTION_KEYS,
 			ERROR_LAYER, ERROR_PROGRAM,
-			ERROR_STRING, "incomplete registration, need a code (attr FUNCKEY_CODE)",
+			ERROR_STRING, XV_MSG("incomplete registration, need a code (attr FUNCKEY_CODE)"),
 			ERROR_SEVERITY, ERROR_RECOVERABLE,
 			NULL);
 
@@ -888,7 +889,7 @@ static void register_new(Funckey_private *priv, Attr_avlist avlist)
 			 * but XView does not allow two menu items to have the same
 			 * accelerators
 			 */
-			sprintf(errstr, "FUNCKEY_CODE '%s' seen twice", nr->code);
+			sprintf(errstr, XV_MSG("FUNCKEY_CODE '%s' seen twice"), nr->code);
 			xv_error(FKPUB(priv),
 					ERROR_PKG, FUNCTION_KEYS,
 					ERROR_LAYER, ERROR_PROGRAM,
@@ -905,7 +906,7 @@ static void register_new(Funckey_private *priv, Attr_avlist avlist)
 		xv_error(FKPUB(priv),
 			ERROR_PKG, FUNCTION_KEYS,
 			ERROR_LAYER, ERROR_PROGRAM,
-			ERROR_STRING, "incomplete registration, need a\ndescription (attr FUNCKEY_DESCRIPTION)",
+			ERROR_STRING, XV_MSG("incomplete registration, need a\ndescription (attr FUNCKEY_DESCRIPTION)"),
 			ERROR_SEVERITY, ERROR_RECOVERABLE,
 			NULL);
 
@@ -999,7 +1000,7 @@ static int funckeys_init(Perm_prop_frame owner, Function_keys slf,
 			xv_error(slf,
 					ERROR_PKG, FUNCTION_KEYS,
 					ERROR_LAYER, ERROR_PROGRAM,
-					ERROR_STRING, "owner must be a PERMANENT_PROPS",
+					ERROR_STRING, XV_MSG("owner must be a PERMANENT_PROPS"),
 					ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
 					NULL);
 			return XV_ERROR;
