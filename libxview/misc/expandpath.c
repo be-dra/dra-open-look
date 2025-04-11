@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)expandpath.c 20.16 93/06/28 SMI DRA: RCS $Id: expandpath.c,v 4.2 2024/09/15 08:55:29 dra Exp $ ";
+static char     sccsid[] = "@(#)expandpath.c 20.16 93/06/28 SMI DRA: RCS $Id: expandpath.c,v 4.3 2025/04/10 19:00:01 dra Exp $ ";
 #endif
 #endif
 
@@ -43,80 +43,86 @@ void expand_path(char *nm, char *buf);
 
 void expand_path(char *nm, char *buf)
 {
-    register char  *s, *d;
-    char            lnm[MAXPATHLEN];
-    int             q;
-    register char  *trimchars = "\n \t";
+	register char *s, *d;
+	char lnm[MAXPATHLEN];
+	int q;
+	register char *trimchars = "\n \t";
 
-    /* Strip off leading & trailing whitespace and cr */
-    while (XV_INDEX(trimchars, *nm) != NULL)
-	nm++;
-    s = nm + (q = strlen(nm)) - 1;
-    while (q-- && XV_INDEX(trimchars, *s) != NULL)
-	*s = '\0';
+	/* Strip off leading & trailing whitespace and cr */
+	while (XV_INDEX(trimchars, *nm) != NULL)
+		nm++;
+	s = nm + (q = strlen(nm)) - 1;
+	while (q-- && XV_INDEX(trimchars, *s) != NULL)
+		*s = '\0';
 
-    s = nm;
-    d = lnm;
-    q = nm[0] == '\\' && nm[1] == '~';
+	s = nm;
+	d = lnm;
+	q = nm[0] == '\\' && nm[1] == '~';
 
-    /* Expand inline environment variables */
-    while ((*d++ = *s)) {
-	if (*s == '\\') {
-	    if ((*(d - 1) = *++s)) {
-		s++;
-		continue;
-	    } else
-		break;
-	} else if (*s++ == '$') {
-	    register char  *start = d;
-	    int braces = *s == '{';
-	    register char  *value;
-	    while ((*d++ = *s))
-		if (braces ? *s == '}' : !(isalnum(*s) || *s == '_') )
-		    break;
-		else
-		    s++;
-	    *--d = 0;
-	    value = getenv(braces ? start + 1 : start);
-	    if (value) {
-		for (d = start - 1; (*d++ = *value++); );
-		d--;
-		if (braces && *s)
-		    s++;
-	    }
+	/* Expand inline environment variables */
+	while ((*d++ = *s)) {
+		if (*s == '\\') {
+			if ((*(d - 1) = *++s)) {
+				s++;
+				continue;
+			}
+			else
+				break;
+		}
+		else if (*s++ == '$') {
+			register char *start = d;
+			int braces = *s == '{';
+			register char *value;
+
+			while ((*d++ = *s))
+				if (braces ? *s == '}' : !(isalnum(*s) || *s == '_'))
+					break;
+				else
+					s++;
+			*--d = 0;
+			value = getenv(braces ? start + 1 : start);
+			if (value) {
+				for (d = start - 1; (*d++ = *value++););
+				d--;
+				if (braces && *s)
+					s++;
+			}
+		}
 	}
-    }
 
-    /* Expand ~ and ~user */
-    nm = lnm;
-    s = "";
-    if (nm[0] == '~' && !q) {	/* prefix ~ */
-	if (nm[1] == '/' || nm[1] == 0) {	/* ~/filename */
-	    if ((s = getenv("HOME"))) {
-		if (*++nm)
-		    nm++;
-	    }
-	} else {		/* ~user/filename */
-	    register char  *nnm;
-	    register struct passwd *pw;
-	    for (s = nm; *s && *s != '/'; s++);
-	    nnm = *s ? s + 1 : s;
-	    *s = 0;
-	    pw = (struct passwd *) getpwnam(nm + 1);
-	    if (pw == 0) {
-		*s = '/';
-		s = "";
-	    } else {
-		nm = nnm;
-		s = pw->pw_dir;
-	    }
+	/* Expand ~ and ~user */
+	nm = lnm;
+	s = "";
+	if (nm[0] == '~' && !q) {	/* prefix ~ */
+		if (nm[1] == '/' || nm[1] == 0) {	/* ~/filename */
+			if ((s = getenv("HOME"))) {
+				if (*++nm)
+					nm++;
+			}
+		}
+		else {	/* ~user/filename */
+			register char *nnm;
+			register struct passwd *pw;
+
+			for (s = nm; *s && *s != '/'; s++);
+			nnm = *s ? s + 1 : s;
+			*s = 0;
+			pw = (struct passwd *)getpwnam(nm + 1);
+			if (pw == 0) {
+				*s = '/';
+				s = "";
+			}
+			else {
+				nm = nnm;
+				s = pw->pw_dir;
+			}
+		}
 	}
-    }
-    d = buf;
-    if (*s) {
+	d = buf;
+	if (*s) {
+		while ((*d++ = *s++));
+		*(d - 1) = '/';
+	}
+	s = nm;
 	while ((*d++ = *s++));
-	*(d - 1) = '/';
-    }
-    s = nm;
-    while ((*d++ = *s++));
 }
