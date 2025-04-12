@@ -26,7 +26,7 @@
 #include <xview/attrol.h>
 
 
-/* "@(#) %M% V%I% %E% %U% $Id: dircanv.h,v 1.23 2025/04/10 20:15:08 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: dircanv.h,v 1.24 2025/04/11 15:05:41 dra Exp $" */
 
 extern const Xv_pkg xv_dircanvas_pkg;
 #define DIRCANVAS &xv_dircanvas_pkg
@@ -131,7 +131,6 @@ typedef enum {
 typedef struct {
 	Pixmap icon, sel_icon;
 	int ordering;
-	Server_image cursor_image, cursor_mask;
 } Dir_subclass_attrs;
 
 typedef struct {
@@ -144,7 +143,7 @@ typedef struct {
 	long mtime;
 	long long size;
 	unsigned short access_mode;
-	Dir_subclass_attrs *attrs;
+	Dir_subclass_attrs *dscattrs;
 } Dir_entry_t;
 
 typedef struct {
