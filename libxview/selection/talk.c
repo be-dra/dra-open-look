@@ -6,7 +6,7 @@
 #include <xview/talk.h>
 #include <xview/defaults.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.38 2025/03/15 21:25:49 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.39 2025/04/13 14:33:49 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -210,7 +210,7 @@ static void analyze_trigger_data(Talk_private *priv, char *val)
 	}
 
 	if (priv->notify_proc) {
-		priv->notify_proc(TALKPUB(priv), message, pid, params, host);
+		priv->notify_proc(TALKPUB(priv), message, host, pid, params);
 	}
 }
 
