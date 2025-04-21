@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.6 2025/03/08 12:37:37 dra Exp $";
+static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.7 2025/04/21 07:10:32 dra Exp $";
 #endif
 #endif
 
@@ -313,7 +313,7 @@ Xv_private Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 	if (!xv_initialized) {
 		xv_initialized = TRUE;
 		/* use and xv_init attrs from the avlist */
-		xv_init((Attr_attribute)ATTR_LIST, avlist, NULL);
+		xv_init((Attr_attribute) ATTR_LIST, avlist, NULL);
 		/* create the default server */
 		if (pkg != SERVER)
 			if (!xv_create(XV_NULL, SERVER, NULL))
@@ -356,7 +356,7 @@ Xv_private Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 	 * Flatten out XV_USE_DB lists first
 	 */
 	avlist_used = attr_customize((Xv_object) NULL, orig_pkg, instance_name,
-						parent, avlist_copy, ATTR_STANDARD_SIZE, avlist);
+			parent, avlist_copy, ATTR_STANDARD_SIZE, avlist);
 
 	/*
 	 * Execute stacked functions.
@@ -370,12 +370,12 @@ Xv_private Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 			embedding_offset = 0;
 			/* BUG ALERT! Most init routines don't know about the 4th arg. */
 			error_code = ((*loop_pkgp)->init) (parent, object, avlist_used,
-					&embedding_offset);
+													&embedding_offset);
 			total_offset += embedding_offset;
 		}
 	}
 
-	xv_temporarily_report_seal(object,"xv_create_avlist");
+	xv_temporarily_report_seal(object, "xv_create_avlist");
 
 	if (error_code) {
 		if (ccom_object->pkg->parent_pkg) {
@@ -412,7 +412,7 @@ Xv_private Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 
 					default:
 						(void)xv_destroy_status(object, DESTROY_CLEANUP);
-						return (XV_NULL);
+						return XV_NULL;
 				}
 			}
 		}
@@ -420,69 +420,67 @@ Xv_private Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 		object = (Xv_opaque) ((char *)object + total_offset);
 	}
 
-	return (object);
+	return object;
 }
 
 Xv_public Xv_opaque xv_set(Xv_opaque object, ...)
 {
-    AVLIST_DECL;
-    Attr_attribute	flat_avlist[ATTR_STANDARD_SIZE];
-    va_list         args;
+	AVLIST_DECL;
+	Attr_attribute flat_avlist[ATTR_STANDARD_SIZE];
+	va_list args;
 
-    if (object == XV_NULL) {
-	xv_error(XV_NULL,
-	    ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
-	    ERROR_STRING,
-		XV_MSG("NULL pointer passed to xv_set"),
-	    NULL);
-    }
+	if (object == XV_NULL) {
+		xv_error(XV_NULL,
+				ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
+				ERROR_STRING, XV_MSG("NULL pointer passed to xv_set"),
+				NULL);
+	}
 
-    VA_START( args, object );
-    MAKE_AVLIST( args, avlist );
-    va_end( args );
+	VA_START(args, object);
+	MAKE_AVLIST(args, avlist);
+	va_end(args);
 
-    avlist = attr_customize(object, ((Xv_base *) object)->pkg,
-                        (char *)NULL, (Xv_opaque)NULL, flat_avlist,
-                        ATTR_STANDARD_SIZE, avlist);
-    return xv_set_avlist(object, avlist);
+	avlist = attr_customize(object, ((Xv_base *) object)->pkg,
+			(char *)NULL, XV_NULL, flat_avlist, ATTR_STANDARD_SIZE, avlist);
+	return xv_set_avlist(object, avlist);
 }
 
 static Xv_opaque xv_set_pkg_avlist(Xv_object object, const Xv_pkg *pkg,
 											Attr_avlist avlist)
 /* Caller must guarantee that object is a standard, not embedded, object. */
 {
-    register Xv_opaque error_code;
-
-    /*
-     * Execute the set procs youngest to oldest (client-visible pkg to base
-     * ). e.g. canvas-window-generic
-     */
-    for (; pkg; pkg = pkg->parent_pkg) {
-	if (!pkg->set)
-	    continue;
+	register Xv_opaque error_code;
 
 	/*
-	 * we are done if the set proc says so or returns the bad attribute.
-	 * If XV_SET_DONE is returned, the rest of the set has been done
-	 * (using xv_super_set_avlist()), so return XV_OK now.
+	 * Execute the set procs youngest to oldest (client-visible pkg to base
+	 * ). e.g. canvas-window-generic
 	 */
-	if ((error_code = (*(pkg->set)) (object, avlist)) != XV_OK) {
-	    return (error_code == XV_SET_DONE) ? XV_OK : error_code;
-	}
-    }
+	for (; pkg; pkg = pkg->parent_pkg) {
+		if (!pkg->set)
+			continue;
 
-    return XV_OK;
+		/*
+		 * we are done if the set proc says so or returns the bad attribute.
+		 * If XV_SET_DONE is returned, the rest of the set has been done
+		 * (using xv_super_set_avlist()), so return XV_OK now.
+		 */
+		if ((error_code = (*(pkg->set)) (object, avlist)) != XV_OK) {
+			return (error_code == XV_SET_DONE) ? XV_OK : error_code;
+		}
+	}
+
+	return XV_OK;
 }
 
 Xv_private Xv_opaque xv_set_avlist(Xv_opaque passed_object, Attr_avlist avlist)
 {
-    register Xv_opaque	object;
+	register Xv_opaque object;
 
-    XV_OBJECT_TO_STANDARD(passed_object, "xv_set", object);
-    if (!object)
-	return (Xv_opaque) XV_ERROR;
+	XV_OBJECT_TO_STANDARD(passed_object, "xv_set", object);
+	if (!object)
+		return (Xv_opaque) XV_ERROR;
 
-    return xv_set_pkg_avlist(object, ((Xv_base *) object)->pkg, avlist);
+	return xv_set_pkg_avlist(object, ((Xv_base *) object)->pkg, avlist);
 }
 
 Xv_public Xv_opaque xv_super_set_avlist(Xv_opaque object, const Xv_pkg *pkg,
@@ -498,14 +496,11 @@ Xv_public Xv_opaque xv_get(Xv_opaque passed_object, Attr32_attribute attr, ...)
 	int status;
 	Xv_opaque result;
 	va_list args;
-/* DRA_CHANGED - damit haben die voellig unmotiviert rumgefummelt:
- *   va_list args_save;
- */
 	Xv_opaque object;
 
 	XV_OBJECT_TO_STANDARD(passed_object, "xv_get", object);
 	if (!object)
-		return (Xv_opaque) 0;
+		return XV_NULL;
 
 	/*
 	 * Execute the get procs youngest to oldest (client-visible pkg to base
@@ -561,7 +556,7 @@ Xv_public Xv_opaque xv_get(Xv_opaque passed_object, Attr32_attribute attr, ...)
 	 * executable were compiled against the same version of the .h files. c)
 	 * Attribute is invalid.  Unfortunately, this is undetectable.
 	 */
-	return 0;
+	return XV_NULL;
 }
 
 
@@ -578,55 +573,55 @@ Xv_public Xv_opaque xv_get(Xv_opaque passed_object, Attr32_attribute attr, ...)
 Xv_private Xv_opaque xv_get_varargs(Xv_opaque passed_object,
 							Attr_attribute attr, va_list valist)
 {
-    register const Xv_pkg *pkg;
-    Xv_opaque       object;
-    int             status;
-    Xv_opaque       result;
+	register const Xv_pkg *pkg;
+	Xv_opaque object;
+	int status;
+	Xv_opaque result;
 
-    XV_OBJECT_TO_STANDARD(passed_object, "xv_get", object);
-    if (!object)
-	return (Xv_opaque) 0;
-
-    /*
-     * Execute the get procs youngest to oldest (client-visible pkg to base
-     * ). e.g. canvas-window-generic
-     */
-    for (pkg = ((Xv_base *) object)->pkg; pkg; pkg = pkg->parent_pkg) {
-	if (!pkg->get)
-	    continue;
+	XV_OBJECT_TO_STANDARD(passed_object, "xv_get", object);
+	if (!object)
+		return XV_NULL;
 
 	/*
-	 * Assume object will handle the get. Object should set status to
-	 * XV_ERROR if not handled
+	 * Execute the get procs youngest to oldest (client-visible pkg to base
+	 * ). e.g. canvas-window-generic
 	 */
-	status = XV_OK;
-	/*
-	 * Assume client has done va_start. xv_get calls va_start() every
-	 * time to insure each pkg gets the start of the varargs. we aren't.
-	 * This should still work.
-	 */
-	/* ask the object to handle the get */
-	result = (*(pkg->get)) (object, &status, attr, valist);
+	for (pkg = ((Xv_base *) object)->pkg; pkg; pkg = pkg->parent_pkg) {
+		if (!pkg->get)
+			continue;
 
-	if (status == XV_OK) {
-	    /* result is the answer -- return it */
-	    return result;
+		/*
+		 * Assume object will handle the get. Object should set status to
+		 * XV_ERROR if not handled
+		 */
+		status = XV_OK;
+		/*
+		 * Assume client has done va_start. xv_get calls va_start() every
+		 * time to insure each pkg gets the start of the varargs. we aren't.
+		 * This should still work.
+		 */
+		/* ask the object to handle the get */
+		result = (*(pkg->get)) (object, &status, attr, valist);
+
+		if (status == XV_OK) {
+			/* result is the answer -- return it */
+			return result;
+		}
 	}
-    }
 
-    /*
-     * None of the packages handled the get.  There are three possibilities,
-     * but for all of them xv_get() should return 0: a) Attribute is valid,
-     * but not for this object.  This is suspect, as it implies the caller is
-     * relying on the fact that xv_get() returns 0 if no package recognizes a
-     * valid attribute. b) Attribute is valid, and for this object.  Either
-     * one or more of the packages' get procedures are in error, or there has
-     * been a problem with the .h - .c file correspondence, possibly caused
-     * by compilation phase error where not all of the object files in the
-     * executable were compiled against the same version of the .h files. c)
-     * Attribute is invalid.  Unfortunately, this is undetectable.
-     */
-    return 0;
+	/*
+	 * None of the packages handled the get.  There are three possibilities,
+	 * but for all of them xv_get() should return 0: a) Attribute is valid,
+	 * but not for this object.  This is suspect, as it implies the caller is
+	 * relying on the fact that xv_get() returns 0 if no package recognizes a
+	 * valid attribute. b) Attribute is valid, and for this object.  Either
+	 * one or more of the packages' get procedures are in error, or there has
+	 * been a problem with the .h - .c file correspondence, possibly caused
+	 * by compilation phase error where not all of the object files in the
+	 * executable were compiled against the same version of the .h files. c)
+	 * Attribute is invalid.  Unfortunately, this is undetectable.
+	 */
+	return XV_NULL;
 }
 
 
