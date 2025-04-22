@@ -13,7 +13,7 @@ Features:
 
 * This is a 64-bit version of XView
 
-* It implements all the features of a Level 2 Open Look toolkit.
+* It implements (probably) all the features of a Level 2 Open Look toolkit.
 
 
 
@@ -47,18 +47,18 @@ ow_noarch_\*.tar.xz and either ow_x86_64_\*.tar.xz or ow_aarch64\_*.tar.xz.
 
 If you download these files and unpack them (they contain relative path names like "openwin/lib64/libxview.so.4.0", so, it is best to unpack them under /usr so that you have a default installation under /usr/openwin), you may want to do the following:
 
-cd /usr/share/xsessions
+cd /usr/share/xsessions  
 ln -s /usr/openwin/etc/openwin.desktop .
 
 Create files under /etc/profile.d:
 
-echo 'export OPENWINHOME=/usr/openwin' > ow.sh
-echo 'setenv OPENWINHOME /usr/openwin' > ow.csh
+echo 'export OPENWINHOME=/usr/openwin' > ow.sh  
+echo 'setenv OPENWINHOME /usr/openwin' > ow.csh  
 
 Create a file under /etc/ld.so.conf.d:
 
-echo /usr/openwin/lib64 > ow.conf
-echo /usr/openwin/lib >> ow.conf
+echo /usr/openwin/lib64 > ow.conf  
+echo /usr/openwin/lib >> ow.conf  
 
 If you do not want to use /usr/openwin, then, of course, you'll have to modify those commands accordingly.
 
