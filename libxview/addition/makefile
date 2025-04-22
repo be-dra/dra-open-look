@@ -595,11 +595,11 @@ GETTEXT.H		= gettext.h
 GETTEXT.C		= gettext.c
 GETTEXT.O		= gettext.o
 
-HDRSPUBLIC=accel.h bitmap.h colorchsr.h colortext.h dircanv.h filedrag.h filereq.h fontprop.h funckey.h shortcut.h group.h iccc.h mllist.h permlist.h process.h proplist.h richtext.h scrollw.h pixscr.h
+HDRSPUBLIC=accel.h bitmap.h colorchsr.h colortext.h dircanv.h filedrag.h fileman.h filereq.h fontprop.h funckey.h shortcut.h group.h iccc.h mllist.h permlist.h process.h proplist.h richtext.h scrollw.h pixscr.h
 
 HDRSPRIVATE=
 
-SRCS =accel.c bitmap.c colorchsr.c colortext.c dircanv.c filedrag.c filereq.c fontprop.c funckey.c shortcut.c group.c iccc.c mllist.c permlist.c process.c proplist.c richtext.c scrollw.c pixscr.c
+SRCS =accel.c bitmap.c colorchsr.c colortext.c dircanv.c filedrag.c fileman.c filereq.c fontprop.c funckey.c shortcut.c group.c iccc.c mllist.c permlist.c process.c proplist.c richtext.c scrollw.c pixscr.c
 OBJS=$(SRCS:.c=.o)
 
 LIBTARGET = xview
