@@ -6,7 +6,7 @@
 #include <xview/talk.h>
 #include <xview/defaults.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.39 2025/04/13 14:33:49 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.40 2025/04/25 08:11:40 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -24,7 +24,7 @@ typedef struct {
 	Xv_opaque       public_self;
 
 	Selection_owner selown;
-	Atom            pattern, trigg, regist, deregist, talksrv, targets;
+	Atom            talksrv, pattern, trigg, regist, deregist, targets;
 	int             last_error;
 	int             silent;
 	int             notify_count;
@@ -32,6 +32,8 @@ typedef struct {
 	Talk_state_t    state;
 	pattern_t       not_yet_installed;
 	pattern_t       installed;
+
+	int             decentralized;
 } Talk_private;
 
 #define TALKPRIV(_x_) XV_PRIVATE(Talk_private, Xv_talk, _x_)
@@ -209,8 +211,23 @@ static void analyze_trigger_data(Talk_private *priv, char *val)
 		params[0] = NULL;
 	}
 
-	if (priv->notify_proc) {
-		priv->notify_proc(TALKPUB(priv), message, host, pid, params);
+	if (priv->decentralized) {
+		pattern_t p;
+		/* we have to check our own patterns: */
+
+		for (p = priv->not_yet_installed; p; p = p->next) {
+			if (0 == strcmp(p->name, message)) {
+				if (priv->notify_proc) {
+					priv->notify_proc(TALKPUB(priv), message,host, pid, params);
+				}
+				break;
+			}
+		}
+	}
+	else {
+		if (priv->notify_proc) {
+			priv->notify_proc(TALKPUB(priv), message, host, pid, params);
+		}
 	}
 }
 
@@ -342,6 +359,11 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	Xv_talk *self = (Xv_talk *)slf;
 	Talk_private *priv;
 	Xv_server srv = XV_SERVER_FROM_WINDOW(owner);
+	Window root = xv_get(xv_get(owner, XV_ROOT), XV_XID);
+	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
+	int format, succ;
+	unsigned long len, rest;
+	Atom acttype, *data;
 
 	if (!(priv = (Talk_private *)xv_alloc(Talk_private))) return XV_ERROR;
 
@@ -370,6 +392,17 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 
 	xv_set(slf, SEL_REPLY_PROC, note_client_reply, NULL);
 
+	succ = XGetWindowProperty(dpy, root, priv->talksrv, 0L, 100L, FALSE,
+				XA_ATOM, &acttype, &format, &len, &rest,
+				(unsigned char **)&data);
+	if (succ == Success && acttype == XA_ATOM && format == 32) {
+		/* somebody wants to run (or test) the 
+		 * Non-Server-based TALK mechanism.
+		 * We store that state in priv->decentralized.
+		 */
+		XFree(data);
+		priv->decentralized = TRUE;
+	}
 	return XV_OK;
 }
 static void deregister(Talk self, Talk_private *priv)
@@ -408,8 +441,8 @@ static void add_pattern(Talk_private *priv, char *patt)
 	priv->not_yet_installed = p;
 }
 
-static void call_server(Talk t, int bufsize, const char *msg, char **params,
-							int *countptr, char *host)
+static void call_server(Talk t, Atom rank, Atom target, int bufsize,
+				const char *msg, char **params, int *countptr, char *host)
 {
 	Talk_private *priv = TALKPRIV(t);
 	char *p, sep[2];
@@ -435,8 +468,8 @@ static void call_server(Talk t, int bufsize, const char *msg, char **params,
 	}
 
 	xv_set(t,
-			SEL_RANK, priv->talksrv,
-			SEL_TYPE, priv->trigg,
+			SEL_RANK, rank,
+			SEL_TYPE, target,
 			SEL_TYPE_INDEX, 0,
 			SEL_PROP_TYPE, XA_STRING,
 			SEL_PROP_FORMAT, 8,
@@ -465,6 +498,7 @@ static void call_server(Talk t, int bufsize, const char *msg, char **params,
 
 static void trigger(Talk t, const char *msg, char **params, int *countptr)
 {
+	Talk_private *priv = TALKPRIV(t);
 	char *p;
 	size_t bufsize;
 	struct utsname u;
@@ -479,7 +513,33 @@ static void trigger(Talk t, const char *msg, char **params, int *countptr)
 		}
 	}
 
-	call_server(t, (int)bufsize, msg, params, countptr, u.nodename);
+	if (priv->decentralized) {
+		Xv_window win = xv_get(t, XV_OWNER);
+		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
+		Window root = xv_get(xv_get(win, XV_ROOT), XV_XID);
+		Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
+		int format, succ;
+		unsigned long i, len, rest;
+		Atom acttype, *data;
+
+		succ = XGetWindowProperty(dpy, root, priv->talksrv, 0L, 100L, FALSE,
+					XA_ATOM, &acttype, &format, &len, &rest,
+					(unsigned char **)&data);
+		if (succ == Success && acttype == XA_ATOM && format == 32) {
+			for (i = 0; i < len; i++) {
+				if (data[i] == XA_ATOM) continue;
+				if (data[i] ==priv->regist) continue; /* Ref (hsrdtfgklherst) */
+				call_server(t, data[i], data[i], (int)bufsize, msg,
+									params, NULL, u.nodename);
+			}
+		}
+
+		if (data) XFree(data);
+	}
+	else {
+		call_server(t, priv->talksrv, priv->trigg, (int)bufsize, msg, params,
+								countptr, u.nodename);
+	}
 }
 
 static void new_pattern(Talk_private *priv, char *patt)
@@ -501,6 +561,77 @@ static void new_pattern(Talk_private *priv, char *patt)
 											priv->not_yet_installed);
 			break;
 	}
+}
+
+static int decentral_convert_proc(Selection_owner sel_own, Atom *type,
+					Xv_opaque *data, unsigned long *length, int *format)
+{
+	Talk_private *priv = (Talk_private *)xv_get(sel_own, XV_KEY_DATA, talk_key);
+
+	if (*type == xv_get(sel_own, SEL_RANK)) {
+		Sel_prop_info *info;
+
+		if ((info = (Sel_prop_info *)xv_get(sel_own, SEL_PROP_INFO)) &&
+				info->length > 0 &&
+				info->format == 8 &&
+				info->type == XA_STRING)
+		{
+			analyze_trigger_data(priv, (char *)info->data);
+		}
+
+		*data = XV_NULL;
+		*length = 0;
+		*format = 8;
+		return TRUE;
+	}
+	if (*type == priv->targets) {
+		static Atom tgts[3];
+		int i = 0;
+
+		tgts[i++] = xv_get(sel_own, SEL_RANK);
+		tgts[i++] = priv->targets;
+		*data = (Xv_opaque)tgts;
+		*type = XA_ATOM;
+		*length = i;
+		*format = 32;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static void init_decentralized(Talk_private *priv)
+{
+	Talk self = TALKPUB(priv);
+	struct utsname u;
+	char buf[100];
+	Atom sel_atom;
+	Xv_window win;
+	Xv_server srv;
+	Window root;
+	Display *dpy;
+
+	if (! priv->decentralized) return;
+	if (! priv->notify_proc) return;
+	if (! priv->not_yet_installed) return;
+
+	win = xv_get(self, XV_OWNER);
+	srv = XV_SERVER_FROM_WINDOW(win);
+	root = xv_get(xv_get(win, XV_ROOT), XV_XID);
+	dpy = (Display *)xv_get(srv, XV_DISPLAY);
+	uname(&u);
+	sprintf(buf, "_DRATALK%s%d", u.nodename, getpid());
+	sel_atom = xv_get(srv, SERVER_ATOM, buf);
+	priv->regist = sel_atom; /* to recognize myself (hsrdtfgklherst) */
+	priv->selown = xv_create(win, SELECTION_OWNER,
+				XV_KEY_DATA, talk_key, priv,
+				SEL_RANK, sel_atom,
+				SEL_CONVERT_PROC, decentral_convert_proc,
+				SEL_OWN, TRUE,
+				NULL);
+
+	XChangeProperty(dpy, root, priv->talksrv, XA_ATOM, 32, PropModeAppend,
+				(unsigned char *)&sel_atom, 1);
 }
 
 static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
@@ -538,6 +669,10 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 		case TALK_SILENT:
 			priv->silent = (int)A1;
 			ADONE;
+
+		case XV_END_CREATE:
+			init_decentralized(priv);
+			break;
 
 		default: xv_check_bad_attr(TALK, A0);
 			break;
