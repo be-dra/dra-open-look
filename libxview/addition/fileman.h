@@ -4,7 +4,7 @@
 
 #include <xview/dircanv.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.22 2025/04/21 18:50:42 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.23 2025/04/23 16:17:04 dra Exp $" */
 
 extern const Xv_pkg xv_filemanager_pkg;
 #define FILE_MANAGER &xv_filemanager_pkg
@@ -105,7 +105,7 @@ typedef struct {
 typedef struct _fileman_types {
 	Dir_subclass_attrs dscattrs;
 	char *name, *action, *print;
-	Server_image glyph, mask;
+	Server_image glyph, mask, svrim;
 	void *entry; /* maybe something like CE_ENTRY */
 	struct _fileman_types *next;
 	unsigned long refcount;
