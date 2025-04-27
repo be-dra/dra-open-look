@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.42 2025/04/25 21:38:14 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.43 2025/04/26 12:25:15 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -23,17 +23,14 @@ typedef enum {
 } Talk_state_t;
 
 typedef struct {
-	Xv_opaque       public_self;
+	Xv_opaque          public_self;
 
-	Selection_owner selown;
-	Atom            talksrv, pattern, trigg, regist, deregist, targets;
-	int             last_error;
-	int             silent;
-	int             notify_count;
-	talk_notify_proc_t   notify_proc;
-	Talk_state_t    state;
-	pattern_t       not_yet_installed;
-	pattern_t       installed;
+	Selection_owner    selown;
+	Atom               talksrv, trigg, regist, targets;
+	int                last_error, silent, notify_count;
+	talk_notify_proc_t notify_proc;
+	Talk_state_t       state;
+	pattern_t          not_yet_installed, installed;
 } Talk_private;
 
 #define TALKPRIV(_x_) XV_PRIVATE(Talk_private, Xv_talk, _x_)
@@ -148,7 +145,7 @@ static void install_pattern(Talk_private *priv, char *patt)
 	sprintf(buf, "%ld%c%s", xv_get(priv->selown, SEL_RANK), AGS, patt);
 	xv_set(self,
 			SEL_RANK, priv->talksrv,
-			SEL_TYPE, priv->pattern,
+			SEL_TYPE_NAME, "_DRA_TALK_PATTERN",
 			SEL_TYPE_INDEX, 0,
 			SEL_PROP_TYPE, XA_STRING,
 			SEL_PROP_FORMAT, 8,
@@ -327,7 +324,7 @@ static void registration_done(Talk_private *priv, Atom sel_atom)
 	xv_set(priv->selown, SEL_OWN, TRUE, NULL);
 }
 
-static void note_client_reply(Talk self, Atom target, Atom type,
+static void client_reply(Talk self, Atom target, Atom type,
 					Xv_opaque value, unsigned long length, int format)
 {
 	Talk_private *priv = TALKPRIV(self);
@@ -361,7 +358,41 @@ static void note_client_reply(Talk self, Atom target, Atom type,
 	if (value) xv_free(value);
 }
 
-static void note_decentral_reply(Talk self, Atom target, Atom type,
+static void cleanup_root_prop(Talk self, Atom bad_atom)
+{
+	Talk_private *priv = TALKPRIV(self);
+	Xv_window win = xv_get(self, XV_OWNER);
+	Window root = xv_get(xv_get(win, XV_ROOT), XV_XID);
+	Display *dpy = (Display *)xv_get(win, XV_DISPLAY);
+	int format, succ;
+	unsigned long len, rest;
+	Atom acttype, *data;
+
+	/* there is a race condition between this XGetWindowProperty and
+	 * the following XChangeProperty... - therefore, we use the 
+	 * 'delete' flag of XGetWindowProperty, so, a second reader will get
+	 * nothing and therefore will not come int our way.
+	 */
+	succ = XGetWindowProperty(dpy, root, priv->talksrv, 0L, 100L, TRUE,
+				XA_ATOM, &acttype, &format, &len, &rest,
+				(unsigned char **)&data);
+	if (succ == Success && acttype == XA_ATOM && format == 32) {
+		unsigned long i;
+
+		for (i = 0; i < len; i++) {
+			if (data[i] == bad_atom) {
+				++i;
+				for (; i < len; i++) data[i-1] = data[i];
+				XChangeProperty(dpy, root, priv->talksrv, XA_ATOM, 32,
+						PropModeReplace, (unsigned char *)data, 
+						(int)len - 1);
+				return;
+			}
+		}
+	}
+}
+
+static void decentral_reply(Talk self, Atom target, Atom type,
 					Xv_opaque value, unsigned long length, int format)
 {
 	/* we are in decentral mode where all participants of the TALK
@@ -370,36 +401,13 @@ static void note_decentral_reply(Talk self, Atom target, Atom type,
 	 * still in that property and causes selection errors.
 	 */
 	if (length == SEL_ERROR) {
-		Talk_private *priv = TALKPRIV(self);
-		Xv_window win = xv_get(self, XV_OWNER);
-		Window root = xv_get(xv_get(win, XV_ROOT), XV_XID);
-		Display *dpy = (Display *)xv_get(win, XV_DISPLAY);
-		int format, succ;
-		unsigned long len, rest;
-		Atom acttype, *data;
+		int have_owner = format;
 
-		/* there is a race condition between this XGetWindowProperty and
-		 * the following XChangeProperty...
-		 */
-		succ = XGetWindowProperty(dpy, root, priv->talksrv, 0L, 100L, FALSE,
-					XA_ATOM, &acttype, &format, &len, &rest,
-					(unsigned char **)&data);
-		if (succ == Success && acttype == XA_ATOM && format == 32) {
-			unsigned long i;
-
-			for (i = 0; i < len; i++) {
-				if (data[i] == target) {
-					/* target is bad */
-					++i;
-					for (; i < len; i++) data[i-1] = data[i];
-					XChangeProperty(dpy, root, priv->talksrv, XA_ATOM, 32,
-							PropModeReplace, (unsigned char *)data, 
-							(int)len - 1);
-					return;
-				}
-			}
-		}
+		if (! have_owner) cleanup_root_prop(self, target);
+		return;
 	}
+
+	if (value) xv_free(value);
 }
 
 static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
@@ -434,8 +442,6 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	priv->talksrv = xv_get(srv, SERVER_ATOM, "_DRA_TALK_SERVER");
 	priv->trigg = xv_get(srv, SERVER_ATOM, "_DRA_TALK_TRIGGER");
 	priv->regist = xv_get(srv, SERVER_ATOM, "_DRA_TALK_REGISTER");
-	priv->deregist = xv_get(srv, SERVER_ATOM, "_DRA_TALK_DEREGISTER");
-	priv->pattern = xv_get(srv, SERVER_ATOM, "_DRA_TALK_PATTERN");
 	priv->targets = xv_get(srv, SERVER_ATOM, "TARGETS");
 
 
@@ -449,11 +455,11 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 		 */
 		XFree(data);
 		priv->state = decentral;
-		xv_set(slf, SEL_REPLY_PROC, note_decentral_reply, NULL);
+		xv_set(slf, SEL_REPLY_PROC, decentral_reply, NULL);
 		SERVERTRACE((200, "%s\n", __FUNCTION__));
 	}
 	else {
-		xv_set(slf, SEL_REPLY_PROC, note_client_reply, NULL);
+		xv_set(slf, SEL_REPLY_PROC, client_reply, NULL);
 	}
 	return XV_OK;
 }
@@ -463,7 +469,7 @@ static void deregister(Talk self, Talk_private *priv)
 	Atom at = xv_get(priv->selown, SEL_RANK);
 	xv_set(self,
 			SEL_RANK, priv->talksrv,
-			SEL_TYPE, priv->deregist,
+			SEL_TYPE_NAME, "_DRA_TALK_DEREGISTER",
 			SEL_TYPE_INDEX, 0,
 			SEL_PROP_TYPE, XA_ATOM,
 			SEL_PROP_FORMAT, 32,
@@ -592,6 +598,7 @@ static void trigger(Talk t, const char *msg, char **params, int *countptr)
 		}
 
 		if (data) XFree(data);
+		if (countptr) *countptr = -1; /* no counting here... */
 	}
 	else {
 		call_server(t, priv->talksrv, priv->trigg, (int)bufsize, msg, params,
