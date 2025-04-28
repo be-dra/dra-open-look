@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.43 2025/04/26 12:25:15 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.44 2025/04/27 19:56:52 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -17,8 +17,7 @@ typedef struct _pattern {
 
 typedef enum {
 	initialized,
-	registering,
-	registered,
+	server_based,
 	decentral
 } Talk_state_t;
 
@@ -48,7 +47,6 @@ typedef struct {
 
 extern char *xv_app_name;
 static int talk_key = 0;
-static void register_to_server(Talk self, Talk_private *priv);
 
 static int analyze_string(char *str, int sep, char **strings, long max_strings)
 {
@@ -67,65 +65,6 @@ static int analyze_string(char *str, int sep, char **strings, long max_strings)
 	return i;
 }
 
-static Notify_value note_try_again(Talk self, int unused)
-{
-	Talk_private *priv = TALKPRIV(self);
-	int savesil = priv->silent;
-
-	priv->silent = TRUE;
-	SERVERTRACE((200, "%s\n", __FUNCTION__));
-	register_to_server(self, priv);
-	priv->silent = savesil;
-
-	if (priv->selown) {
-		notify_set_itimer_func(self, NOTIFY_TIMER_FUNC_NULL, ITIMER_REAL,
-									NULL, NULL);
-	}
-	return NOTIFY_DONE;
-}
-
-static void registration_failed(Talk_private *priv, int selerr)
-{
-	static char *selerrors[] = {
-		"BAD_TIME",
-		"BAD_WIN_ID",
-		"BAD_PROPERTY",
-		"BAD_CONVERSION",
-		"TIMEDOUT",
-		"PROPERTY_DELETED",
-		"BAD_PROPERTY_EVENT"
-	};
-	Talk self = TALKPUB(priv);
-	struct itimerval timer;
-	char errbuf[200];
-
-	sprintf(errbuf, "Talk registration failed with code %s, will try again",
-									selerrors[selerr]);
-	if (priv->silent) {
-		/* I still want to know: */
-		fprintf(stderr, "%s: %s\n", xv_app_name, errbuf);
-	}
-	else {
-		xv_error(self,
-			ERROR_PKG, TALK,
-			ERROR_STRING, errbuf,
-			ERROR_SEVERITY, ERROR_RECOVERABLE,
-			NULL);
-	}
-
-	/* The whole concept is based on the assumption that there is
-	 * **one** process that plays the server role.
-	 * In case a potential client is started earlier (or simply faster)
-	 * than the server, we establish a "retry mechanism"
-	 */
-
-	timer.it_value.tv_sec = 60;
-	timer.it_value.tv_usec = 0;
-	timer.it_interval.tv_sec = 60;
-	timer.it_interval.tv_usec = 0;
-	notify_set_itimer_func(self, note_try_again, ITIMER_REAL, &timer, NULL);
-}
-
 static void install_pattern(Talk_private *priv, char *patt)
 {
 	Talk self = TALKPUB(priv);
@@ -133,14 +72,7 @@ static void install_pattern(Talk_private *priv, char *patt)
 	unsigned long len;
 	int format;
 
-	if (priv->state == decentral) return;
-
-	priv->last_error = -1;
-	if (! priv->selown) {
-		SERVERTRACE((200, "%s\n", __FUNCTION__));
-		register_to_server(self, priv);
-	}
-	if (priv->last_error >= 0) return;
+	if (priv->state != server_based) return;
 
 	sprintf(buf, "%ld%c%s", xv_get(priv->selown, SEL_RANK), AGS, patt);
 	xv_set(self,
@@ -293,54 +225,10 @@ static void client_lose(Selection_owner sel_own)
 	sel_post_req(self);
 }
 
-static void registration_done(Talk_private *priv, Atom sel_atom)
-{
-	Talk self = TALKPUB(priv);
-
-	/* can be a first registration or a re-registration from client_lose */
-	if (priv->selown) {
-		pattern_t p;
-
-		/* this is a re-registration */
-		xv_set(priv->selown, SEL_RANK, sel_atom, NULL);
-
-		for (p = priv->installed; p; p = p->next) {
-			install_pattern(priv, p->name);
-		}
-	}
-	else {
-		priv->state = registered;
-		priv->selown = xv_create(xv_get(self, XV_OWNER), SELECTION_OWNER,
-				XV_KEY_DATA, talk_key, priv,
-				SEL_RANK, sel_atom,
-				SEL_CONVERT_PROC, client_convert_proc,
-				SEL_DONE_PROC, client_done,
-				SEL_LOSE_PROC, client_lose,
-				NULL);
-
-		/* now deal with not yet installed patterns */
-		priv->not_yet_installed = install_pending(priv, priv->not_yet_installed);
-	}
-	xv_set(priv->selown, SEL_OWN, TRUE, NULL);
-}
-
 static void client_reply(Talk self, Atom target, Atom type,
 					Xv_opaque value, unsigned long length, int format)
 {
 	Talk_private *priv = TALKPRIV(self);
-
-	if (target == priv->regist) {
-		if (length == SEL_ERROR) {
-			registration_failed(priv,  *((int *)value));
-		}
-		else {
-			Atom *at = (Atom *)value;
-
-			registration_done(priv, *at);
-			xv_free(value);
-		}
-		return;
-	}
 
 	if (length == SEL_ERROR) {
 		priv->last_error = *((int *)value);
@@ -410,16 +298,183 @@ static void decentral_reply(Talk self, Atom target, Atom type,
 	if (value) xv_free(value);
 }
 
-static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
+static int decentral_convert_proc(Selection_owner sel_own, Atom *type,
+					Xv_opaque *data, unsigned long *length, int *format)
 {
-	Xv_talk *self = (Xv_talk *)slf;
-	Talk_private *priv;
+	Talk_private *priv = (Talk_private *)xv_get(sel_own, XV_KEY_DATA, talk_key);
+
+	if (*type == xv_get(sel_own, SEL_RANK)) {
+		Sel_prop_info *info;
+
+		if ((info = (Sel_prop_info *)xv_get(sel_own, SEL_PROP_INFO)) &&
+				info->length > 0 &&
+				info->format == 8 &&
+				info->type == XA_STRING)
+		{
+			analyze_trigger_data(priv, (char *)info->data);
+		}
+
+		*data = XV_NULL;
+		*length = 0;
+		*format = 8;
+		return TRUE;
+	}
+	if (*type == priv->targets) {
+		static Atom tgts[3];
+		int i = 0;
+
+		tgts[i++] = xv_get(sel_own, SEL_RANK);
+		tgts[i++] = priv->targets;
+		*data = (Xv_opaque)tgts;
+		*type = XA_ATOM;
+		*length = i;
+		*format = 32;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static Notify_value note_try_again(Talk self, int unused);
+
+static void try_again(Talk self)
+{
+	struct itimerval timer;
+
+	timer.it_value.tv_sec = 2;
+	timer.it_value.tv_usec = 0;
+	timer.it_interval.tv_sec = 2;
+	timer.it_interval.tv_usec = 0;
+	notify_set_itimer_func(self, note_try_again, ITIMER_REAL, &timer, NULL);
+}
+
+/* we return
+ *         initialized = "don't know yet"
+ *         server_based  = "server mode"
+ *         decentral   = "decentral mode"
+ */
+static Talk_state_t check_mode(Xv_window owner, Atom tsrv)
+{
 	Xv_server srv = XV_SERVER_FROM_WINDOW(owner);
 	Window root = xv_get(xv_get(owner, XV_ROOT), XV_XID);
 	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
 	int format, succ;
 	unsigned long len, rest;
 	Atom acttype, *data;
+
+	succ = XGetWindowProperty(dpy, root, tsrv, 0L, 100L, FALSE,
+				XA_ATOM, &acttype, &format, &len, &rest,
+				(unsigned char **)&data);
+	if (succ == Success && acttype == XA_ATOM && format == 32) {
+		XFree(data);
+		return decentral;
+	}
+
+	if (XGetSelectionOwner(dpy, tsrv) != None) return server_based;
+
+	return initialized;
+}
+
+static void initialize_by_mode(Talk_private *priv)
+{
+	Talk self = TALKPUB(priv);
+	struct utsname u;
+	char buf[100];
+	Atom sel_atom, *data;
+	Xv_window win;
+	Xv_server srv;
+	Window root;
+	Display *dpy;
+	unsigned long length;
+	int format;
+
+	if (priv->state != initialized) {
+		/* we already know! */
+		return;
+	}
+
+	/* No need to register anything????
+	 * I can still be an instance of TALK that just calls TALK_MESSAGE...
+	 */
+	if (! priv->notify_proc) return;
+	if (! priv->not_yet_installed) return;
+
+	switch (check_mode(xv_get(self, XV_OWNER), priv->talksrv)) {
+		case server_based:
+			SERVERTRACE((200, "%s: server mode\n", __FUNCTION__));
+			xv_set(self,
+					SEL_RANK, priv->talksrv,
+					SEL_TYPE, priv->regist,
+					NULL);
+			data = (Atom *)xv_get(self, SEL_DATA, &length, &format);
+			if (length == SEL_ERROR) {
+				try_again(self);
+				return;
+			}
+
+			priv->state = server_based;
+			priv->selown = xv_create(xv_get(self, XV_OWNER), SELECTION_OWNER,
+					XV_KEY_DATA, talk_key, priv,
+					SEL_RANK, *data,
+					SEL_CONVERT_PROC, client_convert_proc,
+					SEL_DONE_PROC, client_done,
+					SEL_LOSE_PROC, client_lose,
+					NULL);
+			XFree(data);
+
+			xv_set(self, SEL_REPLY_PROC, client_reply, NULL);
+			/* now deal with not yet installed patterns */
+			priv->not_yet_installed = install_pending(priv,
+									priv->not_yet_installed);
+			break;
+
+		case decentral:
+			priv->state = decentral;
+			xv_set(self, SEL_REPLY_PROC, decentral_reply, NULL);
+			win = xv_get(self, XV_OWNER);
+			srv = XV_SERVER_FROM_WINDOW(win);
+			root = xv_get(xv_get(win, XV_ROOT), XV_XID);
+			dpy = (Display *)xv_get(srv, XV_DISPLAY);
+			uname(&u);
+			sprintf(buf, "_DRATALK%s%d", u.nodename, getpid());
+			sel_atom = xv_get(srv, SERVER_ATOM, buf);
+			priv->regist = sel_atom; /* to recognize myself (hsrdtfgklherst) */
+			priv->selown = xv_create(win, SELECTION_OWNER,
+						XV_KEY_DATA, talk_key, priv,
+						SEL_RANK, sel_atom,
+						SEL_CONVERT_PROC, decentral_convert_proc,
+						SEL_OWN, TRUE,
+						NULL);
+
+			XChangeProperty(dpy, root, priv->talksrv, XA_ATOM, 32,
+							PropModeAppend, (unsigned char *)&sel_atom, 1);
+
+			break;
+
+		default:
+			/* we don't know yet... */
+			try_again(self);
+	}
+}
+
+static Notify_value note_try_again(Talk self, int unused)
+{
+	Talk_private *priv = TALKPRIV(self);
+
+	SERVERTRACE((200, "%s\n", __FUNCTION__));
+
+	notify_set_itimer_func(self, NOTIFY_TIMER_FUNC_NULL, ITIMER_REAL,
+									NULL, NULL);
+	initialize_by_mode(priv);
+	return NOTIFY_DONE;
+}
+
+static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
+{
+	Xv_talk *self = (Xv_talk *)slf;
+	Xv_server srv = XV_SERVER_FROM_WINDOW(owner);
+	Talk_private *priv;
+	Attr_attribute *attrs;
 
 	if (!(priv = (Talk_private *)xv_alloc(Talk_private))) return XV_ERROR;
 
@@ -444,22 +499,11 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	priv->regist = xv_get(srv, SERVER_ATOM, "_DRA_TALK_REGISTER");
 	priv->targets = xv_get(srv, SERVER_ATOM, "TARGETS");
 
-
-	succ = XGetWindowProperty(dpy, root, priv->talksrv, 0L, 100L, FALSE,
-				XA_ATOM, &acttype, &format, &len, &rest,
-				(unsigned char **)&data);
-	if (succ == Success && acttype == XA_ATOM && format == 32) {
-		/* somebody wants to run (or test) the 
-		 * Non-Server-based TALK mechanism.
-		 * We store that state in priv->state
-		 */
-		XFree(data);
-		priv->state = decentral;
-		xv_set(slf, SEL_REPLY_PROC, decentral_reply, NULL);
-		SERVERTRACE((200, "%s\n", __FUNCTION__));
-	}
-	else {
-		xv_set(slf, SEL_REPLY_PROC, client_reply, NULL);
+	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
+		case TALK_NOTIFY_PROC:
+			priv->notify_proc = (talk_notify_proc_t)A1;
+			ADONE;
+		default: break;
 	}
 	return XV_OK;
 }
@@ -467,30 +511,22 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 static void deregister(Talk self, Talk_private *priv)
 {
 	Atom at = xv_get(priv->selown, SEL_RANK);
-	xv_set(self,
-			SEL_RANK, priv->talksrv,
-			SEL_TYPE_NAME, "_DRA_TALK_DEREGISTER",
-			SEL_TYPE_INDEX, 0,
-			SEL_PROP_TYPE, XA_ATOM,
-			SEL_PROP_FORMAT, 32,
-			SEL_PROP_LENGTH, 1,
-			SEL_PROP_DATA, &at,
-			NULL);
-	sel_post_req(self);
-}
 
-static void register_to_server(Talk self, Talk_private *priv)
-{
-	if (priv->selown) return;
-	if (priv->state == decentral) return;
-
-	SERVERTRACE((200, "%s\n", __FUNCTION__));
-	priv->last_error = -1;
-	xv_set(self,
-			SEL_RANK, priv->talksrv,
-			SEL_TYPE, priv->regist,
-			NULL);
-	sel_post_req(self);
+	if (priv->state == decentral) {
+		cleanup_root_prop(self, at);
+	}
+	else {
+		xv_set(self,
+				SEL_RANK, priv->talksrv,
+				SEL_TYPE_NAME, "_DRA_TALK_DEREGISTER",
+				SEL_TYPE_INDEX, 0,
+				SEL_PROP_TYPE, XA_ATOM,
+				SEL_PROP_FORMAT, 32,
+				SEL_PROP_LENGTH, 1,
+				SEL_PROP_DATA, &at,
+				NULL);
+		sel_post_req(self);
+	}
 }
 
 static void add_pattern(Talk_private *priv, char *patt)
@@ -611,96 +647,9 @@ static void new_pattern(Talk_private *priv, char *patt)
 	SERVERTRACE((200, "%s(%s)\n", __FUNCTION__, patt));
 	add_pattern(priv, patt);
 
-	switch (priv->state) {
-		case initialized:
-			SERVERTRACE((200, "%s\n", __FUNCTION__));
-			register_to_server(TALKPUB(priv), priv);
-			priv->state = registering;
-			break;
-
-		case registering:
-			/* do nothing, we still wait ... */
-			break;
-
-		case registered:
-			priv->not_yet_installed = install_pending(priv,
-											priv->not_yet_installed);
-			break;
-
-		case decentral:
-			break;
+	if (priv->state == server_based) {
+		priv->not_yet_installed = install_pending(priv,priv->not_yet_installed);
 	}
-}
-
-static int decentral_convert_proc(Selection_owner sel_own, Atom *type,
-					Xv_opaque *data, unsigned long *length, int *format)
-{
-	Talk_private *priv = (Talk_private *)xv_get(sel_own, XV_KEY_DATA, talk_key);
-
-	if (*type == xv_get(sel_own, SEL_RANK)) {
-		Sel_prop_info *info;
-
-		if ((info = (Sel_prop_info *)xv_get(sel_own, SEL_PROP_INFO)) &&
-				info->length > 0 &&
-				info->format == 8 &&
-				info->type == XA_STRING)
-		{
-			analyze_trigger_data(priv, (char *)info->data);
-		}
-
-		*data = XV_NULL;
-		*length = 0;
-		*format = 8;
-		return TRUE;
-	}
-	if (*type == priv->targets) {
-		static Atom tgts[3];
-		int i = 0;
-
-		tgts[i++] = xv_get(sel_own, SEL_RANK);
-		tgts[i++] = priv->targets;
-		*data = (Xv_opaque)tgts;
-		*type = XA_ATOM;
-		*length = i;
-		*format = 32;
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static void init_decentralized(Talk_private *priv)
-{
-	Talk self = TALKPUB(priv);
-	struct utsname u;
-	char buf[100];
-	Atom sel_atom;
-	Xv_window win;
-	Xv_server srv;
-	Window root;
-	Display *dpy;
-
-	if (priv->state != decentral) return;
-	if (! priv->notify_proc) return;
-	if (! priv->not_yet_installed) return;
-
-	win = xv_get(self, XV_OWNER);
-	srv = XV_SERVER_FROM_WINDOW(win);
-	root = xv_get(xv_get(win, XV_ROOT), XV_XID);
-	dpy = (Display *)xv_get(srv, XV_DISPLAY);
-	uname(&u);
-	sprintf(buf, "_DRATALK%s%d", u.nodename, getpid());
-	sel_atom = xv_get(srv, SERVER_ATOM, buf);
-	priv->regist = sel_atom; /* to recognize myself (hsrdtfgklherst) */
-	priv->selown = xv_create(win, SELECTION_OWNER,
-				XV_KEY_DATA, talk_key, priv,
-				SEL_RANK, sel_atom,
-				SEL_CONVERT_PROC, decentral_convert_proc,
-				SEL_OWN, TRUE,
-				NULL);
-
-	XChangeProperty(dpy, root, priv->talksrv, XA_ATOM, 32, PropModeAppend,
-				(unsigned char *)&sel_atom, 1);
 }
 
 static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
@@ -711,10 +660,6 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 	int *count_ptr = NULL;
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
-		case TALK_NOTIFY_PROC:
-			priv->notify_proc = (talk_notify_proc_t)A1;
-			ADONE;
-
 		case TALK_PATTERN:
 			new_pattern(priv, (char *)A1);
 			ADONE;
@@ -740,7 +685,7 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 			ADONE;
 
 		case XV_END_CREATE:
-			init_decentralized(priv);
+			initialize_by_mode(priv);
 			break;
 
 		default: xv_check_bad_attr(TALK, A0);
