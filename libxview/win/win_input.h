@@ -1,4 +1,4 @@
-/*      @(#)win_input.h  20.55  93/06/28  SMI  DRA: $Id: win_input.h,v 4.4 2024/11/10 13:14:35 dra Exp $   */
+/*      @(#)win_input.h  20.55  93/06/28  SMI  DRA: $Id: win_input.h,v 4.5 2025/04/29 04:59:10 dra Exp $   */
   
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -371,22 +371,22 @@
  * Definitions required for input event structures 
  */
 
-#define	IE_NEGEVENT	(1<<0)		/* input code is negative */
-#define IE_QUICK_MOVE	(1<<1)		/* Move key is pressed */
-#define IE_QUICK_COPY	(1<<2)		/* Duplicate key is pressed */
+#define	IE_NEGEVENT			(1<<0)		/* input code is negative */
+#define IE_QUICK_MOVE		(1<<1)		/* Move key is pressed */
+#define IE_QUICK_DUPLICATE	(1<<2)		/* Duplicate key is pressed */
 
 #define	win_inputnegevent(ie)		((ie)->ie_flags & IE_NEGEVENT)
 #define	win_inputposevent(ie)		(!((ie)->ie_flags & IE_NEGEVENT))
 #define	event_is_up(event)		(win_inputnegevent((event)))
 #define	event_is_down(event)		(win_inputposevent((event)))
 #define event_is_quick_move(event)	((event)->ie_flags & IE_QUICK_MOVE)
-#define event_is_quick_copy(event)	((event)->ie_flags & IE_QUICK_COPY)
+#define event_is_quick_copy(event)	((event)->ie_flags & IE_QUICK_DUPLICATE)
 /* this is how it is called in the OL GUI Spec: */
-#define event_is_quick_duplicate(event)	((event)->ie_flags & IE_QUICK_COPY)
+#define event_is_quick_duplicate(event)	((event)->ie_flags & IE_QUICK_DUPLICATE)
 #define	event_set_up(event)		(event)->ie_flags |= IE_NEGEVENT
 #define	event_set_down(event)		(event)->ie_flags &= ~IE_NEGEVENT
 #define event_set_quick_move(event)	(event)->ie_flags |= IE_QUICK_MOVE
-#define event_set_quick_copy(event)	(event)->ie_flags |= IE_QUICK_COPY
+#define event_set_quick_duplicate(event) (event)->ie_flags |= IE_QUICK_DUPLICATE
 
 
 /*
