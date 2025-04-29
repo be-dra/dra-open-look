@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.35 2025/03/16 20:38:41 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.36 2025/04/29 05:00:14 dra Exp $";
 #endif
 #endif
 
@@ -3433,7 +3433,7 @@ static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
 					if (data) {
 						/* key_type == DUPLICATE in this case */
 						if (key_type == *(Atom *) data)
-							event_set_quick_copy(event);
+							event_set_quick_duplicate(event);
 						else {
 	    					SERVERTRACE((765, "%s: set quick_move\n",
 										xv_app_name));
