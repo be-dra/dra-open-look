@@ -15,28 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-#ifdef NO_CODE
-
-Idee zur Integration dieser Funktionalitaet in das richtige XView:
-
-Diese instance_t - Datenstruktur sollte ein Teil von Xv_server (bzw. 
-Server_info, siehe svr_impl.h) sein.
-
-extern void xvwp_set_popup DRA_ARGS((Frame popup, ...)) _X_SENTINEL(0);
-				koennte das evtl ein NULL-terminiertes FRAME_CMD-Atribut
-				werden, das dann per xv_set an den Server weitergereicht wird.
-
-extern void xvwp_set_menu_no_inst DRA_ARGS((Menu menu, const char *name,
-						Xv_opaque panelitem_window_or_server));
-extern void xvwp_set_menu DRA_ARGS((Menu menu,
-				NOCH NICHT KLAR
-
-
-Die restlichen Funktionen könnten set- und get-Attribute von SERVER werden.
-
-#endif /* NO_CODE */
-
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.14 2025/02/06 09:03:35 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.15 2025/05/01 18:32:16 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
