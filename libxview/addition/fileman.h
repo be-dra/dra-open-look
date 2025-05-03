@@ -4,7 +4,7 @@
 
 #include <xview/dircanv.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.23 2025/04/23 16:17:04 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.25 2025/05/02 16:15:04 dra Exp $" */
 
 extern const Xv_pkg xv_filemanager_pkg;
 #define FILE_MANAGER &xv_filemanager_pkg
@@ -60,7 +60,7 @@ typedef enum {
 	FM_HANDLE_DROP          = FM_ATTR(ATTR_OPAQUE_PAIR, 99),   /* -S- */
 
 	/* private: */
-	FM_NEW_FILE_CACHE       = FM_ATTR(ATTR_OPAQUE, 110),       /* --G */
+	FM_INVALIDATE_CACHE     = FM_ATTR(ATTR_NO_VALUE, 109),     /* -S- */
 	FM_PERFORM_ACTION       = FM_ATTR(ATTR_OPAQUE_TRIPLE,111)  /* -S- */
 } Fileman_attr;
 
@@ -112,26 +112,8 @@ typedef struct _fileman_types {
 	int is_user;
 } *fileman_types;
 
-typedef struct _file_cache {
-	struct _file_cache *next_file;
-	ino_t inode;
-	time_t mtime;
-	Dir_subclass_attrs *attrs;
-} *Fm_file_cache_t;
-
-struct _cachepriv;
-
-#define MY_HASH_PRIME 521
-typedef struct _fmdir_cache {
-	struct _fmdir_cache *next;
-	ino_t dir_inode;
-	dev_t dir_dev;
-	Fm_file_cache_t htab[MY_HASH_PRIME];
-	struct _cachepriv *private;
-} *Fm_dir_cache_t;
-
-typedef void (*fileman_assign_filetype_t)(FileManager self, Fm_dir_cache_t dc,
-								struct stat *sb, Dir_entry_t *ent);
+typedef void (*fileman_assign_filetype_t)(FileManager self, struct stat *sb,
+													Dir_entry_t *ent);
 
 typedef void (*fileman_errlog_proc_t)(FileManager self, char *msg, int beep);
 
