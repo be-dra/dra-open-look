@@ -4,7 +4,7 @@
 
 #include <xview/dircanv.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.25 2025/05/02 16:15:04 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.27 2025/05/04 06:35:13 dra Exp $" */
 
 extern const Xv_pkg xv_filemanager_pkg;
 #define FILE_MANAGER &xv_filemanager_pkg
@@ -50,10 +50,8 @@ typedef enum {
 	FM_CLIENT_SERVICE       = FM_ATTR(ATTR_BOOLEAN, 13),       /* CSG */
 	FM_OPEN_WITH_ARGS       = FM_ATTR(ATTR_OPAQUE_PAIR, 14),   /* -S- */
 	FM_DEFAULT_PRINT        = FM_ATTR(ATTR_STRING, 15),        /* CSG */
-	FM_MAX_DIR_CACHE        = FM_ATTR(ATTR_INT, 17),           /* CSG */
 	FM_RELATIVE_LINK_LEVEL  = FM_ATTR(ATTR_INT, 18),           /* CSG */
 	FM_AUTO_CREATE_MENU     = FM_ATTR(ATTR_BOOLEAN, 19),       /* CSG */
-	FM_CE_ENTRY             = FM_ATTR(ATTR_STRING, 20),        /* --G */
 	FM_WASTEBASKET_PROC     = FM_ATTR(ATTR_FUNCTION_PTR, 21),  /* C-G */
 	FM_DROP_PROC            = FM_ATTR(ATTR_FUNCTION_PTR, 22),  /* CSG */
 	FM_TYPE_PROC            = FM_ATTR(ATTR_FUNCTION_PTR, 23),  /* C-- */
