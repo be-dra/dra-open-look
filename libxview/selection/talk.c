@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.44 2025/04/27 19:56:52 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.45 2025/05/04 19:20:10 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -47,6 +47,7 @@ typedef struct {
 
 extern char *xv_app_name;
 static int talk_key = 0;
+#define TALK_KEY XV_KEY_DATA,talk_key
 
 static int analyze_string(char *str, int sep, char **strings, long max_strings)
 {
@@ -169,7 +170,7 @@ static void analyze_trigger_data(Talk_private *priv, char *val)
 static int client_convert_proc(Selection_owner sel_own, Atom *type,
 					Xv_opaque *data, unsigned long *length, int *format)
 {
-	Talk_private *priv = (Talk_private *)xv_get(sel_own, XV_KEY_DATA, talk_key);
+	Talk_private *priv = (Talk_private *)xv_get(sel_own, TALK_KEY);
 
 	if (*type == xv_get(sel_own, SEL_RANK)) {
 		Sel_prop_info *info;
@@ -214,7 +215,7 @@ static int client_convert_proc(Selection_owner sel_own, Atom *type,
 
 static void client_lose(Selection_owner sel_own)
 {
-	Talk_private *priv = (Talk_private *)xv_get(sel_own, XV_KEY_DATA, talk_key);
+	Talk_private *priv = (Talk_private *)xv_get(sel_own, TALK_KEY);
 	Talk self = TALKPUB(priv);
 
 	SERVERTRACE((200, "%s\n", __FUNCTION__));
@@ -301,7 +302,7 @@ static void decentral_reply(Talk self, Atom target, Atom type,
 static int decentral_convert_proc(Selection_owner sel_own, Atom *type,
 					Xv_opaque *data, unsigned long *length, int *format)
 {
-	Talk_private *priv = (Talk_private *)xv_get(sel_own, XV_KEY_DATA, talk_key);
+	Talk_private *priv = (Talk_private *)xv_get(sel_own, TALK_KEY);
 
 	if (*type == xv_get(sel_own, SEL_RANK)) {
 		Sel_prop_info *info;
@@ -355,22 +356,34 @@ static void try_again(Talk self)
  */
 static Talk_state_t check_mode(Xv_window owner, Atom tsrv)
 {
-	Xv_server srv = XV_SERVER_FROM_WINDOW(owner);
-	Window root = xv_get(xv_get(owner, XV_ROOT), XV_XID);
-	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
+	Xv_screen screen = XV_SCREEN_FROM_WINDOW(owner);
+	Xv_server srv;
+	Window root;
+	Display *dpy;
 	int format, succ;
 	unsigned long len, rest;
 	Atom acttype, *data;
+	Talk_state_t scr_state = (Talk_state_t)xv_get(screen, TALK_KEY);
+
+	if (scr_state != initialized) return scr_state;
+
+	srv = XV_SERVER_FROM_WINDOW(owner);
+	root = xv_get(xv_get(owner, XV_ROOT), XV_XID);
+	dpy = (Display *)xv_get(srv, XV_DISPLAY);
 
 	succ = XGetWindowProperty(dpy, root, tsrv, 0L, 100L, FALSE,
 				XA_ATOM, &acttype, &format, &len, &rest,
 				(unsigned char **)&data);
 	if (succ == Success && acttype == XA_ATOM && format == 32) {
 		XFree(data);
+		xv_set(screen, TALK_KEY, decentral, NULL);
 		return decentral;
 	}
 
-	if (XGetSelectionOwner(dpy, tsrv) != None) return server_based;
+	if (XGetSelectionOwner(dpy, tsrv) != None) {
+		xv_set(screen, TALK_KEY, server_based, NULL);
+		return server_based;
+	}
 
 	return initialized;
 }
@@ -414,7 +427,7 @@ static void initialize_by_mode(Talk_private *priv)
 
 			priv->state = server_based;
 			priv->selown = xv_create(xv_get(self, XV_OWNER), SELECTION_OWNER,
-					XV_KEY_DATA, talk_key, priv,
+					TALK_KEY, priv,
 					SEL_RANK, *data,
 					SEL_CONVERT_PROC, client_convert_proc,
 					SEL_DONE_PROC, client_done,
@@ -440,7 +453,7 @@ static void initialize_by_mode(Talk_private *priv)
 			sel_atom = xv_get(srv, SERVER_ATOM, buf);
 			priv->regist = sel_atom; /* to recognize myself (hsrdtfgklherst) */
 			priv->selown = xv_create(win, SELECTION_OWNER,
-						XV_KEY_DATA, talk_key, priv,
+						TALK_KEY, priv,
 						SEL_RANK, sel_atom,
 						SEL_CONVERT_PROC, decentral_convert_proc,
 						SEL_OWN, TRUE,
@@ -484,7 +497,7 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	if (! talk_key) talk_key = xv_unique_key();
 	priv->silent = TRUE;
 
-	if (xv_get(srv, XV_KEY_DATA, talk_key)) {
+	if (xv_get(srv, TALK_KEY)) {
 		xv_error(slf,
 			ERROR_PKG, TALK,
 			ERROR_STRING, "Already a TALK instance in this process",
@@ -492,12 +505,14 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 			NULL);
 		return XV_ERROR;
 	}
-	xv_set(srv, XV_KEY_DATA, talk_key, slf, NULL);
+	xv_set(srv, TALK_KEY, slf, NULL);
 
 	priv->talksrv = xv_get(srv, SERVER_ATOM, "_DRA_TALK_SERVER");
 	priv->trigg = xv_get(srv, SERVER_ATOM, "_DRA_TALK_TRIGGER");
 	priv->regist = xv_get(srv, SERVER_ATOM, "_DRA_TALK_REGISTER");
 	priv->targets = xv_get(srv, SERVER_ATOM, "TARGETS");
+
+	priv->state = (Talk_state_t)xv_get(XV_SCREEN_FROM_WINDOW(owner), TALK_KEY);
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case TALK_NOTIFY_PROC:
@@ -612,6 +627,10 @@ static void trigger(Talk t, const char *msg, char **params, int *countptr)
 		}
 	}
 
+	if (priv->state == initialized) {
+		priv->state = check_mode(xv_get(t, XV_OWNER), priv->talksrv);
+	}
+
 	if (priv->state == decentral) {
 		Xv_window win = xv_get(t, XV_OWNER);
 		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
@@ -634,7 +653,11 @@ static void trigger(Talk t, const char *msg, char **params, int *countptr)
 		}
 
 		if (data) XFree(data);
-		if (countptr) *countptr = -1; /* no counting here... */
+		/* No counting here... however, callers (usually) want to know
+		 * "how many others" were interested - this '-1' is the indication
+		 * for 'we do not know' meaning 'we cannot count'.
+		 */
+		if (countptr) *countptr = -1;
 	}
 	else {
 		call_server(t, priv->talksrv, priv->trigg, (int)bufsize, msg, params,
@@ -734,7 +757,7 @@ static Xv_object talk_find(Xv_window owner, const Xv_pkg *pkg, Attr_avlist avlis
 	if (! talk_key) talk_key = xv_unique_key();
 
 	/* only one instance per server */
-	if ((self = xv_get(srv, XV_KEY_DATA, talk_key))) return self;
+	if ((self = xv_get(srv, TALK_KEY))) return self;
 	return XV_NULL;
 }
 
