@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.52 2025/03/16 19:59:29 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.53 2025/05/11 17:43:54 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -211,7 +211,7 @@ Pkg_private int textsw_internal_convert(Textsw_private priv,
 		}
 		else if (*type == priv->atoms.utf8) {
 			/* this is a little complicated: even in a pure latin1 
-			 * environment, funny people like xterm ask for "UTF8-STRING" -
+			 * environment, funny people like xterm ask for "UTF8_STRING" -
 			 * but are not able to display the result....
 			 */
 			if (_xv_is_multibyte) {
