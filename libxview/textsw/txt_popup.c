@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_popup_c_sccsid[] = "@(#)txt_popup.c 1.54 93/06/28 DRA: $Id: txt_popup.c,v 4.11 2024/12/20 21:50:45 dra Exp $";
+char     txt_popup_c_sccsid[] = "@(#)txt_popup.c 1.54 93/06/28 DRA: $Id: txt_popup.c,v 4.12 2025/05/11 12:58:23 dra Exp $";
 #endif
 
 /*
@@ -180,9 +180,9 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 #endif
 					FILE_CHOOSER_TYPE, FILE_CHOOSER_SAVEAS,
 #ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, save_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_save_cmd_proc,
 #else
-					FILE_CHOOSER_NOTIFY_FUNC, save_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC, textsw_save_cmd_proc,
 #endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
@@ -203,9 +203,9 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 #endif
 					FILE_CHOOSER_TYPE, FILE_CHOOSER_OPEN,
 #ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, open_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_open_cmd_proc,
 #else
-					FILE_CHOOSER_NOTIFY_FUNC, open_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC, textsw_open_cmd_proc,
 #endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
@@ -226,9 +226,9 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 #endif
 					FILE_CHOOSER_TYPE, FILE_CHOOSER_SAVE,
 #ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, save_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_save_cmd_proc,
 #else
-					FILE_CHOOSER_NOTIFY_FUNC, save_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC, textsw_save_cmd_proc,
 #endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
@@ -254,9 +254,9 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 						XV_MSG("Include"), XV_MSG("Click Select to Include"),
 					FILE_CHOOSER_SELECT_FILES,
 #ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, include_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_include_cmd_proc,
 #else
-					FILE_CHOOSER_NOTIFY_FUNC, include_cmd_proc,
+					FILE_CHOOSER_NOTIFY_FUNC, textsw_include_cmd_proc,
 #endif
 					WIN_CLIENT_DATA, view,
 					FILE_CHOOSER_ADD_UI_FUNC, add_exten_item,
