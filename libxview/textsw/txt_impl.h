@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.58 2025/03/11 19:48:59 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.59 2025/05/11 12:58:10 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -341,9 +341,9 @@ Pkg_private void textsw_set_dir_str(int popup_type);
 Pkg_private void textsw_stablize(Textsw_private , int blink);
 Pkg_private void textsw_thaw_caret(Textsw_private);
 Pkg_private void textsw_undo(Textsw_private);
-Pkg_private int open_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data);
-Pkg_private int save_cmd_proc(Frame fc, CHAR *path, struct stat *exists);
-Pkg_private int include_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data);
+Pkg_private int textsw_open_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data);
+Pkg_private int textsw_save_cmd_proc(Frame fc, CHAR *path, struct stat *exists);
+Pkg_private int textsw_include_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data);
 Pkg_private void textsw_find_pattern(Textsw_private textsw, Es_index *first, Es_index *last_plus_one, CHAR *buf, unsigned buf_len, unsigned flags);
 Pkg_private Menu textsw_menu_get(Textsw_private);
 Pkg_private void textsw_menu_set(Textsw_private, Menu);
