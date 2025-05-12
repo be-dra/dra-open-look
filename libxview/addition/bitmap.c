@@ -34,9 +34,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
-char bitmap_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: bitmap.c,v 4.3 2025/03/08 13:37:48 dra Exp $";
+char bitmap_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: bitmap.c,v 4.5 2025/05/11 10:38:31 dra Exp $";
 
-typedef struct {
+typedef struct _bm_priv {
 	Xv_opaque           public_self;
 	char               *file;
 	Bitmap_file_type    type;
@@ -44,6 +44,7 @@ typedef struct {
 	Xv_screen           screen;
 	Display            *dpy;
 	GC                  gc;
+	struct _bm_priv    *next;
 } Bitmap_private;
 
 #define BITPRIV(_x_) XV_PRIVATE(Bitmap_private, Xv_bitmap, _x_)
@@ -55,6 +56,8 @@ typedef struct {
 
 #define IMIN(a, b) ((a) > (b) ? (b) : (a))
 #define ADONE ATTR_CONSUME(*attrs);break
+
+static int bm_key = 0;
 
 static void flood_fill(XImage *xima, int x, int y)
 {
@@ -550,9 +553,11 @@ static Bitmap_file_status store_file(Bitmap_private *priv)
 static int bitmap_init(Xv_screen owner, Bitmap slf, Attr_avlist avlist, int *u)
 {
 	Xv_bitmap *self = (Xv_bitmap *)slf;
-	Bitmap_private *priv;
+	Bitmap_private *priv, *list;
 	Xv_window xvroot;
 	GC *gc_list;
+
+	if (! bm_key) bm_key = xv_unique_key();
 
 	if (!(priv = (Bitmap_private *)xv_alloc(Bitmap_private)))
 		return XV_ERROR;
@@ -567,6 +572,15 @@ static int bitmap_init(Xv_screen owner, Bitmap slf, Attr_avlist avlist, int *u)
     gc_list = (GC *)xv_get(priv->screen, SCREEN_OLGC_LIST, xvroot);
 	priv->gc = gc_list[SCREEN_BITMAP_GC];
 
+	if ((list = (Bitmap_private *)xv_get(priv->screen, XV_KEY_DATA, bm_key))) {
+		while (list->next) list = list->next;
+
+		/* assign new image object to end of list */
+		list->next = priv;
+	}
+	else {
+		xv_set(priv->screen, XV_KEY_DATA, bm_key, priv, NULL);
+	}
 	return XV_OK;
 }
 
@@ -652,12 +666,68 @@ static Xv_opaque bitmap_get(Bitmap self, int *status, Attr_attribute attr, va_li
 static int bitmap_destroy(Bitmap self, Destroy_status status)
 {
 	if (status == DESTROY_CLEANUP) {
-		Bitmap_private *priv = BITPRIV(self);
+		Bitmap_private *priv = BITPRIV(self), *list;
+
+        list = (Bitmap_private *)xv_get(priv->screen, XV_KEY_DATA, bm_key);
+        if (BITPUB(list) == self) {
+            xv_set(priv->screen, XV_KEY_DATA, bm_key, list->next, NULL);
+		}
+		else {
+        	for ( ; list->next; list = list->next) {
+            	if (BITPUB(list->next) == self) {
+                	list->next = list->next->next;
+                	break;
+            	}
+			}
+		}
 
 		if (priv->file) xv_free(priv->file);
 		xv_free((char *)priv);
 	}
 	return XV_OK;
+}
+
+static Xv_opaque bitmap_find(Xv_screen owner, const Xv_pkg *pkg,
+							Attr_avlist avlist)
+{
+	Xv_Screen screen = owner? owner : xv_default_screen;
+	Bitmap_private *list;
+	Attr_attribute *attrs;
+	/* consider all the attrs we allow "find" to match on */
+	int     width = -1, height = -1;
+	char   *filename = NULL;
+
+	if (! bm_key) bm_key = xv_unique_key();
+
+	/* get the list of existing images from the screen */
+	list = (Bitmap_private *)xv_get(screen, XV_KEY_DATA, bm_key);
+
+	if (!list) return XV_NULL;
+
+    for (attrs = avlist; *attrs; attrs = attr_next(attrs)) switch (attrs[0]) {
+		case XV_WIDTH : width = (int)attrs[1]; break;
+		case XV_HEIGHT : height = (int)attrs[1]; break;
+		case BITMAP_FILE: filename = (char *)attrs[1]; break;
+		default: break;
+	}
+	/* Now loop thru each object looking for those whose
+	 * value that match those specified above.
+	 */
+	for ( ; list; list = list->next) {
+		/* If it doesn't match, continue to the next object in
+		 * the list.  Repeat for each requested attribute.
+		 */
+		 if (width > -1 && (width != (int)xv_get(XV_PUBLIC(list), XV_WIDTH)))
+			continue;
+		if (height > -1 && (height != (int)xv_get(XV_PUBLIC(list), XV_HEIGHT)))
+			continue;
+		if (filename && (!list->file || strcmp(filename, list->file)))
+			continue;
+		/* all matches seemed to be successful, return this object */
+		return BITPUB(list);
+	}
+	/* nothing found */
+	return XV_NULL;
 }
 
 const Xv_pkg xv_bitmap_pkg = {
@@ -669,5 +739,5 @@ const Xv_pkg xv_bitmap_pkg = {
 	bitmap_set,
 	bitmap_get,
 	bitmap_destroy,
-	0
+	bitmap_find
 };
