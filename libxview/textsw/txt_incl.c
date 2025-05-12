@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_incl_c_sccsid[] = "@(#)txt_incl.c 1.35 93/06/28 DRA: $Id: txt_incl.c,v 4.6 2025/01/01 20:35:21 dra Exp $";
+char     txt_incl_c_sccsid[] = "@(#)txt_incl.c 1.35 93/06/28 DRA: $Id: txt_incl.c,v 4.7 2025/05/11 12:58:23 dra Exp $";
 #endif
 
 /*
@@ -43,7 +43,7 @@ typedef enum {
 Pkg_private Panel_item include_panel_items[];
 
 
-Pkg_private int include_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data)
+Pkg_private int textsw_include_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data)
 {
 
 	Textsw_view_private view =
