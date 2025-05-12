@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_load_c_sccsid[] = "@(#)txt_load.c 1.37 93/06/28 DRA: $Id: txt_load.c,v 4.5 2025/01/01 20:35:21 dra Exp $";
+char     txt_load_c_sccsid[] = "@(#)txt_load.c 1.37 93/06/28 DRA: $Id: txt_load.c,v 4.6 2025/05/11 12:58:23 dra Exp $";
 #endif
 
 /*
@@ -42,7 +42,7 @@ typedef enum {
     FILE_STRING_ITEM = 2
 }               File_panel_item_enum;
 
-Pkg_private int open_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data)
+Pkg_private int textsw_open_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque client_data)
 {
 
     Textsw_view_private view  = (Textsw_view_private)xv_get(fc,WIN_CLIENT_DATA,0);
@@ -167,7 +167,7 @@ Specify a file name to Load."),
 }
    
 
-Pkg_private int save_cmd_proc(Frame fc, CHAR *path, struct stat * exists)
+Pkg_private int textsw_save_cmd_proc(Frame fc, CHAR *path, struct stat * exists)
 {
    Textsw_view_private view  = (Textsw_view_private)xv_get(fc,WIN_CLIENT_DATA);
    Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
