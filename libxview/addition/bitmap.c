@@ -24,6 +24,7 @@
  */
 #include <xview/bitmap.h>
 #include <xview/icon_load.h>
+#include <xview_private/svr_impl.h>
 #include <X11/Xutil.h>
 #if defined(sun) && defined(BSD)
 #  include <rasterfile.h>
@@ -34,7 +35,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-char bitmap_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: bitmap.c,v 4.5 2025/05/11 10:38:31 dra Exp $";
+char bitmap_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: bitmap.c,v 4.6 2025/05/13 18:40:35 dra Exp $";
 
 typedef struct _bm_priv {
 	Xv_opaque           public_self;
@@ -592,7 +593,7 @@ static Xv_opaque bitmap_set(Bitmap self, Attr_avlist avlist)
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case XV_DEPTH:
-		case SERVER_IMAGE_DEPTH: A1 = (Attr_attribute)1;
+		case SERVER_IMAGE_DEPTH: A1 = (Attr_attribute)1; /* we are BITmap */
 			break;
 
 		case BITMAP_FILE:
@@ -691,7 +692,7 @@ static Xv_opaque bitmap_find(Xv_screen owner, const Xv_pkg *pkg,
 							Attr_avlist avlist)
 {
 	Xv_Screen screen = owner? owner : xv_default_screen;
-	Bitmap_private *list;
+	Bitmap_private *head, *list, *prev = NULL;
 	Attr_attribute *attrs;
 	/* consider all the attrs we allow "find" to match on */
 	int     width = -1, height = -1;
@@ -700,9 +701,9 @@ static Xv_opaque bitmap_find(Xv_screen owner, const Xv_pkg *pkg,
 	if (! bm_key) bm_key = xv_unique_key();
 
 	/* get the list of existing images from the screen */
-	list = (Bitmap_private *)xv_get(screen, XV_KEY_DATA, bm_key);
+	head = (Bitmap_private *)xv_get(screen, XV_KEY_DATA, bm_key);
 
-	if (!list) return XV_NULL;
+	if (!head) return XV_NULL;
 
     for (attrs = avlist; *attrs; attrs = attr_next(attrs)) switch (attrs[0]) {
 		case XV_WIDTH : width = (int)attrs[1]; break;
@@ -713,18 +714,24 @@ static Xv_opaque bitmap_find(Xv_screen owner, const Xv_pkg *pkg,
 	/* Now loop thru each object looking for those whose
 	 * value that match those specified above.
 	 */
-	for ( ; list; list = list->next) {
+	for (list = head; list; prev = list, list = list->next) {
+		Bitmap self = BITPUB(list);
 		/* If it doesn't match, continue to the next object in
 		 * the list.  Repeat for each requested attribute.
 		 */
-		 if (width > -1 && (width != (int)xv_get(XV_PUBLIC(list), XV_WIDTH)))
-			continue;
-		if (height > -1 && (height != (int)xv_get(XV_PUBLIC(list), XV_HEIGHT)))
-			continue;
-		if (filename && (!list->file || strcmp(filename, list->file)))
-			continue;
-		/* all matches seemed to be successful, return this object */
-		return BITPUB(list);
+		if (width > -1 && (width != (int)xv_get(self, XV_WIDTH))) continue;
+		if (height > -1 && (height != (int)xv_get(self, XV_HEIGHT))) continue;
+		if (filename && (!list->file || strcmp(filename, list->file))) continue;
+
+		/* all matches seemed to be successful, return this object
+		 * and put it to the front of the list;
+		 */
+		if (prev) { /* list is not the first */
+			prev->next = list->next;
+			list->next = head;
+			xv_set(screen, XV_KEY_DATA, bm_key, list, NULL);
+		}
+		return self;
 	}
 	/* nothing found */
 	return XV_NULL;
