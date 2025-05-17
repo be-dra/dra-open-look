@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.45 2025/05/04 19:20:10 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.46 2025/05/16 17:22:42 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -27,6 +27,7 @@ typedef struct {
 	Selection_owner    selown;
 	Atom               talksrv, trigg, regist, targets;
 	int                last_error, silent, notify_count;
+	Xv_opaque          client_data;
 	talk_notify_proc_t notify_proc;
 	Talk_state_t       state;
 	pattern_t          not_yet_installed, installed;
@@ -707,6 +708,10 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 			priv->silent = (int)A1;
 			ADONE;
 
+		case TALK_CLIENT_DATA:
+			priv->client_data = (Xv_opaque)A1;
+			ADONE;
+
 		case XV_END_CREATE:
 			initialize_by_mode(priv);
 			break;
@@ -730,6 +735,7 @@ static Xv_opaque talk_get(Talk self, int *status, Attr_attribute attr, va_list v
 	switch ((int)attr) {
 		case TALK_NOTIFY_PROC: return (Xv_opaque)priv->notify_proc;
 		case TALK_SILENT: return (Xv_opaque)priv->silent;
+		case TALK_CLIENT_DATA: return priv->client_data;
 		case TALK_LAST_ERROR: return (Xv_opaque)priv->last_error;
 		default:
 			*status = xv_check_bad_attr(TALK, attr);
