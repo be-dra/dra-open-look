@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.46 2025/05/16 17:22:42 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.47 2025/05/18 07:37:51 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -261,7 +261,7 @@ static void cleanup_root_prop(Talk self, Atom bad_atom)
 	/* there is a race condition between this XGetWindowProperty and
 	 * the following XChangeProperty... - therefore, we use the 
 	 * 'delete' flag of XGetWindowProperty, so, a second reader will get
-	 * nothing and therefore will not come int our way.
+	 * nothing and therefore will not get in our way.
 	 */
 	succ = XGetWindowProperty(dpy, root, priv->talksrv, 0L, 100L, TRUE,
 				XA_ATOM, &acttype, &format, &len, &rest,
