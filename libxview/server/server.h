@@ -1,4 +1,4 @@
-/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.8 2025/03/08 13:42:17 dra Exp $      */
+/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.9 2025/05/18 07:56:45 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -100,6 +100,8 @@ typedef enum {
 	SERVER_EVENT_HAS_PRIMARY_PASTE_MODIFIERS=SERVER_ATTR(ATTR_INT,69), /* --G */
 
 	SERVER_SHAPE_AVAILABLE = SERVER_ATTR(ATTR_INT, 68),    /* --G */
+	SERVER_LOCK                 = SERVER_ATTR(ATTR_OPAQUE_PAIR, 137), /* -S- */
+	SERVER_UNLOCK               = SERVER_ATTR(ATTR_STRING, 138),      /* -S- */
 
 	/* Private attributes */
 	SERVER_ASCII_KEYSTATE		= SERVER_ATTR(ATTR_OPAQUE,	 7),
