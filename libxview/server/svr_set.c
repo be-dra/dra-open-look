@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.8 2025/02/04 20:08:35 dra Exp $";
+static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.9 2025/05/18 07:56:35 dra Exp $";
 #endif
 #endif
 
@@ -47,10 +47,67 @@ static void intern_atoms(Server_info *server, char **names)
 	xv_free(atoms);
 }
 
-Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute *avlist)
+static int lock_global_X_resource(Xv_server srv, const char *atomname,
+									Window xid)
+{
+	typedef struct {
+		unsigned long pid;
+		unsigned long xid;
+	} xlockinfo_t;
+	xlockinfo_t lock, *dt;
+	int pid = (int)getpid();
+	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
+	Window root = DefaultRootWindow(dpy);
+	Atom at = xv_get(srv, SERVER_ATOM, atomname);
+	Atom typ = xv_get(srv, SERVER_ATOM, "XLOCKINFO");
+	int format, succ;
+	unsigned long len, rest;
+	Atom acttype;
+
+	/* the idea is as follows: we use a property of type XLOCKINFO, format 32
+	 * on the default root window of the display.
+	 * Every program that wants to lock something chooses an atom name and
+	 * calls this function handing it a window ID of an own window.
+	 * Then this function APPENDS an xlockinfo_t and afterwards reads the
+	 * property. If the first xlockinfo contains the own data, the lock was
+	 * successful.
+	 */
+
+	lock.pid = pid;
+	lock.xid = xid;
+
+	XChangeProperty(dpy, root, at, typ, 32, PropModeAppend, 
+				(unsigned char *)&lock, (int)(sizeof(lock)/sizeof(lock.pid)));
+
+	/* now the X server has serialized simultaneous requests! 
+	 * We read the first xlockinfo_t and check whether it conatins OUR OWN
+	 * data;
+	 */
+
+	succ = XGetWindowProperty(dpy, root, at, 0L, sizeof(lock)/sizeof(lock.pid),
+				FALSE, typ, &acttype, &format, &len, &rest,
+				(unsigned char **)&dt);
+	if (succ == Success && acttype == typ && format == 32) {
+		lock = *dt;
+		XFree(dt);
+		if (lock.pid == pid && lock.xid == xid) return TRUE;
+	}
+	return FALSE;
+}
+
+static void unlock_global_X_resource(Xv_server srv, const char *atomname)
+{
+	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
+	Window root = DefaultRootWindow(dpy);
+	Atom at = xv_get(srv, SERVER_ATOM, atomname);
+
+	XDeleteProperty(dpy, root, at);
+}
+
+Pkg_private Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 {
 	Attr_avlist attrs;
-	Server_info *server = SERVER_PRIVATE(server_public);
+	Server_info *server = SERVER_PRIVATE(self);
 	short error = XV_OK;
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
@@ -100,7 +157,7 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute 
 				break;
 			case SERVER_JOURNAL_SYNC_EVENT:
 				if (server->journalling)
-					server_journal_sync_event(server_public, (int)attrs[1]);
+					server_journal_sync_event(self, (int)attrs[1]);
 				ATTR_CONSUME(*attrs);
 				break;
 			case SERVER_UI_REGISTRATION_PROC:
@@ -214,7 +271,7 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute 
 					/*
 					 * Determine offsets into the semantic mapping tables.
 					 */
-					server_semantic_map_offset(server_public, modifiers,
+					server_semantic_map_offset(self, modifiers,
 							&offset);
 
 					/*
@@ -239,7 +296,7 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute 
 					/*
 					 * Determine offsets into the semantic mapping tables.
 					 */
-					server_semantic_map_offset(server_public, modifiers,
+					server_semantic_map_offset(self, modifiers,
 							&offset);
 
 					/*
@@ -287,7 +344,7 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute 
 				break;
 
 			case SERVER_REGISTER_SECONDARY_BASE:
-				server_register_secondary_base(server_public,
+				server_register_secondary_base(self,
 											(Frame)attrs[1], (Frame)attrs[2]);
 				ATTR_CONSUME(*attrs);
 				break;
@@ -299,7 +356,7 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute 
 
 					server->app_name_string = xv_strsave(xv_app_name);
 				}
-				server_xvwp_connect(server_public, "base");
+				server_xvwp_connect(self, "base");
 				break;
 
 			case SERVER_UPDATE_RESOURCE_DATABASES:
@@ -314,6 +371,20 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute 
 
 			case SERVER_INTERN_ATOMS:
 				intern_atoms(server, (char **)(attrs + 1));
+				ATTR_CONSUME(*attrs);
+				break;
+
+			case SERVER_LOCK:
+				if (! lock_global_X_resource(self,(char *)attrs[1],
+											(Window)attrs[2]))
+				{
+					error = XV_ERROR;
+				}
+				ATTR_CONSUME(*attrs);
+				break;
+
+			case SERVER_UNLOCK:
+				unlock_global_X_resource(self, (char *)attrs[1]);
 				ATTR_CONSUME(*attrs);
 				break;
 
