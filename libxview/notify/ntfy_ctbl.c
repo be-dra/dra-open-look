@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ntfy_ctbl.c 1.22 93/06/28  DRA: $Id: ntfy_ctbl.c,v 4.3 2025/03/25 14:40:20 dra Exp $ ";
+static char     sccsid[] = "@(#)ntfy_ctbl.c 1.22 93/06/28  DRA: $Id: ntfy_ctbl.c,v 4.4 2025/05/19 08:01:57 dra Exp $ ";
 #endif
 #endif
 
@@ -253,9 +253,12 @@ pkg_private NTFY_ENUM ntfy_new_enum_conditions(NTFY_CNDTBL *cnd_list,
 		 * that is already there (so no real adding takes place) and immediately
 		 * afterwards calls  ntfy_remove_from_table, which really does the
 		 * removing - so the current cnd_list is being freed ....
-		 * don't know where the 0x10 comes from, but we never saw something else
+		 * don't know where the 0x10 comes from, but we never saw anything else
 		 */
-		if ((long)cnd_list->next == 0x10) {
+		if ((long)cnd_list->next == 0x10) {  /* HERE !!!! valgrind detects
+									* (sometimes) "Invalid read of size 8".
+									* For now, I have suppressed it....
+									*/
 			/* sorry, but this only prevents us from dying here - 
 			 * we die in ntfy_new_paranoid_enum_conditions
 			 */
