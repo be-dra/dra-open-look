@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.47 2025/05/18 07:37:51 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.48 2025/05/25 11:08:11 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -256,7 +256,7 @@ static void cleanup_root_prop(Talk self, Atom bad_atom)
 	Display *dpy = (Display *)xv_get(win, XV_DISPLAY);
 	int format, succ;
 	unsigned long len, rest;
-	Atom acttype, *data;
+	Atom acttype, *data = NULL;
 
 	/* there is a race condition between this XGetWindowProperty and
 	 * the following XChangeProperty... - therefore, we use the 
@@ -276,10 +276,12 @@ static void cleanup_root_prop(Talk self, Atom bad_atom)
 				XChangeProperty(dpy, root, priv->talksrv, XA_ATOM, 32,
 						PropModeReplace, (unsigned char *)data, 
 						(int)len - 1);
+				XFree(data);
 				return;
 			}
 		}
 	}
+	if (data) XFree(data);
 }
 
 static void decentral_reply(Talk self, Atom target, Atom type,
