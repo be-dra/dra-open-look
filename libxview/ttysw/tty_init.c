@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.13 2025/04/03 08:31:10 dra Exp $";
+char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.14 2025/05/29 08:12:48 dra Exp $";
 #endif
 
 /*
@@ -217,6 +217,7 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 
 	((Xv_tty *) tty_public)->private_data = (Xv_opaque) ttysw;
 	ttysw->public_self = (Tty) tty_public;
+	ttysw->magic = 0xF0110B0B;
 
 	ttysw->ttysw_eventop = ttysw_eventstd;
 	/* Following call only affect appearance of ttysw, not termsw */
