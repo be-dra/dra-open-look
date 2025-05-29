@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.18 2025/04/04 20:13:22 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.20 2025/05/29 08:13:36 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -590,6 +590,7 @@ static int termsw_init(Xv_Window parent, Termsw termsw_public,
 	/* link to object; termsw is a textsw at this moment */
 	termsw_object->private_data = (Xv_opaque) termsw_folio;
 	termsw_folio->public_self = termsw_public;
+	termsw_folio->magic = 0xF011EFFA;
 
 	termsw_object->private_tty = (Xv_opaque) 0;
 
