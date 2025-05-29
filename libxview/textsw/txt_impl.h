@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.59 2025/05/11 12:58:10 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.61 2025/05/29 08:11:48 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -145,9 +145,9 @@ typedef struct textsw_selection_object {
 typedef Textsw_selection_object	*Textsw_selection_handle;
 
 typedef struct textsw_view_object {
+	Textsw_view			  public_self;
 	long unsigned		  magic;
 	struct textsw_object *textsw_priv;
-	Textsw_view			  public_self;
 	Rect				  rect;
 	Ev_handle			  e_view;
 	long unsigned		  view_state;
@@ -165,6 +165,7 @@ Pkg_private int textsw_destroy(Textsw tsw, Destroy_status status);
 
 #define	TEXTSW_VIEW_NULL	((Textsw_view_private)0)
 #define	TEXTSW_VIEW_MAGIC	0xF0110A0A
+#define	TEXTSW_FOLIO_MAGIC	0xF011A0A0
 
 #define PIXWIN_FOR_VIEW(_view)		((_view)->e_view->pw)
 
