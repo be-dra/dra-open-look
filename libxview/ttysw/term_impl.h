@@ -1,4 +1,4 @@
-/* @(#)term_impl.h 20.32 93/06/28 SMI dra: $Id: term_impl.h,v 4.6 2025/04/03 14:12:01 dra Exp $ */
+/* @(#)term_impl.h 20.32 93/06/28 SMI dra: $Id: term_impl.h,v 4.8 2025/05/29 08:12:48 dra Exp $ */
 
 /****************************************************************************/
 /*
@@ -175,6 +175,7 @@
 /* Termsw's folio data structure */
 typedef struct _Termsw_folio_object {
     Termsw		public_self;
+	long unsigned	magic;
     Menu		text_menu;
     Menu		tty_menu;
     Textsw_mark		user_mark;
@@ -213,9 +214,9 @@ typedef Termsw_folio_object	*Termsw_folio;
 
 /* Termsw's view data structure */
 typedef struct termsw_view_object {
-	long unsigned			  magic;
     Termsw_view		public_self;	/* Back pointer to the object*/
-    Termsw_folio		folio;
+	long unsigned	magic;
+    Termsw_folio	folio;
 } Termsw_view_object;
 typedef Termsw_view_object	*Termsw_view_handle;
 
