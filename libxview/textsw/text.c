@@ -1,5 +1,5 @@
 #ifndef lint
-char     text_c_sccsid[] = "@(#)text.c 20.31 93/06/28 DRA: $Id: text.c,v 4.14 2025/03/08 13:15:23 dra Exp $";
+char     text_c_sccsid[] = "@(#)text.c 20.31 93/06/28 DRA: $Id: text.c,v 4.15 2025/05/29 08:11:48 dra Exp $";
 #endif
 
 /*
@@ -58,6 +58,7 @@ static int textsw_init(Xv_Window parent, Textsw textsw_public,
 	/* link to object */
 	textsw_object->private_data = (Xv_opaque) priv;
 	priv->public_self = textsw_public;
+	priv->magic = TEXTSW_FOLIO_MAGIC;
 
 	priv = textsw_init_internal(priv, status, textsw_default_notify, avlist);
 	textsw_new_selection_init(textsw_public);
