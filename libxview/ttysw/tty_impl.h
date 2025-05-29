@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.31 2025/04/07 19:25:12 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.33 2025/05/29 08:12:48 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -120,6 +120,7 @@ enum ttysw_hdrstate { HS_BEGIN, HS_HEADER, HS_ICON, HS_ICONFILE, HS_FLUSH };
 
 typedef struct ttysubwindow {
     Tty			public_self;		/* Back pointer to the object*/
+	long unsigned	magic;
     struct ttysw_view_object 			/* View window */
     			*view;			/* (Pure tty has only one view) */
     Tty_view	current_view_public; /* This keep trace of the view become ttysw */
@@ -225,8 +226,8 @@ typedef struct ttysubwindow {
 typedef Ttysw		*Ttysw_private;
 
 typedef struct ttysw_view_object {
-	long unsigned	magic;
     Tty_view		public_self;
+	long unsigned	magic;
     Ttysw_private	folio;
 	Xv_Cursor       ttysw_stop_cursor;	/* stop sign cursor (i.e., CTRL-S) */
 	Xv_Cursor       ttysw_cursor;	/* stop sign cursor (i.e., CTRL-S) */
