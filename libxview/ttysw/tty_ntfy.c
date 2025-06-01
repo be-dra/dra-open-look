@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.15 2025/04/03 14:12:52 dra Exp $";
+char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.16 2025/05/29 14:52:10 dra Exp $";
 #endif
 
 /*
@@ -457,6 +457,21 @@ Pkg_private void ttysw_resize(Ttysw_view_handle ttysw_view)
 {
 	Ttysw_private ttysw = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
 	int pagemode;
+
+	/* if we are running a vi in a TERMSW and resize it, we come here
+	 * with a Textsw_view_private: magic is then 0xf0110a0a = TEXTSW_VIEW_MAGIC
+	 * and we die in ttysw_setopt.
+	 */
+	if (ttysw_view->magic == TEXTSW_VIEW_MAGIC) {
+		/* if we simply 'return;' here, vi will not know
+		 * about the new size...
+		 */
+		Textsw_view tswv = XV_PUBLIC(ttysw_view);
+		Termsw term = xv_get(tswv, XV_OWNER); /* this is in fact a Termsw */
+
+		ttysw = TTY_PRIVATE_TERMSW(term);
+		ttysw_view = ttysw->view;
+	}
 
 	/*
 	 * Turn off page mode because send characters through character image
