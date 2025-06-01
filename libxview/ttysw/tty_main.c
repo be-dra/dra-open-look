@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.18 2025/04/04 19:59:05 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.19 2025/05/29 14:52:44 dra Exp $";
 #endif
 
 /*
@@ -1638,11 +1638,12 @@ Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on)
  */
 Pkg_private void ttysw_setopt(Ttysw_private ttysw_folio_or_view, int opt, int on)
 {
-	Tty folio_or_view_public = TTY_PUBLIC((Ttysw_private) ttysw_folio_or_view);
+	Tty folio_or_view_public;
 	Ttysw_view_handle ttysw_view;
 	Ttysw_private ttysw_folio;
 	int result = 0;
 
+	folio_or_view_public = TTY_PUBLIC((Ttysw_private) ttysw_folio_or_view);
 	if (IS_TTY_VIEW(folio_or_view_public) ||
 			IS_TERMSW_VIEW(folio_or_view_public)) {
 		ttysw_view = (Ttysw_view_handle) ttysw_folio_or_view;
