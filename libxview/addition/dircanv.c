@@ -18,7 +18,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.50 2025/04/11 15:05:41 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.51 2025/05/31 18:32:35 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -1203,7 +1203,7 @@ static int handle_navigation(Dir_private *priv, Xv_window pw, Scrollpw_info *vi,
 	return TRUE;
 }
 
-static void dircanvas_machine_intern(dir_events ev, dir_states *staptr,
+static void dircanvas_machine(dir_events ev, dir_states *staptr,
 							dir_priv_ptr priv, dir_event_ptr es)
 {
 	switch (*staptr) {
@@ -1396,34 +1396,6 @@ static void dircanvas_machine_intern(dir_events ev, dir_states *staptr,
 			}
 			break;
 	}
-}
-
-/* static char *state_names[] = { */
-/*   "SNULL", */
-/*   "SEL_BACK", */
-/*   "SEL_OBJ", */
-/*   "ADJ_BACK", */
-/*   "ADJ_OBJ", */
-/*   "FRAME_SEL", */
-/*   "FRAME_ADJ" */
-/* }; */
-/*  */
-/* static char *event_names[] = { */
-/*   "SELECT_DOWN", */
-/*   "SELECT_UP", */
-/*   "ADJUST_DOWN", */
-/*   "ADJUST_UP", */
-/*   "DRAG", */
-/*   "STOP", */
-/*   "UNKNOWN_INPUT" */
-/* }; */
-
-static void dircanvas_machine(dir_events ev, dir_states *staptr,
-							dir_priv_ptr priv, dir_event_ptr es)
-{
-/* 	DTRACE(DTL_STAT, "state %s, event %s\n", state_names[*staptr], event_names[ev]); */
-	dircanvas_machine_intern(ev, staptr, priv, es);
-/* 	DTRACE(DTL_STAT, "        -> state %s\n", state_names[*staptr]); */
 }
 
 static void dir_show_propwin(Dir_private *priv)
