@@ -35,7 +35,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.6 2025/03/08 13:37:48 dra Exp $";
+char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.7 2025/06/04 20:01:50 dra Exp $";
 #endif
 
 #define IMAGE_WIDTH 64
@@ -172,11 +172,9 @@ static char *image_string_2dframes = "\
 
 */
 
-typedef void (*changed_proc_t)(Color_chooser, int r, int g, int b);
-
 typedef struct {
 	Xv_opaque       public_self;
-	changed_proc_t  changed_proc;
+	Color_chooser_changed_proc_t  changed_proc;
 	Panel_item      textfield;
 	Xv_opaque       client_data;
 	props_t curprops;
@@ -1132,7 +1130,7 @@ static Xv_opaque colorchsr_set(Color_chooser self, Attr_avlist avlist)
 			ADONE;
 
 		case COLORCHOOSER_CHANGED_PROC:
-			priv->changed_proc = (changed_proc_t)A1;
+			priv->changed_proc = (Color_chooser_changed_proc_t)A1;
 			ADONE;
 
 		case COLORCHOOSER_TEXTFIELD:
