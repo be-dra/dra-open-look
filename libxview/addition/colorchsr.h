@@ -2,7 +2,7 @@
 #define _colorchsr_h_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: colorchsr.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: colorchsr.h,v 4.4 2025/06/04 20:01:50 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -49,6 +49,8 @@ typedef enum {
 	COLORCHOOSER_TEXTFIELD  = COLCH_ATTR(ATTR_OPAQUE, 4),            /* CSG */
 	COLORCHOOSER_CLIENT_DATA  = COLCH_ATTR(ATTR_OPAQUE, 99)          /* CSG */
 } Colorchooser_attr;
+
+typedef void (*Color_chooser_changed_proc_t)(Color_chooser, int r,int g,int b);
 
 typedef struct {
 	int r, g, b;
