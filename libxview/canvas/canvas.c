@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.6 2025/03/18 12:30:40 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.7 2025/06/04 19:49:16 dra Exp $ ";
 #endif
 #endif
 
@@ -43,12 +43,6 @@ Xv_private_data Attr_attribute  canvas_pew_key;
 
 #define	BIT_FIELD(field)	unsigned field : 1
 
-
-typedef void (*CanvasResizeFunction_t)(Canvas, int, int);
-
-typedef void (*CanvasRepaintFunction_t)(Canvas, Xv_window, Display *, Window,
-										Xv_xrectlist *);
-typedef void (*CanvasOldRepaintFunction_t)(Canvas, Xv_window, Rectlist *);
 
 #ifdef OW_I18N
 /*
