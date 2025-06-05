@@ -1,4 +1,4 @@
-/*      @(#)canvas.h 20.38 93/06/28 SMI    DRA: $Id: canvas.h,v 4.2 2025/03/08 12:52:57 dra Exp $    */
+/*      @(#)canvas.h 20.38 93/06/28 SMI    DRA: $Id: canvas.h,v 4.4 2025/06/04 19:58:37 dra Exp $    */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -15,8 +15,8 @@
  ***********************************************************************
  */
 #include <xview/openwin.h>
-/* #include <xview/pixwin.h> */
 #include <xview/win_input.h>
+#include <xview/xv_xrect.h>
 
 /*
  ***********************************************************************
@@ -137,6 +137,10 @@ typedef struct {
     Xv_opaque		private_data;
 } Xv_canvas_pw;
 
+typedef void (*CanvasResizeFunction_t)(Canvas, int, int);
+typedef void (*CanvasRepaintFunction_t)(Canvas, Xv_window, Display *, Window,
+										Xv_xrectlist *);
+typedef void (*CanvasOldRepaintFunction_t)(Canvas, Xv_window, Rectlist *);
 
 /*
  ***********************************************************************
