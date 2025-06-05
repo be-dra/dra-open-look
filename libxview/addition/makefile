@@ -595,11 +595,11 @@ GETTEXT.H		= gettext.h
 GETTEXT.C		= gettext.c
 GETTEXT.O		= gettext.o
 
-HDRSPUBLIC=accel.h bitmap.h colorchsr.h colortext.h dircanv.h filedrag.h fileman.h filereq.h fontprop.h funckey.h shortcut.h group.h iccc.h mllist.h permlist.h process.h proplist.h richtext.h scrollw.h pixscr.h
+HDRSPUBLIC=accel.h bitmap.h colorchsr.h colortext.h dircanv.h filedrag.h fileman.h filereq.h fontprop.h funckey.h shortcut.h group.h iccc.h mllist.h permlist.h process.h proplist.h richtext.h scrollw.h pixscr.h graphwin.h
 
 HDRSPRIVATE=
 
-SRCS =accel.c bitmap.c colorchsr.c colortext.c dircanv.c filedrag.c fileman.c filereq.c fontprop.c funckey.c shortcut.c group.c iccc.c mllist.c permlist.c process.c proplist.c richtext.c scrollw.c pixscr.c
+SRCS =accel.c bitmap.c colorchsr.c colortext.c dircanv.c filedrag.c fileman.c filereq.c fontprop.c funckey.c shortcut.c group.c iccc.c mllist.c permlist.c process.c proplist.c richtext.c scrollw.c pixscr.c graphwin.c
 OBJS=$(SRCS:.c=.o)
 
 LIBTARGET = xview
@@ -674,10 +674,8 @@ includes::
 	$(LN) $(BUILDINCTOP)//$(CURRENT_DIR)/$$i .; \
 	done)
 
-install::
-	$(MKDIRHIER) $(XVPUB_HEADER_DEST)
-
-install:: install_h
+install:
+	@echo install NOT FROM HERE
 
 install_h: $(HDRSPUBLIC)
 	$(INSTALL) $(INSTALLFLAGS) $(INSTDATFLAGS) $? $(DESTDIR)$(XVPUB_HEADER_DEST)
@@ -705,8 +703,6 @@ populate::
 
 includes::
 
-install::
-
 retrieve: $(HEADERS)
 
 # -----------------------------------------------------------------------
@@ -732,9 +728,6 @@ tags::
 
 # -----------------------------------------------------------------------
 # empty rules for directories that do not have SUBDIRS - do not edit
-
-install::
-	@echo "install in $(CURRENT_DIR) done"
 
 install.man::
 	@echo "install.man in $(CURRENT_DIR) done"
