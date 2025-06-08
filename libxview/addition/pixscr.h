@@ -2,7 +2,7 @@
 #define pixscr_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: pixscr.h,v 4.2 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: pixscr.h,v 4.3 2025/06/06 18:42:14 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -51,5 +51,7 @@ typedef enum {
 	PIXSCR_EXPAND_FRAME = PIXSCR_ATTR(ATTR_BOOLEAN, 50)       /* CSG */
 } Pixmap_scroller_attr;
 
+typedef void (*pixscr_layout_proc_t)(Pixmap_scroller, int, int);
+typedef void (*pixscr_drop_proc_t)(Pixmap_scroller, char **, int);
 
 #endif /* pixscr_h_INCLUDED */
