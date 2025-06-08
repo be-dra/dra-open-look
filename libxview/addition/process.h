@@ -2,7 +2,7 @@
 #define process_h_included 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: process.h,v 4.3 2025/03/24 12:22:34 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: process.h,v 4.4 2025/06/06 18:45:26 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -87,5 +87,6 @@ typedef enum {
 
 typedef void (*process_exit_proc_t) (Process, int pid, int *statp);
 typedef void (*process_io_proc_t) (Process, char *buf, int len, int err);
+typedef int (*process_child_proc_t)(Process);
 
 #endif /* process_h_included */
