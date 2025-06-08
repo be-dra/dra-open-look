@@ -4,7 +4,7 @@
 
 #include <xview/dircanv.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.27 2025/05/04 06:35:13 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: fileman.h,v 1.28 2025/06/06 18:33:46 dra Exp $" */
 
 extern const Xv_pkg xv_filemanager_pkg;
 #define FILE_MANAGER &xv_filemanager_pkg
@@ -114,5 +114,10 @@ typedef void (*fileman_assign_filetype_t)(FileManager self, struct stat *sb,
 													Dir_entry_t *ent);
 
 typedef void (*fileman_errlog_proc_t)(FileManager self, char *msg, int beep);
+typedef void (*fileman_start_shell_t) (FileManager, char *, char *, int);
+typedef void (*fileman_new_path_proc_t) (FileManager, char *);
+typedef void (*fileman_waste_proc_t) (FileManager);
+typedef int (*fileman_drop_proc_t) (FileManager, Scrollwin_drop_struct *);
+typedef int (*fileman_file_transfer_t) (FileManager, char *, char *, char *, int, char **);
 
 #endif
