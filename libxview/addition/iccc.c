@@ -33,7 +33,7 @@
 #include <pwd.h>				/* System V dependent */
 
 #ifndef lint
-char iccc_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: iccc.c,v 4.11 2025/03/08 13:37:48 dra Exp $";
+char iccc_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: iccc.c,v 4.12 2025/06/06 18:40:20 dra Exp $";
 #endif
 
 #define A0 *attrs
@@ -43,14 +43,12 @@ char iccc_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: iccc.c,v 4.11 2025/03/08 13:3
 
 #define ADONE ATTR_CONSUME(*attrs);break
 
-typedef int (*convert_func)(Iccc,Atom *,Xv_opaque *, unsigned long *,int *);
-
 typedef struct {
 	Xv_opaque public_self;
 	Xv_opaque srv;
 	Atom *targets;
 	unsigned num_targets_alloc, num_targets_used;
-	convert_func appl_converter;
+	iccc_convert_func_t appl_converter;
 } Iccc_private;
 
 #define ICCCPRIV(_x_) XV_PRIVATE(Iccc_private, Xv_iccc_public, _x_)
@@ -396,7 +394,7 @@ static Xv_opaque iccc_set(Iccc self, Attr_avlist avlist)
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case ICCC_APPL_CONVERT_PROC:
-			priv->appl_converter = (convert_func)A1;
+			priv->appl_converter = (iccc_convert_func_t)A1;
 			ADONE;
 		case ICCC_ADD_TARGET:
 			add_target(priv, (Atom)A1);
