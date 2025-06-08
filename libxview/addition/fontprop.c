@@ -30,18 +30,16 @@
 #include <xview/permprop.h>
 #include <xview_private/i18n_impl.h>
 
-char fontprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontprop.c,v 4.4 2025/03/08 13:37:48 dra Exp $";
+char fontprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontprop.c,v 4.5 2025/06/06 18:40:26 dra Exp $";
 
 #define SUBOFF(_field_) FP_OFF(fontprop_t *,_field_)
-
-typedef void (*notify_proc_t)(Font_props, Fontprop_setting, fontprop_t *);
 
 typedef struct {
 	Xv_opaque           public_self;
 	Frame_props          frame;
 	Panel_item          preview, list, size, slant, style, name;
 	int                 dataoff;
-	notify_proc_t       proc;
+	fontprops_notify_proc_t       proc;
 	char                *fam_label, *name_label;
 	char                name_read_only, scales_only, fixedwidth_only,
 						need_both, scalable_only;
@@ -707,7 +705,7 @@ static Xv_opaque fontprops_set(Font_props self, Attr_avlist avlist)
 			ADONE;
 
 		case FONTPROPS_NOTIFY_PROC:
-			priv->proc = (notify_proc_t)A1;
+			priv->proc = (fontprops_notify_proc_t)A1;
 			ADONE;
 
 		case FONTPROPS_FIXEDWIDTH_ONLY:
