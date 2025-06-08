@@ -2,7 +2,7 @@
 #define proplist_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: proplist.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: proplist.h,v 4.4 2025/06/06 18:47:52 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -79,6 +79,12 @@ typedef enum {
 	PROPLIST_LIST_CHANGED,
 	PROPLIST_DESELECT
 } Proplist_verify_op;
+
+typedef void (*proplist_sort_proc_t) (Property_list);
+typedef void (*proplist_copy_proc_t) (Property_list, Xv_opaque, Xv_opaque);
+typedef int (*proplist_verify_proc_t) (Property_list, Xv_opaque,
+								Proplist_verify_op, Xv_opaque);
+typedef void (*proplist_free_proc_t) (Property_list, Xv_opaque);
 
 _XVFUNCPROTOBEGIN
 EXTERN_FUNCTION(void xv_proplist_converter, (int, int, Proplist_contents *,
