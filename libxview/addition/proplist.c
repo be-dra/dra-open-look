@@ -29,7 +29,7 @@
 #include <xview_private/i18n_impl.h>
 
 #ifndef lint
-char proplist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: proplist.c,v 4.6 2025/03/08 13:37:48 dra Exp $";
+char proplist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: proplist.c,v 4.7 2025/06/06 18:47:49 dra Exp $";
 #endif
 
 #define A0 *attrs
@@ -39,20 +39,12 @@ char proplist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: proplist.c,v 4.6 2025/03/
 
 #define ADONE ATTR_CONSUME(*attrs);break
 
-typedef void (*sort_proc_t) (Property_list);
-typedef void (*copy_proc_t) (Property_list, Xv_opaque, Xv_opaque);
-
-typedef int (*verify_proc_t) (Property_list, Xv_opaque,
-								Proplist_verify_op, Xv_opaque);
-
-typedef void (*free_proc_t) (Property_list, Xv_opaque);
-
 typedef struct {
 	Xv_opaque          public_self;
-	verify_proc_t      verify_proc;
-	copy_proc_t        copy_proc;
-	free_proc_t        free_proc;
-	sort_proc_t        sort_proc;
+	proplist_verify_proc_t      verify_proc;
+	proplist_copy_proc_t        copy_proc;
+	proplist_free_proc_t        free_proc;
+	proplist_sort_proc_t        sort_proc;
 	Xv_font	           font;
 	Panel_item         delete, apply_edits;
 	Menu_item          up_item, down_item;
@@ -729,15 +721,15 @@ static Xv_opaque proplist_set(Property_list self, Attr_avlist avlist)
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case PROPLIST_VERIFY_PROC:
-			priv->verify_proc = (verify_proc_t)A1;
+			priv->verify_proc = (proplist_verify_proc_t)A1;
 			if (!priv->verify_proc) priv->verify_proc = proplist_verify_item;
 			ADONE;
 		case PROPLIST_COPY_PROC:
-			priv->copy_proc = (copy_proc_t)A1;
+			priv->copy_proc = (proplist_copy_proc_t)A1;
 			if (!priv->copy_proc) priv->copy_proc = proplist_copy_item;
 			ADONE;
 		case PROPLIST_FREE_ITEM_PROC:
-			priv->free_proc = (free_proc_t)A1;
+			priv->free_proc = (proplist_free_proc_t)A1;
 			if (!priv->free_proc) priv->free_proc = proplist_free_item;
 			ADONE;
 		case PROPLIST_FONT:
@@ -745,7 +737,7 @@ static Xv_opaque proplist_set(Property_list self, Attr_avlist avlist)
 /* 			fprintf(stderr, "proplist_set PROPLIST_FONT %lx\n", priv->font); */
 			ADONE;
 		case PROPLIST_SORT_PROC:
-			priv->sort_proc = (sort_proc_t)A1;
+			priv->sort_proc = (proplist_sort_proc_t)A1;
 			ADONE;
 		case PROPLIST_GLYPH_OFFSET:
 			priv->glyph_offset = (int)A1;
