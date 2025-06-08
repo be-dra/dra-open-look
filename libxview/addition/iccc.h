@@ -2,7 +2,7 @@
 #define iccc_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: iccc.h,v 4.4 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: iccc.h,v 4.5 2025/06/06 18:40:24 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -56,6 +56,8 @@ typedef enum {
 	ICCC_REMOVE_TARGET_NAMES= ICCC_ATTR(ATTR_LIST_INLINE(ATTR_NULL, ATTR_STRING), 9), /* CS- */
 	ICCC_APPL_CONVERT_PROC  = ICCC_ATTR(ATTR_FUNCTION_PTR, 41)   /* CS- */
 } Iccc_attr;
+
+typedef int (*iccc_convert_func_t)(Iccc,Atom *,Xv_opaque *,unsigned long *,int *);
 
 typedef struct {
 	Atom *type;
