@@ -2,7 +2,7 @@
 #define fontprop_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: fontprop.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: fontprop.h,v 4.4 2025/06/06 18:40:17 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -80,5 +80,7 @@ typedef enum {
 	FONTPROP_PREVIEW,
 	FONTPROP_last
 } Fontprop_setting;
+
+typedef void (*fontprops_notify_proc_t)(Font_props, Fontprop_setting, fontprop_t *);
 
 #endif
