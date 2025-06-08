@@ -33,11 +33,9 @@
 #include <xview/process.h>
 #include <xview_private/i18n_impl.h>
 
-char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.5 2025/03/24 12:22:37 dra Exp $";
+char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.6 2025/06/06 18:45:21 dra Exp $";
 
 typedef enum { NOT_RUNNING, IS_ALIVE, MAYBE_DEAD, IS_DEAD, IS_DONE } chstat_t;
-
-typedef int (*child_proc_t)(Process);
 
 typedef struct {
 	Xv_opaque       public_self;
@@ -47,7 +45,7 @@ typedef struct {
 	int             input_fd, output_fd, error_fd;
 	int             *output_fd_ptr, *error_fd_ptr, pid;
 	int             nice, outpipe, errpipe;
-	child_proc_t	childproc;
+	process_child_proc_t	childproc;
 	process_io_proc_t       outproc, errproc;
 	process_exit_proc_t     exitproc;
 	Xv_opaque       client_data;
@@ -541,7 +539,7 @@ static Xv_opaque process_set(Process self, Attr_avlist avlist)
 			}
 			ADONE;
 		case PROCESS_CHILD_FUNCTION:
-			priv->childproc = (child_proc_t)A1;
+			priv->childproc = (process_child_proc_t)A1;
 			priv->wait_for_exec = FALSE;
 			ADONE;
 		case PROCESS_OUTPUT_PROC:
