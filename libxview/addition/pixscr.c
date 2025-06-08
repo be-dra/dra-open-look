@@ -29,7 +29,7 @@
 #include <xview/filereq.h>
 #include <xview/dragdrop.h>
 
-char pixscr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pixscr.c,v 4.2 2025/03/08 13:37:48 dra Exp $";
+char pixscr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pixscr.c,v 4.3 2025/06/06 18:42:14 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -37,14 +37,11 @@ char pixscr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pixscr.c,v 4.2 2025/03/08 1
 
 #define ADONE ATTR_CONSUME(*attrs);break
 
-typedef void (*layout_proc_t)(Pixmap_scroller, int, int);
-typedef void (*drop_proc_t)(Pixmap_scroller, char **, int);
-
 typedef struct {
 	Xv_opaque               public_self;
 	Pixmap                  pixmap;
-	layout_proc_t           layout_proc;
-	drop_proc_t             drop_proc;
+	pixscr_layout_proc_t           layout_proc;
+	pixscr_drop_proc_t             drop_proc;
 	int                     width, height;
 	char                    center_image, is_bitmap, expand_frame;
 	GC                      gc;
@@ -269,7 +266,7 @@ static Xv_opaque pixscr_set(Pixmap_scroller self, Attr_avlist avlist)
 			ADONE;
 
 		case PIXSCR_LAYOUT_PROC:
-			priv->layout_proc = (layout_proc_t)A1;
+			priv->layout_proc = (pixscr_layout_proc_t)A1;
 			if (!priv->layout_proc) priv->layout_proc = own_layout_proc;
 			ADONE;
 
@@ -297,7 +294,7 @@ static Xv_opaque pixscr_set(Pixmap_scroller self, Attr_avlist avlist)
 			ADONE;
 
 		case PIXSCR_DROP_PROC:
-			priv->drop_proc = (drop_proc_t)A1;
+			priv->drop_proc = (pixscr_drop_proc_t)A1;
 			ADONE;
 
 		case PIXSCR_DO_LAYOUT:
