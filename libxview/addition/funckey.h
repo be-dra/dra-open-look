@@ -2,7 +2,7 @@
 #define funckey_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: funckey.h,v 4.5 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: funckey.h,v 4.6 2025/06/06 18:40:14 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -70,6 +70,8 @@ typedef enum {
 	FUNCKEY_PROC                 = FUNCK_ATTR(ATTR_OPAQUE_PAIR, 54), /* -S- */
 	FUNCKEY_FALL_THROUGH         = FUNCK_ATTR(ATTR_NO_VALUE, 55)     /* -S- */
 } Funckeys_attr;
+
+typedef int (*funckey_event_cb_t)(Function_keys, Xv_Window, Event *);
 
 /* Conventions for FUNCKEY_MENU: */
 #define MENU_FUNCKEY_CODE XV_KEY_DATA,FUNCKEY_CODE
