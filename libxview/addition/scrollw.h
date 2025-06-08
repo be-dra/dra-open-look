@@ -2,7 +2,7 @@
 #define scrollw_h_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.3 2025/03/08 13:04:27 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.4 2025/06/06 18:49:58 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -87,6 +87,8 @@ typedef enum {
 	SCROLLWIN_PW_CMS_CHANGED  = SCROLL_ATTR(ATTR_OPAQUE, 40),       /* -S- */
 	SCROLLWIN_REPAINT         = SCROLL_ATTR(ATTR_OPAQUE, 41)        /* -S- */
 } Scrollwin_attr;
+
+typedef void (*scrollwin_update_proc_t)(Scrollwin, Scrollview);
 
 typedef enum {
 	SCROLLVIEW_V_START   = SCROLL_ATTR(ATTR_INT, 51),         /* -SG */
