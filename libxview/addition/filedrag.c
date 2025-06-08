@@ -47,16 +47,14 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.8 2025/03/08 13:37:48 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.9 2025/06/06 18:26:13 dra Exp $";
 #endif
-
-typedef void (*dnd_done_proc_t)(FileDrag, int);
 
 typedef struct {
 	Xv_opaque       public_self;
 	char            **files;
 	int             num_files, current;
-	dnd_done_proc_t dnd_done_proc;
+	filedrag_dnd_done_proc_t dnd_done_proc;
 	Xv_cursor copy_1, copy_accept_1, copy_n, copy_accept_n;
 	Xv_cursor move_1, move_accept_1, move_n, move_accept_n;
 	Xv_cursor copy_reject_1, copy_reject_n, move_reject_1, move_reject_n;
@@ -683,7 +681,7 @@ static Xv_opaque filedrag_set(FileDrag self, Attr_avlist avlist)
 			ADONE;
 
 		case FILEDRAG_DND_DONE_PROC:
-			priv->dnd_done_proc = (dnd_done_proc_t)A1;
+			priv->dnd_done_proc = (filedrag_dnd_done_proc_t)A1;
 			ADONE;
 
 		case FILEDRAG_DO_DELETE:
