@@ -35,7 +35,7 @@
 #include <olgx/olgx.h>
 #include <xview/win_notify.h>
 
-char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.7 2025/03/08 13:04:27 dra Exp $";
+char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.8 2025/06/06 18:49:58 dra Exp $";
 
 extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 
@@ -46,8 +46,6 @@ extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 #define A4 attrs[4]
 
 #define ADONE ATTR_CONSUME(*attrs);break
-
-typedef void (*update_proc_t)(Scrollwin, Scrollview);
 
 typedef struct {
 	/* internals */
@@ -67,7 +65,7 @@ typedef struct {
 
 	int                         scale_percent;
 	int                         v_objlen, h_objlen, v_unit, h_unit;
-	update_proc_t               update_proc;
+	scrollwin_update_proc_t               update_proc;
 	Scrollwin_drop_setting      drop_kind;
 	char                        created, panning, restrict_panning,
 								auto_scroll_enabled, destroying;
@@ -1430,7 +1428,7 @@ static Xv_opaque scrollwin_set(Scrollwin self, Attr_avlist avlist)
 				ADONE;
 
 			case SCROLLWIN_UPDATE_PROC:
-				priv->update_proc = (update_proc_t)A1;
+				priv->update_proc = (scrollwin_update_proc_t)A1;
 				ADONE;
 
 			case SCROLLWIN_DROP_EVENT:
