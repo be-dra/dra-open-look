@@ -2,7 +2,7 @@
 #define filedrag_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: filedrag.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: filedrag.h,v 4.4 2025/06/06 18:26:13 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -51,6 +51,8 @@ typedef enum {
 	FILEDRAG_DND_DONE_PROC = FILEDRAG_ATTR(ATTR_FUNCTION_PTR, 6),     /* CSG */
 	FILEDRAG_CURRENT_FILE  = FILEDRAG_ATTR(ATTR_BOOLEAN, 20)          /* --G */
 } Filedrag_attr;
+
+typedef void (*filedrag_dnd_done_proc_t)(FileDrag, int is_move);
 
 typedef enum {
 	FILEDRAG_NO_STRING, FILEDRAG_NAME_STRING, FILEDRAG_CONTENTS_STRING
