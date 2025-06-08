@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.17 2025/04/10 16:14:40 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.18 2025/06/06 18:40:22 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -47,8 +47,6 @@ typedef void (*funckey_pfunction_t)(Xv_opaque, Event *, Xv_opaque);
 /* can be used with a MENU_NOTIFY_PROC: */
 typedef void (*funckey_mfunction_t)(Xv_opaque, Xv_opaque, Xv_opaque);
 typedef void (*fk_split_proc_t)(Xv_window, Xv_Window, int);
-
-typedef int (*event_cb_t)(Function_keys, Xv_Window, Event *);
 
 /* An application works similar to the following:
 	++  create a FUNCTION_KEYS [[ this can be created with an XV_NULL owner,
@@ -114,7 +112,7 @@ typedef struct _Funckey_private {
 	copy_func_t         copy_item_func;
 	verify_func_t       verify_item_func;
 	permprop_cb_t       appl_apply;
-	event_cb_t          event_cb;
+	funckey_event_cb_t          event_cb;
 	Xv_window          *softkeywins;
 	int                 num_softkeywins;
 	Panel_item          func_choice;
@@ -1140,7 +1138,7 @@ static Xv_opaque funckeys_set(Function_keys self, Attr_avlist avlist)
 			ADONE;
 
 		case FUNCKEY_EVENT_CALLBACK:
-			priv->event_cb = (event_cb_t)A1;
+			priv->event_cb = (funckey_event_cb_t)A1;
 			ADONE;
 
 		case FUNCKEY_INCLUDE_WM_FUNCTIONS:
