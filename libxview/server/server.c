@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.29 2025/03/16 07:22:27 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.30 2025/06/08 15:54:28 dra Exp $";
 #endif
 #endif
 
@@ -2066,7 +2066,7 @@ const static Server_atom2type Server_atom2type_tbl[] = {
 	{"XV_DO_DRAG_LOAD",		SERVER_DO_DRAG_LOAD_TYPE},
 	{"_OL_WIN_DISMISS",		SERVER_WM_DISMISS_TYPE},
 	{"WM_CHANGE_STATE",		SERVER_WM_CHANGE_STATE_TYPE},
-	{"_OL_DFLT_BIN",		SERVER_WM_DEFAULT_BUTTON_TYPE},
+	{"_OL_DFLT_BTN",		SERVER_WM_DEFAULT_BUTTON_TYPE},
 	{"_SUN_DRAGDROP_PREVIEW",	SERVER_WM_DRAGDROP_PREVIEW_TYPE},
 	{"_SUN_DRAGDROP_ACK",		SERVER_WM_DRAGDROP_ACK_TYPE},
 	{"_SUN_DRAGDROP_DONE",		SERVER_WM_DRAGDROP_DONE_TYPE},
