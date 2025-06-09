@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -21,7 +22,7 @@
 #define SET_SIGNAL(s,f) signal(s, f);
 #endif
 
-char dra_signal_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_signal.c,v 1.9 2025/03/25 18:51:44 dra Exp $";
+char dra_signal_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_signal.c,v 1.10 2025/06/08 16:33:46 dra Exp $";
 
 typedef struct {
 	int signal;
@@ -123,7 +124,7 @@ void dra_dispatch_signal(Display *dpy)
 			}
 			else if (WIFSTOPPED(mess.status)) kill(mess.pid, SIGKILL);
 		}
-		else if (mess.signal = SIGALRM) {
+		else if (mess.signal == SIGALRM) {
 			dra_olwm_trace(66, "olws_props timeout\n");
 			dra_olws_started(dpy, -1);
 		}
@@ -139,6 +140,14 @@ int dra_get_pipe(void)
 	return readpipe;
 }
 
+static void dump_core(int s)
+{
+	if (fork() == 0) {
+		chdir("/tmp");
+		abort();
+	}
+}
+
 void dra_init_signals(void)
 {
 	int pip[2];
@@ -147,6 +156,7 @@ void dra_init_signals(void)
 	readpipe = pip[0];
 	writepipe = pip[1];
 	SET_SIGNAL(SIGCHLD, handleChildSignal);
+	SET_SIGNAL(SIGUSR1, dump_core);
 }
 
 void dra_disable_sigchld(void)
