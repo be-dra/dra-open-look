@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_atom.c 1.7 93/06/28 DRA: $Id: svr_atom.c,v 4.9 2025/03/11 22:24:23 dra Exp $";
+static char     sccsid[] = "@(#)svr_atom.c 1.7 93/06/28 DRA: $Id: svr_atom.c,v 4.11 2025/06/08 15:54:34 dra Exp $";
 #endif
 #endif
 
@@ -173,7 +173,6 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"NAME",
 		"NULL",
 		"PIXEL",
-		"STRING",
 		"TARGETS",
 		"TEXT",
 		"TIMESTAMP",
@@ -237,7 +236,6 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"_OL_DECOR_OK",
 		"_OL_DECOR_PIN",
 		"_OL_DECOR_RESIZE",
-		"_OL_DFLT_BIN",
 		"_OL_DFLT_BTN",
 		"_OL_ENTER_LANG_MODE",
 		"_OL_EXIT_LANG_MODE",
@@ -301,7 +299,6 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"_SUN_DRAGDROP_SITE_RECTS",
 		"_SUN_DRAGDROP_TRANSIENT_0",
 		"_SUN_DRAGDROP_TRANSIENT_1",
-		"_SUN_DRAGDROP_TRANSIENT_2",
 		"_SUN_DRAGDROP_TRIGGER",
 		"_SUN_ENUMERATION_COUNT",
 		"_SUN_ENUMERATION_ITEM",
@@ -327,6 +324,10 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 	};
 	Atom *atoms;
 	int i, num_names;
+
+	/* this function takes less than a millisecond on a local connection
+	 * and about 80 ms through a VPN connection.
+	 */
 
 	for (num_names = 0; atns[num_names]; num_names++);
 	atoms = xv_alloc_n(Atom, (unsigned long)num_names);
