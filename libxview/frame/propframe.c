@@ -34,7 +34,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.15 2025/03/08 13:21:40 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.16 2025/06/08 16:18:08 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -1100,7 +1100,7 @@ static void finish_panel(Propframe_private *priv, one_panel_t p)
 		 * an Apply button in the current panel and we have also set this
 		 * button as PANEL_DEFAULT_ITEM in the current panel (so that it
 		 * will be displayed with the default ring).
-		 * However, pointer warping (via the _OL_DFLT_BIN property) works
+		 * However, pointer warping (via the _OL_DFLT_BTN property) works
 		 * only for the default button in the FRAME_PROPS_PANEL.
 		 * Therefore, for each category, we create an invisible inactive
 		 * Apply button with the 'correct' position.
