@@ -1,4 +1,4 @@
-char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.8 2025/03/10 18:43:00 dra Exp $";
+char winmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winmenu.c,v 2.9 2025/06/09 19:20:06 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -250,7 +250,6 @@ void MapMenuWindow(Display *dpy, WinMenu *winInfo, MenuInfo	*menuInfo)
  */
 void UnmapMenuWindow(Display *dpy, WinMenu *winInfo)
 {
-	dra_olwm_trace(742, "%s(%lx)\n", __FUNCTION__, winInfo);
 	if (winInfo->shadow) {
 		WinShadow *sh = winInfo->shadow;
 
@@ -270,8 +269,6 @@ int MenuEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
 {
 	MenuInfo *mInfo = NULL;
 	WinMenu *wm = NULL;
-
-	dra_olwm_trace(743, "MenuEventExpose(%lx)\n", winInfo);
 
 	if (winInfo->core.kind == WIN_MENU) {
 		wm = (WinMenu *)winInfo;
@@ -301,7 +298,6 @@ int MenuEventDrawMenu(Display *dpy, WinGeneric *winInfo)
 {
     MenuInfo *mInfo = NULL;
 
-	dra_olwm_trace(745, "MenuEventDrawMenu(%lx)\n", winInfo);
     if (winInfo->core.kind == WIN_MENU)
 	mInfo = ((WinMenu *) winInfo)->menuInfo;
     else
@@ -317,7 +313,6 @@ static int ShadowEventUnmap(Display *dpy, XEvent *event, WinGeneric *winInfo)
 {
 	WinShadow *ws = (WinShadow *)winInfo;
 
-	dra_olwm_trace(740, "%s(%lx)\n", __FUNCTION__, winInfo);
 	if (ws->saveShadowPix) {
 		XFreePixmap(dpy, ws->saveShadowPix);
 		ws->saveShadowPix = None;
@@ -327,8 +322,6 @@ static int ShadowEventUnmap(Display *dpy, XEvent *event, WinGeneric *winInfo)
 
 static int ShadowEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo)
 {
-	dra_olwm_trace(740, "ShadowEventExpose(%lx)\n", winInfo);
-
 	if (event->xexpose.count == 0) {
 		WinShadow *ws = (WinShadow *)winInfo;
 
