@@ -1,5 +1,5 @@
 /* #ident	"@(#)wincolor.c	26.24	93/06/28 SMI" */
-char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.6 2025/02/20 18:53:45 dra Exp $";
+char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.7 2025/06/09 19:22:32 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -512,6 +512,13 @@ void TrackSubwindows(Client *cli)
 	if (!PropGetWMColormapWindows(dpy, pane, &cmapwindata, &nItems))
 		return;
 
+	/* suspicious about xnest: sometimes olwm seems to run into an 
+	 * endless loop.
+	 * Xnest is the only program that sets the WM_COLORMAP_WINDOWS property...
+	 */
+
+	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
+
 	/*
 	 * Register all the windows on the new list, taking care to not touch any 
 	 * window that was on the old list, while getting rid of windows not on 
@@ -552,12 +559,14 @@ void TrackSubwindows(Client *cli)
 	cli->colormapWins = NULL_LIST;
 
 	/* step (1) */
+	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	l = oldlist;
 	for (cmwi = ListEnum(&l); cmwi != NULL; cmwi = ListEnum(&l))
 		cmwi->core.tag = TAG_OLDLIST;
 
 	/* step (2) */
+	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	last = &cli->colormapWins;
 	for (i = 0; i < nItems; ++i) {
@@ -586,6 +595,7 @@ void TrackSubwindows(Client *cli)
 	XFree((char *)cmapwindata);
 
 	/* step (3) */
+	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	switch (paneinfo->core.tag) {
 		case TAG_NEITHER:
@@ -601,6 +611,7 @@ void TrackSubwindows(Client *cli)
 	}
 
 	/* step (4) */
+	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	l = oldlist;
 	for (cmwi = ListEnum(&l); cmwi != NULL; cmwi = ListEnum(&l)) {
@@ -611,6 +622,7 @@ void TrackSubwindows(Client *cli)
 	ListDestroy(oldlist);
 
 	/* step (5) */
+	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	l = cli->colormapWins;
 	for (cmwi = ListEnum(&l); cmwi != NULL; cmwi = ListEnum(&l))
@@ -627,6 +639,7 @@ void TrackSubwindows(Client *cli)
 		else
 			InstallColormap(dpy, paneinfo);
 	}
+	fprintf(stderr, "%s`%s-%d done\n", __FILE__,__FUNCTION__,__LINE__);
 }
 
 
