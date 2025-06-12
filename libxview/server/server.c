@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.30 2025/06/08 15:54:28 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.32 2025/06/10 17:24:32 dra Exp $";
 #endif
 #endif
 
@@ -1965,6 +1965,8 @@ static void server_init_atoms(Xv_Server server_public)
 	 * See Ref (khbdrfvk_mbfrv) : they talk about a "journal process"....
 	 *
 	 * However, I don't even understand what a "journal" really is.
+	 * And I can't see what benefit those client messages have - they do not
+	 * carry any useful informations....
 	 */
 
 	/*
@@ -2146,6 +2148,12 @@ Xv_private void server_journal_sync_event(Xv_Server server_public, int type)
 	cme->message_type = sync_atom;
 	cme->format = 32;
 	cme->data.l[0] = type;
+#ifdef BEFORE_DRA_CHANGED_IT
+#else
+	cme->data.l[1] = server->xtime;
+	cme->data.l[2] = getpid();
+#endif
+
 	/* Ref (khbdrfvk_mbfrv) */
 	XSync(dpy, 0);	/* make sure journal process has been 
 					 * scheduled and is waiting for the sync
@@ -2159,6 +2167,7 @@ Xv_private void server_journal_sync_event(Xv_Server server_public, int type)
 	 * The client who created the root window ????? Does not exists.
 	 */
 #ifdef BEFORE_DRA_CHANGED_IT
+	/* solche Events habe ich niemals gesehen... */
 	XSendEvent(dpy, cme->window, 0, 0L, (XEvent *) cme);
 #else
 	/* at least the window manager might be interested in properties? */
