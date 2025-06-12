@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.36 2025/04/29 05:00:14 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.37 2025/06/11 19:54:03 dra Exp $";
 #endif
 #endif
 
@@ -366,34 +366,29 @@ void win_release_event_lock(Xv_object window)
 
 int win_set_kbd_focus(Xv_object window, XID xid)
 {
-    int             rtn = 0;
-    register Xv_Drawable_info *info;
-    Xv_opaque       server_public;
-    register Window_info *win;
+	int rtn = 0;
+	register Xv_Drawable_info *info;
+	Xv_opaque server_public;
+	register Window_info *win;
 
+	DRAWABLE_INFO_MACRO(window, info);
+	/* Get server info */
+	server_public = xv_server(info);
 
-    DRAWABLE_INFO_MACRO(window, info);
-    /* Get server info */
-    server_public = xv_server(info);
+	if (xid == (XID) WIN_NULLLINK)
+		xid = None;
+	if (!xv_has_focus(info)) {
+		Display *display = xv_display(info);
+		Time ts;
 
-    if (xid == (XID) WIN_NULLLINK)
-	xid = None;
-    if (!xv_has_focus(info)) {
-	Display        *display = xv_display(info);
-
-	rtn = XSetInputFocus(display, xid, RevertToParent,
-			     server_get_timestamp(server_public));
-	win = WIN_PRIVATE(window);
-	if (win->softkey_flag) {
-	    xv_set(server_public, SERVER_FOCUS_TIMESTAMP, 
-				  server_get_timestamp(server_public),NULL);
+		rtn = XSetInputFocus(display, xid, RevertToParent,
+								ts = server_get_timestamp(server_public));
+		win = WIN_PRIVATE(window);
+		if (win->softkey_flag) {
+			xv_set(server_public, SERVER_FOCUS_TIMESTAMP, ts, NULL);
+		}
 	}
-    }
-    /*
-     * if(xv_get(xv_server(info),SERVER_JOURNALLING))
-     * xv_set(xv_server(info),SERVER_JOURNAL_SYNC_EVENT,1,NULL);
-     */
-    return (rtn);
+	return rtn;
 }
 
 XID win_get_kbd_focus(Xv_object window)
