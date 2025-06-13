@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.37 2025/06/11 19:54:03 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.38 2025/06/12 17:05:34 dra Exp $";
 #endif
 #endif
 
@@ -3351,9 +3351,15 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 		xcl.data.l[1] = keyevent->type;
 		xcl.data.l[2] = keyevent->state;
 
+		/* this pattern in data.l[3] indicates that data.l[4] contains
+		 * the current focus window, so that the vkbd does not have to
+		 * call XGetInputFocus before sending the reply (_OL_TRANSLATED_KEY).
+		 * 
+		 * Of course, this will only be understood by my own reimplementation
+		 * of vkbd. The real (SUN) vkbd will hopefully ignore data.l[3]
+		 * and data.l[4].
+		 */
 		xcl.data.l[3] = 0xaffe123; /* pattern to recognize */
-
-		/* so that the vkbd does not have to call XGetInputFocus */
 		xcl.data.l[4] = keyevent->window;
 
 		if (keyevent->type == KeyPress) {
