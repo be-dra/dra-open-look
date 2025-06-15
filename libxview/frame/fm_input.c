@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.22 2025/03/30 09:17:13 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.23 2025/06/15 06:53:22 dra Exp $ ";
 #endif
 #endif
 
@@ -483,22 +483,31 @@ Pkg_private Notify_value frame_footer_input(Xv_Window footer, Event *ev,
 		case ACTION_HELP:
 			if (event_is_down(ev)) {
 				Frame f = xv_get(footer, WIN_PARENT);
-				char *help_data;
+				xv_frame_help_proc_t proc = (xv_frame_help_proc_t)xv_get(f,
+									XV_KEY_DATA, FRAME_FOOTER_HELP_PROC_KEY);
 
-				help_data = (char *)xv_get(f,XV_KEY_DATA,FRAME_FOOTER_HELP_KEY);
-				if (help_data) {
-					xv_help_show(f, help_data, ev);
+				/* do we have a help PROCEDURE ? */
+				if (proc) {
+					proc(f, ev);
 				}
 				else {
-					help_data = (char *)xv_get(footer, XV_HELP_DATA);
-					if (help_data) {
-						/* we try footer help */
-						if (XV_ERROR == xv_help_show(footer, help_data, ev)) {
+					char *help_data;
 
-							/* no footer help, try the frame help */
-							help_data = (char *)xv_get(f, XV_HELP_DATA);
-							if (help_data) {
-								xv_help_show(f, help_data, ev);
+					help_data = (char *)xv_get(f,XV_KEY_DATA,FRAME_FOOTER_HELP_KEY);
+					if (help_data) {
+						xv_help_show(f, help_data, ev);
+					}
+					else {
+						help_data = (char *)xv_get(footer, XV_HELP_DATA);
+						if (help_data) {
+							/* we try footer help */
+							if (XV_ERROR == xv_help_show(footer, help_data, ev)) {
+
+								/* no footer help, try the frame help */
+								help_data = (char *)xv_get(f, XV_HELP_DATA);
+								if (help_data) {
+									xv_help_show(f, help_data, ev);
+								}
 							}
 						}
 					}
