@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.7 2025/03/27 14:44:31 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.8 2025/06/15 06:53:22 dra Exp $ ";
 #endif
 #endif
 
@@ -273,6 +273,7 @@ typedef enum {
 	FRAME_COMPOSE_STATE	= FRAME_ATTR(ATTR_BOOLEAN,               235),
 	FRAME_WINTYPE       = FRAME_ATTR(ATTR_LONG, 236),
 	FRAME_FOOTER_HELP_KEY	= FRAME_ATTR(ATTR_INT, 232), 
+	FRAME_FOOTER_HELP_PROC_KEY	= FRAME_ATTR(ATTR_INT, 233), 
 
 	/* see OL GUI Spec, p 55 */
 	FRAME_FOOTER_PROC       = FRAME_ATTR(ATTR_FUNCTION_PTR, 123),/* C-- */
@@ -387,6 +388,8 @@ EXTERN_FUNCTION (void xv_perform_soon, (Xv_opaque cldt, xv_soon_proc_t func));
 EXTERN_FUNCTION (void xv_perform_later, (Xv_opaque cldt, xv_soon_proc_t func, int usec));
 
 typedef void (*xv_frame_layout_cb_t)(Frame, void *);
+typedef void (*xv_frame_help_proc_t)(Frame, Event *);
+
 extern Attr_attribute xv_get_rwid_key(void);
 extern void xv_set_frame_resizing(Frame_cmd frame, int resize_width,
 										xv_frame_layout_cb_t cb, void *cldt);
