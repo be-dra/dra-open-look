@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.18 2025/06/06 18:40:22 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.19 2025/06/16 18:26:23 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -146,6 +146,7 @@ static char *modstr[] = {
 };
 
 static Attr_attribute fkey_key = 0;
+#define OWNER_PRIV_LIST XV_KEY_DATA,fkey_key
 
 static void free_func_descr(Function_keys self, Funckey_descr_t *fd)
 {
@@ -253,7 +254,8 @@ static int verify_func_descr(Function_keys self, Xv_opaque data, Proplist_verify
 static void update_func_key_labels(Funckey_private *priv)
 {
 	int itemsize = (int)xv_get(FKPUB(priv), PROPLIST_ITEM_DATA_SIZE);
-	char *ptr, *add = (char *)xv_get(xv_get(FKPUB(priv), XV_OWNER), FRAME_PROPS_DATA_ADDRESS);
+	char *ptr, *add = (char *)xv_get(xv_get(FKPUB(priv), XV_OWNER),
+											FRAME_PROPS_DATA_ADDRESS);
 	Proplist_contents *lcont = (Proplist_contents *)(add +
 					(int)xv_get(FKPUB(priv), FRAME_PROPS_DATA_OFFSET));
 	Funckey_descr_t *descr = 0;
@@ -301,15 +303,15 @@ static void update_func_key_labels(Funckey_private *priv)
 static int note_apply(Perm_prop_frame fram, int is_triggered)
 {
 	Funckey_private *priv =
-				(Funckey_private *)xv_get(fram, XV_KEY_DATA, fkey_key);
-
-	if (priv->appl_apply) {
-		int val = (*(priv->appl_apply))(fram, is_triggered);
-
-		if (val != XV_OK) return val;
-	}
+				(Funckey_private *)xv_get(fram, OWNER_PRIV_LIST);
 
 	while (priv) {
+		if (priv->appl_apply) {
+			int val = (*(priv->appl_apply))(fram, is_triggered);
+
+			if (val != XV_OK) return val;
+		}
+
 		update_func_key_labels(priv);
 		priv = priv->next_instance;
 	}
@@ -980,6 +982,25 @@ static void from_menu(Function_keys self, Menu menu)
 	}
 }
 
+static void install_owner(Function_keys self, Funckey_private *priv)
+{
+	Frame owner = xv_get(self, XV_OWNER);
+
+	if (owner) {
+		Funckey_private *other =
+					(Funckey_private *)xv_get(owner, OWNER_PRIV_LIST);
+
+		if (! other) {
+			/* I'm the first (maybe the only) one */
+			priv->appl_apply = (permprop_cb_t)xv_get(owner,
+											FRAME_PROPS_APPLY_PROC);
+			xv_set(owner, FRAME_PROPS_APPLY_PROC, note_apply, NULL);
+		}
+		priv->next_instance = other;
+		xv_set(owner, OWNER_PRIV_LIST, priv, NULL);
+	}
+}
+
 static int funckeys_init(Perm_prop_frame owner, Function_keys slf,
 							Attr_avlist avlist, int *u)
 {
@@ -1050,7 +1071,6 @@ static Xv_opaque funckeys_set(Function_keys self, Attr_avlist avlist)
 {
 	Attr_attribute *attrs;
 	Funckey_private *priv = FKPRIV(self);
-	Frame owner;
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case PROPLIST_VERIFY_PROC:
@@ -1107,25 +1127,7 @@ static Xv_opaque funckeys_set(Function_keys self, Attr_avlist avlist)
 			break;
 
 		case PERMLIST_OWNER_SET:
-			owner = xv_get(self, XV_OWNER);
-			if (owner) {
-				Funckey_private *other = (Funckey_private *)xv_get(owner,
-													XV_KEY_DATA, fkey_key);
-
-				if (! other) {
-					/* used in funckeys_find */
-					xv_set(owner, XV_KEY_DATA, fkey_key, priv, NULL);
-
-					priv->appl_apply = (permprop_cb_t)xv_get(owner,
-													FRAME_PROPS_APPLY_PROC);
-					xv_set(owner, FRAME_PROPS_APPLY_PROC, note_apply, NULL);
-				}
-				else {
-					while (other->next_instance) other=other->next_instance;
-
-					other->next_instance = priv;
-				}
-			}
+			install_owner(self, priv);
 			/* let the superclass do its work */
 			break;
 
@@ -1146,25 +1148,7 @@ static Xv_opaque funckeys_set(Function_keys self, Attr_avlist avlist)
 			ADONE;
 
 		case XV_END_CREATE:
-			owner = xv_get(self, XV_OWNER);
-			if (owner) {
-				Funckey_private *other = (Funckey_private *)xv_get(owner,
-													XV_KEY_DATA, fkey_key);
-
-				if (! other) {
-					/* used in funckeys_find */
-					xv_set(owner, XV_KEY_DATA, fkey_key, priv, NULL);
-
-					priv->appl_apply = (permprop_cb_t)xv_get(owner,
-													FRAME_PROPS_APPLY_PROC);
-					xv_set(owner, FRAME_PROPS_APPLY_PROC, note_apply, NULL);
-				}
-				else {
-					while (other->next_instance) other=other->next_instance;
-
-					other->next_instance = priv;
-				}
-			}
+			install_owner(self, priv);
 			break;
 
 		default: xv_check_bad_attr(FUNCTION_KEYS, A0);
