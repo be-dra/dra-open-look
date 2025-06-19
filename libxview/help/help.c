@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.28 2025/03/25 20:12:03 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.29 2025/06/19 04:38:18 dra Exp $";
 #endif
 
 /*
@@ -352,6 +352,26 @@ static void help_done(Frame fr)
 	xv_set(fr, XV_SHOW, FALSE, NULL);
 }
 
+/* basically stolen from txt_menu.c */
+static Menu gen_edit_menu(Menu menu, Menu_generate op)
+{
+	Textsw tsw;
+	int sellen;
+	char buf[10];
+
+	if (op != MENU_DISPLAY) return menu;
+
+	tsw = xv_get(menu, XV_KEY_DATA, help_info_key);
+	if (! tsw) return menu;
+
+	sellen = textsw_get_primary_selection(tsw, buf, (unsigned)sizeof(buf),
+											NULL, NULL);
+
+	xv_set(xv_get(menu, MENU_CLIENT_DATA), MENU_INACTIVE, sellen == 0, NULL);
+
+	return menu;
+}
+
 Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 									Event *client_event)
 {
@@ -565,6 +585,8 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 			 */
 			newmenu = xv_create(XV_NULL, MENU,
 						MENU_TITLE_ITEM, XV_MSG("Text Pane"),
+						XV_KEY_DATA, help_info_key, tsw,
+						MENU_GEN_PROC, gen_edit_menu,
 						NULL);
 
 			menu = xv_get(tsw, TEXTSW_SUBMENU_FILE);
@@ -582,7 +604,10 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 						MENU_VALUE, TEXTSW_MENU_COPY,
 						NULL)))
 			{
-				xv_set(newmenu, MENU_APPEND_ITEM, item, NULL);
+				xv_set(newmenu,
+						MENU_APPEND_ITEM, item,
+						MENU_CLIENT_DATA, item,
+						NULL);
 			}
 
 			menu = xv_get(tsw, TEXTSW_SUBMENU_FIND);
