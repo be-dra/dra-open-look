@@ -1,4 +1,4 @@
-char p_event_sccsid[] = "@(#)p_event.c 20.62 93/06/28 DRA: $Id: p_event.c,v 4.3 2025/04/03 06:23:39 dra Exp $";
+char p_event_sccsid[] = "@(#)p_event.c 20.62 93/06/28 DRA: $Id: p_event.c,v 4.4 2025/06/17 16:02:15 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -241,7 +241,6 @@ Pkg_private Notify_value panel_notify_event(Xv_Window paint_window,
 		case SHIFT_META:
 			break;
 
-#ifdef DOES_NOT_WORK_YET
 		case ACTION_WHEEL_FORWARD:
 			{
 				Xv_window view = xv_get(paint_window, XV_OWNER);
@@ -251,14 +250,6 @@ Pkg_private Notify_value panel_notify_event(Xv_Window paint_window,
 				if (sb) {
 					if (event_is_down(event)) {
 						int newpos = xv_get(sb, SCROLLBAR_VIEW_START);
-						fprintf(stderr, "ACTION_WHEEL_FORWARD, sb=%ld, view=%ld\n", sb, view);
-
-						fprintf(stderr, "VIEW_START %d\n", newpos);
-						fprintf(stderr, "OBJECT_LENGTH=%ld\n", xv_get(sb, SCROLLBAR_OBJECT_LENGTH));
-						fprintf(stderr, "PAGE_LENGTH=%ld\n", xv_get(sb, SCROLLBAR_PAGE_LENGTH));
-						fprintf(stderr, "VIEW_LENGTH=%ld\n", xv_get(sb, SCROLLBAR_VIEW_LENGTH));
-						fprintf(stderr, "PIXELS_PER_UNIT=%ld\n", xv_get(sb, SCROLLBAR_PIXELS_PER_UNIT));
-
 						if (newpos > 0) {
 							xv_set(sb, SCROLLBAR_VIEW_START, newpos - 1, NULL);
 						}
@@ -277,16 +268,12 @@ Pkg_private Notify_value panel_notify_event(Xv_Window paint_window,
 				if (sb) {
 					if (event_is_down(event)) {
 						int newpos = xv_get(sb, SCROLLBAR_VIEW_START);
-						fprintf(stderr, "ACTION_WHEEL_BACKWARD, sb=%ld, view=%ld\n", sb, view);
-
-						fprintf(stderr, "VIEW_START %d\n", newpos);
 						xv_set(sb, SCROLLBAR_VIEW_START, newpos + 1, NULL);
 					}
 				}
 				else event_handled = FALSE;
 			}
 			break;
-#endif /* DOES_NOT_WORK_YET */
 
 		default:
 			event_handled = FALSE;
