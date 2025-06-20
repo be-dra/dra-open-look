@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.19 2025/06/16 18:26:23 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.20 2025/06/19 13:17:09 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -423,7 +423,7 @@ static void create_top(Funckey_private *priv, Attr_attribute *avlist)
 		}
 	}
 
-	max_top = defaults_get_integer("OpenWindows.NumberOfTopFkeys",
+	max_top = defaults_get_integer("openWindows.numberOfTopFkeys",
 									"OpenWindows.NumberOfTopFkeys", 12);
 	for (i = 0; i < max_top; i++) {
 		char buf[20];
