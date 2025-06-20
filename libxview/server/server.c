@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.32 2025/06/10 17:24:32 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.33 2025/06/19 13:17:24 dra Exp $";
 #endif
 #endif
 
@@ -467,8 +467,8 @@ static void server_build_keymap_table(Server_info *server)
 			break;
 		}
 	}
-	max_top = defaults_get_integer("OpenWindows.NumberOfTopFkeys",
-			"OpenWindows.NumberOfTopFkeys", 12);
+	max_top = defaults_get_integer("openWindows.numberOfTopFkeys",
+									"OpenWindows.NumberOfTopFkeys", 12);
 	for (i = 1; i <= max_top; i++) {
 		win_keymap[f0_index + i] = KEY_TOP(i);
 	}
