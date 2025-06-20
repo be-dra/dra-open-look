@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.13 2025/04/06 08:35:39 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.14 2025/06/19 11:48:39 dra Exp $ ";
 #endif
 #endif
 
@@ -4768,6 +4768,17 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 	 * If this is not within xv_create
 	 */
 	if (!(notice->new) && show_seen) {
+		Xv_screen screen;
+
+		if (notice->client_window)
+			screen = XV_SCREEN_FROM_WINDOW(notice->client_window);
+    	else if (notice->owner_window) 
+			screen = XV_SCREEN_FROM_WINDOW(notice->owner_window);
+		else screen = xv_default_screen;
+
+		if (! xv_get(screen, SCREEN_ENHANCED_OLWM)) {
+    		notice->lock_screen_looking = FALSE;
+		}
 		notice_do_show(notice);
 	}
 
