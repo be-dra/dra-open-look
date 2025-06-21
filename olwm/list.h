@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: list.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: list.h,v 1.3 2025/06/20 20:37:23 dra Exp $ */
 /* #ident	"@(#)list.h	26.8	93/06/28 SMI" */
 
 /*
@@ -25,17 +25,18 @@ extern void ListInit();
 	 * at startup.
 	 */
 
-extern List *ListCons();	/* void *val, List *next */
+extern List *ListCons(void *val, List *next);
 
 extern int ListCount();		/* List *l */
 	/* returns number of items in a list 
 	 */
 
-extern void ListDestroy();	/* List *l */
+extern void ListDestroy(List *l);
+
 	/* destroys all list cells in a list; does not affect list values 
 	 */
 
-extern void ListDestroyCell();	/* List **l */
+extern void ListDestroyCell(List **l);
 	/* deletes one cell from a list; modifies the List* passed by
 	 * reference to point to the next cell.
 	 */
@@ -46,7 +47,7 @@ extern void *ListApply();	/* List *l, (void *)(*f)(), void *c */
 	 * value, or NULL if hte end of the list is reached.
 	 */
 
-extern void *ListEnum();	/* List **l */
+extern void *ListEnum(List **l);
 	/* used for enumerating a list in a loop.  Returns the value of the
 	 * cell, and modifies the cell pointer to point to the next cell.
 	 */
