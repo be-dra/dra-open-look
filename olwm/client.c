@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.3 2025/02/20 17:04:46 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.4 2025/06/20 20:37:10 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -27,6 +27,7 @@ char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.3 2025/02/20 1
 #include "ollocale.h"
 #include "events.h"
 #include "mem.h"
+#include "screen.h"
 #include "olwm.h"
 #include "win.h"
 #include "group.h"
@@ -153,7 +154,7 @@ Display	*dpy;
 {
 	long *ledMap;
 	int	i,numLeds;
-	unsigned int nitems,nremain;
+	unsigned long nitems,nremain;
 
 	DoingWindowState = False;
 
@@ -393,6 +394,7 @@ void	*junk;
 	return NULL;
 }
 
+void ClientSetWMState(Client *cli, WMState	wmState);
 
 /* UnparentClient - while exiting OLWM: unmap all icons that are on the
  * screen.  Reparent all windows back to the root, suitably offset
@@ -412,7 +414,6 @@ void *junk;
 	WinPane 	*paneInfo;
 	Display		*dpy = cli->dpy;
 	Window 		pane;
-	void 		ClientSetWMState();	/* local forward */
 
 	/* if no framewin then it's probably a root window */
 	if (frameInfo == NULL)
@@ -490,10 +491,7 @@ Client *cli;
 /*
  * ClientCreate -- allocate and initialize a client structure.
  */
-Client *
-ClientCreate(dpy,screen)
-	Display *dpy;
-	int 	screen;
+Client *ClientCreate(Display *dpy, int screen)
 {
 	Client *cli = MemNew(Client);
 
@@ -556,6 +554,7 @@ ClientSetInstanceVars(cli)
 	}
 }
 
+extern void PreenColormapInhibit(Client *cli);
 
 /* 
  * DestroyClient -- destroy all resources associated with this client, and 
@@ -570,16 +569,13 @@ ClientSetInstanceVars(cli)
  * client (such as an XID) should be used, so that references can go stale 
  * without causing fatal problems.
  */
-void 
-DestroyClient(cli)
-Client *cli;
+void DestroyClient(Client *cli)
 {
 	Bool	    setfocus = False;
 	Display	    *dpy = cli->dpy;
 	ScreenInfo  *scrInfo = cli->scrInfo;
 	List	    *l;
 	Client	    *tcli;
-	extern void PreenColormapInhibit();
 
 	UnTrackSubwindows(cli, True);
 	if (IsSelected(cli))
@@ -702,10 +698,7 @@ XConfigureRequestEvent *pxcre;
  *			   Since InvisibleState is private to olwm,
  *			   coerce to IconicState.
  */
-void
-ClientSetWMState(cli,wmState)
-	Client *cli;
-	WMState	wmState;
+void ClientSetWMState(Client *cli, WMState	wmState)
 {
 	WinIconFrame *iconWinInfo = cli->iconwin;
 	Window 	pane = PANEWINOFCLIENT(cli);
@@ -786,7 +779,8 @@ void ClientProcessDragDropInterest(cli, state)
     int state;		/* PropertyNewValue or PropertyDelete */
 {
 	unsigned long *data;
-	int nitems, remain, nsites, i, areatype, nelts;
+	long nitems, remain;
+	int nsites, i, areatype, nelts;
 	int cur = 0;
 	Window wid;
 	unsigned long sid, flags;
@@ -880,8 +874,7 @@ ClientUpdateDragDropInterest(cli,event)
 
 /* ClientPane - return the pane window of a client
  */
-Window ClientPane(cli)
-	Client *cli;
+Window ClientPane(Client *cli)
 {
 	WinPaneFrame *wf;
 	WinPane *wp;
@@ -1538,9 +1531,7 @@ void ClientSetFocus(Client *cli, Bool sendTF, Time evtime)
  * of the current client, we may get "stuck" if the next client fails to take
  * the focus when requested.
  */
-void
-ClientSetCurrent(cli)
-    Client *cli;
+void ClientSetCurrent(Client *cli)
 {
     if (cli != CurrentClient) {
 	lastCurrentClient = CurrentClient;
@@ -1612,11 +1603,7 @@ void ClientActivate(Display *dpy, Client *cli, Time time)
 /*
  * Set the focus to the topmost window on the given screen.
  */
-void
-ClientFocusTopmost(dpy, scrinfo, time)
-    Display *dpy;
-    ScreenInfo *scrinfo;
-    Time time;
+void ClientFocusTopmost(Display *dpy, ScreenInfo *scrinfo, Time time)
 {
     Window wjunk;
     Window *children;
