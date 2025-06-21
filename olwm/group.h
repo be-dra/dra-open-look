@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: group.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: group.h,v 1.3 2025/06/20 20:37:14 dra Exp $ */
 /* #ident	"@(#)group.h	26.8	93/06/28 SMI" */
 
 /*
@@ -49,7 +49,7 @@ extern Bool GroupAdd();		/* GroupID, Client *, mask */
 	 * if the client was successfully added.
 	 */
 
-extern Bool GroupRemove();	/* GroupID, Client * */
+extern Bool GroupRemove(GroupID grpid, Client *cli);
 	/* removes a client from the group.  If the group becomes empty
 	 * it is deleted.  Returns True if the client was successfully deleted.
 	 */
@@ -59,7 +59,7 @@ extern Bool GroupIsLeader();	/* GroupID, Client * */
 	 * a group 
 	 */
 
-extern Client *GroupLeader();	/* GroupID */
+extern Client *GroupLeader(GroupID);
 	/* returns the leader of a group */
 
 #endif /* _OLWM_GROUP_H */
