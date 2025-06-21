@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: selection.h,v 1.4 2024/09/08 19:50:10 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: selection.h,v 1.5 2025/06/20 20:37:04 dra Exp $ */
 /* #ident	"@(#)selection.h	1.3	93/06/28 SMI" */
 
 /*
@@ -17,9 +17,9 @@ extern	Time	SelectionTime;
 
 struct _client;
 
-extern	Bool	IsSelected(/*  client  */);
+extern	Bool IsSelected(struct _client *cli);
 extern void AddSelection(struct _client *cli, Time timestamp);
-extern	Bool	RemoveSelection(/*  client  */);
+extern	Bool RemoveSelection(struct _client *cli);
 extern	Bool	ToggleSelection(/*  client, time  */);
 extern	void	ClearSelections(/*  dpy  */);
 extern	struct _client* EnumSelections(/*  void*  */);
