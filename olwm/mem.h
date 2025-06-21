@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: mem.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: mem.h,v 1.3 2025/06/20 20:37:08 dra Exp $ */
 /* #ident	"@(#)mem.h	26.15	93/06/28 SMI" */
 
 /*
@@ -13,10 +13,10 @@
 #ifndef _OLWM_MEM_H
 #define _OLWM_MEM_H
 
-extern void *MemAlloc();	/* malloc frontend */
-extern void *MemCalloc();	/* calloc frontend */
-extern void MemFree();		/* free frontend */
-extern void *MemRealloc();	/* realloc frontend */
+extern void *MemAlloc(unsigned int sz);	/* malloc frontend */
+extern void * MemCalloc(unsigned int num, unsigned int sz); /*calloc frontend */
+extern void MemFree(void   *p); /* free frontend */
+extern void *MemRealloc(void *p, unsigned int sz); /* realloc frontend */
 
 #ifdef MEMDEBUG
 extern void *d_MemAlloc();
