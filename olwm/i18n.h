@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: i18n.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: i18n.h,v 1.3 2025/06/20 20:36:54 dra Exp $ */
 /* #ident	"@(#)i18n.h	1.26	93/06/28 SMI" */
 
 /*
@@ -148,7 +148,7 @@ extern		char			*gettext();
 
 #elif defined OW_I18N_L3
 
-extern		char			*gettext();
+/* extern		char			*gettext(); */
 #define		GetString(s)		gettext(s)
 #define		GetText(s)		gettext(s)
 #define		FreeText(s)	
