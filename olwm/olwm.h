@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.3 2025/03/01 15:00:41 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.4 2025/06/20 20:37:00 dra Exp $ */
 /* #ident	"@(#)olwm.h	26.27	93/06/28 SMI" */
 
 /*
@@ -92,7 +92,9 @@ extern	Pixmap	pixGray;
 /* miscellaneous functions */
 extern void ExitOLWM(int sig);
 extern void Exit(Display *dpy);
-extern void *GetWindowProperty();
+extern void *GetWindowProperty(Display *dpy, Window w, Atom property, long long_offset,
+		long long_length, Atom req_type, int req_fmt, unsigned long *nitems,
+		unsigned long *bytes_after);
 #ifdef OW_I18N_L4
 extern void parseApplicationLocaleDefaults();
 #endif
@@ -119,8 +121,11 @@ extern int NoFocusEventBeep();
 /* client information and functions */
 extern struct _List *ActiveClientList;
 
-extern struct _client *ClientCreate();
-extern Window ClientPane();
+struct _client;
+struct _screeninfo;
+
+extern struct _client *ClientCreate(Display *dpy, int screen);
+extern Window ClientPane(struct _client *);
 typedef struct _clientinboxclose {
 	Display *dpy;
 	int 	screen;
@@ -131,11 +136,10 @@ typedef struct _clientinboxclose {
 extern void *ClientInBox();
 extern void ClientInhibitFocus();
 extern void ClientSetFocus(struct _client *cli, Bool sendTF, Time evtime);
-extern void ClientSetCurrent();
+extern void ClientSetCurrent(struct _client *cli);
 extern struct _client *ClientGetLastCurrent();
 extern void ClientActivate(Display *dpy, struct _client *cli, Time time);
-extern void ClientFocusTopmost();
-struct _client;
+extern void ClientFocusTopmost(Display *dpy, struct _screeninfo *scrinfo, Time time);
 
 extern Bool ClientShowHelp(struct _client *cli, int r_x, int r_y, char *hlp);
 extern void ClientShowProps(struct _client *cli);
@@ -169,7 +173,7 @@ extern struct _winiconframe *MakeIcon();
 extern void IconChangeName();
 extern void DrawIconToWindowLines();
 extern void IconShow();
-extern void IconHide();
+extern void IconHide(struct _client *cli, struct _winiconframe *winIcon);
 extern void IconSetPos();
 
 /* icon pane functions */
@@ -185,9 +189,9 @@ extern struct _winmenu *MakeMenu();
 
 /* colormap functions */
 extern void TrackSubwindows();
-extern void UnTrackSubwindows();
+extern void UnTrackSubwindows(struct _client *cli, Bool destroyed);
 extern void ColormapInhibit();
-extern void InstallColormap();
+extern void InstallColormap(Display *dpy, struct _wingeneric *winInfo);
 extern void InstallPointerColormap();
 extern void UnlockColormap();
 extern void ColorWindowCrossing();
@@ -195,11 +199,9 @@ extern struct _wingeneric *ColormapUnhook();
 extern void ColormapTransmogrify();
 
 /* selection functions */
-extern Bool IsSelected();
+extern	Bool IsSelected(struct _client *cli);
 extern struct _client *EnumSelections();
 extern Time TimeFresh();
-/* extern int AddSelection(); */
-extern Bool RemoveSelection();
 extern Bool ToggleSelection();
 extern void ClearSelections();
 extern void SelectionResponse();
