@@ -7,11 +7,12 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.48 2025/05/25 11:08:11 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.49 2025/06/24 19:34:28 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
 	char *name;
+	char **startpars;
 	Atom client_selection;
 } *pattern_t;
 
@@ -67,16 +68,25 @@ static int analyze_string(char *str, int sep, char **strings, long max_strings)
 	return i;
 }
 
-static void install_pattern(Talk_private *priv, char *patt)
+static void install_pattern(Talk_private *priv, char *patt, char **startpars)
 {
 	Talk self = TALKPUB(priv);
-	char buf[100];
+	char *p, sep[2], buf[2000];
 	unsigned long len;
-	int format;
+	int format, i = 0;
 
 	if (priv->state != server_based) return;
 
 	sprintf(buf, "%ld%c%s", xv_get(priv->selown, SEL_RANK), AGS, patt);
+
+	sep[0] = AGS;
+	sep[1] = '\0';
+	while ((p = startpars[i++])) {
+		strcat(buf, sep);
+		strcat(buf, p);
+		sep[0] = ARS;
+	}
+
 	xv_set(self,
 			SEL_RANK, priv->talksrv,
 			SEL_TYPE_NAME, "_DRA_TALK_PATTERN",
@@ -109,7 +119,7 @@ static pattern_t install_pending(Talk_private *priv, pattern_t p)
 	if (! p) return p;
 	p->next = install_pending(priv, p->next);
 
-	install_pattern(priv, p->name);
+	install_pattern(priv, p->name, p->startpars);
 	/* now link p to the "installed" list */
 	p->next = priv->installed;
 	priv->installed = p;
@@ -547,9 +557,21 @@ static void deregister(Talk self, Talk_private *priv)
 	}
 }
 
-static void add_pattern(Talk_private *priv, char *patt)
+static void add_pattern(Talk_private *priv, char *patt, char **startpars)
 {
 	pattern_t p = xv_alloc(struct _pattern);
+
+	if (startpars) {
+		unsigned long i = 0, n = 0;
+		char *q;
+
+		while (startpars[n++]);
+
+		p->startpars = xv_alloc_n(char *, n);
+		while ((q = startpars[i++])) {
+			p->startpars[i] = strdup(q);
+		}
+	}
 
 	p->name = strdup(patt);
 	p->next = priv->not_yet_installed;
@@ -668,10 +690,10 @@ static void trigger(Talk t, const char *msg, char **params, int *countptr)
 	}
 }
 
-static void new_pattern(Talk_private *priv, char *patt)
+static void new_pattern(Talk_private *priv, char *patt, char **startpars)
 {
 	SERVERTRACE((200, "%s(%s)\n", __FUNCTION__, patt));
-	add_pattern(priv, patt);
+	add_pattern(priv, patt, startpars);
 
 	if (priv->state == server_based) {
 		priv->not_yet_installed = install_pending(priv,priv->not_yet_installed);
@@ -684,10 +706,15 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 	Talk_private *priv = TALKPRIV(self);
 	char *msg = NULL, **pars = NULL;
 	int *count_ptr = NULL;
+	char *patt = NULL, **startpars = NULL;
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case TALK_PATTERN:
-			new_pattern(priv, (char *)A1);
+			patt = (char *)A1;
+			ADONE;
+
+		case TALK_START:
+			startpars = (char **)(attrs + 1);
 			ADONE;
 
 		case TALK_DEREGISTER:
@@ -720,6 +747,10 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 
 		default: xv_check_bad_attr(TALK, A0);
 			break;
+	}
+
+	if (patt) {
+		new_pattern(priv, patt, startpars);
 	}
 
 	if (msg) {
