@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.49 2025/06/24 19:34:28 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.51 2025/06/25 20:07:23 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -81,10 +81,12 @@ static void install_pattern(Talk_private *priv, char *patt, char **startpars)
 
 	sep[0] = AGS;
 	sep[1] = '\0';
-	while ((p = startpars[i++])) {
-		strcat(buf, sep);
-		strcat(buf, p);
-		sep[0] = ARS;
+	if (startpars) {
+		while ((p = startpars[i++])) {
+			strcat(buf, sep);
+			strcat(buf, p);
+			sep[0] = ARS;
+		}
 	}
 
 	xv_set(self,
@@ -707,10 +709,19 @@ static Xv_opaque talk_set(Talk self, Attr_avlist avlist)
 	char *msg = NULL, **pars = NULL;
 	int *count_ptr = NULL;
 	char *patt = NULL, **startpars = NULL;
+	int pattern_count = 0;
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case TALK_PATTERN:
-			patt = (char *)A1;
+			if (pattern_count == 1) {
+				xv_error(self,
+					ERROR_PKG, TALK,
+					ERROR_STRING, "More than one TALK_PATTERN in one xv_set",
+					ERROR_SEVERITY, ERROR_RECOVERABLE,
+					NULL);
+			}
+			if (pattern_count == 0) patt = (char *)A1;
+			++pattern_count;
 			ADONE;
 
 		case TALK_START:
