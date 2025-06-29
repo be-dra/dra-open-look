@@ -26,7 +26,7 @@
 #include <xview/accel.h>
 #include <xview_private/i18n_impl.h>
 
-char accel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: accel.c,v 4.7 2025/03/08 13:04:27 dra Exp $";
+char accel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: accel.c,v 4.8 2025/06/28 13:34:13 dra Exp $";
 
 #define ADOFF(f) FP_OFF(Accel_descr_t *,f)
 
@@ -556,6 +556,11 @@ static void create_items(Accel_private *priv)
 					XV_HELP_DATA, make_help(priv, "keysymname"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 					NULL,
+				NULL);
+
+	xv_set(xv_get(priv->func_choice, XV_OWNER),
+				XV_HELP_DATA, make_help(priv, "categ"),
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 				NULL);
 
 	for (reg = priv->registered; reg; reg = reg->next) {
