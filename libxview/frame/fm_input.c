@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.23 2025/06/15 06:53:22 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.24 2025/06/29 06:11:14 dra Exp $ ";
 #endif
 #endif
 
@@ -488,6 +488,10 @@ Pkg_private Notify_value frame_footer_input(Xv_Window footer, Event *ev,
 
 				/* do we have a help PROCEDURE ? */
 				if (proc) {
+					/* this procedure is supposed to handle help
+					 * completely. In most cases, it will finally call
+					 * xv_help_show(f, "myprog:dynamic_help", ev)
+					 */
 					proc(f, ev);
 				}
 				else {
