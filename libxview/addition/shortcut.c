@@ -27,7 +27,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview/shortcut.h>
 
-char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.12 2025/03/08 13:37:48 dra Exp $";
+char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.14 2025/06/28 20:16:51 dra Exp $";
 
 typedef struct {
 	char *code;
@@ -465,14 +465,14 @@ static void create_top(Shortcut_private *priv, Attr_attribute *avlist)
 		if (hlp && *hlp) {
 			if (0 == strcmp(hlp, "xview:panel")) {
 				xv_set(pan, 
-						XV_HELP_DATA, make_help(priv, "default_panel_help"),
+						XV_HELP_DATA, make_help(priv, "categ"),
 						XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 						NULL);
 			}
 		}
 		else {
 			xv_set(pan, 
-					XV_HELP_DATA, make_help(priv, "default_panel_help"),
+					XV_HELP_DATA, make_help(priv, "categ"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 					NULL);
 		}
