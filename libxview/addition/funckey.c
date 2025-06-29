@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.20 2025/06/19 13:17:09 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.22 2025/06/28 20:16:51 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -410,14 +410,14 @@ static void create_top(Funckey_private *priv, Attr_attribute *avlist)
 		if (hlp && *hlp) {
 			if (0 == strcmp(hlp, "xview:panel")) {
 				xv_set(pan, 
-						XV_HELP_DATA, make_help(priv, "default_panel_help"),
+						XV_HELP_DATA, make_help(priv, "categ"),
 						XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 						NULL);
 			}
 		}
 		else {
 			xv_set(pan, 
-					XV_HELP_DATA, make_help(priv, "default_panel_help"),
+					XV_HELP_DATA, make_help(priv, "categ"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 					NULL);
 		}
