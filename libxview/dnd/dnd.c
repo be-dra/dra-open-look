@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.19 2025/02/26 18:53:04 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.20 2025/07/02 20:20:58 dra Exp $ ";
 #endif
 #endif
 
@@ -1391,6 +1391,7 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 					/* there is an old application that expects the old
 					 * preview events.
 					 */
+					cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
 					if (dnd->siteRects[dnd->eventSiteIndex].flags
 												& DND_FORWARDED_FLAG)
 						cM.xclient.data.l[4] = DND_FORWARDED_FLAG;
