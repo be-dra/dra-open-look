@@ -1,4 +1,4 @@
-/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.3 2025/03/03 20:00:20 dra Exp $	*/
+/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.4 2025/07/05 12:42:45 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -301,8 +301,10 @@ typedef struct menu_item {
 	 * paint_rect: was 'bemalt' wird - nur bei MENU_TOGGLE anders als item_rect
 	 */
 	Rect item_rect, paint_rect; /* die werden belegt in.... */
-	int         choice_group; /* relevant only for class_ == MENU_CHOICE */
-								/* currently only one group per menu... */
+	int         choice_group; /* relevant only for class MENU_CHOICE:
+							   * The index of the first item of this group.
+							   * currently only one group per menu...
+							   */
 }  Xv_menu_item_info;
 
 
