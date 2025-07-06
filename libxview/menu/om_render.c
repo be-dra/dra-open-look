@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.10 2025/03/10 21:02:31 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.11 2025/07/05 12:43:14 dra Exp $";
 #endif
 #endif
 
@@ -534,13 +534,14 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 						/* same group */
 					}
 					else if (last_choice_index < 0) {
-						/* first group */
+						/* first of a new group */
+						ch_grp = i;
 					}
 					else {
 						/* new group */
 						cleanup(m, CLEANUP_ABORT);
 						xv_error(XV_NULL,
-							ERROR_STRING, XV_MSG("Several choice groups in one men not supported"),
+							ERROR_STRING, XV_MSG("Several choice groups in one mixed menu not supported"),
 							ERROR_PKG, MENU,
 							NULL);
 						return;
@@ -548,6 +549,11 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 					mi->choice_group = ch_grp;
 				}
 				last_choice_index = i;
+			}
+			else {
+				/* a non-MENU_CHOICE item: prepare for the next choice_group */
+				ch_grp = 1;
+				last_choice_index = -99;
 			}
 		}
 
