@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.8 2025/03/08 13:52:55 dra Exp $";
+static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.9 2025/07/05 12:43:38 dra Exp $";
 #endif
 #endif
 
@@ -70,7 +70,7 @@ Xv_private void menu_item_set_parent(Menu_item menu_item_public,
 /* Pkg_private (server XV_KEY_DATA keys) */
 int menu_active_menu_key = 0;
 static Attr_attribute key_startindex, key_show, key_menu, key_menu_item,
-		key_notify_proc, key_gen_proc;
+		key_notify_proc, key_gen_proc, key_set;
 
 /*
  * Private
@@ -98,6 +98,7 @@ extern int panel_item_destroy_flag;
 #define KEY_MENU_ITEM XV_KEY_DATA,key_menu_item
 #define KEY_NOTIFY_PROC XV_KEY_DATA,key_notify_proc
 #define KEY_GEN_PROC XV_KEY_DATA,key_gen_proc
+#define KEY_MENU_ITEM_SET XV_KEY_DATA,key_set
 
 /* ------------------------------------------------------------------------- */
 static void initialize_keys(void)
@@ -111,6 +112,7 @@ static void initialize_keys(void)
 	key_menu_item = xv_unique_key();
 	key_notify_proc = xv_unique_key();
 	key_gen_proc = xv_unique_key();
+	key_set = xv_unique_key();
 }
 
 /*
@@ -634,8 +636,8 @@ static Xv_opaque menu_return_result(Xv_menu_info *menu, Xv_menu_group_info *grou
 		case MENU_MIXED:
 			switch (mi->class) {
 				case MENU_CHOICE:	/* exclusive choice */
-					/* selected_position bezieht sich auf das Menu, und
-					 * NICHT die choice_group
+					/* selected_position is related to the menu and NOT to
+					 * the choice group!
 					 */
 					for (i = 0; i < m->nitems; i++) {
 						Xv_menu_item_info *it = m->item_list[i];
@@ -1131,10 +1133,16 @@ static void pin_button_notify_proc(Panel_item item, Event *event)
 	Menu_item menu_item;
 	Menu_notify_proc_t notify_proc;
 
-	menu = (Menu) xv_get(item, KEY_MENU);
-	menu_item = (Menu_item) xv_get(item, KEY_MENU_ITEM);
-	notify_proc =
-			(Menu_notify_proc_t) xv_get(item, KEY_NOTIFY_PROC);
+	menu = xv_get(item, KEY_MENU);
+	menu_item = xv_get(item, KEY_MENU_ITEM_SET);
+	if (menu_item) {
+		xv_set(item, KEY_MENU_ITEM_SET, XV_NULL, NULL);
+	}
+	else {
+		menu_item = xv_get(item, KEY_MENU_ITEM);
+	}
+	SERVERTRACE((456, "button: pi=%ld, mi=%ld\n", item, menu_item));
+	notify_proc = (Menu_notify_proc_t) xv_get(item, KEY_NOTIFY_PROC);
 	gen_proc = (Menu_item_gen_proc_t) xv_get(item, KEY_GEN_PROC);
 
 	/* Fake a MENU_FIRST_EVENT */
@@ -1167,24 +1175,44 @@ static void pin_choice_notify_proc(Panel_item item, int value, Event *event)
 	Xv_menu_item_info *mi = NULL;
 	int startindex = (int)xv_get(item, KEY_STARTINDEX);
 
+	SERVERTRACE((456, "========\n"));
+	SERVERTRACE((456, "choice: pi=%ld, value = %d, startidx=%d\n",
+						item, value, startindex));
 	menu = (Menu) xv_get(item, KEY_MENU);
 	m = MENU_PRIVATE(menu);
 
 	if (m->item_list[0]->title) menu_item_index++;
 
 	if (m->class == MENU_MIXED) {
+		Menu_item mip;
+
 		mi = m->item_list[startindex];
+		mip = MENU_ITEM_PUBLIC(mi);
 
 		if (mi->class == MENU_CHOICE) {
 			for (i = startindex; i < m->nitems; i++) {
 				if (m->item_list[i]->class == MENU_CHOICE) {
-					m->item_list[i]->selected = (i == startindex + value);
+					mi = m->item_list[i];
+					mip = MENU_ITEM_PUBLIC(mi);
+					mi->selected = (i == startindex + value);
+					xv_set(mip, MENU_SELECTED, mi->selected, NULL);
+					/* just to know in pin_button_notify_proc */
+					if (mi->selected) {
+						xv_set(item, KEY_MENU_ITEM_SET, mip, NULL);
+						SERVERTRACE((456, "found choice item '%s'\n",
+							(char *)xv_get(mip, MENU_STRING)));
+					}
+				}
+				else {
+					break; /* end of choice group */
 				}
 			}
 		}
 		else {
 			/* single toggle */
 			mi->selected = value;
+			xv_set(mip, MENU_SELECTED, value, NULL);
+			xv_set(item, KEY_MENU_ITEM_SET, mip, NULL);
 		}
 	}
 	else if (m->class == MENU_CHOICE) {
@@ -1725,8 +1753,7 @@ Xv_private void menu_accelerator_notify_proc(Frame_accel_data *accelerator_data,
 	        group_info = (Xv_menu_group_info *) xv_malloc(sizeof(Xv_menu_group_info));
 	        if (group_info == NULL) {
 	            xv_error(XV_NULL,
-		         ERROR_STRING,
-			    XV_MSG("Unable to allocate group_info"),
+		         ERROR_STRING, XV_MSG("Unable to allocate group_info"),
 		         ERROR_PKG, MENU,
 		         NULL);
 	        }
