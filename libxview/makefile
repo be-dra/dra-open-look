@@ -116,6 +116,8 @@ XFREE86JAPANESEDOCDIR = $(XFREE86DOCDIR)/Japanese
                CC = gcc
                AS = as
 
+SILENT=--no-print-directory
+
 .SUFFIXES: .cxx
 
               CXX = c++
@@ -805,9 +807,7 @@ install_lib:
 	cp libxview.* $(OPENWINHOME)/lib
 
 install_h:
-	rm -f $(XVPUB_HEADER_DEST)/*.h
-	cd $(BUILDINCDIR)/$(XVPUB_INCDIR) ; cp *.h $(XVPUB_HEADER_DEST)
-	chmod 444 $(XVPUB_HEADER_DEST)/*.h
+	@echo do not do that HERE
 
 # -wTRADITIONAL-CONVERSION
 lib64: FORCE
