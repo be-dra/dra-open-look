@@ -713,17 +713,6 @@ includes::
 	$(LN) $(BUILDINCTOP)//$(CURRENT_DIR)/$$i .; \
 	done)
 
-install::
-	$(MKDIRHIER) $(XVPUB_HEADER_DEST)
-
-install:: $(HDRSPUBLIC)
-	@if [ -d $(DESTDIR)$(XVPUB_HEADER_DEST) ]; then set +x; \
-	else (set -x; $(MKDIRHIER) $(DESTDIR)$(XVPUB_HEADER_DEST)); fi
-	@case '${MFLAGS}' in *[i]*) set +e;; esac; \
-	for i in $(HDRSPUBLIC); do \
-	(set -x; $(INSTALL) $(INSTALLFLAGS) $(INSTDATFLAGS) $$i $(DESTDIR)$(XVPUB_HEADER_DEST)); \
-	done
-
 includes::
 	@if [ -d $(BUILDINCDIR)/$(XVPRI_INCDIR) ]; then set +x; \
 	else (set -x; $(MKDIRHIER) $(BUILDINCDIR)/$(XVPRI_INCDIR)); fi
@@ -745,8 +734,6 @@ populate::
 	fi
 
 includes::
-
-install::
 
 retrieve: $(HEADERS)
 
@@ -779,8 +766,8 @@ man_keywords::
 # ----------------------------------------------------------------------
 # empty rules for directories that do not have SUBDIRS - do not edit
 
-install::
-	@echo "install in $(CURRENT_DIR) done"
+install:
+	@echo install NOT FROM HERE
 
 install.man::
 	@echo "install.man in $(CURRENT_DIR) done"
