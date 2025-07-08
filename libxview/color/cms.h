@@ -1,4 +1,4 @@
-/*	@(#)cms.h 20.12 89/08/17 SMI   DRA: RCS $Id: cms.h,v 2.2 2025/03/08 13:26:38 dra Exp $	*/
+/*	@(#)cms.h 20.12 89/08/17 SMI   DRA: RCS $Id: cms.h,v 2.3 2025/07/06 11:19:00 dra Exp $	*/
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL NOTICE 
@@ -112,7 +112,7 @@ typedef struct xv_cmsdata {
 } Xv_cmsdata;
 
 typedef struct xv_singlecolor {
-    u_char 	red, green, blue;
+    unsigned char 	red, green, blue;
 } Xv_singlecolor;
 
 
