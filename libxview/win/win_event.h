@@ -1,5 +1,5 @@
 /*
- * @(#)win_event.h 1.19 93/06/28 SMI RCS: $Id: win_event.h,v 4.2 2024/03/31 17:37:43 dra Exp $
+ * @(#)win_event.h 1.19 93/06/28 SMI RCS: $Id: win_event.h,v 4.3 2025/07/06 10:56:25 dra Exp $
  * (formally sundev/vuid_event.h
  */
 
@@ -282,8 +282,8 @@ typedef	enum vuid_device {
  * key.
  */
 typedef	struct firm_event {
-	u_short		id;	/* Event's unique id */
-	u_char		pair_type;	/* Event pair's type */
+	unsigned short		id;	/* Event's unique id */
+	unsigned char		pair_type;	/* Event pair's type */
 #define	FE_PAIR_NONE		0	/* pair is not defined */
 #define	FE_PAIR_SET		1	/* pair is accompanying id to set to
 					   this events value */
@@ -295,7 +295,7 @@ typedef	struct firm_event {
 					   be set to the sum of its current
 					   value and the delta indicated by
 					   this event's value */
-	u_char		pair;	/* Event id's associated delta|absolute|pair
+	unsigned char		pair;	/* Event id's associated delta|absolute|pair
 				   offset within id's segment (minus id's
 				   address) */
 	int		value;	/* Event's value */
