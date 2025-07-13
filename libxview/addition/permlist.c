@@ -29,7 +29,7 @@
 #include <string.h>
 #include <xview/permlist.h>
 
-char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.11 2025/03/17 18:20:18 dra Exp $";
+char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.12 2025/07/13 07:18:19 dra Exp $";
 
 /* this attribute is so private that I don't even want to have it in
  * permlist.h
@@ -69,6 +69,76 @@ typedef struct _pl_private {
 #define PLPUB(_x_) XV_PUBLIC(_x_)
 
 static int permlist_key = 0;
+
+static void internal_free_func(Permanent_list self, Xv_opaque fd)
+{
+	int i;
+	Permlist_private *priv = PLPRIV(self);
+	char **straddr, *addr = (char *)fd;
+
+	for (i = 0; i < priv->num_fdres; i++) {
+		Permprop_res_res_t  *p = priv->fdres + i;
+
+		switch (p->type) {
+			case DAP_int: break;
+			case DAP_bool: break;
+			case DAP_enum: break;
+			case DAP_string:
+				straddr = (char **)(addr + p->offset);
+				if (*straddr) xv_free(*straddr);
+				*straddr = NULL;
+				break;
+			case DAP_stringlist:
+				fprintf(stderr, "DAP_stringlist not yet\n");
+				break;
+		}
+	}
+	memset(addr, 0, (size_t)priv->itemsize);
+}
+
+static void internal_copy_func(Permanent_list self, Xv_opaque src, Xv_opaque tgt)
+{
+	int i;
+	Permlist_private *priv = PLPRIV(self);
+	char **straddr, *taddr = (char *)tgt, *saddr = (char *)src;
+
+	for (i = 0; i < priv->num_fdres; i++) {
+		Permprop_res_res_t  *p = priv->fdres + i;
+
+		switch (p->type) {
+			case DAP_int: break;
+			case DAP_bool: break;
+			case DAP_enum: break;
+			case DAP_string:
+				straddr = (char **)(taddr + p->offset);
+				if (*straddr) xv_free(*straddr);
+				*straddr = NULL;
+				break;
+			case DAP_stringlist:
+				fprintf(stderr, "DAP_stringlist not yet\n");
+				break;
+		}
+	}
+
+	memcpy(taddr, saddr, (size_t)priv->itemsize);
+
+	for (i = 0; i < priv->num_fdres; i++) {
+		Permprop_res_res_t  *p = priv->fdres + i;
+
+		switch (p->type) {
+			case DAP_int: break;
+			case DAP_bool: break;
+			case DAP_enum: break;
+			case DAP_string:
+				straddr = (char **)(taddr + p->offset);
+				if (*straddr) *straddr = xv_strsave(*straddr);
+				break;
+			case DAP_stringlist:
+				fprintf(stderr, "DAP_stringlist not yet\n");
+				break;
+		}
+	}
+}
 
 static void free_item(Property_list l, Xv_opaque fd)
 {
@@ -491,6 +561,8 @@ static int permlist_init(Perm_prop_frame owner, Permanent_list slf, Attr_avlist 
 		}
 		xv_set(owner, XV_KEY_DATA, permlist_key, priv, NULL);
 	}
+	priv->free_item_func = internal_free_func;
+	priv->copy_item_func = internal_copy_func;
 	priv->dataoff = -1;
 	priv->itemsize = -1;
 	priv->label_off = -1;
