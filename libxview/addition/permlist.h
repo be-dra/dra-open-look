@@ -2,7 +2,7 @@
 #define permlist_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: permlist.h,v 4.6 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: permlist.h,v 4.7 2025/07/13 07:26:01 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -48,15 +48,17 @@ typedef struct {
 
 typedef enum {
 	PERMLIST_CREATE_TOP=PERML_ATTR(ATTR_LIST_INLINE(ATTR_RECURSIVE,ATTR_AV),1),/* -S- */
-	PERMLIST_PROP_MASTER          = PERML_ATTR(ATTR_OPAQUE, 2),     /* --G */
-	PERMLIST_ADD_RESOURCE         = PERML_ATTR(ATTR_PERML_QUAD, 3), /* C-- */
-	PERMLIST_ITEM_RESOURCE_NAME   = PERML_ATTR(ATTR_STRING, 4),     /* CSG */
-	PERMLIST_RESOURCE_CATEGORY    = PERML_ATTR(ATTR_INT, 5),        /* C-- */
-	PERMLIST_BEFORE_RESET         = PERML_ATTR(ATTR_OPAQUE, 6),     /* -S- */
-	PERMLIST_BEFORE_RESET_FACTORY = PERML_ATTR(ATTR_OPAQUE, 7),     /* -S- */
-	PERMLIST_CREATE_BOTTOM        = PERML_ATTR(ATTR_NO_VALUE, 99),  /* -S- */
+	PERMLIST_PROP_MASTER          = PERML_ATTR(ATTR_OPAQUE, 2),      /* --G */
+	PERMLIST_ADD_RESOURCE         = PERML_ATTR(ATTR_PERML_QUAD, 3),  /* C-- */
+	PERMLIST_ITEM_RESOURCE_NAME   = PERML_ATTR(ATTR_STRING, 4),      /* CSG */
+	PERMLIST_RESOURCE_CATEGORY    = PERML_ATTR(ATTR_INT, 5),         /* C-- */
+	PERMLIST_BEFORE_RESET         = PERML_ATTR(ATTR_OPAQUE, 6),      /* -S- */
+	PERMLIST_BEFORE_RESET_FACTORY = PERML_ATTR(ATTR_OPAQUE, 7),      /* -S- */
+	PERMLIST_TRIGGER_FREE         = PERML_ATTR(ATTR_OPAQUE, 8),      /* -S- */
+	PERMLIST_TRIGGER_COPY         = PERML_ATTR(ATTR_OPAQUE_PAIR, 9), /* -S- */
+	PERMLIST_CREATE_BOTTOM        = PERML_ATTR(ATTR_NO_VALUE, 99),   /* -S- */
 	/* private attributes */
-	PERMLIST_OWNER_SET            = PERML_ATTR(ATTR_NO_VALUE, 111) /* -S- */
+	PERMLIST_OWNER_SET            = PERML_ATTR(ATTR_NO_VALUE, 111)   /* -S- */
 	                                        /* keep away from 112 !!! */
 } Permlist_attr;
 
