@@ -29,7 +29,7 @@
 #include <string.h>
 #include <xview/permlist.h>
 
-char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.12 2025/07/13 07:18:19 dra Exp $";
+char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.13 2025/07/14 13:30:56 dra Exp $";
 
 /* this attribute is so private that I don't even want to have it in
  * permlist.h
@@ -663,6 +663,18 @@ static Xv_opaque permlist_set(Permanent_list self, Attr_avlist avlist)
 
 		case PERMLIST_PREPARE_DESTROY:
 			prepare_destroy(priv);
+			ADONE;
+
+		case PERMLIST_TRIGGER_FREE:
+			if (priv->free_item_func) {
+				(*(priv->free_item_func))(self, (Xv_opaque)A1);
+			}
+			ADONE;
+
+		case PERMLIST_TRIGGER_COPY:
+			if (priv->copy_item_func) {
+				(*(priv->copy_item_func))(self, (Xv_opaque)A1, (Xv_opaque)A2);
+			}
 			ADONE;
 
 		case XV_END_CREATE:
