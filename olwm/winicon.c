@@ -1,5 +1,5 @@
 /* #ident	"@(#)winicon.c	26.42	93/06/28 SMI" */
-char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.7 2025/01/11 19:13:53 dra Exp $";
+char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.8 2025/06/20 20:36:58 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -734,10 +734,7 @@ IconShow(cli, winIcon)
  * IconHide -- remove an icon from the screen, handling reparenting and
  * save-sets for icon panes.
  */
-void
-IconHide(cli, winIcon)
-    Client *cli;
-    WinIconFrame *winIcon;
+void IconHide(Client *cli, WinIconFrame *winIcon)
 {
     WinIconPane *pane = (WinIconPane *)winIcon->fcore.panewin;
 
