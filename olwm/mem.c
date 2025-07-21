@@ -1,5 +1,5 @@
 /* #ident	"@(#)mem.c	26.9	91/08/25 SMI" */
-char mem_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mem.c,v 1.2 1995/09/22 06:14:31 dra Exp $";
+char mem_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mem.c,v 1.3 2025/06/20 20:36:50 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -125,18 +125,7 @@ DumpExtant()
 
 #endif
 
-void       *
-MemAlloc(sz
-#ifdef MEMDEBUG
- , f, l, k
-#endif
-)
-    unsigned int sz;
-#ifdef MEMDEBUG
-    char *f;
-    int l;
-    char *k;
-#endif
+void *MemAlloc(unsigned int sz)
 {
     void       *p;
 
@@ -145,25 +134,10 @@ MemAlloc(sz
 
     memset((char *) p, 0, (int) sz);
 
-#ifdef MEMDEBUG
-    insertAcctInfo(p, sz, f, l, k);
-#endif
-
     return p;
 }
 
-void       *
-MemCalloc(num, sz
-#ifdef MEMDEBUG
-   , f, l
-#endif
-)
-    unsigned int num;
-    unsigned int sz;
-#ifdef MEMDEBUG
-    char *f;
-    int l;
-#endif
+void * MemCalloc(unsigned int num, unsigned int sz)
 {
     void       *p;
 
@@ -172,17 +146,10 @@ MemCalloc(num, sz
 
     memset((char *) p, 0, (int) sz * (int) num);
 
-#ifdef MEMDEBUG
-    insertAcctInfo(p, sz * num, f, l, NULL);
-#endif
-
     return p;
 }
 
-void       *
-MemRealloc(p, sz)
-    void       *p;
-    unsigned int sz;
+void *MemRealloc(void *p, unsigned int sz)
 {
     void       *t;
 
@@ -204,9 +171,7 @@ MemRealloc(p, sz)
 }
 
 
-void
-MemFree(p)
-    void       *p;
+void MemFree(void   *p)
 {
     if (p != NULL) {
 #ifdef MEMDEBUG
