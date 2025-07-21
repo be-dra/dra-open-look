@@ -1,5 +1,5 @@
 /* #ident	"@(#)gettext.c	1.10	93/06/28 SMI" */
-char gettext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: gettext.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char gettext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: gettext.c,v 2.2 2025/07/21 07:08:16 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -11,12 +11,15 @@ char gettext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: gettext.c,v 2.1 2024/09/20
  */
 
 #include "gettext.h"
+#include "stdint.h"
 #include "stdlib.h"
 #include "string.h"
 
 #ifdef SYSV
 #define bzero(a,b) memset(a,0,b)
 #endif
+
+extern char *strdup(char *);
 
 char * dgettext();
 char *_gettext();
@@ -254,7 +257,7 @@ olwm_dra_obsolete_dgettext(domain_name, msg_id)
 
     struct stat statbuf;
     int	fd = -1;
-    caddr_t addr;
+    char *addr;
 
     int   msg_inc;
 
@@ -358,7 +361,7 @@ olwm_dra_obsolete_dgettext(domain_name, msg_id)
     close(fd);
 
     messages_so[first_free].mess_file_info = (struct struct_mo_info *) addr;
-    if (addr == (caddr_t) -1) {
+    if (addr == (char *) -1) {
 	first_free++;
 	return (msg_id);
     }
