@@ -1,7 +1,7 @@
 OPENLOOK_BITS=
 RANLIB=ranlib
 SYSDEFINES=-DBSD -Dlinux
-CFLAGS=-O2 -Wno-implicit-function-declaration -pipe $(OPENLOOK_BITS) -Wall 
+CFLAGS=-O2 -pipe $(OPENLOOK_BITS) -ansi -Wno-old-style-definition -Wno-implicit-function-declaration
 # -Wmissing-prototypes -Wtraditional-conversion -Wstrict-prototypes
 # CFLAGS=-O2 -Wmissing-prototypes -Wstrict-prototypes -pipe $(OPENLOOK_BITS)
 LDFLAGS=-L. -L$(OPENWINHOME)/lib64$(OPENLOOK_BITS)  $(OPENLOOK_BITS)
