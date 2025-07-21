@@ -1,5 +1,5 @@
 /* #ident	"@(#)kbdfuncs.c	1.18	93/06/28 SMI" */
-char kbdfuncs_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: kbdfuncs.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char kbdfuncs_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: kbdfuncs.c,v 2.2 2025/06/20 20:37:12 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -32,7 +32,7 @@ extern void ClientActivate();
 extern Client *ClientGetLastCurrent();
 extern void ClientLowerTransients();
 extern Client *ClientRaiseTransients();
-extern void ClientSetCurrent();
+extern void ClientSetCurrent(Client *cli);
 
 /* ===== private functions ================================================ */
 
