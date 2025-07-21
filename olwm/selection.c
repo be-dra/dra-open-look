@@ -1,5 +1,5 @@
 /* #ident	"@(#)selection.c	26.19	93/06/28 SMI" */
-char selection_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: selection.c,v 2.3 2025/02/19 16:27:08 dra Exp $";
+char selection_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: selection.c,v 2.4 2025/06/20 20:37:02 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -285,9 +285,7 @@ static void handlePrimary(XEvent *event)
  * REMIND: is this really necessary?  Why not just use cli->isSelected in open 
  * code?
  */
-Bool
-IsSelected(cli)
-	Client *cli;
+Bool IsSelected(Client *cli)
 {
 	return cli->isSelected;
 }
@@ -343,9 +341,7 @@ void AddSelection(Client *cli, Time timestamp)
  * Remove a client from the PRIMARY selection list.  Returns True if client
  * was deselected; false if the client was not already selected.
  */
-Bool
-RemoveSelection(cli)
-	Client *cli;
+Bool RemoveSelection(Client *cli)
 {
 	List **l;
 
