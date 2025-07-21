@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.6 2025/03/25 18:50:43 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.7 2025/06/20 20:37:19 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -99,48 +99,48 @@ static	XrmOptionDescRec	optionTable[] = {
 	/*
 	 * Standard Options
 	 */
-	{ "-display",	".display",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-name",	".name",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-xrm",	NULL,		XrmoptionResArg, (caddr_t)NULL },
-	{ "-2d", 	".use3D",	XrmoptionNoArg,  (caddr_t)"False" },
-	{ "-3d", 	".use3D",	XrmoptionNoArg,  (caddr_t)"True" },
-	{ "-bd",	"*BorderColor",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-bordercolor","*BorderColor",XrmoptionSepArg, (caddr_t)NULL },
-	{ "-bg",	"*Background",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-background","*Background",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-fg",	"*Foreground",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-foreground","*Foreground",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-c", 	".setInput",	XrmoptionNoArg,  (caddr_t)"select" },
-	{ "-click", 	".setInput",	XrmoptionNoArg,  (caddr_t)"select" },
-	{ "-f",		".setInput",	XrmoptionNoArg,  (caddr_t)"follow" },
-	{ "-follow",	".setInput",	XrmoptionNoArg,  (caddr_t)"follow" },
-	{ "-fn",	"*TitleFont",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-font",	"*TitleFont",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-single",	".singleScreen",XrmoptionNoArg,  (caddr_t)"True" },
-	{ "-multi",	".singleScreen",XrmoptionNoArg,  (caddr_t)"False" },
-	{ "-syncfd",   ".syncFd",     XrmoptionSepArg, (caddr_t)NULL },
-	{ "-syncpid",   ".syncPid",     XrmoptionSepArg, (caddr_t)NULL },
-	{ "-syncsignal",".syncSignal",  XrmoptionSepArg, (caddr_t)NULL },
-	{ "-depth",	"*depth",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-visual",	"*visual",	XrmoptionSepArg, (caddr_t)NULL },
-	{ "-dsdm",	".startDSDM",	XrmoptionNoArg,	 (caddr_t)"True" },
-	{ "-nodsdm",	".startDSDM",	XrmoptionNoArg,	 (caddr_t)"False" },
+	{ "-display",	".display",	XrmoptionSepArg, NULL },
+	{ "-name",	".name",	XrmoptionSepArg, NULL },
+	{ "-xrm",	NULL,		XrmoptionResArg, NULL },
+	{ "-2d", 	".use3D",	XrmoptionNoArg,  "False" },
+	{ "-3d", 	".use3D",	XrmoptionNoArg,  "True" },
+	{ "-bd",	"*BorderColor",	XrmoptionSepArg, NULL },
+	{ "-bordercolor","*BorderColor",XrmoptionSepArg, NULL },
+	{ "-bg",	"*Background",	XrmoptionSepArg, NULL },
+	{ "-background","*Background",	XrmoptionSepArg, NULL },
+	{ "-fg",	"*Foreground",	XrmoptionSepArg, NULL },
+	{ "-foreground","*Foreground",	XrmoptionSepArg, NULL },
+	{ "-c", 	".setInput",	XrmoptionNoArg,  "select" },
+	{ "-click", 	".setInput",	XrmoptionNoArg,  "select" },
+	{ "-f",		".setInput",	XrmoptionNoArg,  "follow" },
+	{ "-follow",	".setInput",	XrmoptionNoArg,  "follow" },
+	{ "-fn",	"*TitleFont",	XrmoptionSepArg, NULL },
+	{ "-font",	"*TitleFont",	XrmoptionSepArg, NULL },
+	{ "-single",	".singleScreen",XrmoptionNoArg,  "True" },
+	{ "-multi",	".singleScreen",XrmoptionNoArg,  "False" },
+	{ "-syncfd",   ".syncFd",     XrmoptionSepArg, NULL },
+	{ "-syncpid",   ".syncPid",     XrmoptionSepArg, NULL },
+	{ "-syncsignal",".syncSignal",  XrmoptionSepArg, NULL },
+	{ "-depth",	"*depth",	XrmoptionSepArg, NULL },
+	{ "-visual",	"*visual",	XrmoptionSepArg, NULL },
+	{ "-dsdm",	".startDSDM",	XrmoptionNoArg,	 "True" },
+	{ "-nodsdm",	".startDSDM",	XrmoptionNoArg,	 "False" },
 	/*
 	 * Debugging Options
 	 */
-	{ "-all", 	 ".printAll",	 XrmoptionNoArg, (caddr_t)"True" },
-	{ "-debug",	 ".printOrphans",XrmoptionNoArg, (caddr_t)"True" },
-	{ "-orphans", 	 ".printOrphans",XrmoptionNoArg, (caddr_t)"True" },
-	{ "-synchronize",".synchronize", XrmoptionNoArg, (caddr_t)"True" },
+	{ "-all", 	 ".printAll",	 XrmoptionNoArg, "True" },
+	{ "-debug",	 ".printOrphans",XrmoptionNoArg, "True" },
+	{ "-orphans", 	 ".printOrphans",XrmoptionNoArg, "True" },
+	{ "-synchronize",".synchronize", XrmoptionNoArg, "True" },
 #ifdef OW_I18N_L3
 	/* 
 	 * Internationalization Options
 	 */
-        { "-basiclocale", "*basicLocale", XrmoptionSepArg, (caddr_t) NULL },
-       	{ "-displaylang", "*displayLang", XrmoptionSepArg, (caddr_t) NULL },
-       	{ "-inputlang",   "*inputLang", XrmoptionSepArg, (caddr_t) NULL },
-       	{ "-numeric",     "*numeric", XrmoptionSepArg, (caddr_t) NULL },
-       	{ "-dateformat",  "*dateFormat", XrmoptionSepArg, (caddr_t) NULL },
+        { "-basiclocale", "*basicLocale", XrmoptionSepArg,  NULL },
+       	{ "-displaylang", "*displayLang", XrmoptionSepArg,  NULL },
+       	{ "-inputlang",   "*inputLang", XrmoptionSepArg,  NULL },
+       	{ "-numeric",     "*numeric", XrmoptionSepArg,  NULL },
+       	{ "-dateformat",  "*dateFormat", XrmoptionSepArg,  NULL },
 #endif /* OW_I18N_L3 */
 };
 #define OPTION_TABLE_ENTRIES (sizeof(optionTable)/sizeof(XrmOptionDescRec))
