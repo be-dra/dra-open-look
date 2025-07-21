@@ -1,5 +1,5 @@
 /* #ident	"@(#)group.c	26.9	93/06/28 SMI" */
-char group_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: group.c,v 1.3 2024/04/20 15:27:49 dra Exp $";
+char group_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: group.c,v 1.4 2025/06/20 20:36:56 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -247,10 +247,7 @@ unsigned int mask;
 /* GroupRemove -- removes a client from the group.  If the group becomes empty
  * it is deleted.  Returns True if the client was successfully deleted.
  */
-Bool 
-GroupRemove(grpid,cli)
-GroupID grpid;
-Client *cli;
+Bool GroupRemove(GroupID grpid, Client *cli)
 {
 	Group *group;
 	unsigned int mask;
