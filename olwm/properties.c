@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.6 2025/03/01 15:00:17 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.7 2025/06/20 20:36:52 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -43,17 +43,9 @@ char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.6 2025
  *	Returned memory should be free'd with XFree() since it
  *	is allocated by XGetWindowProperty() internally.
  */
-void *
-GetWindowProperty(dpy, w, property, long_offset, long_length, 
-			req_type, req_fmt, nitems, bytes_after)
-	Display *dpy;
-	Window w;
-	Atom property;
-	long long_offset, long_length;
-	Atom req_type;
-	int req_fmt;
-	unsigned long *nitems;
-	unsigned long *bytes_after;
+void *GetWindowProperty(Display *dpy, Window w, Atom property, long long_offset,
+		long long_length, Atom req_type, int req_fmt, unsigned long *nitems,
+		unsigned long *bytes_after)
 {
 	int status;
 	unsigned char *prop;
