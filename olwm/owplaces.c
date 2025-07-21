@@ -11,7 +11,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xresource.h>
 
-char owplaces_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: owplaces.c,v 1.11 2024/11/08 20:52:59 dra Exp $";
+char owplaces_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: owplaces.c,v 1.12 2025/06/20 21:16:58 dra Exp $";
 
 #ifdef linux
 #define GETTIMEOFDAY(p) gettimeofday(p, 0)
@@ -119,17 +119,17 @@ static client_t get_clients(Display *dpy, Window win, client_t list)
 int main(int argc, char **argv)
 {
 	static XrmOptionDescRec opts[] = {
-		{ "-display", ".display", XrmoptionSepArg, (caddr_t)0 },
-		{ "-timeout", ".timeout", XrmoptionSepArg, (caddr_t)0 },
-		{ "-output", ".output", XrmoptionSepArg, (caddr_t)0 },
-		{ "-host", ".host", XrmoptionSepArg, (caddr_t)0 },
-		{ "-all", ".all", XrmoptionNoArg, (caddr_t)"true" },
-		{ "-remote", ".remote", XrmoptionNoArg, (caddr_t)"true" },
-		{ "-local", ".local", XrmoptionNoArg, (caddr_t)"true" },
-		{ "-ampersand", ".ampersand", XrmoptionNoArg, (caddr_t)"true" },
-		{ "-ampSleepTime", ".ampSleepTime", XrmoptionSepArg, (caddr_t)"2" },
-		{ "-tw", ".toolWait", XrmoptionNoArg, (caddr_t)"true" },
-		{ "-silent", ".silent", XrmoptionNoArg, (caddr_t)"true" }
+		{ "-display", ".display", XrmoptionSepArg, NULL },
+		{ "-timeout", ".timeout", XrmoptionSepArg, NULL },
+		{ "-output", ".output", XrmoptionSepArg, NULL },
+		{ "-host", ".host", XrmoptionSepArg, NULL },
+		{ "-all", ".all", XrmoptionNoArg, "true" },
+		{ "-remote", ".remote", XrmoptionNoArg, "true" },
+		{ "-local", ".local", XrmoptionNoArg, "true" },
+		{ "-ampersand", ".ampersand", XrmoptionNoArg, "true" },
+		{ "-ampSleepTime", ".ampSleepTime", XrmoptionSepArg, "2" },
+		{ "-tw", ".toolWait", XrmoptionNoArg, "true" },
+		{ "-silent", ".silent", XrmoptionNoArg, "true" }
 	};
 	XrmDatabase db, scrdb;
 	char *t;
