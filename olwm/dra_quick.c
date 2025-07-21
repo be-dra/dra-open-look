@@ -7,7 +7,7 @@
 #include "globals.h"
 #include <X11/Xatom.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.23 2025/02/26 22:40:53 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.24 2025/06/20 20:37:17 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -23,6 +23,7 @@ typedef struct _quick_dupl {
 	int baseline;
 } quick_data_t;
 
+typedef unsigned char uch_t;
 	
 static quick_data_t *supply_quick_data(Display *dpy, quick_data_t *qd,
 						Window root, Client *cli, Graphics_info *gi)
@@ -73,7 +74,7 @@ static void mouse_to_charpos(quick_data_t *qd, XFontStruct *fs,
 	for (i = 0; i < len; i++) {     
 		qd->xpos[i] = *sx; 
 		if (fs->per_char)  {
-			*sx += fs->per_char[(u_char)s[i] - fs->min_char_or_byte2].width;
+			*sx += fs->per_char[(uch_t)s[i] - fs->min_char_or_byte2].width;
 		}
 		else *sx += fs->min_bounds.width;
 		if (mx >= qd->xpos[i] && mx < *sx) {
@@ -102,7 +103,7 @@ static void select_word(quick_data_t *qd, char *s, int sx, XFontStruct *fs)
 	i = qd->startindex;
 	if (qd->delimtab[(int)s[i]]) {
 		if (fs->per_char) {
-			cwidth = fs->per_char[(u_char) s[i] - fs->min_char_or_byte2].width;
+			cwidth = fs->per_char[(uch_t) s[i] - fs->min_char_or_byte2].width;
 		}
 		else
 			cwidth = fs->min_bounds.width;
@@ -123,7 +124,7 @@ static void select_word(quick_data_t *qd, char *s, int sx, XFontStruct *fs)
 			for (i = qd->startindex - 1; i >= 0 && !qd->delimtab[(int)s[i]];
 					i--) {
 				if (fs->per_char) {
-					cwidth = fs->per_char[(u_char) s[i] -
+					cwidth = fs->per_char[(uch_t) s[i] -
 							fs->min_char_or_byte2].width;
 				}
 				else
@@ -141,7 +142,7 @@ static void select_word(quick_data_t *qd, char *s, int sx, XFontStruct *fs)
 		cwid_sum = 0;
 		for (i = qd->startindex; i < len && !qd->delimtab[(int)s[i]]; i++) {
 			if (fs->per_char) {
-				cwidth = fs->per_char[(u_char) s[i] -
+				cwidth = fs->per_char[(uch_t) s[i] -
 						fs->min_char_or_byte2].width;
 			}
 			else
