@@ -1,5 +1,5 @@
 /* #ident	"@(#)list.c	26.9	93/06/28 SMI" */
-char list_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: list.c,v 1.2 1995/09/22 06:14:31 dra Exp $";
+char list_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: list.c,v 1.3 2025/06/20 20:37:21 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -152,10 +152,7 @@ ListInit()
  *
  * Prepends a value to the head of a list.
  */
-List *
-ListCons(val,next)
-void *val;
-List *next;
+List *ListCons(void *val, List *next)
 {
 	List *cell;
 
@@ -191,9 +188,7 @@ List *l;
  *
  * destroys all the cells in a list.  Leaves the values unaffected.
  */
-void 
-ListDestroy(l)
-List *l;
+void ListDestroy(List *l)
 {
 	List *last;
 
@@ -212,9 +207,7 @@ List *l;
  * deletes one cell from a list; modifies the List* passed by
  * reference to point to the next cell.
  */
-void 
-ListDestroyCell(l)
-List **l;
+void ListDestroyCell(List **l)
 {
 	List *cell;
 
@@ -255,9 +248,7 @@ void *c;
  * returns the value of the cell pointed to by l; modifies l to point
  * to the next cell in the list.
  */
-void *
-ListEnum(l)
-List **l;
+void *ListEnum(List **l)
 {
 	void *val;
 
