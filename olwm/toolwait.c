@@ -4,13 +4,14 @@
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/X.h>
 #include <X11/Xproto.h>
 
-char toolwait_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: toolwait.c,v 1.21 2025/01/23 15:56:43 dra Exp $";
+char toolwait_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: toolwait.c,v 1.22 2025/06/20 21:16:34 dra Exp $";
 
 typedef struct _win {
 	struct _win *next;
