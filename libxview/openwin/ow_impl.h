@@ -13,7 +13,7 @@
 #ifndef	__openwin_impl_h
 #define	__openwin_impl_h
 
-/* $Id: ow_impl.h,v 4.1 2024/03/28 18:20:25 dra Exp $ */
+/* $Id: ow_impl.h,v 4.2 2025/07/22 16:22:52 dra Exp $ */
 /*
  * Package:     openwin
  *
@@ -85,9 +85,6 @@ struct openwin_view_struct {
 #define STATUS_RESET(ow, field)     STATUS(ow, field) = FALSE
 #define BOOLEAN_FIELD(field)        unsigned field : 1
 
-typedef int (*resize_verification_t)(Openwin ow, Openwin_resize_side side,
-                                            int frame_pos, int is_up_event);
-
 struct openwin_info_struct {
    	Openwin		public_self;		/* Back pointer */
 
@@ -119,9 +116,9 @@ struct openwin_info_struct {
 	int		nbr_cols;		/* WIN_COLUMNS specified by client */
 	int		nbr_rows;		/* WIN_ROWS specified by client */
 	window_layout_proc_t	layout_proc;
-	void		(*split_init_proc)(Xv_window, Xv_window, int);
-	void		(*split_destroy_proc)(Xv_window);
-	resize_verification_t       resize_verify_proc;
+	openwin_split_init_proc split_init_proc;
+	openwin_split_destroy_proc split_destroy_proc;
+	openwin_resize_verification_t resize_verify_proc;
 	Openwin_resize_side cur_resize;
 	int frame_trans, last_frame_pos;
 	Selection_owner sel_owner;
