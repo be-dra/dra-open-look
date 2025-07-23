@@ -2,7 +2,7 @@
 #define permprop_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: permprop.h,v 4.2 2025/03/08 13:21:40 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: permprop.h,v 4.3 2025/07/22 16:27:38 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -51,6 +51,8 @@ typedef enum {
 	PERM_FILE_NAME           = PERM_ATTR(ATTR_STRING, 7),            /* CSG */
 	PERM_RESOURCE_PREFIX     = PERM_ATTR(ATTR_STRING, 8)             /* CSG */
 } Permprop_attr;
+
+typedef void (*permprop_writefileproc_t)(Perm_prop_frame pf);
 
 typedef enum {
 	DAP_int,
