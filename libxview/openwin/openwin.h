@@ -10,7 +10,7 @@
  *	file for terms of the license.
  */
 
-/* $Id: openwin.h,v 4.2 2025/03/08 12:47:02 dra Exp $ */
+/* $Id: openwin.h,v 4.3 2025/07/22 16:22:40 dra Exp $ */
 
 #ifndef	xview_openwin_DEFINED
 #define	xview_openwin_DEFINED
@@ -164,6 +164,10 @@ typedef enum {
     OPENWIN_VIEW_PAINT_WINDOW = OPENWIN_ATTR(ATTR_OPAQUE, 100)    /* --G */
 } Openwin_attribute;
 
+typedef void (*openwin_split_init_proc)(Xv_window, Xv_window, int);
+typedef void (*openwin_split_destroy_proc)(Xv_window);
+typedef int (*openwin_resize_verification_t)(Openwin ow,
+				Openwin_resize_side side, int frame_pos, int is_up_event);
 
 /*
  *Public Functions
