@@ -1,5 +1,5 @@
 #ifndef lint
-char     ow_set_c_sccsid[] = "@(#)ow_set.c 1.49 91/05/23 DRA: $Id: ow_set.c,v 4.4 2025/03/25 11:37:19 dra Exp $ ";
+char     ow_set_c_sccsid[] = "@(#)ow_set.c 1.49 91/05/23 DRA: $Id: ow_set.c,v 4.5 2025/07/22 16:22:55 dra Exp $ ";
 #endif
 
 /*
@@ -231,7 +231,7 @@ Pkg_private Xv_opaque openwin_set(Openwin self, Attr_avlist avlist)
                 }
 				ADONE;
 			case OPENWIN_RESIZE_VERIFY_PROC:
-                owin->resize_verify_proc = (resize_verification_t)avlist[1];
+                owin->resize_verify_proc = (openwin_resize_verification_t)avlist[1];
 				ADONE;
 			case OPENWIN_SPLIT:
 				if (ow_parse_split_attrs(owin, &(avlist[1])) != XV_OK) {
@@ -358,12 +358,11 @@ static Xv_opaque ow_parse_split_attrs(Xv_openwin_info *owin, Attr_avlist avlist)
 				split_position = (int)avlist[1];
 				break;
 			case OPENWIN_SPLIT_INIT_PROC:
-				owin->split_init_proc =
-						(void (*)(Xv_window, Xv_window, int))avlist[1];
+				owin->split_init_proc = (openwin_split_init_proc)avlist[1];
 				break;
 
 			case OPENWIN_SPLIT_DESTROY_PROC:
-				owin->split_destroy_proc = (void (*)(Xv_window))avlist[1];
+				owin->split_destroy_proc =(openwin_split_destroy_proc)avlist[1];
 				break;
 
 			case OPENWIN_SPLIT_VIEW_START:
