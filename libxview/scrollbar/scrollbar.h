@@ -1,4 +1,4 @@
-/*      @(#)scrollbar.h 1.35 91/03/19	RCS: $Id: scrollbar.h,v 4.4 2025/03/08 13:11:09 dra Exp $ */
+/*      @(#)scrollbar.h 1.35 91/03/19	RCS: $Id: scrollbar.h,v 4.5 2025/07/22 16:30:37 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -9,7 +9,7 @@
 #ifndef	xview_scrollbar_DEFINED
 #define	xview_scrollbar_DEFINED
 
-/* $Id: scrollbar.h,v 4.4 2025/03/08 13:11:09 dra Exp $ */
+/* $Id: scrollbar.h,v 4.5 2025/07/22 16:30:37 dra Exp $ */
 /*
  * Module:	scrollbar.h
  * Library:	libxview.a
@@ -96,7 +96,6 @@ typedef enum {
 	SCROLLBAR_VIEW_LENGTH		= SCROLLBAR_ATTR(ATTR_INT,	  3)
 } Scrollbar_attribute;
 
-
 typedef enum {
 	/*
 	 * absolute motion
@@ -125,6 +124,11 @@ typedef enum {
 	 */
 	SCROLLBAR_NONE
 } Scroll_motion;
+
+typedef void (*scrollbar_normalize_proc_t)(Scrollbar, long, Scroll_motion,
+														long *);
+typedef void (*scrollbar_compute_scroll_proc_t)(Scrollbar, int, int,
+								Scroll_motion, long *, long *);
 
 typedef enum {
 	SCROLLBAR_VERTICAL,
