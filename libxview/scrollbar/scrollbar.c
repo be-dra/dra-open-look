@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.4 2025/03/08 13:11:09 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.5 2025/07/22 16:30:37 dra Exp $ ";
 #endif
 #endif
 
@@ -124,9 +124,6 @@ typedef enum {
  */
 
 typedef struct scrollbar			Xv_scrollbar_info;
-typedef void (*normalize_proc_t)(Scrollbar, long, Scroll_motion, long *);
-typedef void (*compute_scroll_proc_t)(Scrollbar, int, int, Scroll_motion,
-								long *, long *);
 
 struct scrollbar {
     Scrollbar		public_self;		  /* Back pointer */
@@ -145,8 +142,8 @@ struct scrollbar {
     unsigned int	pixels_per_unit;
     unsigned int	view_length; /* in units */
     unsigned long	view_start; /* in units ??? */
-    compute_scroll_proc_t compute_scroll_proc; /* Application supplied compute proc */
-    normalize_proc_t normalize_proc;  /* Application supplied normalize proc */
+    scrollbar_compute_scroll_proc_t compute_scroll_proc; /* Application supplied compute proc */
+    scrollbar_normalize_proc_t normalize_proc;  /* Application supplied normalize proc */
 
     int		        jump_pointer;		/* boolean, adjust pointer? */
     int			multiclick_timeout;
@@ -2658,11 +2655,11 @@ static void scrollbar_parse_attr(Xv_scrollbar_info *sb, Attr_avlist avlist)
 				ADONE;
 
 			case SCROLLBAR_NORMALIZE_PROC:
-				sb->normalize_proc = (normalize_proc_t)attrs[1];
+				sb->normalize_proc = (scrollbar_normalize_proc_t)attrs[1];
 				ADONE;
 
 			case SCROLLBAR_COMPUTE_SCROLL_PROC:
-				sb->compute_scroll_proc = (compute_scroll_proc_t)attrs[1];
+				sb->compute_scroll_proc = (scrollbar_compute_scroll_proc_t)attrs[1];
 				ADONE;
 
 			case SCROLLBAR_NOTIFY_CLIENT:
