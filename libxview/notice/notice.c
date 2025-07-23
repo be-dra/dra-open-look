@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.14 2025/06/19 11:48:39 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.15 2025/07/22 16:42:05 dra Exp $ ";
 #endif
 #endif
 
@@ -4380,7 +4380,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 				 */
 			case NOTICE_EVENT_PROC:
 				if (avlist[1]) {
-					notice->event_proc = (void (*)(Xv_notice, int, Event *))avlist[1];
+					notice->event_proc = (notice_event_proc_t)avlist[1];
 				}
 				ADONE;
 
