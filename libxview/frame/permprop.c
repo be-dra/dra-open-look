@@ -32,7 +32,7 @@
 #include <xview_private/i18n_impl.h>
 
 #ifndef lint
-char permprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permprop.c,v 4.4 2025/03/08 13:21:40 dra Exp $";
+char permprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permprop.c,v 4.5 2025/07/22 16:27:50 dra Exp $";
 #endif
 
 #define A0 *attrs
@@ -44,14 +44,13 @@ char permprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permprop.c,v 4.4 2025/03/
 
 typedef Xv_opaque (*convertfunc)(Xv_opaque, char *, Xv_opaque, int);
 
-typedef int (*propcbproc)(Perm_prop_frame pf, int is_triggered);
-typedef void (*writefileproc)(Perm_prop_frame pf);
+typedef int (*permprop_cbproc_t)(Perm_prop_frame pf, int is_triggered);
 
 typedef struct {
 	Xv_opaque                     public_self;
-	propcbproc                    appl_set_defaults;
+	permprop_cbproc_t             appl_set_defaults;
 	char                          *file_name, *resource_prefix;
-	writefileproc                 write_file_proc;
+	permprop_writefileproc_t      write_file_proc;
 	Xv_opaque                     resource_db;
 	Permprop_res_res_t            *res_descr;
 	int                           num_res;
@@ -599,11 +598,11 @@ static Xv_opaque permprop_set(Xv_window self, Attr_avlist avlist)
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case FRAME_PROPS_SET_DEFAULTS_PROC:
-			priv->appl_set_defaults = (propcbproc)A1;
+			priv->appl_set_defaults = (permprop_cbproc_t)A1;
 			ADONE;
 
 		case PERM_WRITE_FILE_PROC:
-			priv->write_file_proc = (writefileproc)A1;
+			priv->write_file_proc = (permprop_writefileproc_t)A1;
 			priv->use_xvwp = FALSE;
 			ADONE;
 
