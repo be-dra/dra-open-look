@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.28 2025/03/08 14:06:27 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.29 2025/07/22 17:11:05 dra Exp $";
 #endif
 #endif
 
@@ -82,18 +82,17 @@ static Xv_opaque sel_owner_set_avlist(Selection_owner sel_owner_public,
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
 			case SEL_CONVERT_PROC:
-				sel_owner->convert_proc = (convert_proc_t) attrs[1];
+				sel_owner->convert_proc = (selection_convert_proc_t) attrs[1];
 
 				/* Shouldn't let clients set convert_proc to NULL */
 				if (sel_owner->convert_proc == NULL)
 					sel_owner->convert_proc = sel_convert_proc;
 				break;
 			case SEL_DONE_PROC:
-				sel_owner->done_proc =
-						(void (*)(Selection_owner, Xv_opaque, Atom))attrs[1];
+				sel_owner->done_proc = (selection_done_proc_t)attrs[1];
 				break;
 			case SEL_LOSE_PROC:
-				sel_owner->lose_proc = (void (*)(Selection_owner))attrs[1];
+				sel_owner->lose_proc = (selection_lose_proc_t)attrs[1];
 				break;
 			case SEL_OWN:
 				if (sel_owner->own != (Bool) attrs[1]) {
