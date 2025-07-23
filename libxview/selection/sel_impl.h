@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.19 2025/02/10 11:36:27 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.20 2025/07/22 16:39:38 dra Exp $";
 #endif
 #endif
 
@@ -60,15 +60,13 @@ typedef struct sel_info {
 } Sel_info;
 
 
-typedef void (*reply_proc_t)(Selection_requestor,Atom,Atom,Xv_opaque,unsigned long,int);
-
 /*
  * Selection_requestor object private data
  */
 typedef struct sel_req_info {
     Selection_requestor	    public_self;  /* back pointer to public object */
     int		    nbr_types;	/* number of types and type names */
-    reply_proc_t	reply_proc, saved_reply_proc;
+    selection_reply_proc_t	reply_proc, saved_reply_proc;
 	int             auto_collect_incr;
 	int                is_incremental;
 	unsigned long      incr_size;
@@ -96,7 +94,7 @@ typedef struct requestor {
     int        incr;              /* reply in increments */
     int        numIncr;           /* number of incrs in a request */
     int        multiple;
-    reply_proc_t reply_proc;
+    selection_reply_proc_t reply_proc;
     Atom       *incrPropList;
     struct sel_owner_info  *owner;
 } Requestor;
@@ -129,13 +127,11 @@ typedef struct {
     Atom  property;
 } atom_pair;
 
-typedef Bool (*convert_proc_t)(Selection_owner,Atom *,Xv_opaque *,unsigned long *,int *);
-
 typedef struct sel_owner_info {
     Selection_owner      public_self;  /* back pointer to public object */
-    convert_proc_t convert_proc; /* called only via sel_wrap_convert_proc */
-    void	        (*done_proc)(Selection_owner, Xv_opaque, Atom);
-    void	        (*lose_proc)(Selection_owner);
+    selection_convert_proc_t convert_proc; /* called only via sel_wrap_convert_proc */
+    selection_done_proc_t done_proc;
+    selection_lose_proc_t lose_proc;
     Bool	        own;	/* True: acquired, False: lost */
     struct sel_item_info *first_item;
     struct sel_item_info *last_item;
