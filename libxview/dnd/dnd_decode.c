@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.6 2025/02/27 13:24:42 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.7 2025/07/22 17:00:58 dra Exp $ ";
 #endif
 #endif
 
@@ -146,7 +146,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 	if (xv_get(sel_req, XV_KEY_DATA, dnd_transient_key)) {
 		int format;
 		long length;
-		reply_proc_t reply_proc;
+		selection_reply_proc_t reply_proc;
 
 		/* the intention here is obviously to have 
 		 * 
@@ -167,7 +167,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 		char *data;
 
 		reply_proc = srpriv->reply_proc;
-		srpriv->reply_proc = 0;
+		srpriv->reply_proc = NULL;
 
 		xv_set(sel_req, XV_KEY_DATA, dnd_transient_key, False, NULL);
 		xv_set(sel_req, SEL_TYPE_NAME, "_SUN_DRAGDROP_DONE", NULL);
