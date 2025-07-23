@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.33 2025/03/08 14:06:27 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.34 2025/07/22 17:11:05 dra Exp $";
 #endif
 #endif
 
@@ -145,7 +145,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) switch (attrs[0]) {
 		case SEL_REPLY_PROC:
-			sel_req->reply_proc = (reply_proc_t) attrs[1];
+			sel_req->reply_proc = (selection_reply_proc_t) attrs[1];
 			break;
 		case SEL_TYPE:
 			sel_req->nbr_types = 1;
