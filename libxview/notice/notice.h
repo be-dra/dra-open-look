@@ -1,4 +1,4 @@
-/*      @(#)notice.h 20.23 91/01/11 DRA: RCS $Id: notice.h,v 4.2 2025/03/08 14:06:08 dra Exp $  */
+/*      @(#)notice.h 20.23 91/01/11 DRA: RCS $Id: notice.h,v 4.3 2025/07/22 16:42:05 dra Exp $  */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -94,6 +94,7 @@ typedef enum {
 	NOTICE_LOCK_SCREEN_LOOKING	= NOTICE_ATTR(ATTR_BOOLEAN,		120)
 } Notice_attribute;
 
+typedef void (*notice_event_proc_t)(Xv_notice, int, Event *);
 
 /*
  * Notice public struct
