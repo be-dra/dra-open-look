@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.8 2025/03/08 14:06:27 dra Exp $";
+static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.9 2025/07/22 17:11:05 dra Exp $";
 #endif
 #endif
 
@@ -169,6 +169,13 @@ typedef enum {
 	 * Private Attributes 
 	 */
 } Selection_attr;
+
+typedef Bool (*selection_convert_proc_t)(Selection_owner,Atom *,Xv_opaque *,unsigned long *,int *);
+typedef void (*selection_done_proc_t)(Selection_owner, Xv_opaque, Atom);
+typedef void (*selection_lose_proc_t)(Selection_owner);
+
+typedef void (*selection_reply_proc_t)(Selection_requestor,Atom,Atom,Xv_opaque,
+											unsigned long,int);
 
 typedef enum {
 	SEL_COPY_NO,    /* FALSE */
