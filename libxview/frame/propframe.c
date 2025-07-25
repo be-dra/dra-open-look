@@ -34,7 +34,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.16 2025/06/08 16:18:08 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.17 2025/07/23 16:48:22 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -53,9 +53,6 @@ typedef struct _pp_item_t *pp_item_ptr_t;
 typedef void (*convert_t)(Xv_opaque val, int panel_to_data, char **datptr, Panel_item it, Xv_opaque unused);
 typedef void (*propagate_action)(propframe_priv_ptr_t,
 									Panel_item, pp_item_ptr_t, Xv_opaque);
-typedef int (*propcbproc) (Frame_props pf, int is_triggered);
-typedef int (*propswitchproc)(Frame_props pf,Panel newp,int isfilled);
-typedef void (*create_proc_t)(Frame_props);
 typedef int (*prop2apply_t)(Frame_props, Xv_opaque, Propframe_apply_mode);
 
 typedef struct _pp_item_t {
@@ -70,7 +67,7 @@ typedef struct _one_panel {   /* = one category */
 	Panel             panel;
 	int               cat_initial_width, cat_initial_height;
 	int               cat_width, cat_height;
-	propswitchproc    switch_proc;
+	frame_props_switch_proc_t    switch_proc;
 	Panel_item        apply, pseudo_default;
 	Panel_item        resize_item;
 	int               resize_y; /* the y coordinate of the resize_item */
@@ -80,8 +77,8 @@ typedef struct _one_panel {   /* = one category */
 
 typedef struct _propframe_priv_t {
 	Xv_opaque       public_self;
-	propcbproc      apply, reset, set_defaults, reset_factory;
-	create_proc_t   create_contents_proc;
+	frame_props_cb_proc_t      apply, reset, set_defaults, reset_factory;
+	frame_props_create_contents_proc_t   create_contents_proc;
 	char            *cur_data, *def_data, *fac_data;
 	char            *apply_label, *cat_label;
 	int             cat_cols;
@@ -630,7 +627,7 @@ static void note_internal_menu_apply(Menu menu, Menu_item item)
 	}
 }
 
-static void notify_non_apply(Xv_opaque item, Propframe_private *priv, propcbproc cb, int reset_change, int triggered)
+static void notify_non_apply(Xv_opaque item, Propframe_private *priv, frame_props_cb_proc_t cb, int reset_change, int triggered)
 {
 	int val;
 
@@ -1785,10 +1782,11 @@ static Xv_opaque propframe_set(Frame_props self, Attr_avlist avlist)
 			priv->reset_on_switch = (char)A1; /* unused at the moment */
 			ADONE;
 		case FRAME_PROPS_CREATE_CONTENTS_PROC:
-			priv->create_contents_proc = (create_proc_t)A1;
+			priv->create_contents_proc = (frame_props_create_contents_proc_t)A1;
 			ADONE;
 		case FRAME_PROPS_SWITCH_PROC:
-			if (priv->current) priv->current->switch_proc = (propswitchproc)A1;
+			if (priv->current)
+				priv->current->switch_proc = (frame_props_switch_proc_t)A1;
 			else {
 				xv_error(self,
 						ERROR_PKG, FRAME_PROPS,
@@ -1812,17 +1810,17 @@ static Xv_opaque propframe_set(Frame_props self, Attr_avlist avlist)
 				priv->apply_2 = (prop2apply_t)A1;
 			}
 			else {
-				priv->apply = (propcbproc)A1;
+				priv->apply = (frame_props_cb_proc_t)A1;
 			}
 			ADONE;
 		case FRAME_PROPS_RESET_PROC:
-			priv->reset = (propcbproc)A1;
+			priv->reset = (frame_props_cb_proc_t)A1;
 			ADONE;
 		case FRAME_PROPS_SET_DEFAULTS_PROC:
-			priv->set_defaults = (propcbproc)A1;
+			priv->set_defaults = (frame_props_cb_proc_t)A1;
 			ADONE;
 		case FRAME_PROPS_RESET_FACTORY_PROC:
-			priv->reset_factory = (propcbproc)A1;
+			priv->reset_factory = (frame_props_cb_proc_t)A1;
 			ADONE;
 		case FRAME_PROPS_ITEM_CHANGED:
 			set_changed(priv, (Panel_item)A1, (int)A2);
