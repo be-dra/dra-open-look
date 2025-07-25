@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.13 2025/03/16 13:37:28 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.14 2025/07/24 16:52:31 dra Exp $";
 #endif
 
 /*
@@ -647,7 +647,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				priv->notify_level = (int)(attrs[1]);
 				break;
 			case TEXTSW_NOTIFY_PROC:
-				priv->notify = (int (*)(Xv_opaque, Attr_avlist))attrs[1];
+				priv->notify = (textsw_notify_proc_t)attrs[1];
 				if (priv->notify_level == 0)
 					priv->notify_level = TEXTSW_NOTIFY_STANDARD;
 				break;
