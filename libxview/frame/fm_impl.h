@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.8 2025/03/30 09:06:10 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.9 2025/07/23 16:48:22 dra Exp $ ";
 #endif
 #endif
 
@@ -97,8 +97,8 @@ typedef	struct	{
     Rect	 rectcache; 	  /* rect of frame (tool relative) */
     Rect 	 oldrect;  	  /* quick check if size has changed */
     Rect         user_rect;       /* user position and size */
-    void       (*done_proc)(Frame);
-    void       (*default_done_proc)(Frame);
+    frame_done_proc_t done_proc;
+    frame_done_proc_t default_done_proc;
     Xv_Window	 focus_subwindow; /* last subwindow that had the input focus */
     Xv_Window	 primary_focus_sw;/* primary focus subwindow */
     XWMHints	 wmhints;	  /* Window manager hints structure */
