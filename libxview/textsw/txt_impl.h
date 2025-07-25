@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.61 2025/05/29 08:11:48 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.63 2025/07/24 16:59:35 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -196,11 +196,6 @@ typedef void (*split_init_proc_t)(Xv_opaque, Xv_opaque, int);
 #define TSW_SEL_CARET	3
 #define NBR_TSW_SELECTIONS	4
 
-typedef int (*textsw_research_proc_t)(Textsw pub, struct textsw_object *priv,
-							Event *ev, Xv_opaque something);
-typedef int (*textsw_convert_proc_t)(Textsw pub, Atom rank, Atom *type,
-					Xv_opaque *data, unsigned long *length, int *format);
-
 typedef struct textsw_object {
 	long unsigned	  magic;
 	struct textsw_object *next;
@@ -208,7 +203,7 @@ typedef struct textsw_object {
 	Xv_opaque	  menu_accessible_only_via_textsw_menu;
 	Ev_chain	  views;
 	Es_handle	(*es_create)(Xv_opaque, Es_handle, Es_handle);
-	int		(*notify)(Xv_opaque, Attr_avlist);
+	textsw_notify_proc_t notify;
 	unsigned	  notify_level;
 	CHAR		  to_insert[TXTSW_UI_BUFLEN];
 	CHAR		 *to_insert_next_free;
@@ -280,7 +275,6 @@ typedef struct textsw_object {
 	split_init_proc_t orig_split_init_proc;
 	char backup_pattern[1000];
 	int restrict_menu;
-	textsw_research_proc_t research;
 
 	int smart_word_handling;
 	long sel_reply;
