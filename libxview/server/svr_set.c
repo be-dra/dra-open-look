@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.9 2025/05/18 07:56:35 dra Exp $";
+static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.10 2025/07/23 17:02:13 dra Exp $";
 #endif
 #endif
 
@@ -161,11 +161,11 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 				ATTR_CONSUME(*attrs);
 				break;
 			case SERVER_UI_REGISTRATION_PROC:
-				server->ui_reg_proc = (ui_req_proc_t)attrs[1];
+				server->ui_reg_proc = (server_ui_registration_proc_t)attrs[1];
 				ATTR_CONSUME(*attrs);
 				break;
 			case SERVER_TRACE_PROC:
-				server->trace_proc = (trace_proc_t)attrs[1];
+				server->trace_proc = (server_trace_proc_t)attrs[1];
 				ATTR_CONSUME(*attrs);
 				break;
 
@@ -545,9 +545,9 @@ static int server_add_xevent_proc(Server_info *server, Xv_opaque func,
 		}
 	}
 	if (external)
-		node->extXeventProc = (extXeventProc_t)func;
+		node->extXeventProc = (server_extension_proc_t)func;
 	else
-		node->pvtXeventProc = (extXeventProc_t)func;
+		node->pvtXeventProc = (server_extension_proc_t)func;
 
 #ifdef _XV_DEBUG
 	p(server);
