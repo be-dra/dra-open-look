@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmbs_set.c 1.44 93/06/28 DRA: $Id: fmbs_set.c,v 4.2 2024/08/17 19:44:49 dra Exp $ ";
+static char     sccsid[] = "@(#)fmbs_set.c 1.44 93/06/28 DRA: $Id: fmbs_set.c,v 4.3 2025/07/23 16:48:22 dra Exp $ ";
 #endif
 #endif
 
@@ -90,7 +90,7 @@ Pkg_private Xv_opaque frame_base_set_avlist(Frame frame_public,
 
 			case FRAME_PROPERTIES_PROC:
 				attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
-				frame->props_proc = (void (*)(Frame))attrs[1];
+				frame->props_proc = (frame_props_proc_t)attrs[1];
 
 				/* This props_active is a sunview carry over.
 				 * If we decide to add FRAME_PROPS_ACTIVE later, to 
