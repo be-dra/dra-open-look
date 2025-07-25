@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.9 2025/07/05 21:26:00 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.10 2025/07/23 16:48:22 dra Exp $ ";
 #endif
 #endif
 
@@ -162,8 +162,6 @@ typedef enum {
 	FRAME_FOOTER_LEFT,
 	FRAME_FOOTER_RIGHT
 } Frame_footer_state;
-typedef void (*frame_footer_proc_t)(Frame, Xv_window *footer,
-								Frame_footer_state, char *);
 
 typedef void (*frame_accel_notify_func)(Xv_opaque, Event *);
 
@@ -318,6 +316,16 @@ typedef enum {
 	FRAME_PROPS_CONVERTER           = FRAME_ATTR(ATTR_OPAQUE_PAIR, 51),/* -S- */
 	FRAME_PROPS_SLAVE_OF            = FRAME_ATTR(ATTR_OPAQUE, 52)      /* -S- */
 } Frame_attribute;
+
+typedef void (*frame_footer_proc_t)(Frame, Xv_window *footer,
+								Frame_footer_state, char *);
+typedef void (*frame_done_proc_t)(Frame);
+typedef void (*frame_props_proc_t)(Frame);
+
+typedef int (*frame_props_cb_proc_t) (Frame_props pf, int is_triggered);
+typedef int (*frame_props_switch_proc_t)(Frame_props pf, Xv_window newpanel,
+											int isfilled);
+typedef void (*frame_props_create_contents_proc_t)(Frame_props);
 
 /* BEGIN two selections: */
 typedef enum {
