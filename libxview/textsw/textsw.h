@@ -1,4 +1,4 @@
-/*	@(#)textsw.h 20.56 93/06/28 SMI  DRA: $Id: textsw.h,v 4.11 2025/03/08 13:15:23 dra Exp $	*/
+/*	@(#)textsw.h 20.56 93/06/28 SMI  DRA: $Id: textsw.h,v 4.13 2025/07/24 16:59:35 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -273,7 +273,6 @@ typedef enum {
 	TEXTSW_RESET_MODE		= TEXTSW_ATTR(ATTR_ENUM,	128),
 	TEXTSW_RESET_TO_CONTENTS	= TEXTSW_ATTR(ATTR_NO_VALUE,	130),
 	TEXTSW_RESTRICT_MENU    = TEXTSW_ATTR(ATTR_BOOLEAN, 131),  /* DRA, C-- */
-	TEXTSW_RESEARCH_PROC = TEXTSW_ATTR(ATTR_FUNCTION_PTR, 135), /* DRA, C-- */
 	TEXTSW_SPARE_1			=
 			TEXTSW_ATTR(ATTR_LIST_INLINE(ATTR_NULL, ATTR_INT),
 									132),
@@ -297,6 +296,9 @@ typedef enum {
 #endif
 } Textsw_attribute;
 
+typedef int	(*textsw_notify_proc_t)(Textsw, Attr_avlist);
+typedef int (*textsw_convert_proc_t)(Textsw pub, Atom rank, Atom *type,
+					Xv_opaque *data, unsigned long *length, int *format);
 /*
  * Following are actions defined for client provided notify_proc.
  * Two standard notify procs are textsw_default_notify and textsw_nop_notify.
