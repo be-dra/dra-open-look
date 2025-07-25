@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.h,v 4.2 2024/11/30 12:38:45 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.h,v 4.3 2025/07/23 16:48:22 dra Exp $ ";
 #endif
 #endif
 
@@ -55,7 +55,7 @@ static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.
 
 typedef	struct	{
     Frame		 public_self;	/* back pointer to object */
-    void		(*props_proc)(Frame);
+	frame_props_proc_t props_proc;
     WM_Win_Type		 win_attr;	/* _OL_WIN_ATTR */
     char		**cmd_line_strings;
     int			cmd_line_strings_count;
