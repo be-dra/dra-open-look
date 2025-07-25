@@ -1,5 +1,5 @@
 #ifndef lint
-char     text_c_sccsid[] = "@(#)text.c 20.31 93/06/28 DRA: $Id: text.c,v 4.15 2025/05/29 08:11:48 dra Exp $";
+char     text_c_sccsid[] = "@(#)text.c 20.31 93/06/28 DRA: $Id: text.c,v 4.16 2025/07/24 16:59:35 dra Exp $";
 #endif
 
 /*
@@ -40,10 +40,6 @@ static int textsw_init(Xv_Window parent, Textsw textsw_public,
 				break;
 			case TEXTSW_RESTRICT_MENU:
 				priv->restrict_menu = attrs[1];
-				ATTR_CONSUME(*attrs);
-				break;
-			case TEXTSW_RESEARCH_PROC:
-				priv->research = (textsw_research_proc_t)attrs[1];
 				ATTR_CONSUME(*attrs);
 				break;
 			default:
