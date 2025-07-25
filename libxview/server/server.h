@@ -1,4 +1,4 @@
-/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.9 2025/05/18 07:56:45 dra Exp $      */
+/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.10 2025/07/23 17:02:13 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -187,6 +187,13 @@ typedef enum {
 	SERVER_SEL_MOD_MASK		= SERVER_ATTR(ATTR_INT,		251),
 	SERVER_FOCUS_TIMESTAMP   	= SERVER_ATTR(ATTR_INT,		203)
 } Server_attr;
+
+typedef void (*server_ui_registration_proc_t)(Xv_server, Xv_opaque, const char *);
+typedef void (*server_trace_proc_t)(Xv_server, int lvl,const char *f, int l,
+											const char *txt);
+struct _XDisplay;
+union _XEvent;
+typedef void (*server_extension_proc_t)(Xv_server, struct _XDisplay *, union _XEvent *, Xv_opaque);
 
 /*
  ***********************************************************************
