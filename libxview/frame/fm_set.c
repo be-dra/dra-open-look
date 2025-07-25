@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.4 2025/03/27 14:47:59 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.5 2025/07/23 16:48:22 dra Exp $ ";
 #endif
 #endif
 
@@ -131,13 +131,13 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public, Attr_attribute *avlis
 	    break;
 
 	  case FRAME_DEFAULT_DONE_PROC:
-	    frame->default_done_proc = (void (*) (Frame)) attrs[1];
+	    frame->default_done_proc = (frame_done_proc_t)attrs[1];
 	    if (!frame->default_done_proc)
-		frame->default_done_proc = frame_default_done_func;
+			frame->default_done_proc = frame_default_done_func;
 	    break;
 
 	  case FRAME_DONE_PROC:
-	    frame->done_proc = (void (*) (Frame)) attrs[1];
+	    frame->done_proc = (frame_done_proc_t)attrs[1];
 	    break;
 
 	  case FRAME_NO_CONFIRM:
