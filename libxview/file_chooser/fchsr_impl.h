@@ -1,4 +1,4 @@
-/*      @(#)fchsr_impl.h 1.22 93/06/28 SMI  DRA: RCS $Id: fchsr_impl.h,v 4.3 2024/05/22 18:17:59 dra Exp $      */
+/*      @(#)fchsr_impl.h 1.22 93/06/28 SMI  DRA: RCS $Id: fchsr_impl.h,v 4.4 2025/07/25 09:23:18 dra Exp $      */
 
 /*
  *	(c) Copyright 1992, 1993 Sun Microsystems, Inc. Sun design patents 
@@ -64,15 +64,8 @@ struct keep_state {
 
 
 
-typedef int (*fchsr_notify_func_t)(File_chooser, char *, char *, Xv_opaque);
-typedef int (*fchsr_cd_func_t)(File_chooser,char *,struct stat *,File_chooser_op);
-typedef File_chooser_op	(*fchsr_filter_func_t)(File_chooser, char *,
-						struct stat, File_chooser_op, Server_image *,
-						Xv_opaque *, Server_image *);
-typedef int (*fchsr_compare_func_t)(File_chooser_row *, File_chooser_row *);
 typedef void (*fchsr_document_default_event_t)(Panel_item, Event *); 
-typedef int	(*fchsr_exten_func_t)(File_chooser, Rect *, Rect *, int, int, int);
-typedef void (*fchsr_add_ui_func_t)(File_chooser);
+
 
 typedef struct {
     Xv_opaque		public_self;
