@@ -1,4 +1,4 @@
-/*      @(#)file_chsr.h 1.20 93/06/28 SMI  DRA: RCS $Id: file_chsr.h,v 4.3 2025/03/08 13:24:37 dra Exp $      */
+/*      @(#)file_chsr.h 1.20 93/06/28 SMI  DRA: RCS $Id: file_chsr.h,v 4.4 2025/07/25 09:23:18 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -86,7 +86,6 @@ typedef enum {
 } File_chooser_attr;
 
 
-
 typedef enum {
     FILE_CHOOSER_OPEN,
     FILE_CHOOSER_SAVE,
@@ -134,7 +133,13 @@ typedef enum {
 } File_chooser_op;
 
 
-
+typedef int (*fchsr_notify_func_t)(File_chooser, char *, char *, Xv_opaque);
+typedef int (*fchsr_cd_func_t)(File_chooser,char *,struct stat *,File_chooser_op);
+typedef File_chooser_op	(*fchsr_filter_func_t)(File_chooser, char *,
+						struct stat, File_chooser_op, Server_image *,
+						Xv_opaque *, Server_image *);
+typedef int	(*fchsr_exten_func_t)(File_chooser, Rect *, Rect *, int, int, int);
+typedef void (*fchsr_add_ui_func_t)(File_chooser);
 
 #define FILE_CHOOSER_NULL_FILTER_FUNC	(File_chooser_op (*)())NULL
 
@@ -158,6 +163,8 @@ typedef struct {
     char *		xfrm;		/* returned by strxfrm() */
     Xv_opaque		reserved;	/* reserved for future use */
 } File_chooser_row;
+
+typedef int (*fchsr_compare_func_t)(File_chooser_row *, File_chooser_row *);
 
 #ifdef OW_I18N
 typedef struct {
