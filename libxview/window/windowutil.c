@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.11 2025/03/06 17:37:21 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.12 2025/07/26 16:07:49 dra Exp $";
 #endif
 #endif
 /*
@@ -1179,109 +1179,107 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
  */
 Xv_private int window_set_tree_child_flag(Xv_window query, Xv_cursor pointer, int deafBit, Bool flag)
 {
-    Display			*display;
-    Xv_Drawable_info		*info;
-    Window			queryXid,
-				root,
-				parent,
-				*children;
-    unsigned int		numchildren = 0;
-    int				return_code = XV_OK;
-    int				i;
+	Display *display;
+	Xv_Drawable_info *info;
+	Window queryXid, root, parent, *children;
+	unsigned int numchildren = 0;
+	int return_code = XV_OK;
+	int i;
 
-    if (!query)  {
-	return(XV_OK);
-    }
-
-    DRAWABLE_INFO_MACRO(query, info);
-    display = xv_display(info);
-    queryXid = xv_xid(info);
-
-    /*
-     * Query for all children of parent window
-     */
-    if (!(XQueryTree(display, queryXid, &root, &parent, &children, &numchildren)))  {
-        xv_error(query,
-            ERROR_STRING,
-		XV_MSG("Attempt to query the window tree failed"),
-            NULL);
-
-	return(XV_ERROR);
-    }
-
-    if (numchildren == 0)  {
-	return(XV_OK);
-    }
-
-    /*
-     * For each child:
-     */
-    for (i=0; i<numchildren; ++i)  {
-	Xv_window	win_obj;
-
-	if ((win_obj = win_data(display, children[i])))  {
-	    Window_info		*win_private = WIN_PRIVATE(win_obj);
-
-            /*
-             * Do only if the window is not already in the state we want to set
-             * it to
-             */
-            if (WIN_IS_FLAG(deafBit, win_private) != flag)  {
-		/*
-		 * Set bit in window private data
-		 */
-	        WIN_SET_FLAG(deafBit, win_private, flag);
-
-		/*
-		 * Set cursor to busy cursor
-		 */
-		if (pointer)  {
-                    (void)window_set_flag_cursor(win_obj, pointer, flag);
-		}
-
-		/*
-		 * make children of this window deaf also
-		 */
-                if (window_set_tree_child_flag(win_obj, pointer, deafBit, flag) != XV_OK)  {
-	            return_code = XV_ERROR;
-	        }
-            }
+	if (!query) {
+		return (XV_OK);
 	}
 
-    }
+	DRAWABLE_INFO_MACRO(query, info);
+	display = xv_display(info);
+	queryXid = xv_xid(info);
 
-    XFree((char *)children);
+	/*
+	 * Query for all children of parent window
+	 */
+	if (!(XQueryTree(display, queryXid, &root, &parent, &children,
+							&numchildren))) {
+		xv_error(query, ERROR_STRING,
+				XV_MSG("Attempt to query the window tree failed"), NULL);
 
-    return(return_code);
+		return (XV_ERROR);
+	}
+
+	if (numchildren == 0) {
+		return (XV_OK);
+	}
+
+	/*
+	 * For each child:
+	 */
+	for (i = 0; i < numchildren; ++i) {
+		Xv_window win_obj;
+
+		if ((win_obj = win_data(display, children[i]))) {
+			Window_info *win_private = WIN_PRIVATE(win_obj);
+
+			/*
+			 * Do only if the window is not already in the state we want to set
+			 * it to
+			 */
+			if (WIN_IS_FLAG(deafBit, win_private) != flag) {
+				/*
+				 * Set bit in window private data
+				 */
+				WIN_SET_FLAG(deafBit, win_private, flag);
+
+				/*
+				 * Set cursor to busy cursor
+				 */
+				if (pointer) {
+					(void)window_set_flag_cursor(win_obj, pointer, flag);
+				}
+
+				/*
+				 * make children of this window deaf also
+				 */
+				if (window_set_tree_child_flag(win_obj, pointer, deafBit,
+								flag) != XV_OK) {
+					return_code = XV_ERROR;
+				}
+			}
+		}
+
+	}
+
+	XFree((char *)children);
+
+	return (return_code);
 }
 
 /*
  * window_set_flag_cursor(window, pointer, flag)
  * Makes 'window' use 'pointer' as a cursor if 'flag' is TRUE
  */
-Xv_private int window_set_flag_cursor(Xv_window window, Xv_cursor pointer, Bool flag)
+Xv_private int window_set_flag_cursor(Xv_window window, Xv_cursor pointer,
+									Bool flag)
 {
-    Window_info		*win_private;
+	Window_info *win_private;
 
-    if (!window)  {
-        return(XV_OK);
-    }
-
-    win_private = WIN_PRIVATE(window);
-
-    if (flag)  {
-	if (pointer)  {
-            win_private->normal_cursor = win_private->cursor;
-            xv_set(window, WIN_CURSOR, pointer, NULL);
+	if (!window) {
+		return (XV_OK);
 	}
-    }
-    else  {
-	if (win_private->normal_cursor)  {
-            xv_set(window, WIN_CURSOR, win_private->normal_cursor, NULL);
-	}
-    }
 
-    return(XV_OK);
+	win_private = WIN_PRIVATE(window);
+
+	if (flag) {
+		if (pointer) {
+			win_private->normal_cursor = win_private->cursor;
+			xv_set(window, WIN_CURSOR, pointer, NULL);
+		}
+	}
+	else {
+		if (win_private->normal_cursor) {
+			xv_set(window, WIN_CURSOR, win_private->normal_cursor, NULL);
+		}
+	}
+
+	return (XV_OK);
 }
 
 #ifdef OW_I18N
