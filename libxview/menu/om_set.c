@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_set.c 20.96 93/06/28 DRA: $Id: om_set.c,v 4.4 2025/03/17 19:45:32 dra Exp $";
+static char     sccsid[] = "@(#)om_set.c 20.96 93/06/28 DRA: $Id: om_set.c,v 4.5 2025/07/27 19:41:29 dra Exp $";
 #endif
 #endif
 
@@ -230,7 +230,7 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 
 
 			case MENU_BUSY_PROC:
-				m->busy_proc = (void (*)(Menu))attrs[1];
+				m->busy_proc = (Menu_busy_proc_t)attrs[1];
 				break;
 
 			case MENU_CLIENT_DATA:
@@ -291,7 +291,7 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 				break;
 
 			case MENU_DONE_PROC:
-				m->done_proc = (void (*)(Menu, Xv_opaque))attrs[1];
+				m->done_proc = (Menu_done_proc_t)attrs[1];
 				break;
 
 			case XV_FONT:
@@ -468,7 +468,7 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 				break;
 
 			case MENU_PIN_PROC:
-				m->pin_proc = (void (*)(Menu, int, int))attrs[1];
+				m->pin_proc = (Menu_pin_proc_t)attrs[1];
 				break;
 
 			case MENU_PIN_WINDOW:
