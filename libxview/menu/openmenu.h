@@ -1,4 +1,4 @@
-/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.4 2025/03/08 13:52:55 dra Exp $	*/
+/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.5 2025/07/27 19:41:29 dra Exp $	*/
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL_NOTICE 
@@ -63,14 +63,14 @@
 #define ATTR_MENU			ATTR_OPAQUE
 #define ATTR_IMAGE			ATTR_OPAQUE
 #define ATTR_MENU_ITEM			ATTR_OPAQUE
-#define ATTR_MENU_ITEM_PAIR		ATTR_INT_PAIR
-#define ATTR_STRING_VALUE_PAIR		ATTR_INT_PAIR
-#define ATTR_IMAGE_VALUE_PAIR		ATTR_INT_PAIR
-#define ATTR_STRING_MENU_PAIR		ATTR_INT_PAIR
-#define ATTR_IMAGE_MENU_PAIR		ATTR_INT_PAIR
-#define ATTR_STRING_FUNCTION_PAIR	ATTR_INT_PAIR
-#define ATTR_IMAGE_FUNCTION_PAIR	ATTR_INT_PAIR
-#define ATTR_INT_MENU_ITEM_PAIR		ATTR_INT_PAIR
+#define ATTR_MENU_ITEM_PAIR		ATTR_OPAQUE_PAIR
+#define ATTR_STRING_VALUE_PAIR		ATTR_OPAQUE_PAIR
+#define ATTR_IMAGE_VALUE_PAIR		ATTR_OPAQUE_PAIR
+#define ATTR_STRING_MENU_PAIR		ATTR_OPAQUE_PAIR
+#define ATTR_IMAGE_MENU_PAIR		ATTR_OPAQUE_PAIR
+#define ATTR_STRING_FUNCTION_PAIR	ATTR_OPAQUE_PAIR
+#define ATTR_IMAGE_FUNCTION_PAIR	ATTR_OPAQUE_PAIR
+#define ATTR_INT_MENU_ITEM_PAIR		ATTR_OPAQUE_PAIR
 
 /* Reserved for future use */
 #define	MENU_ATTR_UNUSED_FIRST		 0
@@ -252,6 +252,14 @@ typedef enum {
 	MENU_NOTIFY, 
 	MENU_NOTIFY_DONE
 } Menu_generate;
+
+typedef Xv_opaque (*Menu_notify_proc_t)(Menu, Menu_item);
+typedef void (*Menu_done_proc_t)(Menu, Xv_opaque);
+typedef Menu (*Menu_gen_proc_t) (Menu, Menu_generate);
+typedef Menu (*Menu_item_gen_proc_t) (Menu_item, Menu_generate);
+typedef void (*Menu_item_preview_proc_t) (Menu_item it, unsigned startpreview);
+typedef void (*Menu_pin_proc_t)(Menu, int, int);
+typedef void (*Menu_busy_proc_t)(Menu);
 
 typedef struct {
 	Xv_generic_struct	parent_data;
