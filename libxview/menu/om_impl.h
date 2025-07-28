@@ -1,4 +1,4 @@
-/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.4 2025/07/05 12:42:45 dra Exp $	*/
+/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.5 2025/07/27 19:41:29 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -99,8 +99,6 @@ typedef enum {
  */
 
 
-typedef Xv_opaque (*Menu_notify_proc_t)(Menu, Menu_item);
-
 /***********	Menu Group	**********
  *
  * Menu_group_info data is maintained across the entire menu group.
@@ -124,8 +122,6 @@ typedef struct menu_group {
     int			setting_default;
     int			three_d;	/* TRUE: 3D, FALSE: 2D */
 } Xv_menu_group_info;
-
-typedef Menu (*Menu_gen_proc_t) (Menu, Menu_generate);
 
 /***********	Menu	**********/
 typedef struct menu {
@@ -182,9 +178,9 @@ typedef struct menu {
 				 * width==0 && pulldown => flush left menu
 				 * instead of centered */
     Rect    	pushpin_rect;	/* coordinates relative to input event window */
-    void (*busy_proc)(Menu);/* called when stay-up mode is first selected */
-    void (*done_proc)(Menu, Xv_opaque);/* called when menu group is dismissed */
-    void (*pin_proc)(Menu, int, int);/* Dynamically generate pinned window */
+    Menu_busy_proc_t busy_proc;/* called when stay-up mode is first selected */
+    Menu_done_proc_t done_proc; /* called when menu group is dismissed */
+    Menu_pin_proc_t pin_proc;/* Dynamically generate pinned window */
     Xv_menu_group_info	*group_info;
     Menu_notify_proc_t notify_proc;	/* Handler for item select;
 					 * calls menu item proc */
@@ -243,9 +239,6 @@ typedef struct menu {
 	/* BEGIN MENU_MIXED */
 	/* bisher brauche ich nichts */
 }  Xv_menu_info;
-
-typedef Menu (*Menu_item_gen_proc_t) (Menu_item, Menu_generate);
-typedef void (*Menu_item_preview_proc_t) (Menu_item it, unsigned startpreview);
 
 /*********** 	Menu item 	**********/
 typedef struct menu_item {
