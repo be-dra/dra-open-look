@@ -4,7 +4,7 @@
 #include <xview/xview.h>
 #include <xview/sel_pkg.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: talk.h,v 1.18 2025/06/23 16:31:57 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: talk.h,v 1.19 2025/08/08 20:36:14 dra Exp $" */
 
 /* This class has been motivated by ToolTalk.
  * We can distinguish two kinds of TALK objects:
@@ -52,7 +52,6 @@ typedef enum {
 	TALK_LAST_ERROR    = TALK_ATTR(ATTR_INT, 7),                    /* --G */
 	TALK_NOTIFY_COUNT  = TALK_ATTR(ATTR_OPAQUE, 8),                 /* -S- */
 	TALK_CLIENT_DATA   = TALK_ATTR(ATTR_OPAQUE, 9),                 /* CSG */
-	TALK_START         = TALK_ATTR_LIST(ATTR_NULL, ATTR_STRING,10), /* -S- */
 	TALK_DEREGISTER    = TALK_ATTR(ATTR_NO_VALUE, 98)               /* -S- */
 } Talk_attr;
 
