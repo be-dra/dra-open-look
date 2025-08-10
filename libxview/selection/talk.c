@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.52 2025/08/08 20:36:14 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.53 2025/08/09 12:36:24 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -176,6 +176,7 @@ static int client_convert_proc(Selection_owner sel_own, Atom *type,
 	if (*type == xv_get(sel_own, SEL_RANK)) {
 		Sel_prop_info *info;
 
+		SERVERTRACE((300, "%s: own rank\n", __FUNCTION__));
 		if ((info = (Sel_prop_info *)xv_get(sel_own, SEL_PROP_INFO)) &&
 				info->length > 0 &&
 				info->format == 8 &&
@@ -203,6 +204,7 @@ static int client_convert_proc(Selection_owner sel_own, Atom *type,
 	}
 	if (*type == priv->regist) {
 		/* a new server has been started - we should "reconnect" */
+		SERVERTRACE((300, "%s: init reconnect\n", __FUNCTION__));
 		xv_set(sel_own, SEL_OWN, FALSE, NULL);
 
 		*data = XV_NULL;
@@ -219,7 +221,7 @@ static void client_lose(Selection_owner sel_own)
 	Talk_private *priv = (Talk_private *)xv_get(sel_own, TALK_KEY);
 	Talk self = TALKPUB(priv);
 
-	SERVERTRACE((200, "%s\n", __FUNCTION__));
+	SERVERTRACE((200, "%s: reconnecting\n", __FUNCTION__));
 	xv_set(self,
 			SEL_RANK, priv->talksrv,
 			SEL_TYPE, priv->regist,
@@ -435,6 +437,7 @@ static void initialize_by_mode(Talk_private *priv)
 					SEL_CONVERT_PROC, client_convert_proc,
 					SEL_DONE_PROC, client_done,
 					SEL_LOSE_PROC, client_lose,
+					SEL_OWN, TRUE,
 					NULL);
 			XFree(data);
 
