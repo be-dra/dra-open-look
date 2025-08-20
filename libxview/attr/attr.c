@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)attr.c 20.24 90/12/04  DRA: $Id: attr.c,v 4.22 2025/03/12 19:52:18 dra Exp $ ";
+static char     sccsid[] = "@(#)attr.c 20.24 90/12/04  DRA: $Id: attr.c,v 4.23 2025/08/19 18:58:58 dra Exp $ ";
 #endif
 #endif
 
@@ -315,7 +315,6 @@ static Attr_attribute check_arg(Attr_attribute arg, Attr_attribute attr,
 					break;
 				case ATTR_BASE_INDEX_XY:
 					typ = "INDEX_XY";
-					break;
 					/* sieht nach 32 bits aus, wir hoffen,
 					 * dass es ungefaehrlich ist
 					 */
@@ -323,7 +322,6 @@ static Attr_attribute check_arg(Attr_attribute arg, Attr_attribute attr,
 				default:
 					/* der wird wahrscheinlich 64-bit-maessig hingrapschen... */
 					return (Attr_attribute)bachs;
-					break;
 			}
 
 			if (verbosity) {
