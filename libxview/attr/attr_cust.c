@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)attr_cust.c 1.7 91/03/25  DRA: $Id: attr_cust.c,v 4.2 2025/03/08 12:37:06 dra Exp $ ";
+static char     sccsid[] = "@(#)attr_cust.c 1.7 91/03/25  DRA: $Id: attr_cust.c,v 4.3 2025/08/19 18:59:48 dra Exp $ ";
 #endif
 #endif
 
@@ -243,26 +243,28 @@ static Xv_server attr_get_server(Xv_object obj, Xv_object passed_owner)
 	return (server);
 }
 
-static Attr_avlist
-attr_copy_customize(Xv_object obj, const Xv_pkg *pkg, char *instance_name,
-			Xv_object owner, int use_db, Attr_avlist dest, Attr_avlist avlist)
+static Attr_avlist attr_copy_customize(Xv_object obj, const Xv_pkg *pkg,
+			char *instance_name, Xv_object owner, int use_db,
+			Attr_avlist dest, Attr_avlist avlist)
 {
 	register unsigned cardinality;
 	char *attr_name;
 	Attr_attribute attr;
 	XID db = 0;
-	XrmQuarkList instance_qlist = NULL;
+	XrmQuarkList is_allocated = NULL, instance_qlist = NULL;
 	Xv_opaque server;
 	int see_db;
 	Attr_attribute default_value;
 
 	if (use_db) {
 		if (obj) {
+			/* this is not allocated! */
 			instance_qlist = (XrmQuarkList) xv_get(obj, XV_INSTANCE_QLIST);
 		}
 		else {
 			instance_qlist = (XrmQuarkList) generic_create_instance_qlist(owner,
 					instance_name);
+			is_allocated = instance_qlist;
 		}
 
 		server = attr_get_server(obj, owner);
@@ -371,10 +373,10 @@ attr_copy_customize(Xv_object obj, const Xv_pkg *pkg, char *instance_name,
 	*dest = 0;
 
 	/*
-	 * Free instance_qlist if it was created
+	 * Free instance_qlist if it was [[(no longer!) created]] allocated
 	 */
-	if (instance_qlist) {
-		free((char *)instance_qlist);
+	if (is_allocated) {
+		free((char *)is_allocated);
 	}
 
 	return (dest);
