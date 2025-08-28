@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.7 2025/03/08 13:24:37 dra Exp $ ";
+static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.8 2025/08/27 14:43:31 dra Exp $ ";
 #endif
 #endif
 
@@ -158,578 +158,599 @@ static int file_chooser_init(Xv_opaque owner, File_chooser slf, Attr_avlist avli
  */
 static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 {
-    Fc_private *private = FC_PRIVATE(public);
-    Attr_avlist attrs;
-    int do_update = FALSE;
+	Fc_private *private = FC_PRIVATE(public);
+	Attr_avlist attrs;
+	int do_update = FALSE;
 
-    for (attrs=avlist; *attrs; attrs=attr_next(attrs)) {
-	switch ( (int) attrs[0] ) {
-	case FILE_CHOOSER_UPDATE:
-	    ATTR_CONSUME(attrs[0]);
-	    if ( private->ui.list )
-		xv_set(private->ui.list, FILE_LIST_UPDATE, NULL);
-	    break;
+	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
+		switch ((int)attrs[0]) {
+			case FILE_CHOOSER_UPDATE:
+				ATTR_CONSUME(attrs[0]);
+				if (private->ui.list)
+					xv_set(private->ui.list, FILE_LIST_UPDATE, NULL);
+				break;
 
-	case FILE_CHOOSER_DOC_NAME:
-	    ATTR_CONSUME(attrs[0]);
+			case FILE_CHOOSER_DOC_NAME:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( private->type == FILE_CHOOSER_OPEN )
-		break;
+				if (private->type == FILE_CHOOSER_OPEN)
+					break;
 
-	    if ( private->state )
-		private->state->doc_name
-		    = xv_strcpy( private->state->doc_name,
-				   (char *)attrs[1]
-				   );
-	    else {
-		xv_set( private->ui.document_txt,
-		       PANEL_VALUE, attrs[1],
-		       NULL);
-		if ( !private->save_to_dir )
-		    fc_item_inactive( private->ui.save_btn, no_string((char *)attrs[1]) );
-	    }
-	    break;
+				if (private->state)
+					private->state->doc_name
+							= xv_strcpy(private->state->doc_name,
+							(char *)attrs[1]
+							);
+				else {
+					xv_set(private->ui.document_txt,
+							PANEL_VALUE, attrs[1], NULL);
+					if (!private->save_to_dir)
+						fc_item_inactive(private->ui.save_btn,
+								no_string((char *)attrs[1]));
+				}
+				break;
 
 #ifdef OW_I18N
-	case FILE_CHOOSER_DOC_NAME_WCS:
-	    ATTR_CONSUME(attrs[0]);
+			case FILE_CHOOSER_DOC_NAME_WCS:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( private->type == FILE_CHOOSER_OPEN )
-		break;
+				if (private->type == FILE_CHOOSER_OPEN)
+					break;
 
-	    if ( private->state ) {
-		xv_free_ref( private->state->doc_name );
-		private->state->doc_name = _xv_wcstombsdup( (wchar_t *) attrs[1] );
-	    } else
-		xv_set( private->ui.document_txt,
-		       PANEL_VALUE_WCS, attrs[1],
-		       NULL);
-		if ( !private->save_to_dir )
-		    fc_item_inactive( private->ui.save_btn, no_string((char *)attrs[1]) );
-	    break;
+				if (private->state) {
+					xv_free_ref(private->state->doc_name);
+					private->state->doc_name =
+							_xv_wcstombsdup((wchar_t *)attrs[1]);
+				}
+				else
+					xv_set(private->ui.document_txt,
+							PANEL_VALUE_WCS, attrs[1], NULL);
+				if (!private->save_to_dir)
+					fc_item_inactive(private->ui.save_btn,
+							no_string((char *)attrs[1]));
+				break;
 #endif /* OW_I18N */
 
 
 
 
 #ifdef OW_I18N
-	case FILE_CHOOSER_DIRECTORY_WCS:
-#endif
-	case FILE_CHOOSER_DIRECTORY:
-
-#ifdef OW_I18N
-	    if ( attrs[0] == FILE_CHOOSER_DIRECTORY_WCS ) {
-		if ( private->state ) {
-		    xv_free_ref( private->state->directory );
-		    private->state->directory
-			= _xv_wcstombsdup( (wchar_t *) attrs[1] );
-		} else {
-		    xv_set(private->ui.list,
-			   FILE_LIST_DIRECTORY_WCS,	attrs[1],
-			   NULL);
-		}
-	    } else {		/* Multibyte */
-#endif
-	    if ( private->state ) {
-		private->state->directory
-		    = xv_strcpy(private->state->directory,
-				   (char *)attrs[1]
-				   );
-	    } else {
-		xv_set(private->ui.list,
-		       FILE_LIST_DIRECTORY,	attrs[1],
-		       NULL);
-	    }
-
-#ifdef OW_I18N
-	    }
+			case FILE_CHOOSER_DIRECTORY_WCS:
 #endif
 
-	    /*
-	     * make sure current folder gets null'd as well,
-	     * because the cd-func won't get activated.
-	     */
-	    if ( !private->state && !attrs[1] )
-		xv_set(private->ui.folder_txt,
-		       PANEL_VALUE,		"",
-		       NULL);
+			case FILE_CHOOSER_DIRECTORY:
 
-	    ATTR_CONSUME(attrs[0]);
-	    break;	/* case FILE_CHOOSER_DIRECTORY(_WCS) */
+#ifdef OW_I18N
+				if (attrs[0] == FILE_CHOOSER_DIRECTORY_WCS) {
+					if (private->state) {
+						xv_free_ref(private->state->directory);
+						private->state->directory
+								= _xv_wcstombsdup((wchar_t *)attrs[1]);
+					}
+					else {
+						xv_set(private->ui.list,
+								FILE_LIST_DIRECTORY_WCS, attrs[1], NULL);
+					}
+				}
+				else {	/* Multibyte */
+#endif
+
+					if (private->state) {
+						private->state->directory
+								= xv_strcpy(private->state->directory,
+								(char *)attrs[1]
+								);
+					}
+					else {
+						xv_set(private->ui.list,
+								FILE_LIST_DIRECTORY, attrs[1], NULL);
+					}
+
+#ifdef OW_I18N
+				}
+#endif
+
+				/*
+				 * make sure current folder gets null'd as well,
+				 * because the cd-func won't get activated.
+				 */
+				if (!private->state && !attrs[1])
+					xv_set(private->ui.folder_txt, PANEL_VALUE, "", NULL);
+
+				ATTR_CONSUME(attrs[0]);
+				break;	/* case FILE_CHOOSER_DIRECTORY(_WCS) */
 
 
 
-	case FILE_CHOOSER_CHILD:
-	case FILE_CHOOSER_TYPE:
-	    ATTR_CONSUME(attrs[0]);
-	    xv_error(public,
-		     ERROR_PKG,		FILE_CHOOSER,
-		     ERROR_CANNOT_SET,	attrs[0],
-		     NULL);
-	    break;
+			case FILE_CHOOSER_CHILD:
+			case FILE_CHOOSER_TYPE:
+				ATTR_CONSUME(attrs[0]);
+				xv_error(public,
+						ERROR_PKG, FILE_CHOOSER,
+						ERROR_CANNOT_SET, attrs[0], NULL);
+				break;
 
 
-	case FILE_CHOOSER_NOTIFY_FUNC:
-	    ATTR_CONSUME(attrs[0]);
-	    private->notify_func = (fchsr_notify_func_t)attrs[1];
-	    break;
+			case FILE_CHOOSER_NOTIFY_FUNC:
+				ATTR_CONSUME(attrs[0]);
+				private->notify_func = (fchsr_notify_func_t) attrs[1];
+				break;
 
 
 #ifdef OW_I18N
-	case FILE_CHOOSER_NOTIFY_FUNC_WCS:
-	    ATTR_CONSUME(attrs[0]);
-	    private->notify_func_wcs = (int (*)()) attrs[1];
-	    break;
+			case FILE_CHOOSER_NOTIFY_FUNC_WCS:
+				ATTR_CONSUME(attrs[0]);
+				private->notify_func_wcs = (int (*)())attrs[1];
+				break;
 #endif /* OW_I18N */
 
 
-	case FILE_CHOOSER_AUTO_UPDATE:
-	    if ( private->state )
-		private->state->auto_update = (unsigned) attrs[1];
-	    else
-		xv_set(private->ui.list,
-		       FILE_LIST_AUTO_UPDATE,  attrs[1],
-		       NULL);
-	    break;
+			case FILE_CHOOSER_AUTO_UPDATE:
+				if (private->state)
+					private->state->auto_update = (unsigned)attrs[1];
+				else
+					xv_set(private->ui.list,
+							FILE_LIST_AUTO_UPDATE, attrs[1], NULL);
+				break;
 
 
-	case FILE_CHOOSER_SHOW_DOT_FILES:
-	    ATTR_CONSUME(attrs[0]);
+			case FILE_CHOOSER_SHOW_DOT_FILES:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( private->state )
-		private->state->hidden_files = (unsigned) ((attrs[1]) ? TRUE : FALSE);
-	    else
-		xv_set(private->ui.list,
-		       FILE_LIST_SHOW_DOT_FILES, attrs[1],
-		       NULL);
-	    break;
+				if (private->state)
+					private->state->hidden_files =
+							(unsigned)((attrs[1]) ? TRUE : FALSE);
+				else
+					xv_set(private->ui.list,
+							FILE_LIST_SHOW_DOT_FILES, attrs[1], NULL);
+				break;
 
 
-	case FILE_CHOOSER_ABBREV_VIEW:
-	    ATTR_CONSUME(attrs[0]);
+			case FILE_CHOOSER_ABBREV_VIEW:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( private->state )
-		private->state->abbrev_view = (unsigned) ((attrs[1]) ? TRUE : FALSE);
-	    else
-		xv_set(private->ui.list,
-		       FILE_LIST_ABBREV_VIEW, attrs[1],
-		       NULL);
-	    break;
+				if (private->state)
+					private->state->abbrev_view =
+							(unsigned)((attrs[1]) ? TRUE : FALSE);
+				else
+					xv_set(private->ui.list,
+							FILE_LIST_ABBREV_VIEW, attrs[1], NULL);
+				break;
 
 #ifdef OW_I18N
-	case FILE_CHOOSER_APP_DIR_WCS:
+			case FILE_CHOOSER_APP_DIR_WCS:
 #endif
-	case FILE_CHOOSER_APP_DIR: {
-	    int fixed_count;
 
-	    if ( !private->hist_list )
-		private->hist_list
-		    = fc_default_history( private,
-					 XV_SERVER_FROM_WINDOW(public)
-					 );
+			case FILE_CHOOSER_APP_DIR:{
+					int fixed_count;
 
-	    fixed_count = (int) xv_get(private->hist_list, HISTORY_FIXED_COUNT);
+					if (!private->hist_list)
+						private->hist_list
+								= fc_default_history(private,
+								XV_SERVER_FROM_WINDOW(public)
+								);
 
-	    /* add a blank between User and App Spaces */
-	    if ( fixed_count == private->user_entries )
-		xv_set( private->hist_list,
-		       HISTORY_ADD_FIXED_ENTRY,	NULL, NULL,
-		       NULL);
+					fixed_count =
+							(int)xv_get(private->hist_list,
+							HISTORY_FIXED_COUNT);
 
-	    /*
-	     * LAF Note:  The Open Look File Choosing Specification states
-	     * that the application is allowed no more than 5 entries.  This
-	     * may be easily gotten around by setting them directly on the
-	     * History List.
-	     */
-	    if ( fixed_count <= (FC_APP_SPACE_SIZE + private->user_entries) )
+					/* add a blank between User and App Spaces */
+					if (fixed_count == private->user_entries)
+						xv_set(private->hist_list,
+								HISTORY_ADD_FIXED_ENTRY, NULL, NULL, NULL);
+
+					/*
+					 * LAF Note:  The Open Look File Choosing Specification states
+					 * that the application is allowed no more than 5 entries.  This
+					 * may be easily gotten around by setting them directly on the
+					 * History List.
+					 */
+					if (fixed_count <=
+							(FC_APP_SPACE_SIZE + private->user_entries))
+
 #ifdef OW_I18N
-		xv_set( private->hist_list,
-		       (attrs[0] == FILE_CHOOSER_APP_DIR_WCS)
-		       	? HISTORY_ADD_FIXED_ENTRY_WCS
-		       	: HISTORY_ADD_FIXED_ENTRY,
-		       		attrs[1], attrs[2],
-		       NULL);
+						xv_set(private->hist_list,
+								(attrs[0] == FILE_CHOOSER_APP_DIR_WCS)
+								? HISTORY_ADD_FIXED_ENTRY_WCS
+								: HISTORY_ADD_FIXED_ENTRY,
+								attrs[1], attrs[2], NULL);
 #else
-		xv_set( private->hist_list,
-		       HISTORY_ADD_FIXED_ENTRY,	attrs[1], attrs[2],
-		       NULL);
+						xv_set(private->hist_list,
+								HISTORY_ADD_FIXED_ENTRY, attrs[1], attrs[2],
+								NULL);
 #endif
-	    /* else ignore */
 
-	    ATTR_CONSUME(attrs[0]);
-	    break;
-	}
+					/* else ignore */
+
+					ATTR_CONSUME(attrs[0]);
+					break;
+				}
 
 
-	case FILE_CHOOSER_FILTER_STRING:
-	    ATTR_CONSUME(attrs[0]);
+			case FILE_CHOOSER_FILTER_STRING:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( private->state ) {
-		private->state->filter_string
-		    = xv_strcpy(private->state->filter_string,
-				   (char *)attrs[1]
-				   );
-	    } else {
-		xv_set(private->ui.list,
-		       FILE_LIST_FILTER_STRING,	attrs[1],
-		       NULL);
-	    }
-	    break;
+				if (private->state) {
+					private->state->filter_string
+							= xv_strcpy(private->state->filter_string,
+							(char *)attrs[1]
+							);
+				}
+				else {
+					xv_set(private->ui.list,
+							FILE_LIST_FILTER_STRING, attrs[1], NULL);
+				}
+				break;
 
 
 #ifdef OW_I18N
-	case FILE_CHOOSER_FILTER_STRING_WCS:
-	    ATTR_CONSUME(attrs[0]);
+			case FILE_CHOOSER_FILTER_STRING_WCS:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( private->state ) {
-		xv_free_ref( private->state->filter_string );
-		private->state->filter_string
-		    = _xv_wcstombsdup( (wchar_t *) attrs[1] );
-	    } else {
-		xv_set(private->ui.list,
-		       FILE_LIST_FILTER_STRING_WCS,	attrs[1],
-		       NULL);
-	    }
-	    break;
+				if (private->state) {
+					xv_free_ref(private->state->filter_string);
+					private->state->filter_string
+							= _xv_wcstombsdup((wchar_t *)attrs[1]);
+				}
+				else {
+					xv_set(private->ui.list,
+							FILE_LIST_FILTER_STRING_WCS, attrs[1], NULL);
+				}
+				break;
 #endif /* OW_I18N */
 
 
-	case FILE_CHOOSER_MATCH_GLYPH:
-	    ATTR_CONSUME(attrs[0]);
+			case FILE_CHOOSER_MATCH_GLYPH:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( private->state )
-		private->state->match_glyph = (Server_image) attrs[1];
-	    else
-		xv_set( private->ui.list,
-		       FILE_LIST_MATCH_GLYPH,	attrs[1],
-		       NULL);
-	    break;
-
-
-	case FILE_CHOOSER_MATCH_GLYPH_MASK:
-	    ATTR_CONSUME(attrs[0]);
-
-	    if ( private->state )
-		private->state->match_glyph_mask = (Server_image) attrs[1];
-	    else
-		xv_set( private->ui.list,
-		       FILE_LIST_MATCH_GLYPH_MASK, attrs[1],
-		       NULL);
-	    break;
+				if (private->state)
+					private->state->match_glyph = (Server_image) attrs[1];
+				else
+					xv_set(private->ui.list,
+							FILE_LIST_MATCH_GLYPH, attrs[1], NULL);
+				break;
 
 
-	case FILE_CHOOSER_CD_FUNC:
-	    ATTR_CONSUME(attrs[0]);
-	    private->cd_func = (fchsr_cd_func_t) attrs[1];
+			case FILE_CHOOSER_MATCH_GLYPH_MASK:
+				ATTR_CONSUME(attrs[0]);
 
-	    if ( !private->state ) {
-		if ( (int) xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE) )
-		    do_update = TRUE;
-	    }
-	    break;
-
-
-	case FILE_CHOOSER_FILTER_MASK:
-	    ATTR_CONSUME(attrs[0]);
-	    private->filter_mask = (unsigned short) attrs[1];
-
-	    if ( !private->state ) {
-		if ( (int) xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE) )
-		    do_update = TRUE;
-	    }
-	    break;
+				if (private->state)
+					private->state->match_glyph_mask = (Server_image) attrs[1];
+				else
+					xv_set(private->ui.list,
+							FILE_LIST_MATCH_GLYPH_MASK, attrs[1], NULL);
+				break;
 
 
-	case FILE_CHOOSER_FILTER_FUNC:
-	    ATTR_CONSUME(attrs[0]);
-	    private->filter_func = (fchsr_filter_func_t) attrs[1];
+			case FILE_CHOOSER_CD_FUNC:
+				ATTR_CONSUME(attrs[0]);
+				private->cd_func = (fchsr_cd_func_t) attrs[1];
 
-	    if ( !private->state ) {
-		if ( (int) xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE) )
-		    do_update = TRUE;
-	    }
-	    break;
-
-
-	case FILE_CHOOSER_COMPARE_FUNC:
-	    ATTR_CONSUME(attrs[0]);
-	    private->compare_func = (fchsr_compare_func_t) attrs[1];
-
-	    if ( !private->state ) {
-		if ( (int) xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE) )
-		    do_update = TRUE;
-	    }
-	    break;
+				if (!private->state) {
+					if ((int)xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE))
+						do_update = TRUE;
+				}
+				break;
 
 
-	case FILE_CHOOSER_SHOW_PATTERN:
-	    ATTR_CONSUME(attrs[0]);
-	    private->show_pattern = (unsigned) ((attrs[1]) ? TRUE : FALSE);
-		break;
+			case FILE_CHOOSER_FILTER_MASK:
+				ATTR_CONSUME(attrs[0]);
+				private->filter_mask = (unsigned short)attrs[1];
 
-	case FILE_CHOOSER_SAVE_TO_DIR:
-	    ATTR_CONSUME(attrs[0]);
-
-	    if ( private->type == FILE_CHOOSER_OPEN )
-		break;		/* xv_error ? */
-
-	    private->save_to_dir = (unsigned) ((attrs[1]) ? TRUE : FALSE);
-
-	    /*
-	     * LAF Note:  if this flag is TRUE, Save typein becomes inactive
-	     * and the Save button should not gray out.  if the flag is FALSE,
-	     * the Save typein is normal and the Save button becomes inactive
-	     * if the typein becomes empty.  default is FALSE.
-	     */
-	    if ( private->state )
-		break;
-
-	    if ( private->save_to_dir == TRUE ) {
-		xv_set( private->ui.document_txt,
-		       PANEL_VALUE,	"",
-		       PANEL_INACTIVE,	TRUE,
-		       NULL);
-		fc_item_inactive( private->ui.save_btn, FALSE );
-	    } else {
-		char *val = (char *) xv_get(private->ui.document_txt, PANEL_VALUE);
-
-		fc_item_inactive(private->ui.document_txt, FALSE);
-		fc_item_inactive(private->ui.save_btn, no_string(val));
-	    }
-	    break;
+				if (!private->state) {
+					if ((int)xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE))
+						do_update = TRUE;
+				}
+				break;
 
 
-	case FILE_CHOOSER_EXTEN_HEIGHT: {
-	    /* 1.5 rows extra white space shown in spec */
-	    int white_space = (int)(private->row_height * 1.5);
-	    int width;
-	    int height;
+			case FILE_CHOOSER_FILTER_FUNC:
+				ATTR_CONSUME(attrs[0]);
+				private->filter_func = (fchsr_filter_func_t) attrs[1];
 
-	    /*
-	     * "Common Look" forces spec conformance to new heights.
-	     * this uglyness was added to follow the spec exactly, while
-	     * not breaking deskset.  in order to get the layout code to
-	     * do this exactingly, augment the current and min sizes.
-	     */
-
-	    /* Remove the extra space used by extension area */
-	    if ( ((int) attrs[1] == 0) && (private->exten_height != 0) ) {
-		xv_get(public, FRAME_MIN_SIZE, &width, &height);
-		xv_set(public, FRAME_MIN_SIZE, width, height - white_space, NULL);
-
-		height = xv_get(public, XV_HEIGHT);
-		xv_set(public, XV_HEIGHT, height - white_space, NULL);
-	    }
-	    	/* Add space needed for extension area */
-	    else  if ( ((int) attrs[1] > 0) && (private->exten_height == 0) ) {
-		xv_get(public, FRAME_MIN_SIZE, &width, &height);
-		xv_set(public, FRAME_MIN_SIZE, width, height + white_space, NULL);
-
-		height = xv_get(public, XV_HEIGHT);
-		xv_set(public, XV_HEIGHT, height + white_space, NULL);
-	    }
-
-	    private->exten_height = (int) attrs[1];
-	    ATTR_CONSUME(attrs[0]);
-	    break;
-	}
+				if (!private->state) {
+					if ((int)xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE))
+						do_update = TRUE;
+				}
+				break;
 
 
-	case FILE_CHOOSER_EXTEN_FUNC:
-	    ATTR_CONSUME(attrs[0]);
-	    private->exten_func = (fchsr_exten_func_t) attrs[1];
-	    break;
+			case FILE_CHOOSER_COMPARE_FUNC:
+				ATTR_CONSUME(attrs[0]);
+				private->compare_func = (fchsr_compare_func_t) attrs[1];
+
+				if (!private->state) {
+					if ((int)xv_get(private->ui.list, FILE_LIST_AUTO_UPDATE))
+						do_update = TRUE;
+				}
+				break;
+
+
+			case FILE_CHOOSER_SHOW_PATTERN:
+				ATTR_CONSUME(attrs[0]);
+				private->show_pattern = (unsigned)((attrs[1]) ? TRUE : FALSE);
+				break;
+
+			case FILE_CHOOSER_SAVE_TO_DIR:
+				ATTR_CONSUME(attrs[0]);
+
+				if (private->type == FILE_CHOOSER_OPEN)
+					break;	/* xv_error ? */
+
+				private->save_to_dir = (unsigned)((attrs[1]) ? TRUE : FALSE);
+
+				/*
+				 * LAF Note:  if this flag is TRUE, Save typein becomes inactive
+				 * and the Save button should not gray out.  if the flag is FALSE,
+				 * the Save typein is normal and the Save button becomes inactive
+				 * if the typein becomes empty.  default is FALSE.
+				 */
+				if (private->state)
+					break;
+
+				if (private->save_to_dir == TRUE) {
+					xv_set(private->ui.document_txt,
+							PANEL_VALUE, "", PANEL_INACTIVE, TRUE, NULL);
+					fc_item_inactive(private->ui.save_btn, FALSE);
+				}
+				else {
+					char *val =
+							(char *)xv_get(private->ui.document_txt,
+							PANEL_VALUE);
+
+					fc_item_inactive(private->ui.document_txt, FALSE);
+					fc_item_inactive(private->ui.save_btn, no_string(val));
+				}
+				break;
+
+
+			case FILE_CHOOSER_EXTEN_HEIGHT:{
+					/* 1.5 rows extra white space shown in spec */
+					int white_space = (int)(private->row_height * 1.5);
+					int width;
+					int height;
+
+					/*
+					 * "Common Look" forces spec conformance to new heights.
+					 * this uglyness was added to follow the spec exactly, while
+					 * not breaking deskset.  in order to get the layout code to
+					 * do this exactingly, augment the current and min sizes.
+					 */
+
+					/* Remove the extra space used by extension area */
+					if (((int)attrs[1] == 0) && (private->exten_height != 0)) {
+						xv_get(public, FRAME_MIN_SIZE, &width, &height);
+						xv_set(public, FRAME_MIN_SIZE, width,
+								height - white_space, NULL);
+
+						height = xv_get(public, XV_HEIGHT);
+						xv_set(public, XV_HEIGHT, height - white_space, NULL);
+					}
+					/* Add space needed for extension area */
+					else if (((int)attrs[1] > 0)
+							&& (private->exten_height == 0)) {
+						xv_get(public, FRAME_MIN_SIZE, &width, &height);
+						xv_set(public, FRAME_MIN_SIZE, width,
+								height + white_space, NULL);
+
+						height = xv_get(public, XV_HEIGHT);
+						xv_set(public, XV_HEIGHT, height + white_space, NULL);
+					}
+
+					private->exten_height = (int)attrs[1];
+					ATTR_CONSUME(attrs[0]);
+					break;
+				}
+
+
+			case FILE_CHOOSER_EXTEN_FUNC:
+				ATTR_CONSUME(attrs[0]);
+				private->exten_func = (fchsr_exten_func_t) attrs[1];
+				break;
 
 
 #ifdef OW_I18N
-	case FILE_CHOOSER_CUSTOMIZE_OPEN_WCS:
+			case FILE_CHOOSER_CUSTOMIZE_OPEN_WCS:
 #endif
-	case FILE_CHOOSER_CUSTOMIZE_OPEN:
 
-	    if ( private->type != FILE_CHOOSER_OPEN ) {
-		xv_error(public,
-			 ERROR_PKG,	FILE_CHOOSER,
-			 ERROR_STRING,	XV_MSG("Only valid for Open dialog"),
-			 NULL);
-		break;
-	    }
+			case FILE_CHOOSER_CUSTOMIZE_OPEN:
 
-	    if ( !private->state ) {
-		xv_error(public,
-			 ERROR_CREATE_ONLY,	attrs[0],
-			 NULL);
-		break;
-	    }
+				if (private->type != FILE_CHOOSER_OPEN) {
+					xv_error(public,
+							ERROR_PKG, FILE_CHOOSER,
+							ERROR_STRING, XV_MSG("Only valid for Open dialog"),
+							NULL);
+					break;
+				}
+
+				if (!private->state) {
+					xv_error(public, ERROR_CREATE_ONLY, attrs[0], NULL);
+					break;
+				}
+
 #ifdef OW_I18N
-	    if ( attrs[0] == FILE_CHOOSER_CUSTOMIZE_OPEN_WCS ) {
-		xv_free_ref( private->state->custom_name );
-		private->state->custom_name
-		    = _xv_wcstombsdup( (wchar_t *) attrs[1] );
+				if (attrs[0] == FILE_CHOOSER_CUSTOMIZE_OPEN_WCS) {
+					xv_free_ref(private->state->custom_name);
+					private->state->custom_name
+							= _xv_wcstombsdup((wchar_t *)attrs[1]);
 
-		xv_free_ref( private->state->custom_string );
-		private->state->custom_string
-		    = _xv_wcstombsdup( (wchar_t *) attrs[2] );
-	    } else {
+					xv_free_ref(private->state->custom_string);
+					private->state->custom_string
+							= _xv_wcstombsdup((wchar_t *)attrs[2]);
+				}
+				else {
 #endif
-	    private->state->custom_name
-		= xv_strcpy(private->state->custom_name,
-			       (char *) attrs[1]
-			       );
 
-	    private->state->custom_string
-		= xv_strcpy(private->state->custom_string,
-			       (char *) attrs[2]
-			       );
+					private->state->custom_name
+							= xv_strcpy(private->state->custom_name,
+							(char *)attrs[1]
+							);
+
+					private->state->custom_string
+							= xv_strcpy(private->state->custom_string,
+							(char *)attrs[2]
+							);
+
 #ifdef OW_I18N
-	}
+				}
 #endif
-	    private->custom = (File_chooser_op) attrs[3];
-	    ATTR_CONSUME(attrs[0]);
-	    break;
+
+				private->custom = (File_chooser_op) attrs[3];
+				ATTR_CONSUME(attrs[0]);
+				break;
 
 
 #ifdef OW_I18N
-	case FILE_CHOOSER_WCHAR_NOTIFY:
-	    ATTR_CONSUME(attrs[0]);
-	    private->wchar_notify = (int) attrs[1];
-	    break;
+			case FILE_CHOOSER_WCHAR_NOTIFY:
+				ATTR_CONSUME(attrs[0]);
+				private->wchar_notify = (int)attrs[1];
+				break;
 #endif /* OW_I18N */
 
 
-	case FILE_CHOOSER_HISTORY_LIST:
-	    ATTR_CONSUME(attrs[0]);
-	    private->hist_list = (History_list) attrs[1];
+			case FILE_CHOOSER_HISTORY_LIST:
+				ATTR_CONSUME(attrs[0]);
+				private->hist_list = (History_list) attrs[1];
 
-	    /* note:  hist-menu package does ref counting */
-	    if ( private->ui.hist_menu )
-		xv_set(private->ui.hist_menu,
-		       HISTORY_MENU_HISTORY_LIST, private->hist_list,
-		       NULL);
-	    break;
-
-
-	case FILE_CHOOSER_ASSUME_DEFAULT_SIZE:	/* private */
-	    /* CHEAPO:  doesn't take exten area into account */
-	    xv_set(public,
-		   XV_WIDTH,	private->default_width,
-		   XV_HEIGHT,	private->default_height,
-		   NULL);
-	    break;
+				/* note:  hist-menu package does ref counting */
+				if (private->ui.hist_menu)
+					xv_set(private->ui.hist_menu,
+							HISTORY_MENU_HISTORY_LIST, private->hist_list,
+							NULL);
+				break;
 
 
-	case FILE_CHOOSER_NO_CONFIRM:	/* private */
-	    private->no_confirm = (unsigned) ((attrs[1]) ? TRUE : FALSE);
-	    break;
+			case FILE_CHOOSER_ASSUME_DEFAULT_SIZE:	/* private */
+				/* CHEAPO:  doesn't take exten area into account */
+				xv_set(public,
+						XV_WIDTH, private->default_width,
+						XV_HEIGHT, private->default_height, NULL);
+				break;
+
+
+			case FILE_CHOOSER_NO_CONFIRM:	/* private */
+				private->no_confirm = (unsigned)((attrs[1]) ? TRUE : FALSE);
+				break;
 
 
 
-	    /*
-	     * WARNING:  the docs should read that it is the client's
-	     * responsiblity to make sure that they don't go under the
-	     * min size.  the XV_WIDTH/XV_HEIGH checking is really a token
-	     * jesture, because there are many ways in which they could
-	     * modify the frame size aside from this (such as XV_RECT,
-	     * and frame_set_height).
-	     */
-	case XV_WIDTH:
-	    if ( private->state ) {
-		ATTR_CONSUME(attrs[0]);
-		break;
-	    }
+				/*
+				 * WARNING:  the docs should read that it is the client's
+				 * responsiblity to make sure that they don't go under the
+				 * min size.  the XV_WIDTH/XV_HEIGH checking is really a token
+				 * jesture, because there are many ways in which they could
+				 * modify the frame size aside from this (such as XV_RECT,
+				 * and frame_set_height).
+				 */
+			case XV_WIDTH:
+				if (private->state) {
+					ATTR_CONSUME(attrs[0]);
+					break;
+				}
 
-	    /*
-	     * FRAME_MIN_SIZE only works for interactive
-	     * sizing, not programatic...
-	     */
-	    if ( (int) attrs[1] < private->min_width ) {
-		Attr_attribute fc_attrs[3];
-		fc_attrs[0] = XV_WIDTH;
-		fc_attrs[1] = (Attr_attribute) private->min_width;
-		fc_attrs[2] = (Attr_attribute) NULL;
-		xv_super_set_avlist(public, FILE_CHOOSER, (Attr_avlist) fc_attrs);
-		ATTR_CONSUME(attrs[0]);
-	    }
-	    break;
+				/*
+				 * FRAME_MIN_SIZE only works for interactive
+				 * sizing, not programatic...
+				 */
+				if ((int)attrs[1] < private->min_width) {
+					Attr_attribute fc_attrs[3];
 
-	case XV_HEIGHT:
-	    if ( private->state ) {
-		ATTR_CONSUME(attrs[0]);
-		break;
-	    }
+					fc_attrs[0] = XV_WIDTH;
+					fc_attrs[1] = (Attr_attribute) private->min_width;
+					fc_attrs[2] = (Attr_attribute) NULL;
+					xv_super_set_avlist(public, FILE_CHOOSER,
+							(Attr_avlist) fc_attrs);
+					ATTR_CONSUME(attrs[0]);
+				}
+				break;
 
-	    /*
-	     * FRAME_MIN_SIZE only works for interactive
-	     * sizing, not programatic...
-	     */
-	    if ( (int) attrs[1] < private->min_height ) {
-		Attr_attribute fc_attrs[3];
-		fc_attrs[0] = XV_HEIGHT;
-		fc_attrs[1] = (Attr_attribute) private->min_height;
-		fc_attrs[2] = (Attr_attribute) NULL;
-		xv_super_set_avlist(public, FILE_CHOOSER, (Attr_avlist) fc_attrs);
-		ATTR_CONSUME(attrs[0]);
-	    }
-	    break;
+			case XV_HEIGHT:
+				if (private->state) {
+					ATTR_CONSUME(attrs[0]);
+					break;
+				}
 
-	case FRAME_MIN_SIZE: {
-	    Attr_attribute fc_attrs[4];
+				/*
+				 * FRAME_MIN_SIZE only works for interactive
+				 * sizing, not programatic...
+				 */
+				if ((int)attrs[1] < private->min_height) {
+					Attr_attribute fc_attrs[3];
 
-	    if ( private->state ) {
-		ATTR_CONSUME(attrs[0]);
-		break;
-	    }
+					fc_attrs[0] = XV_HEIGHT;
+					fc_attrs[1] = (Attr_attribute) private->min_height;
+					fc_attrs[2] = (Attr_attribute) NULL;
+					xv_super_set_avlist(public, FILE_CHOOSER,
+							(Attr_avlist) fc_attrs);
+					ATTR_CONSUME(attrs[0]);
+				}
+				break;
 
-	    /*
-	     * Don't want the min size lowered from the calculated
-	     * values.  they may increase it, expecially if they are
-	     * using the extension api.
-	     */
-	    if ( ((int) attrs[1] <= private->min_width)
-		&& ((int) attrs[2] <= private->min_height)
-		) {
-		ATTR_CONSUME(attrs[0]);
-		break;
-	    }
+			case FRAME_MIN_SIZE:{
+					Attr_attribute fc_attrs[4];
 
-	    if ( (int) attrs[1] > private->min_width )
-	        private->min_width = (int) attrs[1];
-	    if ( (int) attrs[2] > private->min_height )
-	        private->min_height = (int) attrs[2];
+					if (private->state) {
+						ATTR_CONSUME(attrs[0]);
+						break;
+					}
 
-	    fc_attrs[0] = FRAME_MIN_SIZE;
-	    fc_attrs[1] = (Attr_attribute) private->min_width;
-	    fc_attrs[2] = (Attr_attribute) private->min_height;
-	    fc_attrs[3] = (Attr_attribute) NULL;
-	    xv_super_set_avlist(public, FILE_CHOOSER, (Attr_avlist) fc_attrs);
-	    ATTR_CONSUME(attrs[0]);
-	    break;
-	}
+					/*
+					 * Don't want the min size lowered from the calculated
+					 * values.  they may increase it, expecially if they are
+					 * using the extension api.
+					 */
+					if (((int)attrs[1] <= private->min_width)
+							&& ((int)attrs[2] <= private->min_height)
+							) {
+						ATTR_CONSUME(attrs[0]);
+						break;
+					}
 
+					if ((int)attrs[1] > private->min_width)
+						private->min_width = (int)attrs[1];
+					if ((int)attrs[2] > private->min_height)
+						private->min_height = (int)attrs[2];
 
-	case XV_END_CREATE:
-	    fc_end_create( private );
-		xv_set_frame_resizing(public, TRUE, NULL, NULL);
-	    break;
-
-
-	default:
-	    xv_check_bad_attr(FILE_CHOOSER, attrs[0]);
-	    break;
-	} /* switch() */
-    } /* for() */
+					fc_attrs[0] = FRAME_MIN_SIZE;
+					fc_attrs[1] = (Attr_attribute) private->min_width;
+					fc_attrs[2] = (Attr_attribute) private->min_height;
+					fc_attrs[3] = (Attr_attribute) NULL;
+					xv_super_set_avlist(public, FILE_CHOOSER,
+							(Attr_avlist) fc_attrs);
+					ATTR_CONSUME(attrs[0]);
+					break;
+				}
 
 
-    /*
-     * An attribute was set that maps to the File List, but
-     * File Chooser is intercepting.  Must deal with FILE_LIST
-     * AUTO_UPDATE manually.
-     */
-    if ( do_update )
-	xv_set(private->ui.list, FILE_LIST_UPDATE, NULL);
+			case XV_END_CREATE:
+				fc_end_create(private);
+				xv_set_frame_resizing(public, TRUE, NULL, NULL);
+				/* the PANEL_BUTTONS_TO_MENU is needed here, because
+				 * FILE_CHOOSER is a real subclass of FRAME_CMD - and only
+				 * for proper FRAME_CMD the "pane menu" will be created
+				 * automatically.
+				 */      
+				xv_set(private->ui.panel, PANEL_BUTTONS_TO_MENU, NULL);
+				break;
 
-    return XV_OK;
-} /* file_chooser_set() */
+
+			default:
+				xv_check_bad_attr(FILE_CHOOSER, attrs[0]);
+				break;
+		}	/* switch() */
+	}  /* for() */
+
+
+	/*
+	 * An attribute was set that maps to the File List, but
+	 * File Chooser is intercepting.  Must deal with FILE_LIST
+	 * AUTO_UPDATE manually.
+	 */
+	if (do_update)
+		xv_set(private->ui.list, FILE_LIST_UPDATE, NULL);
+
+	return XV_OK;
+}	   /* file_chooser_set() */
 
 
 
