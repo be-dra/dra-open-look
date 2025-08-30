@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.5 2025/03/24 13:35:33 dra Exp $ ";
+static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.6 2025/08/29 17:04:48 dra Exp $ ";
 #endif
 #endif
 
@@ -112,7 +112,8 @@ void xv_ol_default_background(Xv_opaque pan, Event *ev)
 			&xcl);
 }
 
-Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public, Attr_attribute avlist[])
+Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public,
+										Attr_attribute avlist[])
 {
 	Attr_avlist attrs;
 	Frame_cmd_info *frame = FRAME_CMD_PRIVATE(frame_public);
@@ -393,9 +394,7 @@ Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public, Attr_attribute av
 				if (!frame->panel) {
 					char *framename, panelname[200];
 
-					framename =
-							(char *)xv_get(frame_public,
-							XV_INSTANCE_NAME);
+					framename = (char *)xv_get(frame_public, XV_INSTANCE_NAME);
 					sprintf(panelname, "%sCmdPanel",
 							framename ? framename : "FrameCmd");
 					if (frame->panel_bordered) {
