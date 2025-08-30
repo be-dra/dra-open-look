@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.6 2025/03/08 13:01:51 dra Exp $";
+static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.7 2025/08/29 17:05:42 dra Exp $";
 #endif
 #endif
 
@@ -115,6 +115,7 @@ static int generic_init(Xv_object parent, Xv_object object,
 				 * Store instance name in generic object
 				 */
 				generic_set_instance_name(parent, object, (char *)avlist[1]);
+				ATTR_CONSUME(*avlist);
 				/* performance optimization */
 				flag = FALSE;
 				break;
