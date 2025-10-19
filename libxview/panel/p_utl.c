@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.13 2025/04/03 06:21:22 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.14 2025/10/19 08:07:07 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -561,6 +561,8 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 #else
 						size = xv_pf_textwidth(i - line_start,
 								image_font(image), &str[line_start]);
+
+						/* multiline messages seem to be ALWAYS right aligned */
 						baseline_x = rect->r_left + rect->r_width - size.x;
 						panel_paint_text(pw, font_xid, color_index,
 								baseline_x, baseline_y, &str[line_start]);
