@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.4 2025/03/13 16:05:46 dra Exp $";
+static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.5 2025/10/31 20:59:47 dra Exp $";
 #endif
 #endif
 
@@ -531,6 +531,7 @@ static void init_custom_attrs(void)
 
     xv_add_custom_attrs(PANEL_MULTILINE_TEXT, 
     	/* p_mlinetxt.c */
+    	PANEL_DISPLAY_ROWS, "panel_display_rows",
     	PANEL_VALUE_DISPLAY_LENGTH,   "panel_value_display_length",
     	PANEL_VALUE_DISPLAY_WIDTH,   "panel_value_display_width",
     	PANEL_VALUE_STORED_LENGTH,  "panel_value_stored_length",
