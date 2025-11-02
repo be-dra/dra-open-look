@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.c,v 4.4 2025/03/08 13:21:40 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.c,v 4.5 2025/11/01 13:00:16 dra Exp $ ";
 #endif
 #endif
 
@@ -114,7 +114,7 @@ Xv_private void frame_handle_props(Frame frame_public)
 const Xv_pkg          xv_frame_base_pkg = {
     "Frame_base", (Attr_pkg) ATTR_PKG_FRAME,
     sizeof(Xv_frame_base),
-    &xv_frame_class_pkg,
+    FRAME_CLASS,
     frame_base_init,
     frame_base_set_avlist,
     frame_base_get_attr,
