@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.10 2025/07/23 17:02:13 dra Exp $";
+static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.11 2025/11/01 14:56:12 dra Exp $";
 #endif
 #endif
 
@@ -389,8 +389,7 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 				break;
 
 			default:
-				(void)xv_check_bad_attr(&xv_server_pkg,
-						(Attr_attribute) attrs[0]);
+				(void)xv_check_bad_attr(SERVER, (Attr_attribute) attrs[0]);
 				break;
 		}
 	}
