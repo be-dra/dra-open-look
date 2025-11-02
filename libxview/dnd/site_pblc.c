@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)site_pblc.c 1.13 93/06/28 DRA: $Id: site_pblc.c,v 4.4 2025/03/08 13:30:00 dra Exp $ ";
+static char     sccsid[] = "@(#)site_pblc.c 1.13 93/06/28 DRA: $Id: site_pblc.c,v 4.5 2025/11/01 14:53:47 dra Exp $ ";
 #endif
 #endif
 
@@ -239,7 +239,7 @@ static int dnd_site_destroy(Xv_drop_site site_public, Destroy_status state)
 const Xv_pkg		xv_drop_site_item = {
     "DropSite", ATTR_PKG_DND,
     sizeof(Xv_drop_site_struct),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     dnd_site_init,
     dnd_site_set_avlist,
     dnd_site_get_attr,
