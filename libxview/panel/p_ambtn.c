@@ -1,4 +1,4 @@
-char p_ambtn_sccsid[] = "@(#)p_ambtn.c 1.21 93/06/28 DRA: $Id: p_ambtn.c,v 4.3 2025/04/03 06:24:17 dra Exp $";
+char p_ambtn_sccsid[] = "@(#)p_ambtn.c 1.21 93/06/28 DRA: $Id: p_ambtn.c,v 4.4 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -118,7 +118,7 @@ static Xv_opaque panel_ambtn_set_avlist(Panel_item item_public,
 	 */
 	if (*avlist != XV_END_CREATE) {
 		ip->panel->no_redisplay_item = TRUE;
-		result = xv_super_set_avlist(item_public, &xv_panel_ambtn_pkg, avlist);
+		result = xv_super_set_avlist(item_public, PANEL_ABBREV_MENU_BUTTON, avlist);
 		ip->panel->no_redisplay_item = FALSE;
 		if (result != XV_OK)
 			return result;
@@ -405,7 +405,7 @@ const Xv_pkg          xv_panel_ambtn_pkg = {
     "Abbreviated Menu Button Item",
     ATTR_PKG_PANEL,
     sizeof(Xv_panel_ambtn),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     panel_ambtn_init,
     panel_ambtn_set_avlist,
     NULL,
