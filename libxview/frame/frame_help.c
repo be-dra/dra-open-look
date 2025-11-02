@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.3 2025/03/08 13:21:40 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.4 2025/11/01 13:00:16 dra Exp $ ";
 #endif
 #endif
 
@@ -78,7 +78,7 @@ static int frame_help_init(Xv_Window owner, Frame frame_public, Attr_attribute a
 const Xv_pkg          xv_frame_help_pkg = {
     "Frame_help", (Attr_pkg) ATTR_PKG_FRAME,
     sizeof(Xv_frame_help),
-    &xv_frame_class_pkg,
+    FRAME_CLASS,
     frame_help_init,
     frame_help_set_avlist,
     frame_help_get_attr,
