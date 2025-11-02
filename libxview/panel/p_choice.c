@@ -1,4 +1,4 @@
-char p_choice_sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 4.5 2025/04/03 06:21:19 dra Exp $";
+char p_choice_sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 4.6 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -330,7 +330,7 @@ static Xv_opaque choice_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	 * Prevent panel_redisplay_item from being called in item_set_avlist.
 	 */
 	ip->panel->no_redisplay_item = TRUE;
-	result = xv_super_set_avlist(item_public, &xv_panel_choice_pkg, avlist);
+	result = xv_super_set_avlist(item_public, PANEL_CHOICE, avlist);
 	ip->panel->no_redisplay_item = FALSE;
 	if (result != XV_OK)
 		return result;
@@ -2685,7 +2685,7 @@ static void update_value_rect(Item_info *ip)
 const Xv_pkg xv_panel_choice_pkg = {
     "Choice Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_choice),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     choice_init,
     choice_set_avlist,
     choice_get_attr,
