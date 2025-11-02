@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.5 2025/03/08 12:58:04 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.6 2025/11/01 14:57:02 dra Exp $";
 #endif
 #endif
 
@@ -796,7 +796,7 @@ static int window_destroy_win_struct(Xv_Window win_public, Destroy_status status
 const Xv_pkg          xv_window_pkg = {
     "Window", ATTR_PKG_WIN,
     sizeof(Xv_window_struct),
-    &xv_drawable_pkg,
+    XV_DRAWABLE_OBJECT,
     window_init,
     window_set_avlist,
     window_get_attr,
