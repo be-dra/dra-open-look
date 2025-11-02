@@ -1,4 +1,4 @@
-char panel_c_sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.17 2025/04/03 06:20:07 dra Exp $";
+char panel_c_sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.19 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -369,7 +369,7 @@ static int panel_unregister_view(Panel_info *panel, Xv_Window view)
 const Xv_pkg xv_panel_pkg = {
     "Panel", ATTR_PKG_PANEL,
     sizeof(Xv_panel),
-    &xv_window_pkg,
+    WINDOW,
     panel_init,
     panel_set_avlist,
     panel_get_attr,
@@ -379,7 +379,7 @@ const Xv_pkg xv_panel_pkg = {
 const Xv_pkg xv_scrollable_panel_pkg = {
     "Panel", ATTR_PKG_PANEL,
     sizeof(Xv_panel),
-    &xv_canvas_pkg,
+    CANVAS,
     panel_init,
     panel_set_avlist,
     panel_get_attr,
