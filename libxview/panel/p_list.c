@@ -1,4 +1,4 @@
-char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.17 2025/04/03 06:22:58 dra Exp $ DRA: $Id: p_list.c,v 4.17 2025/04/03 06:22:58 dra Exp $";
+char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.18 2025/11/01 14:55:10 dra Exp $ DRA: $Id: p_list.c,v 4.18 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -483,7 +483,7 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 		 * important in case the item rect is being moved).
 		 */
 		ip->panel->no_redisplay_item = TRUE;
-		result = xv_super_set_avlist(panel_list_public, &xv_panel_list_pkg,
+		result = xv_super_set_avlist(panel_list_public, PANEL_LIST,
 				avlist);
 		ip->panel->no_redisplay_item = FALSE;
 		if (result != XV_OK)
@@ -4090,7 +4090,7 @@ static void list_menu_done_proc(Menu menu, Xv_opaque result)
 const Xv_pkg xv_panel_list_pkg = {
     "Panel_list Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_list),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     panel_list_init,
     panel_list_set_avlist,
     panel_list_get_attr,
