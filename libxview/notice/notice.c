@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.15 2025/07/22 16:42:05 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.16 2025/11/01 14:54:36 dra Exp $ ";
 #endif
 #endif
 
@@ -4472,7 +4472,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 
 			default:
 				bad_attr = TRUE;
-				xv_check_bad_attr(&xv_notice_pkg, avlist[0]);
+				xv_check_bad_attr(NOTICE, avlist[0]);
 				break;
 
 		}
@@ -4820,7 +4820,7 @@ static Xv_opaque notice_get_attr(Xv_notice notice_public, int *status, Attr_attr
 			break;
 
 		default:
-			if (xv_check_bad_attr(&xv_notice_pkg, attr) == XV_ERROR) {
+			if (xv_check_bad_attr(NOTICE, attr) == XV_ERROR) {
 				*status = XV_ERROR;
 			}
 			break;
@@ -4920,7 +4920,7 @@ const Xv_pkg xv_notice_pkg = {
     "Notice",
 	ATTR_PKG_NOTICE,
     sizeof(Xv_notice_struct),
-    &xv_generic_pkg,		/* subclass of generic */
+    XV_GENERIC_OBJECT,		/* subclass of generic */
     notice_init_internal,
     notice_set_avlist,
     notice_get_attr,
