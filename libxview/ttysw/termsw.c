@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.20 2025/05/29 08:13:36 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.21 2025/11/01 14:56:47 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -1135,7 +1135,7 @@ const Xv_pkg          xv_termsw_pkg = {
     "Termsw",
     (Attr_pkg) ATTR_PKG_TERMSW,
     sizeof(Xv_termsw),
-    &xv_openwin_pkg,
+    OPENWIN,
     termsw_init,
     termsw_set,
     termsw_get,
@@ -1147,7 +1147,7 @@ const Xv_pkg          xv_termsw_view_pkg = {
     "Termsw_view",
     (Attr_pkg) ATTR_PKG_TERMSW_VIEW,
     sizeof(Xv_termsw_view),
-    &xv_openwin_view_pkg,
+    OPENWIN_VIEW,
     termsw_view_init,
     termsw_view_set,
     termsw_view_get,
