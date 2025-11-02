@@ -1,4 +1,4 @@
-char p_view_sccsid[] = "@(#)p_view.c 20.31 93/06/28 DRA: $Id: p_view.c,v 4.6 2025/04/03 06:23:01 dra Exp $";
+char p_view_sccsid[] = "@(#)p_view.c 20.31 93/06/28 DRA: $Id: p_view.c,v 4.7 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -51,7 +51,7 @@ Pkg_private int panel_view_init(Panel parent, Panel_view view_public,
 const Xv_pkg xv_panel_view_pkg = {
     "PanelView", ATTR_PKG_PANEL,
     sizeof(Xv_panel),
-    &xv_canvas_view_pkg,
+    CANVAS_VIEW,
     panel_view_init,
     NULL,
     NULL,
@@ -90,7 +90,7 @@ static int panel_pw_init(Panel_view view, Xv_window pw,
 const Xv_pkg xv_panel_pw_pkg = {
     "PanelPW", ATTR_PKG_PANEL,
     sizeof(Xv_canvas_pw),
-    &xv_canvas_pw_pkg,
+    CANVAS_PAINT_WINDOW,
     panel_pw_init,
     NULL,
     NULL,
