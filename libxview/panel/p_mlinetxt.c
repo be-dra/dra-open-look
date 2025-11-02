@@ -1,4 +1,4 @@
-char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.9 2025/04/03 06:20:27 dra Exp $";
+char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.10 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -318,8 +318,7 @@ static Xv_opaque panel_mltxt_set_avlist(Panel_item item,
 		 * Prevent panel_redisplay_item from being called in item_set_avlist.
 		 */
 		panel->no_redisplay_item = TRUE;
-		result = xv_super_set_avlist(item, &xv_panel_multiline_text_pkg,
-				avlist);
+		result = xv_super_set_avlist(item, PANEL_MULTILINE_TEXT, avlist);
 		panel->no_redisplay_item = FALSE;
 		if (result != XV_OK)
 			return result;
@@ -1053,7 +1052,7 @@ static int notify_user(Mltxt_info *dp, Event *event)
 const Xv_pkg xv_panel_multiline_text_pkg = {
     "Multiline Text Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_multiline_text),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     panel_mltxt_init,
     panel_mltxt_set_avlist,
     panel_mltxt_get_attr,
