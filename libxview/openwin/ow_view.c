@@ -1,5 +1,5 @@
 #ifndef lint
-char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.9 2025/03/08 12:47:02 dra Exp $ ";
+char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.10 2025/11/01 13:01:24 dra Exp $ ";
 #endif
 
 /*
@@ -2254,7 +2254,7 @@ static const Xv_pkg xv_resize_handle_pkg = {
     "ResizeHandle",
     (Attr_pkg) ATTR_PKG_OPENWIN,
     sizeof(Xv_resize_handle),
-    &xv_window_pkg,
+    WINDOW,
     resize_handle_init,
     resize_handle_set,
     resize_handle_get,
