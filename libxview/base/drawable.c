@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)drawable.c 20.24 93/06/28  DRA: $Id: drawable.c,v 4.3 2025/03/08 13:01:51 dra Exp $";
+static char     sccsid[] = "@(#)drawable.c 20.24 93/06/28  DRA: $Id: drawable.c,v 4.4 2025/11/01 14:57:38 dra Exp $";
 #endif
 #endif
 
@@ -59,8 +59,7 @@ static Xv_opaque drawable_get_attr(Xv_Drawable drawable_public, int *status,
 	return ((Xv_opaque) (info->visual->display));
 
       default:
-	if (xv_check_bad_attr(&xv_drawable_pkg,
-				     (Attr_attribute) attr) == XV_ERROR) {
+	if (xv_check_bad_attr(XV_DRAWABLE_OBJECT, attr) == XV_ERROR) {
 	    *status = XV_ERROR;
 	}
 	return (XV_NULL);
@@ -76,7 +75,7 @@ const Xv_pkg xv_drawable_pkg = {
     "Drawable",
     ATTR_PKG_DRAWABLE,
     sizeof(Xv_drawable_struct),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     drawable_init,
     NULL,			/* No set allowed */
     drawable_get_attr,
