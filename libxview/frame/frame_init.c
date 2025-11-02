@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.12 2025/03/27 14:46:01 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.13 2025/11/01 13:00:16 dra Exp $ ";
 #endif
 #endif
 
@@ -457,10 +457,10 @@ XV_FONT));
 }
 #endif
 
-const Xv_pkg          xv_frame_class_pkg = {
+const Xv_pkg xv_frame_class_pkg = {
     "Frame", (Attr_pkg) ATTR_PKG_FRAME,
     sizeof(Xv_frame_class),
-    &xv_window_pkg,
+    WINDOW,
     frame_init,
     frame_set_avlist,
     frame_get_attr,
