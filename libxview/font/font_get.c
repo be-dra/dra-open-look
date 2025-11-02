@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_get.c 20.31 93/06/28 DRA: RCS $Id: font_get.c,v 4.1 2024/03/28 17:55:25 dra Exp $ ";
+static char     sccsid[] = "@(#)font_get.c 20.31 93/06/28 DRA: RCS $Id: font_get.c,v 4.2 2025/11/01 14:54:12 dra Exp $ ";
 #endif
 #endif
 
@@ -283,7 +283,7 @@ Pkg_private Xv_opaque font_get_attr(Xv_font font_public, int *status, Attr_attri
 #endif /* OW_I18N */
 
       default:
-	if (xv_check_bad_attr(&xv_font_pkg, attr) == XV_ERROR) {
+	if (xv_check_bad_attr(FONT, attr) == XV_ERROR) {
 	    *status = XV_ERROR;
 	}
 	v = (Xv_opaque) 0;
