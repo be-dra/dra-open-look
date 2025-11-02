@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_item.c 1.11 91/04/18 DRA: $Id: sel_item.c,v 4.11 2025/03/08 14:06:27 dra Exp $";
+static char     sccsid[] = "@(#)sel_item.c 1.11 91/04/18 DRA: $Id: sel_item.c,v 4.12 2025/11/01 14:56:02 dra Exp $";
 #endif
 #endif
 
@@ -205,7 +205,7 @@ static Xv_opaque sel_item_get_attr(Selection_item sel_item_public,
 
 			return (Xv_opaque) sel_item->type_name;
 		default:
-			if (xv_check_bad_attr(&xv_sel_item_pkg, attr) == XV_ERROR)
+			if (xv_check_bad_attr(SELECTION_ITEM, attr) == XV_ERROR)
 				*status = XV_ERROR;
 			return (Xv_opaque) 0;
 	}
@@ -245,7 +245,7 @@ const Xv_pkg xv_sel_item_pkg = {
     "Selection Item",
     ATTR_PKG_SELECTION,
     sizeof(Xv_sel_item),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     sel_item_init,
     sel_item_set_avlist,
     sel_item_get_attr,
