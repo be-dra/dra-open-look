@@ -1,4 +1,4 @@
-char p_drop_sccsid[] = "@(#)p_drop.c 1.22 93/06/28 DRA: $Id: p_drop.c,v 4.6 2025/04/03 06:22:09 dra Exp $";
+char p_drop_sccsid[] = "@(#)p_drop.c 1.22 93/06/28 DRA: $Id: p_drop.c,v 4.7 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -165,7 +165,7 @@ static Xv_opaque panel_drop_set_avlist(Panel_item item_public,
 	 */
 	if (*avlist != XV_END_CREATE) {
 		ip->panel->no_redisplay_item = TRUE;
-		result = xv_super_set_avlist(item_public, &xv_panel_drop_pkg, avlist);
+		result = xv_super_set_avlist(item_public, PANEL_DROP_TARGET, avlist);
 		ip->panel->no_redisplay_item = FALSE;
 		if (result != XV_OK)
 			return result;
@@ -584,7 +584,7 @@ const Xv_pkg          xv_panel_drop_pkg = {
     "Drop Target Item",
     ATTR_PKG_PANEL,
     sizeof(Xv_panel_drop),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     panel_drop_init,
     panel_drop_set_avlist,
     panel_drop_get_attr,
