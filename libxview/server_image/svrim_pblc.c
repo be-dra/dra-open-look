@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.4 2025/03/08 14:53:36 dra Exp $ ";
+static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.5 2025/11/01 14:56:22 dra Exp $ ";
 #endif
 #endif
 
@@ -293,7 +293,7 @@ static Xv_opaque server_image_set_internal(Server_image srvim_public,
 	    break;
 	    
 	  default:
-	    (void) xv_check_bad_attr(&xv_server_image_pkg, attrs[0]);
+	    (void) xv_check_bad_attr(SERVER_IMAGE, attrs[0]);
 	    break;
 	}
     }
@@ -468,7 +468,7 @@ const Xv_pkg xv_server_image_pkg = {
     "Server Image",			/* seal -> package name */
     ATTR_PKG_IMAGE,		/* image attr */
     sizeof(Xv_server_image),	/* size of the image data struct */
-    &xv_drawable_pkg,		/* pointer to parent */
+    XV_DRAWABLE_OBJECT,		/* pointer to parent */
     server_image_create_internal,	/* init routine for icon */
     server_image_set_internal,	/* set routine */
     server_image_get_internal,	/* get routine */
