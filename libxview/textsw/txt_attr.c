@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.14 2025/07/24 16:52:31 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.16 2025/11/01 14:56:37 dra Exp $";
 #endif
 
 /*
@@ -912,7 +912,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				break;
 
 			default:
-				(void)xv_check_bad_attr(&xv_textsw_pkg,
+				(void)xv_check_bad_attr(TEXTSW,
 						(Attr_attribute) attrs[0]);
 				break;
 		}
@@ -1624,7 +1624,7 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 		case WIN_TYPE:	/* SunView1.X compatibility */
 			return ((Xv_opaque) TEXTSW_TYPE);
 		default:
-			if (xv_check_bad_attr(&xv_textsw_pkg, (Attr_attribute)attribute) == XV_ERROR) {
+			if (xv_check_bad_attr(TEXTSW, (Attr_attribute)attribute) == XV_ERROR) {
 				*status = XV_ERROR;
 			}
 			return ((Xv_opaque) 0);
@@ -2137,7 +2137,7 @@ static const Xv_pkg xv_textsw_pw_pkg = {
     "Textsw_paint_window",
     (Attr_pkg) ATTR_PKG_TEXTSW_VIEW,
     sizeof(Xv_textsw_pw),
-    &xv_window_pkg,
+    WINDOW,
     textsw_pw_init,
     textsw_pw_set,
     NULL,
