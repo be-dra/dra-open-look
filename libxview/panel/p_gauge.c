@@ -1,4 +1,4 @@
-char p_gauge_sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.5 2025/04/03 06:20:04 dra Exp $";
+char p_gauge_sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.6 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -143,7 +143,7 @@ static Xv_opaque gauge_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	 * Prevent panel_redisplay_item from being called in item_set_avlist.
 	 */
 	ip->panel->no_redisplay_item = TRUE;
-	result = xv_super_set_avlist(item_public, &xv_panel_gauge_pkg, avlist);
+	result = xv_super_set_avlist(item_public, PANEL_GAUGE, avlist);
 	ip->panel->no_redisplay_item = FALSE;
 	if (result != XV_OK)
 	    return result;
@@ -740,7 +740,7 @@ static void update_rects(register Item_info *ip)
 const Xv_pkg          xv_panel_gauge_pkg = {
     "Gauge Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_gauge),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     gauge_init,
     gauge_set_avlist,
     gauge_get_attr,
