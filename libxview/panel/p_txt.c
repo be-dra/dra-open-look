@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.41 2025/03/26 22:11:27 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.42 2025/11/01 14:55:10 dra Exp $";
 #endif
 #endif
 
@@ -510,7 +510,7 @@ static Xv_opaque text_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	 */
 	no_redisplay_item_state = ip->panel->no_redisplay_item;
 	ip->panel->no_redisplay_item = TRUE;
-	result = xv_super_set_avlist(item_public, &xv_panel_text_pkg, avlist);
+	result = xv_super_set_avlist(item_public, PANEL_TEXT, avlist);
 	if (!no_redisplay_item_state)
 		ip->panel->no_redisplay_item = FALSE;
 	if (result != XV_OK)
@@ -7154,7 +7154,7 @@ wslen_in_byte(wcs)
 const Xv_pkg          xv_panel_text_pkg = {
     "Text Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_text),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     text_init,
     text_set_avlist,
     text_get_attr,
