@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.7 2025/03/11 17:22:02 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.8 2025/11/01 14:53:37 dra Exp $";
 #endif
 #endif
 
@@ -567,7 +567,7 @@ const Xv_pkg          xv_cursor_pkg = {
     "Cursor",			/* seal -> package name */
     ATTR_PKG_CURSOR,		/* cursor attr */
     sizeof(Xv_cursor_struct),	/* size of the cursor data struct */
-    &xv_generic_pkg,		/* pointer to parent */
+    XV_GENERIC_OBJECT,		/* pointer to parent */
     cursor_create_internal,	/* init routine for cursor */
     cursor_set_internal,
     cursor_get_internal,
