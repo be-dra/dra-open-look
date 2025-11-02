@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.4 2025/03/17 19:33:56 dra Exp $";
+static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.5 2025/11/01 13:02:52 dra Exp $";
 #endif
 #endif
 
@@ -734,7 +734,7 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 					XV_SERVER_FROM_WINDOW(win_public), XV_LC_TIME_FORMAT);
 
 		default:
-			if (xv_check_bad_attr(&xv_window_pkg, attr) == XV_ERROR) {
+			if (xv_check_bad_attr(WINDOW, attr) == XV_ERROR) {
 				*status = XV_ERROR;
 			}
 			break;
