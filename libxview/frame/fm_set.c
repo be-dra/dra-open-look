@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.5 2025/07/23 16:48:22 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.6 2025/11/01 13:00:16 dra Exp $ ";
 #endif
 #endif
 
@@ -1358,7 +1358,7 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public, Attr_attribute *avlis
 	    }
 	    
 	  default:
-	    xv_check_bad_attr(&xv_frame_class_pkg, attrs[0]);
+	    xv_check_bad_attr(FRAME_CLASS, attrs[0]);
 	    break;
 	}
     }
