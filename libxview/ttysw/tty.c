@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.15 2025/04/04 16:22:17 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.16 2025/11/01 14:56:47 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -577,7 +577,7 @@ const Xv_pkg          xv_tty_pkg = {
     "Tty",
     (Attr_pkg) ATTR_PKG_TTY,
     sizeof(Xv_tty),
-    &xv_openwin_pkg,
+    OPENWIN,
     tty_folio_init,
     ttysw_folio_set,
     ttysw_folio_get,
@@ -589,7 +589,7 @@ const Xv_pkg          xv_tty_view_pkg = {
     "Tty_view",
     (Attr_pkg) ATTR_PKG_TTY_VIEW,
     sizeof(Xv_tty_view),
-    &xv_openwin_view_pkg,
+    OPENWIN_VIEW,
     tty_view_init,
     ttysw_view_set,
     ttysw_view_get,
