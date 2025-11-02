@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.9 2025/03/08 13:30:00 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.10 2025/11/01 14:53:47 dra Exp $ ";
 #endif
 #endif
 
@@ -127,7 +127,7 @@ static Xv_opaque dnd_set_avlist(Dnd dnd_public, Attr_attribute *avlist)
 			case XV_END_CREATE:
 				break;
 			default:
-				(void)xv_check_bad_attr(&xv_dnd_pkg, attrs[0]);
+				(void)xv_check_bad_attr(DRAGDROP, attrs[0]);
 				break;
 		}
 	}
@@ -167,7 +167,7 @@ static Xv_opaque dnd_get_attr(Dnd dnd_public, int *status,
 			value = (Xv_opaque) & dnd->timeout;
 			break;
 		default:
-			if (xv_check_bad_attr(&xv_dnd_pkg, attr) == XV_ERROR)
+			if (xv_check_bad_attr(DRAGDROP, attr) == XV_ERROR)
 				*status = XV_ERROR;
 			break;
 	}
@@ -209,7 +209,7 @@ static int dnd_destroy(Dnd dnd_public, Destroy_status status)
 const Xv_pkg xv_dnd_pkg = {
     "Drag & Drop", ATTR_PKG_DND,
     sizeof(Xv_dnd_struct),
-    &xv_sel_owner_pkg,
+    SELECTION_OWNER,
     dnd_init,
     dnd_set_avlist,
     dnd_get_attr,
