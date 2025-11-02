@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_btn.c 20.110 93/06/28 DRA: $Id: p_btn.c,v 4.6 2025/03/08 13:08:26 dra Exp $";
+static char     sccsid[] = "@(#)p_btn.c 20.110 93/06/28 DRA: $Id: p_btn.c,v 4.7 2025/11/01 14:55:10 dra Exp $";
 #endif
 #endif
 
@@ -785,7 +785,7 @@ static void take_down_cmd_frame(Panel panel_public)
 const Xv_pkg          xv_panel_button_pkg = {
     "Button Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_button),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     panel_button_init,
     NULL,
     NULL,
