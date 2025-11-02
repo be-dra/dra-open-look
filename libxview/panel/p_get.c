@@ -1,4 +1,4 @@
-char p_get_sccsid[] = "@(#)p_get.c 20.38 93/06/28 DRA: $Id: p_get.c,v 4.2 2025/04/03 06:21:27 dra Exp $";
+char p_get_sccsid[] = "@(#)p_get.c 20.38 93/06/28 DRA: $Id: p_get.c,v 4.3 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -144,7 +144,7 @@ Pkg_private Xv_opaque panel_get_attr(Panel panel_public, int *status,
 			return (Xv_opaque) PANEL_TYPE;
 
 		default:
-			xv_check_bad_attr(&xv_panel_pkg, attr);
+			xv_check_bad_attr(PANEL, attr);
 			*status = XV_ERROR;
 			return (Xv_opaque) 0;
 
