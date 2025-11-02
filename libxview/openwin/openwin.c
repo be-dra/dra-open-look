@@ -1,5 +1,5 @@
 #ifndef lint
-char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.6 2025/03/08 12:47:02 dra Exp $ ";
+char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.7 2025/11/01 13:01:24 dra Exp $ ";
 #endif
 
 /*
@@ -305,7 +305,7 @@ const Xv_pkg xv_openwin_pkg = {
     "Open Window",		/* seal -> package name */
     (Attr_pkg) ATTR_PKG_OPENWIN,/* openwin attr */
     sizeof(Xv_openwin),		/* size of the openwin data struct */
-    &xv_window_pkg,		/* pointer to parent */
+    WINDOW,		/* pointer to parent */
     openwin_init,		/* init routine for openwin */
     openwin_set,		/* set routine */
     openwin_get,		/* get routine */
