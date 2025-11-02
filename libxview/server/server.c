@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.33 2025/06/19 13:17:24 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.34 2025/11/01 14:56:12 dra Exp $";
 #endif
 #endif
 
@@ -2343,7 +2343,7 @@ const Xv_pkg xv_server_pkg = {
     "Server",
     ATTR_PKG_SERVER,
     sizeof(Xv_server_struct),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     server_init,
     server_set_avlist,
     server_get_attr,
