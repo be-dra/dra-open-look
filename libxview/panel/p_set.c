@@ -1,4 +1,4 @@
-char p_set_sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.10 2025/04/03 06:21:24 dra Exp $";
+char p_set_sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.11 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -389,7 +389,7 @@ Pkg_private Xv_opaque panel_set_avlist(Panel panel_public, Attr_avlist avlist)
 			break;
 
 		default:
-			xv_check_bad_attr(&xv_panel_pkg, *attrs);
+			xv_check_bad_attr(PANEL, *attrs);
 			break;
 	}
 
