@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_get.c 20.69 93/06/28 DRA: $Id: svr_get.c,v 4.9 2025/02/05 23:31:32 dra Exp $";
+static char     sccsid[] = "@(#)svr_get.c 20.69 93/06/28 DRA: $Id: svr_get.c,v 4.10 2025/11/01 14:56:12 dra Exp $";
 #endif
 #endif
 
@@ -556,8 +556,7 @@ Pkg_private Xv_opaque server_get_attr(Xv_Server server_public, int *status, Attr
 			break;
 
 		default:
-			if (xv_check_bad_attr(&xv_server_pkg,
-							(Attr_attribute) attr) == XV_ERROR)
+			if (xv_check_bad_attr(SERVER, (Attr_attribute) attr) == XV_ERROR)
 				goto Error;
 	}
   Error:
