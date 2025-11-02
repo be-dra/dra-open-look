@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)item_get.c 20.52 93/06/28 Copyr 1984 Sun Micro DRA: $Id: item_get.c,v 4.1 2024/03/28 09:12:09 dra Exp $";
+static char     sccsid[] = "@(#)item_get.c 20.52 93/06/28 Copyr 1984 Sun Micro DRA: $Id: item_get.c,v 4.2 2025/11/01 14:55:10 dra Exp $";
 #endif
 #endif
 
@@ -254,7 +254,7 @@ Pkg_private Xv_opaque item_get_attr(Panel_item item_public, int *status, Attr_at
 			return (Xv_opaque)0;
 
 		default:
-			if (xv_check_bad_attr(&xv_panel_item_pkg, which_attr) == XV_ERROR) {
+			if (xv_check_bad_attr(PANEL_ITEM, which_attr) == XV_ERROR) {
 				*status = XV_ERROR;
 			}
 			return (Xv_opaque) NULL;
