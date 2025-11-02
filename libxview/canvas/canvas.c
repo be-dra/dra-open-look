@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.7 2025/06/04 19:49:16 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.9 2025/11/01 14:53:14 dra Exp $ ";
 #endif
 #endif
 
@@ -1793,7 +1793,7 @@ static Xv_opaque canvas_set_avlist(Canvas canvas_public, Attr_avlist avlist)
 				break;
 
 			default:
-				xv_check_bad_attr(&xv_canvas_pkg, attr);
+				xv_check_bad_attr(CANVAS, attr);
 				break;
 		}
 	}
@@ -1922,7 +1922,7 @@ static Xv_opaque canvas_get_attr(Canvas canvas_public, int *stat,
 			return (Xv_opaque) CANVAS_PAINT_WINDOW;
 
 		default:
-			xv_check_bad_attr(&xv_canvas_pkg, attr);
+			xv_check_bad_attr(CANVAS, attr);
 			*stat = XV_ERROR;
 			return (Xv_opaque) 0;
 	}
@@ -2046,7 +2046,7 @@ static Xv_opaque canvas_view_set(Canvas_view viewpub, Attr_avlist avlist)
 						NULL);
 				break;
 			default:
-				xv_check_bad_attr(&xv_canvas_view_pkg, attr);
+				xv_check_bad_attr(CANVAS_VIEW, attr);
 				break;
 		}
 	}
@@ -2074,7 +2074,7 @@ static Xv_opaque canvas_view_get(Canvas_view view_public, int *stat, Attr_attrib
 #endif /*OW_I18N */
 
 		default:
-			xv_check_bad_attr(&xv_canvas_view_pkg, attr);
+			xv_check_bad_attr(CANVAS_VIEW, attr);
 			*stat = XV_ERROR;
 			return (Xv_opaque) 0;
 	}
@@ -2108,7 +2108,7 @@ static Xv_opaque canvas_paint_get(Canvas_paint_window paint_public, int *stat,
 #endif /*OW_I18N */
 
 		default:
-			xv_check_bad_attr(&xv_canvas_pw_pkg, attr);
+			xv_check_bad_attr(CANVAS_PAINT_WINDOW, attr);
 			*stat = XV_ERROR;
 			return (Xv_opaque) 0;
 	}
@@ -2451,7 +2451,7 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public,
 
 
 			default:
-				xv_check_bad_attr(&xv_canvas_pw_pkg, attr);
+				xv_check_bad_attr(CANVAS_PAINT_WINDOW, attr);
 				break;
 		}
 	}
@@ -2464,7 +2464,7 @@ const Xv_pkg          xv_canvas_pw_pkg = {
     "Canvas paint window",
     (Attr_pkg) ATTR_PKG_CANVAS_PAINT_WINDOW,
     sizeof(Xv_canvas_pw),
-    &xv_window_pkg,
+    WINDOW,
     canvas_paint_init,
     canvas_paint_set,
     canvas_paint_get,
@@ -2475,7 +2475,7 @@ const Xv_pkg          xv_canvas_pkg = {
     "Canvas",
     (Attr_pkg) ATTR_PKG_CANVAS,
     sizeof(Xv_canvas),
-    &xv_openwin_pkg,
+    OPENWIN,
     canvas_init,
     canvas_set_avlist,
     canvas_get_attr,
@@ -2486,7 +2486,7 @@ const Xv_pkg          xv_canvas_view_pkg = {
     "Canvas view",
     (Attr_pkg) ATTR_PKG_CANVAS_VIEW,
     sizeof(Xv_canvas_view),
-    &xv_openwin_view_pkg,
+    OPENWIN_VIEW,
     canvas_view_init,
     canvas_view_set,
     canvas_view_get,
