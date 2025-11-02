@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.8 2025/03/17 19:37:05 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.9 2025/11/01 14:54:12 dra Exp $ ";
 #endif
 #endif
 
@@ -4475,7 +4475,7 @@ static char *font_strip_name(char *str, int	pos, int delim)
 const Xv_pkg          xv_font_pkg = {
     "Font", ATTR_PKG_FONT,
     sizeof(Xv_font_struct),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     font_init,
     font_set_avlist,
     font_get_attr,
