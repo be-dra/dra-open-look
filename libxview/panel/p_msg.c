@@ -1,4 +1,4 @@
-char p_msg_sccsid[] = "@(#)p_msg.c 20.30 93/06/28 Copyr 1987 Sun Micro DRA: $Id: p_msg.c,v 4.3 2025/04/03 06:22:12 dra Exp $";
+char p_msg_sccsid[] = "@(#)p_msg.c 20.30 93/06/28 Copyr 1987 Sun Micro DRA: $Id: p_msg.c,v 4.4 2025/11/01 14:55:10 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -67,7 +67,7 @@ static void msg_paint(Panel_item item_public, Panel_setting u)
 const Xv_pkg xv_panel_message_pkg = {
     "Message Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_message),
-    &xv_panel_item_pkg,
+    PANEL_ITEM,
     panel_message_init,
     NULL,
     NULL,
