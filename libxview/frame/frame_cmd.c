@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.4 2025/03/19 09:32:14 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.5 2025/11/01 13:00:16 dra Exp $ ";
 #endif
 #endif
 
@@ -154,7 +154,7 @@ Pkg_private Notify_value frame_cmd_input(Frame frame_public, Notify_event ev,
 const Xv_pkg xv_frame_cmd_pkg = {
     "Frame_cmd", ATTR_PKG_FRAME,
     sizeof(Xv_frame_cmd),
-    &xv_frame_class_pkg,
+    FRAME_CLASS,
     frame_cmd_init,
     frame_cmd_set_avlist,
     frame_cmd_get_attr,
