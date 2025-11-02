@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cms_pblc.c 1.21 91/03/21 DRA: RCS $Id: cms_pblc.c,v 2.7 2025/03/15 12:50:29 dra Exp $";
+static char     sccsid[] = "@(#)cms_pblc.c 1.21 91/03/21 DRA: RCS $Id: cms_pblc.c,v 2.8 2025/11/01 14:53:26 dra Exp $";
 #endif
 #endif
 
@@ -294,7 +294,7 @@ static Xv_opaque cms_set_avlist(Cms cms_public, Attr_attribute avlist[])
 			break;
 
 		default:
-			xv_check_bad_attr(&xv_cms_pkg, attrs[0]);
+			xv_check_bad_attr(CMS, attrs[0]);
 			break;
 	}
 
@@ -459,7 +459,7 @@ static Xv_opaque cms_get_attr(Cms cms_public, int *status,
 
 		default:
 			value = XV_NULL;
-			if (xv_check_bad_attr(&xv_cms_pkg, attr) == XV_ERROR) {
+			if (xv_check_bad_attr(CMS, attr) == XV_ERROR) {
 				*status = XV_ERROR;
 			}
 	}
@@ -570,7 +570,7 @@ static int cms_destroy(Cms cms_public, Destroy_status status)
 const Xv_pkg          xv_cms_pkg = {
     "Color", ATTR_PKG_CMS,
     sizeof(Xv_cms_struct),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     cms_init,
     cms_set_avlist,
     cms_get_attr,
