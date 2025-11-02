@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.6 2025/03/16 14:40:34 dra Exp $";
+static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.7 2025/11/01 13:02:52 dra Exp $";
 #endif
 #endif
 
@@ -1120,7 +1120,7 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 
 		default:
 			if (attrs[0])
-				xv_check_bad_attr(&xv_window_pkg, attrs[0]);
+				xv_check_bad_attr(WINDOW, attrs[0]);
 			break;
 	}
 
