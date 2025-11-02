@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon_obj.c 20.33 90/02/26 DRA: RCS $Id: icon_obj.c,v 4.5 2025/03/08 13:46:13 dra Exp $ ";
+static char     sccsid[] = "@(#)icon_obj.c 20.33 90/02/26 DRA: RCS $Id: icon_obj.c,v 4.6 2025/11/01 13:00:55 dra Exp $ ";
 #endif
 #endif
 
@@ -496,7 +496,7 @@ const Xv_pkg xv_icon_pkg = {
     "Icon",			/* seal -> package name */
     (Attr_pkg) ATTR_PKG_ICON,	/* icon attr */
     sizeof(Xv_icon),		/* size of the icon data struct */
-    &xv_window_pkg,		/* pointer to parent */
+    WINDOW,		/* pointer to parent */
     icon_init,			/* init routine for icon */
     icon_set_internal,		/* set routine */
     icon_get_internal,		/* get routine */
