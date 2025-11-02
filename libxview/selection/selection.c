@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)selection.c 1.11 93/06/28 DRA: $Id: selection.c,v 4.3 2025/03/08 14:06:27 dra Exp $";
+static char     sccsid[] = "@(#)selection.c 1.11 93/06/28 DRA: $Id: selection.c,v 4.4 2025/11/01 14:56:02 dra Exp $";
 #endif
 #endif
 
@@ -105,7 +105,7 @@ static Xv_opaque sel_get_attr(Selection sel_public, int *status, Attr_attribute 
       case SEL_TIMEOUT_VALUE:
 	return (Xv_opaque) sel->timeout;
       default:
-	if ( xv_check_bad_attr( &xv_sel_pkg, attr ) == XV_ERROR ) 
+	if ( xv_check_bad_attr( SELECTION, attr ) == XV_ERROR ) 
 	    *status = XV_ERROR;
 	return (Xv_opaque) 0;
     }
@@ -130,7 +130,7 @@ const Xv_pkg xv_sel_pkg = {
     "Selection",
     ATTR_PKG_SELECTION,
     sizeof(Xv_sel),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     sel_init,
     sel_set_avlist,
     sel_get_attr,
