@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_set.c 20.28 93/06/28 DRA: RCS $Id: font_set.c,v 4.1 2024/03/28 17:55:25 dra Exp $ ";
+static char     sccsid[] = "@(#)font_set.c 20.28 93/06/28 DRA: RCS $Id: font_set.c,v 4.2 2025/11/01 14:54:12 dra Exp $ ";
 #endif
 #endif
 
@@ -62,7 +62,7 @@ character painting errors may occur."), font->name);
 		break;
 	    }
 	  default:
-	    xv_check_bad_attr(&xv_font_pkg, attrs[0]);
+	    xv_check_bad_attr(FONT, attrs[0]);
 	    /* BUG: should we return attrs[0] here? */
 	    break;
 
