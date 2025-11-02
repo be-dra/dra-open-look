@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.16 2025/03/10 21:02:04 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.17 2025/11/01 14:55:28 dra Exp $ ";
 #endif
 #endif
 
@@ -737,7 +737,7 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
 			break;
 
 		default:
-			if (xv_check_bad_attr(&xv_screen_pkg, attr) == XV_ERROR) {
+			if (xv_check_bad_attr(SCREEN, attr) == XV_ERROR) {
 				*status = XV_ERROR;
 			}
 	}
@@ -1127,7 +1127,7 @@ static Xv_opaque screen_set_avlist(Xv_Screen screen_public, Attr_attribute avlis
     for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 	switch (attrs[0]) {
 	    default:
-		xv_check_bad_attr(&xv_screen_pkg, attrs[0]);
+		xv_check_bad_attr(SCREEN, attrs[0]);
 		break;
 	}
     }
@@ -1244,7 +1244,7 @@ static void screen_input(Xv_server server, Display *dpy, XPropertyEvent	*xev,
 const Xv_pkg xv_screen_pkg = {
     "Screen", ATTR_PKG_SCREEN,
     sizeof(Xv_screen_struct),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     screen_init,
     screen_set_avlist,
     screen_get_attr,
