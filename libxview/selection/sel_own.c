@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.29 2025/07/22 17:11:05 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.30 2025/11/01 14:56:02 dra Exp $";
 #endif
 #endif
 
@@ -75,7 +75,7 @@ static Xv_opaque sel_owner_set_avlist(Selection_owner sel_owner_public,
 	 * to be changed to a more efficient way of processing the object parent
 	 * attrs before the object itself.
 	 */
-	result = xv_super_set_avlist(sel_owner_public, &xv_sel_owner_pkg, avlist);
+	result = xv_super_set_avlist(sel_owner_public, SELECTION_OWNER, avlist);
 	if (result != XV_OK)
 		return result;
 
@@ -1264,7 +1264,7 @@ const Xv_pkg xv_sel_owner_pkg = {
     "Selection Owner",
     ATTR_PKG_SELECTION,
     sizeof(Xv_sel_owner),
-    &xv_sel_pkg,
+    SELECTION,
     sel_owner_init,
     sel_owner_set_avlist,
     sel_owner_get_attr,
