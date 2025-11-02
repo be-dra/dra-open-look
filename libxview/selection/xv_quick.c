@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.6 2025/03/08 14:06:27 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.7 2025/11/01 14:56:02 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -612,7 +612,7 @@ const Xv_pkg xv_quick_owner_pkg = {
     "Quick Duplicate",
 	ATTR_PKG_QUICK,
     sizeof(Xv_quick_owner),
-    &xv_sel_owner_pkg,
+    SELECTION_OWNER,
     quick_init,
     quick_set,
     quick_get,
