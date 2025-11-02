@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)item.c 20.56 93/06/28 DRA: $Id: item.c,v 4.4 2025/03/08 13:08:26 dra Exp $";
+static char     sccsid[] = "@(#)item.c 20.56 93/06/28 DRA: $Id: item.c,v 4.5 2025/11/01 14:55:10 dra Exp $";
 #endif
 #endif
 
@@ -149,7 +149,7 @@ static void item_free(register Item_info *ip)
 const Xv_pkg xv_panel_item_pkg = {
     "Item", ATTR_PKG_PANEL,
     sizeof(Xv_item),
-    &xv_generic_pkg,
+    XV_GENERIC_OBJECT,
     item_init,
     item_set_avlist,
     item_get_attr,
