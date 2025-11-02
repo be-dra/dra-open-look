@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.6 2025/08/29 17:04:48 dra Exp $ ";
+static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.7 2025/11/01 14:52:46 dra Exp $ ";
 #endif
 #endif
 
@@ -798,7 +798,7 @@ static const Xv_pkg xv_soon_pkg = {
 	"SoonObject",
 	ATTR_PKG_HELP,
 	sizeof(Xv_soon_struct),
-	&xv_generic_pkg,		/* subclass of generic */
+	XV_GENERIC_OBJECT,
 	NULL,
 	soon_set_avlist,
 	NULL,
