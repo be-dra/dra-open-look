@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_event_c_sccsid[] = "@(#)txt_event.c 20.63 93/06/28 DRA: $Id: txt_event.c,v 4.6 2025/03/08 13:15:23 dra Exp $";
+char     txt_event_c_sccsid[] = "@(#)txt_event.c 20.63 93/06/28 DRA: $Id: txt_event.c,v 4.7 2025/11/01 13:02:31 dra Exp $";
 #endif
 
 /*
@@ -98,7 +98,7 @@ const Xv_pkg          xv_termsw_view_pkg = {
     "Termsw_view",
     (Attr_pkg) ATTR_PKG_TERMSW_VIEW,
     sizeof(Xv_termsw_view),
-    &xv_window_pkg,               <<====  Das ist die Superklasse
+    WINDOW,               <<====  Das ist die Superklasse
     termsw_view_init,
 	...
 };
