@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.12 2025/07/26 16:07:49 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.13 2025/11/02 13:57:31 dra Exp $";
 #endif
 #endif
 /*
@@ -878,13 +878,9 @@ Xv_private int xv_write_external_data(Xv_object window, char *key, int format,
 /*
  * Send message to addresse
  */
-Xv_public int xv_send_message(window, addresse, msg_type, format, data, len)
-    Xv_object       window;
-    Xv_opaque       addresse;
-    char           *msg_type;
-    int             format;	/* 8, 16, or 32 */
-    Xv_opaque      *data;
-    int             len;	/* Number of bytes in data */
+Xv_public int xv_send_message(Xv_object window, Xv_opaque addresse,
+					char *msg_type, int format, Xv_opaque *data, int len)
+	/* len: Number of bytes in data */
 {
 	Xv_server srv = XV_SERVER_FROM_WINDOW(window);
 	Display *display = XV_DISPLAY_FROM_WINDOW(window);
