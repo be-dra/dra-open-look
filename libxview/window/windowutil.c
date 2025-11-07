@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.13 2025/11/02 13:57:31 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.14 2025/11/06 18:01:28 dra Exp $";
 #endif
 #endif
 /*
@@ -196,12 +196,7 @@ Pkg_private Notify_value window_default_event_func(Xv_Window win_public, Event *
 				/* we could use event_window(event)... */
 				req_event = (XSelectionRequestEvent *) event->ie_xevent;
 
-				if (!xv_sel_handle_selection_request(req_event)) {
-					/* I really want to get rid of the old sel svc -
-					 * why does the young sel_pkg return FALSE here ???
-					 */
-					selection_agent_selectionrequest(server_public, req_event);
-				}
+				xv_sel_handle_selection_request(req_event);
 				break;
 			}
 
