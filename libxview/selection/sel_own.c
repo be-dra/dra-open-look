@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.30 2025/11/01 14:56:02 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.31 2025/11/06 18:01:57 dra Exp $";
 #endif
 #endif
 
@@ -385,16 +385,15 @@ static void SetupReplyEvent(XSelectionEvent *replyEvent,
     replyEvent->time = reqEvent->time;
 }
 
-static int do_refuse(XSelectionEvent *reply, Sel_owner_info *owner)
+static void do_refuse(XSelectionEvent *reply, Sel_owner_info *owner)
 {
 	reply->property = None;
 	XSendEvent(reply->display, reply->requestor, False, 0L, (XEvent *)reply);
 	if (owner) SelClean(owner);
-	return TRUE;
 }
 
 /* we do no longer return FALSE here, the old sel svc is about to die */
-Xv_private int xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent)
+Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent)
 {
 	Sel_owner_info *owner;
 	Requestor *req;
@@ -405,33 +404,43 @@ Xv_private int xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent)
 
 	SetupReplyEvent(&replyEvent, reqEvent);
 
-	if (! owner) return do_refuse(&replyEvent, owner);
+	if (! owner) {
+		do_refuse(&replyEvent, owner);
+		return;
+	}
 
 	/* Is this event for this window? */
-	if (owner->xid != reqEvent->owner)
-		return do_refuse(&replyEvent, owner);
+	if (owner->xid != reqEvent->owner) {
+		do_refuse(&replyEvent, owner);
+		return;
+	}
 
 	/*
 	 * Compare the timestamp with the period we owned the selection, if the
 	 * time is outside, refuse the SelectionRequest.
 	 */
 	if ((owner->time >= reqEvent->time) && (reqEvent->time != CurrentTime)) {
-		return do_refuse(&replyEvent, owner);
+		do_refuse(&replyEvent, owner);
+		return;
 	}
 
 	/* Is this event for the selection that we register for? */
-	if (owner->selection != reqEvent->selection)
-		return do_refuse(&replyEvent, owner);
+	if (owner->selection != reqEvent->selection) {
+		do_refuse(&replyEvent, owner);
+		return;
+	}
 
 	if (reqEvent->property == None) {
 		/* An obsolete client; use the "target" atom as the property name for
 		 * the reply.
 		 */
-		if (reqEvent->target == owner->atomList->multiple)
+		if (reqEvent->target == owner->atomList->multiple) {
 			/* The MULTIPLE target atom is valid only when a property is
 			 * specified.
 			 */
-			return do_refuse(&replyEvent, owner);
+			do_refuse(&replyEvent, owner);
+			return;
+		}
 		else
 			replyEvent.property = reqEvent->target;
 	}
@@ -467,7 +476,7 @@ Xv_private int xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent)
 			 */
 			XFree((char *)owner->req);
 			owner->req = NULL;
-			return (TRUE);
+			return;
 		}
 
 	/*
@@ -480,7 +489,6 @@ Xv_private int xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent)
 	OwnerProcessIncr(owner);
 
 	SelClean(owner);
-	return (TRUE);
 }
 
 
