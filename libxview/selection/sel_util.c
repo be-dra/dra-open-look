@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.24 2025/02/10 21:54:27 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.25 2025/11/06 18:02:05 dra Exp $";
 #endif
 #endif
 
@@ -33,10 +33,6 @@ static int SelFindReply(Sel_reply_info *r1, Sel_reply_info *r2);
 static Sel_req_list *SelMatchReqTbl( Sel_reply_info  *reply);
 
 XContext  selCtx;
-
-/* instead of including <xview_private/seln_impl.h> */
-Xv_private void selection_agent_selectionrequest(Xv_Server server,
-									XSelectionRequestEvent *req_event);
 
 Pkg_private void xv_sel_cvt_xtime_to_timeval(Time  XTime, struct timeval *tv)
 {
@@ -292,27 +288,7 @@ Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
 	if ((xevent->type & 0177) == SelectionRequest) {
 		XSelectionRequestEvent *reqEvent = (XSelectionRequestEvent *) xevent;
 
-		if (!xv_sel_handle_selection_request(reqEvent)) {
-			Xv_window xvWin;
-			Xv_Server server;
-
-			xvWin = win_data(display, reqEvent->requestor);
-
-			if (xvWin == 0)
-				server = xv_default_server;
-			else
-				server = XV_SERVER_FROM_WINDOW(xvWin);
-
-			/* I want to know exactly what is happening here: */
-			fprintf(stderr, "Received a sel req %s:%s ...\n",
-					(char *)xv_get(server,SERVER_ATOM_NAME,reqEvent->selection),
-					(char *)xv_get(server, SERVER_ATOM_NAME, reqEvent->target));
-			/*
-			 * Send this request to the old selection package.
-			 */
-			selection_agent_selectionrequest(server, reqEvent);
-		}
-
+		xv_sel_handle_selection_request(reqEvent);
 	}
 
 	return (FALSE);
@@ -359,23 +335,7 @@ Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent,
 				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
 												*reply.sri_target));
 
-		if (!xv_sel_handle_selection_request(reqEvent)) {
-			Xv_window xvWin;
-			Xv_Server server;
-
-			xvWin = win_data(display, reqEvent->requestor);
-
-			if (xvWin == 0)
-				server = xv_default_server;
-			else
-				server = XV_SERVER_FROM_WINDOW(xvWin);
-
-			/*
-			 * Send this request to the old selection package.
-			 */
-			selection_agent_selectionrequest(server, reqEvent);
-		}
-
+		xv_sel_handle_selection_request(reqEvent);
 	}
 
 	return (FALSE);
