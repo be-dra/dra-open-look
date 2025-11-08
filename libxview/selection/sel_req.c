@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.35 2025/11/01 14:56:02 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.36 2025/11/07 16:10:39 dra Exp $";
 #endif
 #endif
 
@@ -941,12 +941,6 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		return FALSE;
 	}
 
-	/* DRA CHANGED:
-	 * incredible idiots out there: firefox replies to (for example
-	 * _SUN_SELN_FIRST) targets it does reject with a property NONE
-	 * (YES, THESE IDIOTS REALLY CALL XInternAtom(dpy, "NONE"))
-	 * and type 0 and format 0.... you shouldn't believe it.
-	 */
 	if (type == 0 && format == 0) {
 		XFree(propValue);
         xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
