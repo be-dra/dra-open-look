@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.7 2025/11/01 14:56:02 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.8 2025/11/13 08:23:46 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -37,10 +37,9 @@ char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.7 2025/11/
 #include <xview/xview.h>
 #include <xview/defaults.h>
 #include <xview/font.h>
-#include <xview_private/draw_impl.h>
+#include <xview/cms.h>
 #include <xview_private/svr_impl.h>
 #include <xview_private/xv_quick.h>
-#include <xview_private/i18n_impl.h>
 
 typedef void (*remove_underline_t)(Quick_owner);
 
