@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.38 2025/06/12 17:05:34 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.39 2025/12/09 19:55:05 dra Exp $";
 #endif
 #endif
 
@@ -2589,6 +2589,31 @@ static int process_clientmessage_events(Xv_object window,
 						event_set_action(event, ACTION_DISMISS);
 					break;
 				case SERVER_WM_TAKE_FOCUS_TYPE:
+					/* In former times, this might have been a problem in the
+					 * following context: assume the user works in e.g. a text
+					 * editor for quite some time: keystrokes, mouse clicks -
+					 * all within the application. The window manager has
+					 * not been involved for that time - and so has a very
+					 * old last X11 timestamp. Now the user clicks SELECT on
+					 * a "Properties..." button to pop up a property window.
+					 * The window manager sees the window mapping, reads the
+					 * properties of this window (like _OL_WIN_ATTR) and
+					 * decides that it has to 
+					 *     1) warp the pointer to the apply button
+					 *     2) transfer the focus to this window.
+					 * According to the focus model, a WM_PROTOCOLS
+					 * message will be sent to the client with
+					 * data.l[0] = WM_TAKE_FOCUS and
+					 * data.l[1] = olwm's very old timestamp
+					 * And this old timestamp was used in XSetInputFocus
+					 * which failed - and therefore, sometimes the focus
+					 * was not transferred to the popup window.
+					 *
+					 * In the meantime, the function server_set_timestamp
+					 * "avoids a backward running clock ..."
+					 *
+					 * No failed focus tranfers have been observed since then.
+					 */
 					server_set_timestamp(server_public, &event->ie_time,
 								 (unsigned long)clientmessage->data.l[1]);
 					event_set_action(event, ACTION_TAKE_FOCUS);
