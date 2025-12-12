@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.25 2025/02/04 19:35:53 dra Exp $";
+char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.26 2025/12/11 18:25:58 dra Exp $";
 #endif
 
 /*
@@ -350,6 +350,8 @@ static void set_local_selected_text(Textsw_private priv, int indx, unsigned typ)
 		xv_set(priv->sel_item[indx],
 				SEL_DATA, XV_NULL,
 				SEL_LENGTH, 0,
+				XV_KEY_DATA, TEXTSW_LOWER_CONTEXT, TEXTSW_INFINITY,
+				XV_KEY_DATA, TEXTSW_UPPER_CONTEXT, TEXTSW_INFINITY,
 				NULL);
 		return;
 	}
@@ -357,6 +359,8 @@ static void set_local_selected_text(Textsw_private priv, int indx, unsigned typ)
 	xv_set(priv->sel_item[indx],
 			SEL_DATA, mybuf,
 			SEL_LENGTH, buf_len,
+			XV_KEY_DATA, TEXTSW_LOWER_CONTEXT, first,
+			XV_KEY_DATA, TEXTSW_UPPER_CONTEXT, last_plus_one,
 			NULL);
 }
 
