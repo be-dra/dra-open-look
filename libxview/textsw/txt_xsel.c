@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.53 2025/05/11 17:43:54 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.54 2025/12/11 18:25:58 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -128,6 +128,17 @@ Pkg_private int textsw_internal_convert(Textsw_private priv,
 				Xv_opaque *data, unsigned long *length, int *format)
 {
 	int retval;
+	Atom rank_atom = (Atom)xv_get(owner, SEL_RANK);
+	int rank_index;
+
+	if (rank_atom == XA_SECONDARY)
+		rank_index = TSW_SEL_SECONDARY;
+	else if (rank_atom == priv->atoms.clipboard) {
+		rank_index = TSW_SEL_CLIPBOARD;
+	}
+	else { /* primary or dnd */
+		rank_index = TSW_SEL_PRIMARY;
+	}
 
 	if (*type == priv->atoms.delete) {
 		if (! textsw_convert_delete(priv, view, owner, FALSE)) return FALSE;
@@ -139,17 +150,6 @@ Pkg_private int textsw_internal_convert(Textsw_private priv,
 		return TRUE;
 	}
 	else if (*type == priv->atoms.ol_sel_word) {
-		Atom rank_atom = (Atom)xv_get(owner, SEL_RANK);
-		int rank_index;
-
-		if (rank_atom == XA_SECONDARY)
-			rank_index = TSW_SEL_SECONDARY;
-		else if (rank_atom == priv->atoms.clipboard) {
-			rank_index = TSW_SEL_CLIPBOARD;
-		}
-		else { /* primary or dnd */
-			rank_index = TSW_SEL_PRIMARY;
-		}
 		/* wie findet man das heraus */
 		/* siehe start_seln_tracking */
 		priv->sel_reply = priv->select_is_word[rank_index];
@@ -192,6 +192,41 @@ Pkg_private int textsw_internal_convert(Textsw_private priv,
 		*data = (Xv_opaque)xv_strsave(pkg->name);
 		*type = XA_STRING;
 		return TRUE;
+	}
+	else if (*type == priv->atoms.first) {
+		priv->sel_reply = (long)xv_get(priv->sel_item[rank_index],
+										XV_KEY_DATA, TEXTSW_LOWER_CONTEXT);
+
+		*format = 32;
+		*length = 1;
+		*data = (Xv_opaque)&priv->sel_reply;
+		*type = XA_INTEGER;
+		return TRUE;
+	}
+	else if (*type == priv->atoms.last) {
+		priv->sel_reply = (long)xv_get(priv->sel_item[rank_index],
+										XV_KEY_DATA, TEXTSW_UPPER_CONTEXT);
+
+		*format = 32;
+		*length = 1;
+		*data = (Xv_opaque) & priv->sel_reply;
+		*type = XA_INTEGER;
+		return TRUE;
+	}
+	else if (*type == priv->atoms.filename) {
+		Textsw tsw = xv_get(owner, XV_OWNER);
+		char *fn = (char *)xv_get(tsw, TEXTSW_FILE);
+
+		if (fn && *fn) {
+			*format = 8;
+			*length = strlen(fn);
+			*data = (Xv_opaque)strdup(fn);
+			*type = XA_STRING;
+			return TRUE;
+		}
+		else {
+			return FALSE;
+		}
 	}
 
 	/* Use default Selection Package convert procedure */
@@ -258,6 +293,9 @@ static void text_done_proc(Selection_owner sel_own, Xv_opaque value,
 	Textsw_private priv = TEXTSW_PRIVATE(tsw);
 
 	if (target == priv->atoms.utf8) {
+		xv_free(value);
+	}
+	if (target == priv->atoms.filename && value) {
 		xv_free(value);
 	}
 }
@@ -426,6 +464,10 @@ Pkg_private void textsw_new_sel_copy(Textsw_view_private view, Event *ev)
 	xv_set(priv->sel_item[TSW_SEL_CLIPBOARD],
 						SEL_DATA, xv_get(primsel, SEL_DATA),
 						SEL_LENGTH, len,
+						XV_KEY_DATA, TEXTSW_LOWER_CONTEXT,
+							xv_get(primsel, XV_KEY_DATA, TEXTSW_LOWER_CONTEXT),
+						XV_KEY_DATA, TEXTSW_UPPER_CONTEXT,
+							xv_get(primsel, XV_KEY_DATA, TEXTSW_UPPER_CONTEXT),
 						NULL);
 
 	xv_set(priv->sel_owner[TSW_SEL_CLIPBOARD],
@@ -493,6 +535,8 @@ Pkg_private void textsw_new_sel_copy_appending(Textsw_view_private view,
 	xv_set(priv->sel_item[TSW_SEL_CLIPBOARD],
 						SEL_DATA, appended,
 						SEL_LENGTH, applen,
+						XV_KEY_DATA, TEXTSW_LOWER_CONTEXT, TEXTSW_INFINITY,
+						XV_KEY_DATA, TEXTSW_UPPER_CONTEXT, TEXTSW_INFINITY,
 						NULL);
 
 	xv_set(priv->sel_owner[TSW_SEL_CLIPBOARD],
@@ -863,6 +907,8 @@ Pkg_private void textsw_new_sel_select(Textsw_view_private view, Event *ev)
     		xv_set(priv->sel_item[TSW_SEL_SECONDARY],
 						SEL_DATA, buffer,
 						SEL_LENGTH, last_plus_one - first,
+						XV_KEY_DATA, TEXTSW_LOWER_CONTEXT, first,
+						XV_KEY_DATA, TEXTSW_UPPER_CONTEXT, last_plus_one,
 						NULL);
 			xv_free(buffer);
 		}
@@ -941,6 +987,9 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 	priv->atoms.plain = xv_get(srv, SERVER_ATOM, "text/plain");
 	priv->atoms.utf8 = xv_get(srv, SERVER_ATOM, "UTF8_STRING");
 	priv->atoms.XVIEW_CLASS_TARGET  = xv_get(srv, SERVER_ATOM, "_DRA_XVIEW_CLASS");
+	priv->atoms.first = xv_get(srv, SERVER_ATOM, "_SUN_SELN_FIRST");
+	priv->atoms.last = xv_get(srv, SERVER_ATOM, "_SUN_SELN_LAST");
+	priv->atoms.filename = xv_get(srv, SERVER_ATOM, "FILE_NAME");
 
 	priv->sel_owner[TSW_SEL_PRIMARY] =
 					xv_create(tsw, SELECTION_OWNER,
