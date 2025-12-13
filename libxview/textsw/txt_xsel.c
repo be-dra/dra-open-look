@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.54 2025/12/11 18:25:58 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.55 2025/12/12 21:31:37 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -1005,6 +1005,9 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 	additional_items(priv->sel_owner[TSW_SEL_PRIMARY],
 							priv->atoms.ol_sel_word,
 							priv->atoms.delete,
+							priv->atoms.first,
+							priv->atoms.last,
+							priv->atoms.filename,
 							NULL);
 
 	priv->sel_owner[TSW_SEL_SECONDARY] =
@@ -1024,6 +1027,9 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 							priv->atoms.selection_end,
 							priv->atoms.seln_is_readonly,
 							priv->atoms.delete,
+							priv->atoms.first,
+							priv->atoms.last,
+							priv->atoms.filename,
 							NULL);
 
 	priv->sel_owner[TSW_SEL_CLIPBOARD] =
@@ -1041,6 +1047,9 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 	additional_items(priv->sel_owner[TSW_SEL_CLIPBOARD],
 							priv->atoms.ol_sel_word,
 							priv->atoms.seln_is_readonly,
+							priv->atoms.first,
+							priv->atoms.last,
+							priv->atoms.filename,
 							NULL);
 
 	priv->sel_owner[TSW_SEL_CARET] =
