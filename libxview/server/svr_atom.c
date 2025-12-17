@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_atom.c 1.7 93/06/28 DRA: $Id: svr_atom.c,v 4.11 2025/06/08 15:54:34 dra Exp $";
+static char     sccsid[] = "@(#)svr_atom.c 1.7 93/06/28 DRA: $Id: svr_atom.c,v 4.12 2025/12/16 16:33:15 dra Exp $";
 #endif
 #endif
 
@@ -314,6 +314,9 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"_SUN_SELN_CARET",
 		"_SUN_SELN_IS_READONLY",
 		"_SUN_SELN_YIELD",
+		"_SUN_SELN_FIRST",
+		"_SUN_SELN_LAST",
+		"_DRA_FILE_NAME",
 		"_SUN_WINDOW_STATE",
 		"_SUN_WM_PROTOCOLS",
 		"_SUN_WM_REREAD_MENU_FILE",
