@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.55 2025/12/12 21:31:37 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.56 2025/12/16 16:32:43 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -989,7 +989,16 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 	priv->atoms.XVIEW_CLASS_TARGET  = xv_get(srv, SERVER_ATOM, "_DRA_XVIEW_CLASS");
 	priv->atoms.first = xv_get(srv, SERVER_ATOM, "_SUN_SELN_FIRST");
 	priv->atoms.last = xv_get(srv, SERVER_ATOM, "_SUN_SELN_LAST");
-	priv->atoms.filename = xv_get(srv, SERVER_ATOM, "FILE_NAME");
+	/* when I had "FILE_NAME" for a short time, I encountered the following 
+	 * problem: assume I had a text selected in a TEXTSW and hit COPY.
+	 * Afterwards hit PASTE in a PANEL_TEXT: the problem was that the 
+	 * PANEL_TEXT requested FILE_NAME first - and the TEXTSW always
+	 * answered with it's file name. I could never PASTE the selected (and
+	 * COPY'ed) text...
+	 * So, now if an application really wants to know the TEXTSW's filename,
+	 * it will have to request _DRA_FILE_NAME...
+	 */
+	priv->atoms.filename = xv_get(srv, SERVER_ATOM, "_DRA_FILE_NAME");
 
 	priv->sel_owner[TSW_SEL_PRIMARY] =
 					xv_create(tsw, SELECTION_OWNER,
