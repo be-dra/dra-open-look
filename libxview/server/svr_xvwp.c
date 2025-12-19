@@ -15,7 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.15 2025/05/01 18:32:16 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.17 2025/12/18 21:07:28 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -2827,24 +2827,27 @@ static Notify_value secondary_base_interposer(Frame f, Notify_event nev,
 	return notify_next_event_func(f, nev, arg, type);
 }
 
-void server_register_secondary_base(Xv_server srv, Frame sec, Frame baseframe)
+Xv_private void server_register_secondary_base(Xv_server srv, Frame sec,
+											Frame baseframe)
 {
-	Atom at;
-	Window basexid;
+	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
+	Window basexid, secwin = xv_get(sec, XV_XID);
 	Server_info *srvpriv = SERVER_PRIVATE(srv);
 	xvwp_t *inst = srvpriv->xvwp;
+	Atom at;
 	xvwp_popup_t p;
 
 	basexid = (Window)xv_get(baseframe, XV_XID);
 	at = xv_get(srv, SERVER_ATOM, "_OL_COLORS_FOLLOW");
 
-	XChangeProperty((Display *)xv_get(srv, XV_DISPLAY),
-					xv_get(sec, XV_XID), at, XA_WINDOW, 32,
-					PropModeReplace, (unsigned char *)&basexid, 1);
+	XChangeProperty(dpy, secwin, at, XA_WINDOW, 32, PropModeReplace,
+					(unsigned char *)&basexid, 1);
+
+	XChangeProperty(dpy, secwin, xv_get(srv, SERVER_ATOM, "WM_CLIENT_LEADER"),
+					XA_WINDOW, 32,PropModeReplace, (unsigned char *)&basexid, 1);
 
 	at = xv_get(srv, SERVER_ATOM, _OL_OWN_HELP);
-	XChangeProperty((Display *)xv_get(srv, XV_DISPLAY), xv_get(sec, XV_XID),
-					xv_get(srv, SERVER_ATOM, "WM_PROTOCOLS"),
+	XChangeProperty(dpy, secwin, xv_get(srv, SERVER_ATOM, "WM_PROTOCOLS"),
 					XA_ATOM, 32, PropModeAppend, (unsigned char *)&at, 1);
 
 	notify_interpose_event_func(sec, secondary_base_interposer, NOTIFY_SAFE);
