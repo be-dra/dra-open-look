@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.13 2025/11/01 13:00:16 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.14 2025/12/18 21:03:44 dra Exp $ ";
 #endif
 #endif
 
@@ -96,6 +96,7 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	Atom property_array[3];
 	XTextProperty WMMachineName;
 	char hostname[MAXHOSTNAMELEN + 1];
+	Window xid;
 
 	DRAWABLE_INFO_MACRO(frame_public, info);
 
@@ -134,7 +135,12 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	WMMachineName.encoding = XA_STRING;
 	WMMachineName.format = 8;
 	WMMachineName.nitems = (int)xv_get_hostname(hostname, MAXHOSTNAMELEN + 1);
-	XSetWMClientMachine(xv_display(info), xv_xid(info), &WMMachineName);
+	xid = xv_xid(info);
+	XSetWMClientMachine(xv_display(info), xid, &WMMachineName);
+
+	XChangeProperty(xv_display(info), xid,
+					xv_get(xv_server(info), SERVER_ATOM, "WM_CLIENT_LEADER"),
+					XA_WINDOW, 32, PropModeReplace, (unsigned char *)&xid, 1);
 
 	/* Set WM_CLASS property */
 	win_set_wm_class(frame_public);
@@ -179,7 +185,7 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 		frame->user_rect.r_top = 0;
 		frame->user_rect.r_width = 1;
 		frame->user_rect.r_height = 1;
-		frame->wmhints.window_group = xv_xid(info);
+		frame->wmhints.window_group = xid;
 
 		/* created another frame */
 		frame_notify_count++;
@@ -311,12 +317,12 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	frame->fg.red = frame->fg.green = frame->fg.blue = (unsigned short)0;
 	frame->bg.red = frame->bg.green = frame->bg.blue = (unsigned short)~0;
 
-	XSetWMHints(xv_display(info), xv_xid(info), &(frame->wmhints));
+	XSetWMHints(xv_display(info), xid, &(frame->wmhints));
 
 	/* Use old XSetNormalHints function for non-ICCCM wm's */
 	if (!defaults_get_boolean("xview.icccmcompliant",
 					"XView.ICCCMCompliant", TRUE))
-		XSetNormalHints(xv_display(info), xv_xid(info), &frame->normal_hints);
+		XSetNormalHints(xv_display(info), xid, &frame->normal_hints);
 	else {
 		frame->normal_hints.flags |= PSize;
 		frame->normal_hints.base_width = frame->rectcache.r_width;
@@ -325,7 +331,7 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 		frame->normal_hints.height = frame->rectcache.r_height;
 		frame->normal_hints.x = frame->rectcache.r_left;
 		frame->normal_hints.y = frame->rectcache.r_top;
-		XSetWMNormalHints(xv_display(info), xv_xid(info), &frame->normal_hints);
+		XSetWMNormalHints(xv_display(info), xid, &frame->normal_hints);
 	}
 
 	/* Create the Location Cursor (Focus) Window */
