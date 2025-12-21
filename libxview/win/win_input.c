@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.39 2025/12/09 19:55:05 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.40 2025/12/21 08:50:51 dra Exp $";
 #endif
 #endif
 
@@ -3284,9 +3284,8 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 {
 	static short lang_mode = 0;
 	static Window sft_key_win;
-	Atom enter_lang_atom, exit_lang_atom, translate_key_atom;
-	XClientMessageEvent xcl;
 	XKeyEvent *keyevent;
+	Xv_window root;
 
 	if (!event) {
 		/* KBD_DONE event. So get out of the languages mode */
@@ -3295,6 +3294,7 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 	}
 	keyevent = (XKeyEvent *) event->ie_xevent;
 
+	root = xv_get(xv_get(server, SERVER_NTH_SCREEN, 0), XV_ROOT);
 	if (event_action(event) == ACTION_TRANSLATE) {
 
 		sft_key_win = xv_get_softkey_xid(server, display);
@@ -3302,9 +3302,6 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 		if (sft_key_win == None)	/* There is no soft keys process running */
 			return (0);
 
-
-		enter_lang_atom = xv_get(server, SERVER_ATOM, "_OL_ENTER_LANG_MODE");
-		exit_lang_atom = xv_get(server, SERVER_ATOM, "_OL_EXIT_LANG_MODE");
 
 		if (event_is_down(event)) {
 
@@ -3320,13 +3317,8 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 			 * &keycontrol_values); XFlush(display);
 			 */
 
-
-			/* Construct an Event */
-			xcl.type = ClientMessage;
-			xcl.window = sft_key_win;
-			xcl.message_type = enter_lang_atom;
-			xcl.format = 32;
-			XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xcl);
+			xv_send_message(root, sft_key_win, "_OL_ENTER_LANG_MODE",
+											32, (Xv_opaque *)NULL, 0);
 			return (1);
 
 		}
@@ -3344,37 +3336,22 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 			 * &keycontrol_values); XFlush(display);
 			 */
 
-			xcl.type = ClientMessage;
-			xcl.window = sft_key_win;
-			xcl.message_type = exit_lang_atom;
-			xcl.format = 32;
-			XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xcl);
+			xv_send_message(root, sft_key_win, "_OL_EXIT_LANG_MODE",
+											32, (Xv_opaque *)NULL, 0);
 			return (1);
 		}
 	}
 	if (lang_mode) {
+		Xv_opaque msgdata[5];
 
 		/* start sending keys to the virtual keyboard */
 
 		if ((event->ie_code < 33) || (event->ie_code == 127))
 			return (0);	/* Do not send unwanted events */
 
-		translate_key_atom = xv_get(server, SERVER_ATOM, "_OL_TRANSLATE_KEY");
-
-		/* Construct an Event */
-
-		xcl.type = ClientMessage;
-		xcl.window = sft_key_win;
-		xcl.message_type = translate_key_atom;
-
-		/* format 16 WILL NOT WORK when the application is running on a machine
-		 * with different byte order than the machine running vkbd !!!!
-		 */
-		xcl.format = 32;
-
-		xcl.data.l[0] = keyevent->keycode;
-		xcl.data.l[1] = keyevent->type;
-		xcl.data.l[2] = keyevent->state;
+		msgdata[0] = keyevent->keycode;
+		msgdata[1] = keyevent->type;
+		msgdata[2] = keyevent->state;
 
 		/* this pattern in data.l[3] indicates that data.l[4] contains
 		 * the current focus window, so that the vkbd does not have to
@@ -3384,14 +3361,19 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 		 * of vkbd. The real (SUN) vkbd will hopefully ignore data.l[3]
 		 * and data.l[4].
 		 */
-		xcl.data.l[3] = 0xaffe123; /* pattern to recognize */
-		xcl.data.l[4] = keyevent->window;
+		msgdata[3] = 0xaffe123; /* pattern to recognize */
+		msgdata[4] = keyevent->window;
 
 		if (keyevent->type == KeyPress) {
 			SERVERTRACE((100, "c %d, s %x\n", keyevent->keycode, keyevent->state));
 		}
 
-		XSendEvent(display, sft_key_win, False, 0L, (XEvent *)&xcl);
+		/* format 16 (the original...) WILL NOT WORK when the application
+		 * is running on a machine with different byte order than the
+		 * machine running vkbd !!!!
+		 */
+		xv_send_message(root, sft_key_win, "_OL_TRANSLATE_KEY",
+											32, msgdata, (int)sizeof(msgdata));
 		return (1);
 	}
 	return (0);
