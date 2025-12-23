@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.40 2025/12/21 08:50:51 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.41 2025/12/22 17:09:13 dra Exp $";
 #endif
 #endif
 
@@ -1485,6 +1485,18 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					|| sem_action == ACTION_PROPS) &&
 						(event_is_down(event)))
 					win_handle_quick_selection(info, event);
+
+				if (sem_action == ACTION_PROPS && event_is_up(event)) {
+					/* as long as the Props key can be used as a modifier to
+					 * initiate a SECONDARY selection, we want to check.
+					 * If a secondary selection has been made, we don't want
+					 * to handle the up event as ACTION_PROPS
+					 */
+					if (XGetSelectionOwner(display, XA_SECONDARY) != None) {
+						*pwindow = XV_NULL;
+						return 1;
+					}
+				}
 
 				if (win_check_lang_mode(srv, display, event)) {
 					*pwindow = XV_NULL;
