@@ -17,8 +17,9 @@
 #include <xview/filereq.h>
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
+#include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.51 2025/05/31 18:32:35 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.52 2025/12/22 13:03:20 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -438,6 +439,9 @@ static int delegate_conversion(Selection_owner selown, Atom *type,
 	int retval;
 	Atom requested = *type;
 	static char big_filename[1000];
+
+	SERVERTRACE((300, "delegate_conversion called for target '%s'\n",
+			(char *)xv_get(server, SERVER_ATOM_NAME, *type)));
 
 	if (*type == (Atom)xv_get(server, SERVER_ATOM, "text/plain")) {
 		*type = XA_STRING;
@@ -1469,7 +1473,7 @@ static int dir_handle_events(Dir_private *priv, Scrollwin_event_struct *es)
 
 	switch (es->action) {
 		case ACTION_PROPS:
-			if (event_is_down(es->event)) dir_show_propwin(priv);
+			if (event_is_up(es->event)) dir_show_propwin(priv);
 			return TRUE;
 
 		case ACTION_SELECT:
