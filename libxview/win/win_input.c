@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.41 2025/12/22 17:09:13 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.42 2025/12/23 09:46:20 dra Exp $";
 #endif
 #endif
 
@@ -780,9 +780,12 @@ Xv_object xview_x_input_readevent(Display *display, Event *event,
 		}
 
 		/* BEFORE_DRA_CHANGED_IT
-		 * so habe ich rausgefunden, dass der X-Server bei
-		 * Mode_switch-modifizierten Keys IMMER das state-bit 0x2000
-		 * anknipst, EGAL auf welchen Modifier man Mode_switch abbildet:
+		 * Ref (jklvhregjyumktyhj)
+		 * This is how I found out that the X server ALWAYS sets the
+		 * state-bit 0x2000 (= 1 << 13) in Mode_switch modified keys -
+		 * no matter to which modifier the Mode_switch key is mapped.
+		 * Usually, I have Mode_switch mapped to mod5, but I never saw
+		 * a key event with state = Mod5Mask = 1<<7.
 
 		 if (rep->xany.type == KeyPress) {
 		 	XKeyEvent *xk = &rep->xkey;
@@ -797,7 +800,8 @@ Xv_object xview_x_input_readevent(Display *display, Event *event,
 		/* DRA comment: what nonsense is this? if I use the
 		 * SERVER_EXTERNAL_XEVENT_* attributes, I do this for EXTERNAL
 		 * windows - therefore you cannot expect win_data to return
-		 * an XView object.....
+		 * an XView object..... well, maybe the XV_ROOT if you are 
+		 * interested in event on the root window
 		 */
 		XV_SL_TYPED_FOR_ALL(SERVER_PRIVATE(xv_default_server), server,
 				Server_info *)
