@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.42 2025/11/01 14:55:10 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.43 2025/12/24 15:55:14 dra Exp $";
 #endif
 #endif
 
@@ -5138,6 +5138,7 @@ static void update_value(Item_info *ip, Bool is_wc, int action,
 			/* First try to convert the Selection Type "FILE_NAME" */
 			if (action == ACTION_DRAG_COPY || action == ACTION_DRAG_MOVE) {
 				if (ev_flags & DND_IS_XDND) {
+					/* they usually don't know what a FILE_NAME is... */
 					xv_set(panel->sel_req, SEL_TYPE_NAME, "text/uri-list", NULL);
 					sel_string = (CHAR *)xv_get(panel->sel_req, SEL_DATA,
 												&sel_length, &sel_format);
