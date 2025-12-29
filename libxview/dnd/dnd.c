@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.20 2025/07/02 20:20:58 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.21 2025/12/28 10:02:06 dra Exp $ ";
 #endif
 #endif
 
@@ -525,8 +525,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 						dnd->xdnd_status_from_last_top_win_seen = TRUE;
 						if (dnd->xdnd_last_status_was_accept != accepted) {
 							dnd->xdnd_last_status_was_accept = accepted;
-							UpdateGrabCursor(dnd,
-										accepted ? EnterNotify : LeaveNotify,
+							UpdateGrabCursor(dnd, EnterNotify,
 										! accepted, lasttime);
 						}
 					}
