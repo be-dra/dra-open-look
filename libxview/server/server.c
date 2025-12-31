@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.34 2025/11/01 14:56:12 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.35 2025/12/30 16:30:11 dra Exp $";
 #endif
 #endif
 
@@ -37,6 +37,7 @@ static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/Xresource.h>
+#include <dlfcn.h>
 
 #define	LIB_LOCALE	"/lib/locale/"
 
@@ -624,6 +625,24 @@ __attribute__((constructor)) static void xview_ctor(void)
 	}
 }
 
+static void call_real_XInitThreads(void)
+{
+	typedef void (*initthr_t)(void);
+	void *lib = dlopen("libX11.so", RTLD_NOW);
+	initthr_t it;
+
+	if (! lib) return;
+
+	it = (initthr_t)dlsym(lib, "XInitThreads");
+	if (! it) {
+		fprintf(stderr, "cannot find XInitThreads in libX11.so\n");
+		return;
+	}
+
+	(*it)();
+	dlclose(lib);
+}
+
 static int server_init(Xv_opaque parent, Xv_server server_public,
 								Attr_avlist avlist, int *unused)
 {
@@ -665,6 +684,10 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 			case XV_INIT_ARGC_PTR_ARGV:
 				/* unused: argc = *(int *)attrs[1]; */
 				argv = (char **)attrs[2];
+				ATTR_CONSUME(*attrs);
+				break;
+			case SERVER_SUPPORT_MULTI_THREAD:
+				if (attrs[1]) call_real_XInitThreads();
 				ATTR_CONSUME(*attrs);
 				break;
 			default:
@@ -1872,14 +1895,14 @@ static Notify_value scheduler(int n, Notify_client *clients)
  * wird gesagt
  * "It is recommended that single-threaded programs not call this function."
  *
- * Also: sollen die doch XInitThreads aufrufen......
+ * Also: sollen die Multithreadprogramme doch XInitThreads aufrufen......
  *
  * In Wirklichkeit ist meine Loesung hier doch nur ein Hack, um um die
  * Bloedheit der Xlib-Fritzen herumzuprogrammieren. Die rufen XInitThreads
  * auf und bremsen damit single thread Programme aus....
  */
 
-int x_init_threads_called = 0;
+static int x_init_threads_called = 0;
 
 Status XInitThreads(void)
 {
