@@ -1,4 +1,4 @@
-/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.10 2025/07/23 17:02:13 dra Exp $      */
+/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.11 2025/12/30 14:30:58 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -102,6 +102,7 @@ typedef enum {
 	SERVER_SHAPE_AVAILABLE = SERVER_ATTR(ATTR_INT, 68),    /* --G */
 	SERVER_LOCK                 = SERVER_ATTR(ATTR_OPAQUE_PAIR, 137), /* -S- */
 	SERVER_UNLOCK               = SERVER_ATTR(ATTR_STRING, 138),      /* -S- */
+	SERVER_SUPPORT_MULTI_THREAD = SERVER_ATTR(ATTR_BOOLEAN, 139),     /* C-- */
 
 	/* Private attributes */
 	SERVER_ASCII_KEYSTATE		= SERVER_ATTR(ATTR_OPAQUE,	 7),
