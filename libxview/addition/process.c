@@ -33,7 +33,7 @@
 #include <xview/process.h>
 #include <xview_private/i18n_impl.h>
 
-char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.6 2025/06/06 18:45:21 dra Exp $";
+char process_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: process.c,v 4.7 2026/01/03 10:47:29 dra Exp $";
 
 typedef enum { NOT_RUNNING, IS_ALIVE, MAYBE_DEAD, IS_DEAD, IS_DONE } chstat_t;
 
@@ -338,15 +338,16 @@ static Process_status process_run(Process_private *priv)
 			else if (priv->error_fd < 0) dup2(open("/dev/null", O_WRONLY), 2);
 			else if (priv->error_fd != 2) dup2(priv->error_fd, 2);
 
-			for (i = sysconf(_SC_OPEN_MAX) - 1; i > 2; i--) {
-				if (i == cpip[1]) fcntl(i, F_SETFD, 1); /* close-on-exec */
-				else close(i);
-			}
-
 			if (priv->childproc) {
+				/* file descriptors are still open !!!   */
 				return (*(priv->childproc))(PROCPUB(priv));
 			}
 			else {
+				for (i = sysconf(_SC_OPEN_MAX) - 1; i > 2; i--) {
+					if (i == cpip[1]) fcntl(i, F_SETFD, 1); /* close-on-exec */
+					else close(i);
+				}
+
 				/* careful: this will write into the pipe (if any) */
 				if (priv->envp) execve(full_prog_path, priv->argv, priv->envp);
 				else execv(full_prog_path, priv->argv);
