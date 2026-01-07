@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.39 2025/04/08 18:19:50 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.40 2026/01/06 09:34:39 dra Exp $";
 #endif
 
 /*
@@ -1149,7 +1149,9 @@ static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
 	if (length == SEL_ERROR) {
 		SERVERTRACE((333, "note_sel_reply SEL_ERROR\n"));
 		if (target == priv->selection_end) {
-			/* old selection owner? */
+			/* old selection owner that rejected _SUN_SELECTION_END ?
+			 * Try the old _SUN_SELN_YIELD...
+			 */
 			xv_set(sr, SEL_TYPE, priv->seln_yield, NULL);
 			sel_post_req(sr);
 			return;
