@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.56 2025/12/16 16:32:43 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.57 2026/01/06 09:55:48 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -430,7 +430,9 @@ static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
 		SERVERTRACE((333, "SEL_ERROR on %ld for target %ld: %s\n",
 					xv_get(sr, SEL_RANK), target, p));
 		if (target == priv->atoms.selection_end) {
-			/* old selection owner? */
+			/* old selection owner that rejected _SUN_SELECTION_END ?
+			 * Try the old _SUN_SELN_YIELD...
+			 */
 			xv_set(sr, SEL_TYPE, priv->atoms.seln_yield, NULL);
 			sel_post_req(sr);
 		}
