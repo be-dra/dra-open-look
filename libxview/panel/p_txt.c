@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.43 2025/12/24 15:55:14 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.44 2026/01/06 09:56:59 dra Exp $";
 #endif
 #endif
 
@@ -4409,7 +4409,9 @@ static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
 
 	if (length == SEL_ERROR) {
 		if (target == priv->atom.selection_end) {
-			/* do we talk to an old sel owner??? */
+			/* old selection owner that rejected _SUN_SELECTION_END ?
+			 * Try the old _SUN_SELN_YIELD...
+			 */
 			xv_set(sr, SEL_TYPE, priv->atom.seln_yield, NULL);
 			sel_post_req(sr);
 		}
