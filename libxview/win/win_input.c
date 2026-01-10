@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.42 2025/12/23 09:46:20 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.43 2026/01/09 17:23:03 dra Exp $";
 #endif
 #endif
 
@@ -2820,9 +2820,9 @@ static int process_clientmessage_events(Xv_object window,
 
 				SERVERTRACE((TLXDND, "dragger sends XdndEnter from %lx with %s, %s and %s\n",
 						clientmessage->data.l[0],
-						clientmessage->data.l[2] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[2]) : "-nil-",
-						clientmessage->data.l[3] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[3]) : "-nil-",
-						clientmessage->data.l[4] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[4]) : "-nil-"));
+						clientmessage->data.l[2] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[2]) : "none",
+						clientmessage->data.l[3] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[3]) : "none",
+						clientmessage->data.l[4] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[4]) : "none"));
 
 				/* but we know the game must in any case start
 				 * from the beginning
