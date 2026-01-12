@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.44 2026/01/06 09:56:59 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.45 2026/01/11 12:53:01 dra Exp $";
 #endif
 #endif
 
@@ -3927,11 +3927,31 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
 		dp = TEXT_FROM_ITEM(panel->sel_holder[rank_index]);
 		dp->sel_reply = dp->select_is_word[rank_index];
 		SERVERTRACE((377, "%s: answering %d\n", __FUNCTION__, dp->sel_reply));
-		*length = 1;
 		*data = (Xv_opaque)&dp->sel_reply;
 		*length = 1;
 		*format = 32;
 		*type = XA_INTEGER;
+		return TRUE;
+	}
+	else if (*type == (Atom)xv_get(server,SERVER_ATOM,"TARGETS")) {
+		static Atom tgts[10];
+		int i = 0;
+
+		if (rank_atom != panel->atom.clipboard) tgts[i++] = panel->atom.delete;
+		if (rank_atom == XA_SECONDARY) {
+			tgts[i++] = panel->atom.selection_end;
+			tgts[i++] = panel->atom.seln_yield;
+		}
+		tgts[i++] = panel->atom.length;
+		tgts[i++] = xv_get(server,SERVER_ATOM,"_SUN_SELN_IS_READONLY");
+		tgts[i++] = xv_get(server,SERVER_ATOM,"_OL_SELECTION_IS_WORD");
+		tgts[i++] = XA_STRING;
+		tgts[i++] = *type;
+		tgts[i++] = xv_get(server,SERVER_ATOM,"TIMESTAMP");
+		*data = (Xv_opaque)tgts;
+		*length = i;
+		*format = 32;
+		*type = XA_ATOM;
 		return TRUE;
 	}
 	else {
