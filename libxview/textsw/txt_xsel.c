@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.57 2026/01/06 09:55:48 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.59 2026/01/11 19:58:37 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -1018,7 +1018,9 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 							priv->atoms.delete,
 							priv->atoms.first,
 							priv->atoms.last,
+							priv->atoms.length,
 							priv->atoms.filename,
+							priv->atoms.seln_is_readonly,
 							NULL);
 
 	priv->sel_owner[TSW_SEL_SECONDARY] =
@@ -1040,6 +1042,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 							priv->atoms.delete,
 							priv->atoms.first,
 							priv->atoms.last,
+							priv->atoms.length,
 							priv->atoms.filename,
 							NULL);
 
@@ -1060,6 +1063,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 							priv->atoms.seln_is_readonly,
 							priv->atoms.first,
 							priv->atoms.last,
+							priv->atoms.length,
 							priv->atoms.filename,
 							NULL);
 
