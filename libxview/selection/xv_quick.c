@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.8 2025/11/13 08:23:46 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.9 2026/01/11 12:52:45 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -156,7 +156,7 @@ static int note_quick_convert(Quick_owner self, Atom *type,
         *format = 32;
 		return TRUE;
 	}
-	if (*type == xv_get(srv, SERVER_ATOM, "LENGTH")) {
+	else if (*type == xv_get(srv, SERVER_ATOM, "LENGTH")) {
 		/* This is only used by SunView1 selection clients for
 		 * clipboard and secondary selections.
 		 */
@@ -166,14 +166,14 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 		*format = 32;
 		return TRUE;
 	}
-	if (*type == xv_get(srv, SERVER_ATOM, "_SUN_SELN_IS_READONLY")) {
+	else if (*type == xv_get(srv, SERVER_ATOM, "_SUN_SELN_IS_READONLY")) {
 		priv->reply_data = TRUE;
 		*data = (Xv_opaque)&priv->reply_data;
 		*length = 1;
 		*format = 32;
 		return TRUE;
 	}
-	if (*type == xv_get(srv, SERVER_ATOM, "_OL_SELECTION_IS_WORD")) {
+	else if (*type == xv_get(srv, SERVER_ATOM, "_OL_SELECTION_IS_WORD")) {
 		priv->reply_data = (priv->select_click_cnt == 2);
 		*data = (Xv_opaque)&priv->reply_data;
 		*length = 1;
@@ -181,14 +181,31 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 		*type = XA_INTEGER;
 		return TRUE;
 	}
-	if (*type == XA_STRING) {
+	else if (*type == XA_STRING) {
 		*data = (Xv_opaque)priv->seltext;
 		*length = strlen(priv->seltext);
 		*format = 8;
 		return TRUE;
 	}
+	else if (*type == xv_get(srv, SERVER_ATOM, "TARGETS")) {
+		static Atom tgts[10];
+		int i = 0;
 
-	return FALSE;
+		tgts[i++] = xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END");
+		tgts[i++] = xv_get(srv, SERVER_ATOM, "LENGTH");
+		tgts[i++] = xv_get(srv,SERVER_ATOM,"_SUN_SELN_IS_READONLY");
+		tgts[i++] = xv_get(srv,SERVER_ATOM,"_OL_SELECTION_IS_WORD");
+		tgts[i++] = XA_STRING;
+		tgts[i++] = *type;
+		tgts[i++] = xv_get(srv,SERVER_ATOM,"TIMESTAMP");
+		*data = (Xv_opaque)tgts;
+		*length = i;
+		*format = 32;
+		*type = XA_ATOM;
+		return TRUE;
+	}
+
+	return sel_convert_proc(self, type, data, length, format);
 }
 
 static void note_quick_lose(Quick_owner self)
