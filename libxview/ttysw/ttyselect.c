@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.40 2026/01/06 09:34:39 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.41 2026/01/11 09:53:30 dra Exp $";
 #endif
 
 /*
@@ -1063,7 +1063,7 @@ static int tty_convert_proc(Selection_owner sel_own, Atom *type,
         *format = 32;
 		return TRUE;
 	}
-	if (*type == (Atom) xv_get(server, SERVER_ATOM, "LENGTH")) {
+	if (*type == priv->length) {
 		/* This is only used by SunView1 selection clients for
 		 * clipboard and secondary selections.
 		 */
@@ -1078,7 +1078,7 @@ static int tty_convert_proc(Selection_owner sel_own, Atom *type,
 		*format = 32;
 		return TRUE;
 	}
-	if (*type==(Atom)xv_get(server,SERVER_ATOM,"_OL_SELECTION_IS_WORD")) {
+	if (*type == priv->sel_is_word) {
 		if (rank_atom == XA_SECONDARY)
 			rank_index = TTY_SEL_SECONDARY;
 		else if (rank_atom == (Atom)xv_get(server, SERVER_ATOM, "CLIPBOARD")) {
@@ -1096,7 +1096,7 @@ static int tty_convert_proc(Selection_owner sel_own, Atom *type,
 		*type = XA_INTEGER;
 		return TRUE;
 	}
-	if (*type==(Atom)xv_get(server,SERVER_ATOM,"_SUN_SELN_IS_READONLY")) {
+	if (*type == priv->readonly) {
 		priv->sel_reply = TRUE;
 
 		*format = 32;
@@ -1330,11 +1330,17 @@ Pkg_private int ttysw_event_copy_down(Ttysw_private priv, struct timeval *t)
 	return TRUE;
 }
 
-static void additional_items(Selection_owner so, Atom add1)
+static void additional_items(Selection_owner so, ...)
 {
+	va_list ap;
+	Atom tgt;
+
 	/* only to have them contained in TARGETS */
-	xv_create(so, SELECTION_ITEM, SEL_TYPE, add1, NULL);
-	xv_create(so, SELECTION_ITEM, SEL_TYPE_NAME, "_OL_SELECTION_IS_WORD", NULL);
+	va_start(ap, so);
+	while ((tgt = va_arg(ap, Atom))) {
+		xv_create(so, SELECTION_ITEM, SEL_TYPE, tgt, NULL);
+	}
+	va_end(ap);
 }
 
 Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
@@ -1346,6 +1352,9 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 
 	priv->selection_end = (Atom)xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END");
 	priv->seln_yield = (Atom)xv_get(srv, SERVER_ATOM, "_SUN_SELN_YIELD");
+	priv->length = (Atom)xv_get(srv, SERVER_ATOM, "LENGTH");
+	priv->readonly = (Atom)xv_get(srv,SERVER_ATOM,"_SUN_SELN_IS_READONLY");
+	priv->sel_is_word =(Atom)xv_get(srv,SERVER_ATOM,"_OL_SELECTION_IS_WORD");
 
 	priv->sel_owner[TTY_SEL_PRIMARY] = xv_create(tty, SELECTION_OWNER,
 							SEL_RANK, XA_PRIMARY,
@@ -1358,7 +1367,10 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 					xv_create(priv->sel_owner[TTY_SEL_PRIMARY], SELECTION_ITEM,
 							SEL_COPY, SEL_COPY_BLOCKED,
 							NULL);
-	additional_items(priv->sel_owner[TTY_SEL_PRIMARY], priv->selection_end);
+	additional_items(priv->sel_owner[TTY_SEL_PRIMARY],
+							priv->readonly,
+							priv->sel_is_word,
+							0L);
 
 	xv_create(priv->sel_owner[TTY_SEL_PRIMARY], SELECTION_ITEM,
 							SEL_COPY, SEL_COPY_BLOCKED,
@@ -1375,7 +1387,13 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 				xv_create(priv->sel_owner[TTY_SEL_SECONDARY], SELECTION_ITEM,
 							SEL_COPY, SEL_COPY_BLOCKED,
 							NULL);
-	additional_items(priv->sel_owner[TTY_SEL_SECONDARY], priv->selection_end);
+	additional_items(priv->sel_owner[TTY_SEL_SECONDARY],
+							priv->seln_yield,
+							priv->selection_end,
+							priv->readonly,
+							priv->length,
+							priv->sel_is_word,
+							0L);
 
 	priv->sel_owner[TTY_SEL_CLIPBOARD] =
 					xv_create(tty, SELECTION_OWNER,
@@ -1389,4 +1407,9 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 				xv_create(priv->sel_owner[TTY_SEL_CLIPBOARD], SELECTION_ITEM,
 							SEL_COPY, SEL_COPY_BLOCKED,
 							NULL);
+	additional_items(priv->sel_owner[TTY_SEL_CLIPBOARD],
+							priv->readonly,
+							priv->length,
+							priv->sel_is_word,
+							0L);
 }
