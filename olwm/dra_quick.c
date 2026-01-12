@@ -7,7 +7,7 @@
 #include "globals.h"
 #include <X11/Xatom.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.24 2025/06/20 20:37:17 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.25 2026/01/11 19:48:08 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -165,6 +165,8 @@ static Bool answer_true(Client *cli, Time t)
 	return True;
 }
 
+static Time quickTimestamp;
+
 /* now I finally know the reason why non-XView applications lock up
  * the screen: they usually have a different focusMode and therefore
  * (see FrameSetupGrabs in winframe.c) have a button grab....
@@ -294,8 +296,8 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		XSetSelectionOwner(dpy, XA_SECONDARY, None, event->xbutton.time);
 	}
 
-	XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self,
-									event->xbutton.time);
+	quickTimestamp = event->xbutton.time;
+	XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self, quickTimestamp);
 
 	dra_olwm_trace(300, "own SECONDARY selection\n");
 
@@ -578,9 +580,15 @@ int dra_quick_handle_selection(Display *dpy, XEvent *xev,
 			tgts[i++] = XA_STRING;
 			tgts[i++] = Atom_SUN_SELECTION_END;
 			tgts[i++] = Atom_OL_SELECTION_IS_WORD;
+			tgts[i++] = AtomTimestamp;
 			reply.property = scr->property;
     		XChangeProperty(dpy, reply.requestor, reply.property, XA_ATOM,
 						32, PropModeReplace, (unsigned char *)tgts, i);
+		}
+		else if (scr->target == AtomTimestamp) {
+			reply.property = scr->property;
+    		XChangeProperty(dpy, reply.requestor, reply.property, XA_INTEGER,
+					32, PropModeReplace, (unsigned char *)&quickTimestamp, 1);
 		}
 		dra_olwm_trace(300, "send selection notify for %ld\n", scr->target);
 		XSendEvent(dpy, reply.requestor, False, NoEventMask, (XEvent *)&reply);
