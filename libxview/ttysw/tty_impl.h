@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.33 2025/05/29 08:12:48 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.34 2026/01/11 09:52:50 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -201,8 +201,7 @@ typedef struct ttysubwindow {
     Selection_item	sel_item[NBR_TTY_SELECTIONS];
     Selection_owner	sel_owner[NBR_TTY_SELECTIONS];
 	long sel_reply;
-	Atom selection_end;
-	Atom seln_yield;
+	Atom selection_end, seln_yield, length, readonly, sel_is_word;
 
 	/* formerly static variables */
 	int point_down_within_selection;
