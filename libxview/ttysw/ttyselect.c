@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.41 2026/01/11 09:53:30 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.42 2026/01/12 22:07:16 dra Exp $";
 #endif
 
 /*
@@ -1064,10 +1064,9 @@ static int tty_convert_proc(Selection_owner sel_own, Atom *type,
 		return TRUE;
 	}
 	if (*type == priv->length) {
-		/* This is only used by SunView1 selection clients for
-		 * clipboard and secondary selections.
-		 */
-		if (rank_atom == XA_SECONDARY)
+		if (rank_atom == XA_PRIMARY)
+			rank_index = TTY_SEL_PRIMARY;
+		else if (rank_atom == XA_SECONDARY)
 			rank_index = TTY_SEL_SECONDARY;
 		else
 			rank_index = TTY_SEL_CLIPBOARD;
@@ -1369,6 +1368,7 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 							NULL);
 	additional_items(priv->sel_owner[TTY_SEL_PRIMARY],
 							priv->readonly,
+							priv->length,
 							priv->sel_is_word,
 							0L);
 
