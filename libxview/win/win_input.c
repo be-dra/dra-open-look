@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.43 2026/01/09 17:23:03 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.44 2026/01/13 11:28:10 dra Exp $";
 #endif
 #endif
 
@@ -924,7 +924,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 #endif
 
 				if (xevent->type >= LASTEvent) {
-					void (*extensionProc)(Display *,XEvent *, Xv_window);
+					server_extension_proc_t extensionProc;
 
 					if (! srv) {
 						XFindContext(display, (Window) display,
@@ -938,11 +938,11 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						return 1;
 					}
 
-					extensionProc = (void (*)(Display *,XEvent *, Xv_window))xv_get(srv,
+					extensionProc = (server_extension_proc_t)xv_get(srv,
 													SERVER_EXTENSION_PROC);
 
 					if (extensionProc) {
-						(*extensionProc)(display, xevent, window);
+						(*extensionProc)(srv, display, xevent, window);
 					}
 				}
 				*pwindow = XV_NULL;
@@ -1983,24 +1983,23 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 
 			/*
 			 * If we get an event that is not defined in the X protocol, assume
-			 * it is an event generated from a server extension.  If an extension
+			 * it is an event generated from a server extension. If an extension
 			 * proc has been set on this server, we will call it back with the
 			 * display, extension event, and a window object that is possibly
 			 * NULL.
 			 */
 		default:
 			{
-				typedef void (*extproc_t)(Display *,XEvent *, Xv_window);
 				/*
 				 * I would like to cache the extensionProc, but then we run into
 				 * the problem where the extensionProc is sporatically changed
 				 * by the programmer.
 				 */
-				extproc_t extensionProc = (extproc_t)xv_get(srv,
-												SERVER_EXTENSION_PROC);
+				server_extension_proc_t extensionProc =
+					(server_extension_proc_t)xv_get(srv, SERVER_EXTENSION_PROC);
 
 				if (extensionProc)
-					(*extensionProc)(display, xevent, window);
+					(*extensionProc)(srv, display, xevent, window);
 			}
 			*pwindow = XV_NULL;
 			return 1;
