@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.42 2026/01/12 22:07:16 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.43 2026/01/13 09:26:17 dra Exp $";
 #endif
 
 /*
@@ -1372,9 +1372,6 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv)
 							priv->sel_is_word,
 							0L);
 
-	xv_create(priv->sel_owner[TTY_SEL_PRIMARY], SELECTION_ITEM,
-							SEL_COPY, SEL_COPY_BLOCKED,
-							NULL);
 	priv->sel_owner[TTY_SEL_SECONDARY] =
 					xv_create(tty, SELECTION_OWNER,
 							SEL_CONVERT_PROC, tty_convert_proc,
