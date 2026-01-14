@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.11 2025/07/23 17:02:13 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.12 2026/01/13 11:22:57 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -49,7 +49,7 @@ typedef struct server_proc_list {
 	server_extension_proc_t pvtXeventProc;
 } Server_proc_list;
 
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.11 2025/07/23 17:02:13 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.12 2026/01/13 11:22:57 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -163,7 +163,7 @@ typedef struct {
     unsigned int	 but_two_mod;    /* But 1 + this modifier == but 2 */
     unsigned int	 but_three_mod;  /* But 1 + this modifier == but 3 */
 					 /* Above only valid if nbuttons < 3 */
-    void	       (*extensionProc)(Display *,XEvent *, Xv_opaque); 
+    server_extension_proc_t extensionProc;
     char		*display_name;
     int			 alt_modmask;    /* Represents the modifier slot the
 					  * ALT key is in, between
