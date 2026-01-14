@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.11 2025/11/01 14:56:12 dra Exp $";
+static char     sccsid[] = "@(#)svr_set.c 20.56 93/06/28 DRA: $Id: svr_set.c,v 4.12 2026/01/13 11:23:04 dra Exp $";
 #endif
 #endif
 
@@ -196,7 +196,7 @@ Pkg_private Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 				ATTR_CONSUME(*attrs);
 				break;
 			case SERVER_EXTENSION_PROC:
-				server->extensionProc = (void (*)(Display *,XEvent *, Xv_opaque))attrs[1];
+				server->extensionProc = (server_extension_proc_t)attrs[1];
 				ATTR_CONSUME(*attrs);
 				break;
 			case XV_NAME:
