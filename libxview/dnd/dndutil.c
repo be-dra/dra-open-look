@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.3 2024/11/18 12:22:15 dra Exp $ ";
+static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.4 2026/01/15 20:45:29 dra Exp $ ";
 #endif
 #endif
 
@@ -50,6 +50,7 @@ Xv_private int DndGetSelection(Dnd_info *dnd, Display *dpy)
 	int i = 0;
 	Atom seln;
 	Xv_Server server = XV_SERVER_FROM_WINDOW(dnd->parent);
+	XID xid;
 
 	/* Application defined selection. */
 	if (xv_get(DND_PUBLIC(dnd), SEL_OWN))
@@ -58,13 +59,15 @@ Xv_private int DndGetSelection(Dnd_info *dnd, Display *dpy)
 	/* Create our own transient selection. */
 	/* Look for a selection no one else is using. */
 
+ 	xid = (XID) xv_get(dnd->parent, XV_XID);
+
 	/* XXX: This will become very slow if the app
 	 * has > 100 selections in use.  We will go
 	 * through > 100 XGetSelectionOwner() requests
 	 * looking for a free selection.
 	 */
 	for (i = 0;; i++) {
-		seln = InternSelection(server, i, (XID) xv_get(dnd->parent, XV_XID));
+		seln = InternSelection(server, i, xid);
 		if (XGetSelectionOwner(dpy, seln) == None) {
 			dnd->transientSel = True;
 			xv_set(DND_PUBLIC(dnd), SEL_RANK, seln, SEL_OWN, True, NULL);
