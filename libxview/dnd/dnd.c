@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.21 2025/12/28 10:02:06 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.22 2026/01/15 20:45:01 dra Exp $ ";
 #endif
 #endif
 
@@ -24,33 +24,455 @@ static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.21 2025/
 #include <xview/win_notify.h>
 #include <sys/utsname.h>
 
-static int Verification(XButtonEvent *ev, Dnd_info *dnd);
-static int ConstructSiteList(Display *dpy, Window dest_window, long *prop,
- Dnd_site_desc **dsite, unsigned int *nsites);
-static int FindDropSite(Dnd_info *dnd, Dnd_site_desc *dsl, /* drop site list */
- unsigned int nsites, Dnd_site_desc *site);
-static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
-							XButtonEvent *ev);
-
 Xv_private Xv_opaque server_get_timestamp(Xv_Server server_public);
 
+static void UpdateGrabCursor( Dnd_info *dnd, int type, int rejected, Time t)
+{
+	Xv_Drawable_info *info;
+	Cursor cursor;
+
+	DRAWABLE_INFO_MACRO(dnd->parent, info);
+
+	if (rejected) {
+		if (dnd->rejectCursor)
+			cursor = xv_get(dnd->rejectCursor, XV_XID);
+		else if (dnd->rejectXCursor)
+			cursor = dnd->rejectXCursor;
+		else {
+			/* we have no reject cursor - but are still over a drop site */
+			if (dnd->affCursor)
+				cursor = xv_get(dnd->affCursor, XV_XID);
+			else if (dnd->affXCursor)
+				cursor = dnd->affXCursor;
+			else
+				return;
+		}
+	}
+	else {
+		/* If no cursor, then jump out */
+		if (dnd->affCursor)
+			cursor = xv_get(dnd->affCursor, XV_XID);
+		else if (dnd->affXCursor)
+			cursor = dnd->affXCursor;
+		else
+			return;
+	}
+
+	if (type == EnterNotify)
+		XChangeActivePointerGrab(xv_display(info),
+				(int)(ButtonMotionMask | ButtonReleaseMask),
+				cursor, t);
+	else
+		XChangeActivePointerGrab(xv_display(info),
+				(int)(ButtonMotionMask | ButtonReleaseMask),
+				DndGetCursor(dnd), t);
+}
+
+extern int debug_DND;
+
 /* DND_HACK begin */
+
 /* The code highlighted by the words DND_HACK is here to support dropping
  * on V2 clients.  The V3 drop protocol is not compatibile with the V2.
  * If we detect a V2 application, by a property on the its frame, we try
  * to send an V2 style drop event.   This code can be removed once we decide
  * not to support running V2 apps with the latest release.
  */
-static Window FindLeafWindow(XButtonEvent *ev);
+
+static int SendOldDndEvent(Dnd_info *dnd, XButtonEvent *buttonEvent)
+{
+    Selection_requestor	 req;
+    unsigned long	 length;
+    int			 format;
+    char		*data;
+    int			 i = 0;
+    long		 msg[5];
+
+    req = xv_create(dnd->parent, SELECTION_REQUESTOR,
+			      SEL_RANK, (Atom)xv_get(DND_PUBLIC(dnd), SEL_RANK),
+			      SEL_OWN,	True,
+			      SEL_TYPE_NAME,	"FILE_NAME",
+			      NULL);
+
+    do {
+        data = (char *)xv_get(req, SEL_DATA, &length, &format);
+        if (length != SEL_ERROR)
+	    break;
+        else {
+	    i++;
+	    if (i == 1)
+	        xv_set(req, SEL_TYPE, XA_STRING, NULL);
+	    else if (i == 2)
+	        xv_set(req, SEL_TYPE_NAME, "TEXT", NULL);
+	    else
+		return(DND_ERROR);
+	}
+	/* SUPPRESS 558 */
+    } while(True);
+
+    msg[0] = XV_POINTER_WINDOW;
+    msg[1] = buttonEvent->x;
+    msg[2] = buttonEvent->y;
+    msg[3] = (long)xv_get(dnd->parent, XV_XID);
+    msg[4] = (long)xv_get(XV_SERVER_FROM_WINDOW(dnd->parent),
+				SERVER_ATOM, "DRAG_DROP");
+
+    XChangeProperty(XV_DISPLAY_FROM_WINDOW(dnd->parent), (Window)msg[3],
+                    (Atom)msg[4], XA_STRING, 8, PropModeReplace,
+                    (unsigned char *)data, (int)strlen(data)+1);
+
+    if (i == 0)
+        xv_send_message(dnd->parent, dnd->dropSite.window, "XV_DO_DRAG_LOAD",
+			32, (Xv_opaque *)msg, (int)sizeof(msg));
+    else if (dnd->type == DND_COPY)
+        xv_send_message(dnd->parent, dnd->dropSite.window, "XV_DO_DRAG_COPY",
+			32, (Xv_opaque *)msg, (int)sizeof(msg));
+    else
+        xv_send_message(dnd->parent, dnd->dropSite.window, "XV_DO_DRAG_MOVE",
+			32, (Xv_opaque *)msg, (int)sizeof(msg));
+    return(DND_SUCCEEDED);
+}
 /* DND_HACK end */
 
-static void UpdateGrabCursor( Dnd_info *dnd, int type, int rejected, Time t);
+static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
+{
+	Display *dpy = xv_display(info);
+	XEvent event;
+	XEvent selNotifyEvent;
+	Atom property;
+	int status = DND_SUCCEEDED;
+
+	/* Wait for the dest to respond with an
+	 * _SUN_DRAGDROP_ACK.
+	 * XXX: Should check timestamp.  Sec 2.2 ICCCM
+	 */
+	if ((status = DndWaitForEvent(dpy, xv_xid(info), SelectionRequest,
+						dnd->atom[ACK], &dnd->timeout, &event, DndMatchEvent))
+			!= DND_SUCCEEDED)
+		goto BailOut;
+
+	if (debug_DND > 0)
+		fprintf(stderr, "%ld in WairForAck, after DndWaitForEvent(ACK)\n",
+				time(0));
+	/* Select for PropertyNotify events on requestor's window */
+	XSelectInput(dpy, event.xselectionrequest.requestor, PropertyChangeMask);
+
+	/* If the property field is None, the requestor is an obsolete
+	 * client.   Sec. 2.2 ICCCM
+	 */
+	if (event.xselectionrequest.property == None)
+		property = event.xselectionrequest.target;
+	else
+		property = event.xselectionrequest.property;
+
+	/* If the destination ACK'ed us, send it back a NULL reply. */
+	/* XXX: Should be prepared to handle bad alloc errors from the
+	 * server.  Sec 2.2 ICCCM
+	 */
+	XChangeProperty(dpy, event.xselectionrequest.requestor,
+			property, event.xselectionrequest.target, 32,
+			PropModeReplace, (unsigned char *)NULL, 0);
+
+	selNotifyEvent.xselection.type = SelectionNotify;
+	selNotifyEvent.xselection.display = dpy;
+	selNotifyEvent.xselection.requestor = event.xselectionrequest.requestor;
+	selNotifyEvent.xselection.selection = event.xselectionrequest.selection;
+	selNotifyEvent.xselection.target = event.xselectionrequest.target;
+	selNotifyEvent.xselection.property = property;
+	selNotifyEvent.xselection.time = event.xselectionrequest.time;
+
+	/* SUPPRESS 68 */
+	if (DndSendEvent(dpy, &selNotifyEvent, "SelNtfy") != DND_SUCCEEDED) {
+		status = DND_ERROR;
+		goto BailOut;
+	}
+
+	if (debug_DND > 0)
+		fprintf(stderr, "%ld in WairForAck, before DndWaitForEvent(prop)\n",
+				time(0));
+	/* the second param is declared as Window, but DndMatchProp
+	 * compares it with the atom of a PropertyNotify event....
+	 */
+	status = DndWaitForEvent(dpy, property, PropertyNotify, None, &dnd->timeout,
+			&event, DndMatchProp);
+
+	if (debug_DND > 0)
+		fprintf(stderr, "%ld in WairForAck, after DndWaitForEvent(prop)\n",
+				time(0));
+	/* XXX: This will kill any events someone else has selected for. */
+	XSelectInput(dpy, event.xproperty.window, NoEventMask);
+	XFlush(dpy);
+
+  BailOut:
+	return (status);
+}
+
+static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
+							XButtonEvent *ev)
+{
+	XEvent cM;
+	Event event;
+	const char *debugname = 0;
+
+	cM.xclient.type = ClientMessage;
+	cM.xclient.display = ev->display;
+	cM.xclient.format = 32;
+	event_init(&event);
+
+	switch (type) {
+		case Dnd_Trigger_Remote:
+			{
+				long flags = DND_ACK_FLAG;
+
+				if (dnd->type == DND_MOVE)
+					flags |= DND_MOVE_FLAG;
+				if (dnd->transientSel)
+					flags |= DND_TRANSIENT_FLAG;
+				if (dnd->dropSite.flags & DND_FORWARDED_FLAG)
+					flags |= DND_FORWARDED_FLAG;
+
+				debugname = "_SUN_DRAGDROP_TRIGGER";
+				cM.xclient.message_type = dnd->atom[TRIGGER];
+				cM.xclient.window = dnd->dropSite.window;
+				cM.xclient.data.l[0] = (Atom) xv_get(DND_PUBLIC(dnd), SEL_RANK);
+				cM.xclient.data.l[1] = ev->time;
+				cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
+				cM.xclient.data.l[3] = dnd->dropSite.site_id;	/* Site ID */
+				cM.xclient.data.l[4] = flags;
+			}
+			break;
+		case Dnd_Trigger_Local:
+			{
+				int x, y;
+				Window child;
+				Xv_Window dropObject = win_data(ev->display,
+						dnd->dropSite.window);
+				long flags = DND_ACK_FLAG;
+
+				/* Indicate that this is a local event */
+				long local_flags = DND_LOCAL;
+
+				if (dnd->type == DND_MOVE)
+					flags |= DND_MOVE_FLAG;
+				if (dnd->transientSel)
+					flags |= DND_TRANSIENT_FLAG;
+				if (dnd->dropSite.flags & DND_FORWARDED_FLAG) {
+					flags |= DND_FORWARDED_FLAG;
+					local_flags |= DND_FORWARDED;
+				}
+
+				debugname = "_SUN_DRAGDROP_TRIGGER";
+				cM.xclient.message_type = dnd->atom[TRIGGER];
+				cM.xclient.serial = 0L;	/* XXX: This is incorrect. */
+				cM.xclient.send_event = True;
+				cM.xclient.window = dnd->dropSite.window;
+				cM.xclient.data.l[0] = (Atom) xv_get(DND_PUBLIC(dnd), SEL_RANK);
+				cM.xclient.data.l[1] = ev->time;
+				cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
+				cM.xclient.data.l[3] = dnd->dropSite.site_id;	/* Site ID */
+				cM.xclient.data.l[4] = flags;
+
+				event_init(&event);
+				event_set_window(&event, dropObject);
+				event_set_action(&event,
+						(dnd->type == DND_MOVE ? ACTION_DRAG_MOVE :
+								ACTION_DRAG_COPY));
+
+				if (!XTranslateCoordinates(ev->display, ev->window,
+								dnd->dropSite.window, ev->x,
+								ev->y, &x, &y, &child)) {
+					/* Different Screens */
+					return (DND_ERROR);
+				}
+
+				/* Set the time of the trigger event */
+				event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
+				event.ie_time.tv_usec =
+						(((unsigned long)ev->time) % 1000) * 1000;
+
+				event_set_x(&event, x);
+				event_set_y(&event, y);
+				/* Indicate that this is a local event */
+				event_set_flags(&event, local_flags);
+				event_set_xevent(&event, &cM);
+
+				if (win_post_event(dropObject, &event,
+								NOTIFY_IMMEDIATE) !=
+						NOTIFY_OK) return (DND_ERROR);
+
+				return DND_SUCCEEDED;
+			}
+			/*NOTREACHED*/
+			break;
+		case Dnd_Preview:
+			{
+				Xv_Window eventObject = win_data(ev->display,
+						(Window)dnd->siteRects[dnd->eventSiteIndex].window);
+				/* The original XView Dnd protocol had no information about
+				 * the drag source in the preview client messages.
+				 * Therefore, there was no way to establish a communication
+				 * between the drag source and the preview receiver, 
+				 * the main purpose of such a communication would be a
+				 * 'rejection'. The field data.l[4] was taken by the
+				 * DND_FORWARDED info, which takes only 1 bit.
+				 *
+				 * Now, I want to include the 'forwarded' situation into
+				 * data.l[2] which contains the mouse position in the
+				 * following way:
+				 * 1111111111111111 1 111111111111111
+				 * x_root (16 bits) ^ y_root (15 bits)
+				 *                  |
+				 *                  Forwarded
+				 *
+				 * When this has been thoroughly tested, the data.l[4] field
+				 * can be used for the window ID of the drag source - 
+				 * and we can (in analogy to Xdnd) provide a property with
+				 * that TARGETS or similar....
+				 * Reference (erfihlwebfrygjbv)
+				 *
+				 * However, if I send such a preview event to a client that
+				 * is running against the 'standard' XView library, it will
+				 * not understand.
+				 * Our new XView clients set the bit
+				 * DND_EXPECT_NEW_PREVIEW_EVENT in their drop sites - so we
+				 * can recognize them.
+				 */
+
+				debugname = "_SUN_DRAGDROP_PREVIEW";
+				cM.xclient.message_type = dnd->atom[PREVIEW];
+				cM.xclient.window = dnd->siteRects[dnd->eventSiteIndex].window;
+				cM.xclient.data.l[0] = subtype;
+				cM.xclient.data.l[1] = ev->time;
+				cM.xclient.data.l[3] = dnd->siteRects[dnd->eventSiteIndex].site_id;
+
+				if (dnd->siteRects[dnd->eventSiteIndex].flags
+											& DND_EXPECT_NEW_PREVIEW_EVENT)
+				{
+					unsigned event_forwarded = 0;
+					/* there is a new application that know about
+					 * the new preview event
+					 */
+					if (dnd->siteRects[dnd->eventSiteIndex].flags
+											& DND_FORWARDED_FLAG)
+					{
+						event_forwarded = 0x8000;
+					}
+
+					cM.xclient.data.l[2] = (ev->x_root << 16)
+											| event_forwarded
+											| ev->y_root;
+					/* Reference (erfihlwebfrygjbv) */
+					cM.xclient.data.l[4] = xv_get(dnd->parent, XV_XID);
+				}
+				else {
+					/* there is an old application that expects the old
+					 * preview events.
+					 */
+					cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
+					if (dnd->siteRects[dnd->eventSiteIndex].flags
+												& DND_FORWARDED_FLAG)
+						cM.xclient.data.l[4] = DND_FORWARDED_FLAG;
+					else
+						cM.xclient.data.l[4] = 0;
+				}
+
+				if (eventObject) {
+					int x, y;
+					Window child;
+					long local_flags = DND_LOCAL;
+
+					event_init(&event);
+					event_set_window(&event, eventObject);
+					switch (subtype) {
+						case EnterNotify:
+							event_set_id(&event, LOC_WINENTER);
+							break;
+						case LeaveNotify:
+							event_set_id(&event, LOC_WINEXIT);
+							break;
+						case MotionNotify:
+							event_set_id(&event, LOC_DRAG);
+							break;
+					}
+					event_set_action(&event, ACTION_DRAG_PREVIEW);
+
+					/* XXX: This can be improved.  Roundtrip for local preview
+					 * events is not neccessary.
+					 */
+					if (!XTranslateCoordinates(ev->display, ev->root,
+							(Window)dnd->siteRects[dnd->eventSiteIndex].window,
+							ev->x_root, ev->y_root, &x, &y, &child)) {
+						/* XXX: Different Screens */
+						return (DND_ERROR);
+					}
+
+					event_set_x(&event, x);
+					event_set_y(&event, y);
+
+					event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
+					event.ie_time.tv_usec =
+							(((unsigned long)ev->time) % 1000) * 1000;
+
+					if (dnd->siteRects[dnd->eventSiteIndex].flags &
+							DND_FORWARDED_FLAG) local_flags |= DND_FORWARDED;
+
+					event_set_flags(&event, local_flags);
+					event_set_xevent(&event, &cM);
+
+					if (win_post_event(eventObject, &event, NOTIFY_IMMEDIATE)
+							!= NOTIFY_OK)
+						return (DND_ERROR);
+
+					return DND_SUCCEEDED;
+				}
+			}
+			break;
+		default:
+			return (DND_ERROR);
+	}
+	/* SUPPRESS 68 */
+	return DndSendEvent(ev->display, &cM, debugname);
+}
 
 static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
-						XButtonEvent *buttonEvent, int local);
-static int SendOldDndEvent(Dnd_info *dnd, XButtonEvent *buttonEvent);
-static int IsV2App(Display *dpy, Window window, Dnd_info *dnd, XButtonEvent *ev);
-static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info);
+						XButtonEvent *buttonEvent, int local)
+{
+	if (local) {
+		int value;
+		Xv_Server server = XV_SERVER_FROM_WINDOW(dnd->parent);
+		Attr_attribute dndKey = xv_get(server, SERVER_DND_ACK_KEY);
+
+		xv_set(server, XV_KEY_DATA, dndKey, False, NULL);
+
+		if ((value=SendDndEvent(dnd,Dnd_Trigger_Local,0L,buttonEvent))
+				== DND_SUCCEEDED) {
+			if ((int)xv_get(server, XV_KEY_DATA, dndKey))
+				value = DND_SUCCEEDED;
+			else
+				value = DND_TIMEOUT;
+		}
+		return (value);
+	}
+	else {
+		if (SendDndEvent(dnd, Dnd_Trigger_Remote, 0L, buttonEvent)
+				== DND_SUCCEEDED) {
+			int value;
+
+			/* DND_HACK begin */
+			/*
+			   return(WaitForAck(dnd, info));
+			 */
+			if (debug_DND > 0) fprintf(stderr, "%ld before WairForAck\n", time(0));
+			if ((value = WaitForAck(dnd, info)) == DND_TIMEOUT)
+				if (dnd->is_old)
+					return (SendOldDndEvent(dnd, buttonEvent));
+			return (value);
+			/* DND_HACK end */
+		}
+		else
+			return (DND_ERROR);
+	}
+}
 
 #ifdef NO_XDND
 #else /* NO_XDND */
@@ -276,6 +698,296 @@ static void send_preview_leave(Display *dpy, Dnd_info *dnd, Time t)
 
 #endif /* NO_XDND */
 
+static int ConstructSiteList(Display *dpy, Window dest_window, long *prop,
+		Dnd_site_desc **dsite, unsigned int *nsites)
+{
+	long *data;
+	unsigned int i, j;
+	Dnd_site_desc *drop_site;
+
+	data = prop;
+	(void)*data++;	/* Version Number */
+
+	*nsites = (int)*data++;
+
+	drop_site = (Dnd_site_desc *) xv_calloc(*nsites,
+								(unsigned)sizeof(Dnd_site_desc));
+
+	for (i = 0; i < *nsites; i++) {
+		drop_site[i].window = (Window) * data++;
+		drop_site[i].site_id = (long)*data++;
+		drop_site[i].flags = (unsigned long)*data++;	/* flags */
+		if (*data++ == DND_RECT_SITE) {
+			drop_site[i].nrects = (int)*data++;
+			drop_site[i].rect = (DndRect *) xv_calloc(drop_site[i].nrects,
+					(unsigned)sizeof(DndRect));
+			for (j = 0; j < drop_site[i].nrects; j++) {
+				drop_site[i].rect[j].x = (int)*data++;
+				drop_site[i].rect[j].y = (int)*data++;
+				drop_site[i].rect[j].w = (unsigned int)*data++;
+				drop_site[i].rect[j].h = (unsigned int)*data++;
+			}
+		}
+		else {	/* DND_WINDOW_SITE */
+			drop_site[i].nrects = (int)*data++;
+			drop_site[i].rect = (DndRect *) xv_calloc(drop_site[i].nrects,
+					(unsigned)sizeof(DndRect));
+			for (j = 0; j < drop_site[i].nrects; j++) {
+				Window root;
+				int x, y;
+				unsigned int w, h;
+				unsigned int bw, depth;
+
+				if (!XGetGeometry(dpy, (Window) * data,
+								&root, &x, &y, &w, &h, &bw, &depth)) {
+					/* XXX: Handle Bad Window */
+					(void)*data++;
+					/* XXX: Skip it for now */
+					drop_site[i].rect[j].x = 0;
+					drop_site[i].rect[j].y = 0;
+					drop_site[i].rect[j].w = 0;
+					drop_site[i].rect[j].h = 0;
+				}
+				else {
+					int dstX, dstY;
+					Window child;
+
+					/* Window coords must be in coord space of top level
+					 * window.
+					 */
+					if (!XTranslateCoordinates(dpy, (Window) * data++,
+									dest_window, x, y, &dstX, &dstY, &child)) {
+						/* Different Screens */
+						break;
+					}
+					else {
+						drop_site[i].rect[j].x = dstX;
+						drop_site[i].rect[j].y = dstY;
+						drop_site[i].rect[j].w = w + 2 * bw;	/*Includes border */
+						drop_site[i].rect[j].h = h + 2 * bw;
+					}
+				}
+			}
+		}
+	}
+	*dsite = drop_site;
+	return (DND_SUCCEEDED);
+}
+
+static int FindDropSite(Dnd_info *dnd, Dnd_site_desc *dsl, /* drop site list */
+ unsigned int nsites, Dnd_site_desc *site)
+{
+	int i, j;
+
+	for (i = 0; i < nsites; i++) {
+		for (j = 0; j < dsl[i].nrects; j++) {
+			if (DND_POINT_IN_RECT(&dsl[i].rect[j], dnd->drop_target_x,
+							dnd->drop_target_y)) {
+				site->window = dsl[i].window;
+				site->site_id = dsl[i].site_id;
+				site->flags = dsl[i].flags;
+				return (True);
+			}
+		}
+	}
+	return (False);
+}
+
+/* DND_HACK begin */
+static Window FindLeafWindow(XButtonEvent *ev)
+{
+	Display *dpy = ev->display;
+	Window srcXid = ev->window, dstXid = ev->root;
+	int srcX = ev->x, srcY = ev->y, dstX, dstY;
+	Window child;
+
+	do {
+		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
+						&dstY, &child))
+			return (DND_ERROR);	/* XXX: Different Screens !! */
+
+		if (!child)
+			break;
+
+		srcXid = dstXid;
+		dstXid = child;
+		srcX = dstX;
+		srcY = dstY;
+	} while (child);
+
+	return (dstXid);
+}
+
+static int IsV2App(Display *dpy, Window window, Dnd_info *dnd, XButtonEvent *ev)
+{
+	Atom type;
+	int format;
+	unsigned long nitems, remain;
+	unsigned char *data;
+	Atom v2_app = xv_get(XV_SERVER_FROM_WINDOW(dnd->parent),
+									SERVER_ATOM, "_XVIEW_V2_APP");
+
+	if (!window)
+		return DND_ILLEGAL_TARGET;
+
+	if (XGetWindowProperty(dpy, window, v2_app, 0L, 1L, False, AnyPropertyType,
+						&type, &format, &nitems, &remain, &data) != Success)
+	{
+		return DND_ERROR;
+	}
+	else if (type == None) {
+		return DND_ILLEGAL_TARGET;
+	}
+	else {
+		dnd->dropSite.site_id = 0;
+		dnd->dropSite.window = FindLeafWindow(ev);
+		dnd->is_old = True;
+		XFree((char *)data);
+		return DND_SUCCEEDED;
+	}
+}
+/* DND_HACK end */
+/*
+ * See if the window has set the  _SUN_DRAGDROP_INTEREST atom.  If so, see if
+ * the point at which the drop occured happed within a registered drop site.
+ */
+static int Verification(XButtonEvent *ev, Dnd_info *dnd)
+{
+	Window child;
+	Display *dpy = ev->display;
+	Window srcXid = ev->root, dstXid = ev->root;
+	int srcX = ev->x_root,
+			srcY = ev->y_root,
+
+			dstX, dstY, root_window = False, window_count = 0;
+	long *interest_prop = NULL;
+
+	/* DND_HACK begin */
+	dnd->is_old = False;
+	/* DND_HACK end */
+
+	do {
+		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
+						&dstY, &child))
+			return (DND_ERROR);	/* XXX: Different Screens !! */
+
+		srcXid = dstXid;
+		dstXid = child;
+		srcX = dstX;
+		srcY = dstY;
+
+		/* If this is the first time through the loop and child == NULL
+		 * meaning there are no mapped childern of the root, assume it
+		 * is a root window drop.  This of course won't work if someone
+		 * is using a virtual window manager.
+		 */
+		if (!window_count && !child)
+			root_window = True;
+
+		window_count++;
+
+		if (child) {
+			Atom type;
+			int format;
+			unsigned long nitems, remain;
+			unsigned char *data;
+
+			/* Look for the interest property set on
+			 * the icon, wm frame, or an application's
+			 * top level window.
+			 */
+			if (XGetWindowProperty(dpy, child, dnd->atom[INTEREST], 0L, 65535L,
+							False, AnyPropertyType, &type, &format,
+							&nitems, &remain, &data)
+					!= Success) {
+				return (DND_ERROR);
+			}
+			else if (type != None) {
+				Window ignore;
+
+				/* Remember the last interest property we
+				 * see on our way out to the WM_STATE prop.
+				 */
+				if (interest_prop)
+					XFree((char *)interest_prop);
+				interest_prop = (long *)data;
+
+				(void)XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY,
+						&dstX, &dstY, &ignore);
+				/* Save x,y coords of top level window
+				 * of drop site.  Will use later.
+				 */
+				dnd->drop_target_x = dstX;
+				dnd->drop_target_y = dstY;
+			}
+			/* Look for the WM_STATE property set on a
+			 * window as we traverse out to the leaf
+			 * windows.  If we see WM_STATE, then the user
+			 * dropped over an application, not the root.
+			 */
+			if (XGetWindowProperty(dpy, child, dnd->atom[WMSTATE], 0L, 2L,
+							False, AnyPropertyType, &type, &format,
+							&nitems, &remain, &data) != Success)
+				return (DND_ERROR);
+			else if (type != None) {
+				XFree((char *)data);
+				/* If we saw the WM_STATE but didn't see an
+				 * interest property, then this could be a
+				 * V2 application.
+				 */
+				if (!interest_prop) {
+					return (IsV2App(dpy, child, dnd, ev));
+				}
+				else {
+					/* If we saw an interest property and saw
+					 * the WM_STATE property, then it's safe
+					 * to jump out of this loop.
+					 */
+					break;
+				}
+			}
+		}
+	} while (child);
+
+	/* XXX: Revisit once we work out root window drops */
+	/* The idea here is that if we only do one xtranslate before we hit the
+	 * root window, then the user dropped on the root.
+	 */
+	if (root_window) {
+		return DND_ROOT;
+	}
+	else if (interest_prop) {
+		Dnd_site_desc *drop_site = NULL;
+		unsigned int i, nsites;
+
+		/* This might be a legal drop site. We will
+		 * need to dig out the _SUN_DRAGDROP_INTEREST
+		 * property, construct the rects and determine
+		 * if the drop happened within a drop region.
+		 */
+		ConstructSiteList(dpy, None, interest_prop, &drop_site, &nsites);
+		XFree((char *)interest_prop);
+		if (!FindDropSite(dnd, drop_site, nsites, &dnd->dropSite)) {
+			if (drop_site) {
+				for (i = 0; i < nsites; i++) {
+					if (drop_site[i].rect) XFree((char *)drop_site[i].rect);
+				}
+				XFree((char *)drop_site);
+			}
+			return IsV2App(dpy, child, dnd, ev);
+		}
+		else {
+			for (i = 0; i < nsites; i++) {
+				if (drop_site[i].rect) XFree((char *)drop_site[i].rect);
+			}
+			XFree((char *)drop_site);
+			return DND_SUCCEEDED;
+		}
+	}
+
+	return DND_ILLEGAL_TARGET;
+}
+
 extern Xv_object xview_x_input_readevent(Display *display, Event *event,
 								Xv_object req_window, int block, int type,
 								unsigned int xevent_mask, XEvent *rep);
@@ -486,16 +1198,16 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 				break;
 
 			case WIN_CLIENT_MESSAGE:
-#ifdef NO_XDND
-#else /* NO_XDND */
 				if (ev->xclient.message_type == dnd->atom[ACK]) {
-					/* das ist eine 'Preview-Answer' ! */
-					/* im Augenblick sehen wir mal in data.l[0] als 'rejected'
-					 * siehe auch 
+					/* this is a 'Preview-Answer' !
+					 * At the moment we consider data.l[0] as 'rejected',
+					 * see also reference (jklvtrdgkhbegtr)
 					 */
 					UpdateGrabCursor(dnd, EnterNotify,
 										(int)ev->xclient.data.l[0], lasttime);
 				}
+#ifdef NO_XDND
+#else /* NO_XDND */
 				else 
 				/* derzeit fangen wir damit nicht viel an */
 				if (ev->xclient.message_type == dnd->atom[XdndStatus]) {
@@ -733,104 +1445,6 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	return (status);
 }
 
-extern int debug_DND;
-
-static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
-						XButtonEvent *buttonEvent, int local)
-{
-	if (local) {
-		int value;
-		Xv_Server server = XV_SERVER_FROM_WINDOW(dnd->parent);
-		Attr_attribute dndKey = xv_get(server, SERVER_DND_ACK_KEY);
-
-		xv_set(server, XV_KEY_DATA, dndKey, False, NULL);
-
-		if ((value=SendDndEvent(dnd,Dnd_Trigger_Local,0L,buttonEvent))
-				== DND_SUCCEEDED) {
-			if ((int)xv_get(server, XV_KEY_DATA, dndKey))
-				value = DND_SUCCEEDED;
-			else
-				value = DND_TIMEOUT;
-		}
-		return (value);
-	}
-	else {
-		if (SendDndEvent(dnd, Dnd_Trigger_Remote, 0L, buttonEvent)
-				== DND_SUCCEEDED) {
-			int value;
-
-			/* DND_HACK begin */
-			/*
-			   return(WaitForAck(dnd, info));
-			 */
-			if (debug_DND > 0) fprintf(stderr, "%ld before WairForAck\n", time(0));
-			if ((value = WaitForAck(dnd, info)) == DND_TIMEOUT)
-				if (dnd->is_old)
-					return (SendOldDndEvent(dnd, buttonEvent));
-			return (value);
-			/* DND_HACK end */
-		}
-		else
-			return (DND_ERROR);
-	}
-}
-
-/* DND_HACK begin */
-static int SendOldDndEvent(Dnd_info *dnd, XButtonEvent *buttonEvent)
-{
-    Selection_requestor	 req;
-    unsigned long	 length;
-    int			 format;
-    char		*data;
-    int			 i = 0;
-    long		 msg[5];
-
-    req = xv_create(dnd->parent, SELECTION_REQUESTOR,
-			      SEL_RANK, (Atom)xv_get(DND_PUBLIC(dnd), SEL_RANK),
-			      SEL_OWN,	True,
-			      SEL_TYPE_NAME,	"FILE_NAME",
-			      NULL);
-
-    do {
-        data = (char *)xv_get(req, SEL_DATA, &length, &format);
-        if (length != SEL_ERROR)
-	    break;
-        else {
-	    i++;
-	    if (i == 1)
-	        xv_set(req, SEL_TYPE, XA_STRING, NULL);
-	    else if (i == 2)
-	        xv_set(req, SEL_TYPE_NAME, "TEXT", NULL);
-	    else
-		return(DND_ERROR);
-	}
-	/* SUPPRESS 558 */
-    } while(True);
-
-    msg[0] = XV_POINTER_WINDOW;
-    msg[1] = buttonEvent->x;
-    msg[2] = buttonEvent->y;
-    msg[3] = (long)xv_get(dnd->parent, XV_XID);
-    msg[4] = (long)xv_get(XV_SERVER_FROM_WINDOW(dnd->parent),
-				SERVER_ATOM, "DRAG_DROP");
-
-    XChangeProperty(XV_DISPLAY_FROM_WINDOW(dnd->parent), (Window)msg[3],
-                    (Atom)msg[4], XA_STRING, 8, PropModeReplace,
-                    (unsigned char *)data, (int)strlen(data)+1);
-
-    if (i == 0)
-        xv_send_message(dnd->parent, dnd->dropSite.window, "XV_DO_DRAG_LOAD",
-			32, (Xv_opaque *)msg, (int)sizeof(msg));
-    else if (dnd->type == DND_COPY)
-        xv_send_message(dnd->parent, dnd->dropSite.window, "XV_DO_DRAG_COPY",
-			32, (Xv_opaque *)msg, (int)sizeof(msg));
-    else
-        xv_send_message(dnd->parent, dnd->dropSite.window, "XV_DO_DRAG_MOVE",
-			32, (Xv_opaque *)msg, (int)sizeof(msg));
-    return(DND_SUCCEEDED);
-}
-/* DND_HACK end */
-
 Xv_private int DndSendPreviewEvent(Dnd_info *dnd, int site, XEvent *e)
 {
 	int i = dnd->eventSiteIndex;
@@ -1050,123 +1664,9 @@ Xv_private int DndSendPreviewEvent(Dnd_info *dnd, int site, XEvent *e)
 	return (DND_SUCCEEDED);
 }
 
-static void UpdateGrabCursor( Dnd_info *dnd, int type, int rejected, Time t)
-{
-	Xv_Drawable_info *info;
-	Cursor cursor;
-
-	DRAWABLE_INFO_MACRO(dnd->parent, info);
-
-	if (rejected) {
-		if (dnd->rejectCursor)
-			cursor = xv_get(dnd->rejectCursor, XV_XID);
-		else if (dnd->rejectXCursor)
-			cursor = dnd->rejectXCursor;
-		else {
-			/* we have no reject cursor - but are still over a drop site */
-			if (dnd->affCursor)
-				cursor = xv_get(dnd->affCursor, XV_XID);
-			else if (dnd->affXCursor)
-				cursor = dnd->affXCursor;
-			else
-				return;
-		}
-	}
-	else {
-		/* If no cursor, then jump out */
-		if (dnd->affCursor)
-			cursor = xv_get(dnd->affCursor, XV_XID);
-		else if (dnd->affXCursor)
-			cursor = dnd->affXCursor;
-		else
-			return;
-	}
-
-	if (type == EnterNotify)
-		XChangeActivePointerGrab(xv_display(info),
-				(int)(ButtonMotionMask | ButtonReleaseMask),
-				cursor, t);
-	else
-		XChangeActivePointerGrab(xv_display(info),
-				(int)(ButtonMotionMask | ButtonReleaseMask),
-				DndGetCursor(dnd), t);
-}
-
-static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
-{
-	Display *dpy = xv_display(info);
-	XEvent event;
-	XEvent selNotifyEvent;
-	Atom property;
-	int status = DND_SUCCEEDED;
-
-	/* Wait for the dest to respond with an
-	 * _SUN_DRAGDROP_ACK.
-	 * XXX: Should check timestamp.  Sec 2.2 ICCCM
-	 */
-	if ((status = DndWaitForEvent(dpy, xv_xid(info), SelectionRequest,
-						dnd->atom[ACK], &dnd->timeout, &event, DndMatchEvent))
-			!= DND_SUCCEEDED)
-		goto BailOut;
-
-	if (debug_DND > 0)
-		fprintf(stderr, "%ld in WairForAck, after DndWaitForEvent(ACK)\n",
-				time(0));
-	/* Select for PropertyNotify events on requestor's window */
-	XSelectInput(dpy, event.xselectionrequest.requestor, PropertyChangeMask);
-
-	/* If the property field is None, the requestor is an obsolete
-	 * client.   Sec. 2.2 ICCCM
-	 */
-	if (event.xselectionrequest.property == None)
-		property = event.xselectionrequest.target;
-	else
-		property = event.xselectionrequest.property;
-
-	/* If the destination ACK'ed us, send it back a NULL reply. */
-	/* XXX: Should be prepared to handle bad alloc errors from the
-	 * server.  Sec 2.2 ICCCM
-	 */
-	XChangeProperty(dpy, event.xselectionrequest.requestor,
-			property, event.xselectionrequest.target, 32,
-			PropModeReplace, (unsigned char *)NULL, 0);
-
-	selNotifyEvent.xselection.type = SelectionNotify;
-	selNotifyEvent.xselection.display = dpy;
-	selNotifyEvent.xselection.requestor = event.xselectionrequest.requestor;
-	selNotifyEvent.xselection.selection = event.xselectionrequest.selection;
-	selNotifyEvent.xselection.target = event.xselectionrequest.target;
-	selNotifyEvent.xselection.property = property;
-	selNotifyEvent.xselection.time = event.xselectionrequest.time;
-
-	/* SUPPRESS 68 */
-	if (DndSendEvent(dpy, &selNotifyEvent, "SelNtfy") != DND_SUCCEEDED) {
-		status = DND_ERROR;
-		goto BailOut;
-	}
-
-	if (debug_DND > 0)
-		fprintf(stderr, "%ld in WairForAck, before DndWaitForEvent(prop)\n",
-				time(0));
-	/* the second param is declared as Window, but DndMatchProp
-	 * compares it with the atom of a PropertyNotify event....
-	 */
-	status = DndWaitForEvent(dpy, property, PropertyNotify, None, &dnd->timeout,
-			&event, DndMatchProp);
-
-	if (debug_DND > 0)
-		fprintf(stderr, "%ld in WairForAck, after DndWaitForEvent(prop)\n",
-				time(0));
-	/* XXX: This will kill any events someone else has selected for. */
-	XSelectInput(dpy, event.xproperty.window, NoEventMask);
-	XFlush(dpy);
-
-  BailOut:
-	return (status);
-}
-
 Pkg_private int DndWaitForEvent(Display *dpy, Window window, int eventType,
- Atom target, struct timeval *timeout, XEvent *event, DndEventWaiterFunc MatchFunc)
+ 					Atom target, struct timeval *timeout, XEvent *event,
+					DndEventWaiterFunc MatchFunc)
 {
 	fd_set xFd;
 	int nFd;
@@ -1229,525 +1729,6 @@ Pkg_private Bool DndMatchEvent(Display *dpy, XEvent *event, XPointer cldt)
 		return (False);
 }
 
-static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
-							XButtonEvent *ev)
-{
-	XEvent cM;
-	Event event;
-	const char *debugname = 0;
-
-	cM.xclient.type = ClientMessage;
-	cM.xclient.display = ev->display;
-	cM.xclient.format = 32;
-	event_init(&event);
-
-	switch (type) {
-		case Dnd_Trigger_Remote:
-			{
-				long flags = DND_ACK_FLAG;
-
-				if (dnd->type == DND_MOVE)
-					flags |= DND_MOVE_FLAG;
-				if (dnd->transientSel)
-					flags |= DND_TRANSIENT_FLAG;
-				if (dnd->dropSite.flags & DND_FORWARDED_FLAG)
-					flags |= DND_FORWARDED_FLAG;
-
-				debugname = "_SUN_DRAGDROP_TRIGGER";
-				cM.xclient.message_type = dnd->atom[TRIGGER];
-				cM.xclient.window = dnd->dropSite.window;
-				cM.xclient.data.l[0] = (Atom) xv_get(DND_PUBLIC(dnd), SEL_RANK);
-				cM.xclient.data.l[1] = ev->time;
-				cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
-				cM.xclient.data.l[3] = dnd->dropSite.site_id;	/* Site ID */
-				cM.xclient.data.l[4] = flags;
-			}
-			break;
-		case Dnd_Trigger_Local:
-			{
-				int x, y;
-				Window child;
-				Xv_Window dropObject = win_data(ev->display,
-						dnd->dropSite.window);
-				long flags = DND_ACK_FLAG;
-
-				/* Indicate that this is a local event */
-				long local_flags = DND_LOCAL;
-
-				if (dnd->type == DND_MOVE)
-					flags |= DND_MOVE_FLAG;
-				if (dnd->transientSel)
-					flags |= DND_TRANSIENT_FLAG;
-				if (dnd->dropSite.flags & DND_FORWARDED_FLAG) {
-					flags |= DND_FORWARDED_FLAG;
-					local_flags |= DND_FORWARDED;
-				}
-
-				debugname = "_SUN_DRAGDROP_TRIGGER";
-				cM.xclient.message_type = dnd->atom[TRIGGER];
-				cM.xclient.serial = 0L;	/* XXX: This is incorrect. */
-				cM.xclient.send_event = True;
-				cM.xclient.window = dnd->dropSite.window;
-				cM.xclient.data.l[0] = (Atom) xv_get(DND_PUBLIC(dnd), SEL_RANK);
-				cM.xclient.data.l[1] = ev->time;
-				cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
-				cM.xclient.data.l[3] = dnd->dropSite.site_id;	/* Site ID */
-				cM.xclient.data.l[4] = flags;
-
-				event_init(&event);
-				event_set_window(&event, dropObject);
-				event_set_action(&event,
-						(dnd->type == DND_MOVE ? ACTION_DRAG_MOVE :
-								ACTION_DRAG_COPY));
-
-				if (!XTranslateCoordinates(ev->display, ev->window,
-								dnd->dropSite.window, ev->x,
-								ev->y, &x, &y, &child)) {
-					/* Different Screens */
-					return (DND_ERROR);
-				}
-
-				/* Set the time of the trigger event */
-				event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
-				event.ie_time.tv_usec =
-						(((unsigned long)ev->time) % 1000) * 1000;
-
-				event_set_x(&event, x);
-				event_set_y(&event, y);
-				/* Indicate that this is a local event */
-				event_set_flags(&event, local_flags);
-				event_set_xevent(&event, &cM);
-
-				if (win_post_event(dropObject, &event,
-								NOTIFY_IMMEDIATE) !=
-						NOTIFY_OK) return (DND_ERROR);
-
-				return DND_SUCCEEDED;
-			}
-			/*NOTREACHED*/
-			break;
-		case Dnd_Preview:
-			{
-				Xv_Window eventObject = win_data(ev->display,
-						(Window)dnd->siteRects[dnd->eventSiteIndex].window);
-				/* The original XView Dnd protocol had no information about
-				 * the drag source in the preview client messages.
-				 * Therefore, there was no way to establish a communication
-				 * between the drag source and the preview receiver, 
-				 * the main purpose of such a communication would be a
-				 * 'rejection'. The field data.l[4] was taken by the
-				 * DND_FORWARDED info, which takes only 1 bit.
-				 *
-				 * Now, I want to include the 'forwarded' situation into
-				 * data.l[2] which contains the mouse position in the
-				 * following way:
-				 * 1111111111111111 1 111111111111111
-				 * x_root (16 bits) ^ y_root (15 bits)
-				 *                  |
-				 *                  Forwarded
-				 *
-				 * When this has been thoroughly tested, the data.l[4] field
-				 * can be used for the window ID of the drag source - 
-				 * and we can (in analogy to Xdnd) provide a property with
-				 * that TARGETS or similar....
-				 * Reference (erfihlwebfrygjbv)
-				 *
-				 * However, if I send such a preview event to a client that
-				 * is running against the 'standard' XView library, it will
-				 * not understand.
-				 * Our new XView clients set the bit
-				 * DND_EXPECT_NEW_PREVIEW_EVENT in their drop sites - so we
-				 * can recognize them.
-				 */
-
-				debugname = "_SUN_DRAGDROP_PREVIEW";
-				cM.xclient.message_type = dnd->atom[PREVIEW];
-				cM.xclient.window = dnd->siteRects[dnd->eventSiteIndex].window;
-				cM.xclient.data.l[0] = subtype;
-				cM.xclient.data.l[1] = ev->time;
-				cM.xclient.data.l[3] = dnd->siteRects[dnd->eventSiteIndex].site_id;
-
-				if (dnd->siteRects[dnd->eventSiteIndex].flags
-											& DND_EXPECT_NEW_PREVIEW_EVENT)
-				{
-					unsigned event_forwarded = 0;
-					/* there is a new application that know about
-					 * the new preview event
-					 */
-					if (dnd->siteRects[dnd->eventSiteIndex].flags
-											& DND_FORWARDED_FLAG)
-					{
-						event_forwarded = 0x8000;
-					}
-
-					cM.xclient.data.l[2] = (ev->x_root << 16)
-											| event_forwarded
-											| ev->y_root;
-					/* Reference (erfihlwebfrygjbv) */
-					cM.xclient.data.l[4] = xv_get(dnd->parent, XV_XID);
-				}
-				else {
-					/* there is an old application that expects the old
-					 * preview events.
-					 */
-					cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
-					if (dnd->siteRects[dnd->eventSiteIndex].flags
-												& DND_FORWARDED_FLAG)
-						cM.xclient.data.l[4] = DND_FORWARDED_FLAG;
-					else
-						cM.xclient.data.l[4] = 0;
-				}
-
-				if (eventObject) {
-					int x, y;
-					Window child;
-					long local_flags = DND_LOCAL;
-
-					event_init(&event);
-					event_set_window(&event, eventObject);
-					switch (subtype) {
-						case EnterNotify:
-							event_set_id(&event, LOC_WINENTER);
-							break;
-						case LeaveNotify:
-							event_set_id(&event, LOC_WINEXIT);
-							break;
-						case MotionNotify:
-							event_set_id(&event, LOC_DRAG);
-							break;
-					}
-					event_set_action(&event, ACTION_DRAG_PREVIEW);
-
-					/* XXX: This can be improved.  Roundtrip for local preview
-					 * events is not neccessary.
-					 */
-					if (!XTranslateCoordinates(ev->display, ev->root,
-							(Window)dnd->siteRects[dnd->eventSiteIndex].window,
-							ev->x_root, ev->y_root, &x, &y, &child)) {
-						/* XXX: Different Screens */
-						return (DND_ERROR);
-					}
-
-					event_set_x(&event, x);
-					event_set_y(&event, y);
-
-					event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
-					event.ie_time.tv_usec =
-							(((unsigned long)ev->time) % 1000) * 1000;
-
-					if (dnd->siteRects[dnd->eventSiteIndex].flags &
-							DND_FORWARDED_FLAG) local_flags |= DND_FORWARDED;
-
-					event_set_flags(&event, local_flags);
-					event_set_xevent(&event, &cM);
-
-					if (win_post_event(eventObject, &event, NOTIFY_IMMEDIATE)
-							!= NOTIFY_OK)
-						return (DND_ERROR);
-
-					return DND_SUCCEEDED;
-				}
-			}
-			break;
-		default:
-			return (DND_ERROR);
-	}
-	/* SUPPRESS 68 */
-	return DndSendEvent(ev->display, &cM, debugname);
-}
-
-/*
- * See if the window has set the  _SUN_DRAGDROP_INTEREST atom.  If so, see if
- * the point at which the drop occured happed within a registered drop site.
- */
-static int Verification(XButtonEvent *ev, Dnd_info *dnd)
-{
-	Window child;
-	Display *dpy = ev->display;
-	Window srcXid = ev->root, dstXid = ev->root;
-	int srcX = ev->x_root,
-			srcY = ev->y_root,
-
-			dstX, dstY, root_window = False, window_count = 0;
-	long *interest_prop = NULL;
-
-	/* DND_HACK begin */
-	dnd->is_old = False;
-	/* DND_HACK end */
-
-	do {
-		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
-						&dstY, &child))
-			return (DND_ERROR);	/* XXX: Different Screens !! */
-
-		srcXid = dstXid;
-		dstXid = child;
-		srcX = dstX;
-		srcY = dstY;
-
-		/* If this is the first time through the loop and child == NULL
-		 * meaning there are no mapped childern of the root, assume it
-		 * is a root window drop.  This of course won't work if someone
-		 * is using a virtual window manager.
-		 */
-		if (!window_count && !child)
-			root_window = True;
-
-		window_count++;
-
-		if (child) {
-			Atom type;
-			int format;
-			unsigned long nitems, remain;
-			unsigned char *data;
-
-			/* Look for the interest property set on
-			 * the icon, wm frame, or an application's
-			 * top level window.
-			 */
-			if (XGetWindowProperty(dpy, child, dnd->atom[INTEREST], 0L, 65535L,
-							False, AnyPropertyType, &type, &format,
-							&nitems, &remain, &data)
-					!= Success) {
-				return (DND_ERROR);
-			}
-			else if (type != None) {
-				Window ignore;
-
-				/* Remember the last interest property we
-				 * see on our way out to the WM_STATE prop.
-				 */
-				if (interest_prop)
-					XFree((char *)interest_prop);
-				interest_prop = (long *)data;
-
-				(void)XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY,
-						&dstX, &dstY, &ignore);
-				/* Save x,y coords of top level window
-				 * of drop site.  Will use later.
-				 */
-				dnd->drop_target_x = dstX;
-				dnd->drop_target_y = dstY;
-			}
-			/* Look for the WM_STATE property set on a
-			 * window as we traverse out to the leaf
-			 * windows.  If we see WM_STATE, then the user
-			 * dropped over an application, not the root.
-			 */
-			if (XGetWindowProperty(dpy, child, dnd->atom[WMSTATE], 0L, 2L,
-							False, AnyPropertyType, &type, &format,
-							&nitems, &remain, &data) != Success)
-				return (DND_ERROR);
-			else if (type != None) {
-				XFree((char *)data);
-				/* If we saw the WM_STATE but didn't see an
-				 * interest property, then this could be a
-				 * V2 application.
-				 */
-				if (!interest_prop) {
-					return (IsV2App(dpy, child, dnd, ev));
-				}
-				else {
-					/* If we saw an interest property and saw
-					 * the WM_STATE property, then it's safe
-					 * to jump out of this loop.
-					 */
-					break;
-				}
-			}
-		}
-	} while (child);
-
-	/* XXX: Revisit once we work out root window drops */
-	/* The idea here is that if we only do one xtranslate before we hit the
-	 * root window, then the user dropped on the root.
-	 */
-	if (root_window) {
-		return DND_ROOT;
-	}
-	else if (interest_prop) {
-		Dnd_site_desc *drop_site = NULL;
-		unsigned int i, nsites;
-
-		/* This might be a legal drop site. We will
-		 * need to dig out the _SUN_DRAGDROP_INTEREST
-		 * property, construct the rects and determine
-		 * if the drop happened within a drop region.
-		 */
-		ConstructSiteList(dpy, None, interest_prop, &drop_site, &nsites);
-		XFree((char *)interest_prop);
-		if (!FindDropSite(dnd, drop_site, nsites, &dnd->dropSite)) {
-			if (drop_site) {
-				for (i = 0; i < nsites; i++) {
-					if (drop_site[i].rect) XFree((char *)drop_site[i].rect);
-				}
-				XFree((char *)drop_site);
-			}
-			return IsV2App(dpy, child, dnd, ev);
-		}
-		else {
-			for (i = 0; i < nsites; i++) {
-				if (drop_site[i].rect) XFree((char *)drop_site[i].rect);
-			}
-			XFree((char *)drop_site);
-			return DND_SUCCEEDED;
-		}
-	}
-
-	return DND_ILLEGAL_TARGET;
-}
-
-/* DND_HACK begin */
-static int IsV2App(Display *dpy, Window window, Dnd_info *dnd, XButtonEvent *ev)
-{
-	Atom type;
-	int format;
-	unsigned long nitems, remain;
-	unsigned char *data;
-	Atom v2_app = xv_get(XV_SERVER_FROM_WINDOW(dnd->parent),
-									SERVER_ATOM, "_XVIEW_V2_APP");
-
-	if (!window)
-		return DND_ILLEGAL_TARGET;
-
-	if (XGetWindowProperty(dpy, window, v2_app, 0L, 1L, False, AnyPropertyType,
-						&type, &format, &nitems, &remain, &data) != Success)
-	{
-		return DND_ERROR;
-	}
-	else if (type == None) {
-		return DND_ILLEGAL_TARGET;
-	}
-	else {
-		dnd->dropSite.site_id = 0;
-		dnd->dropSite.window = FindLeafWindow(ev);
-		dnd->is_old = True;
-		XFree((char *)data);
-		return DND_SUCCEEDED;
-	}
-}
-/* DND_HACK end */
-
-/* DND_HACK begin */
-static Window FindLeafWindow(XButtonEvent *ev)
-{
-	Display *dpy = ev->display;
-	Window srcXid = ev->window, dstXid = ev->root;
-	int srcX = ev->x, srcY = ev->y, dstX, dstY;
-	Window child;
-
-	do {
-		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
-						&dstY, &child))
-			return (DND_ERROR);	/* XXX: Different Screens !! */
-
-		if (!child)
-			break;
-
-		srcXid = dstXid;
-		dstXid = child;
-		srcX = dstX;
-		srcY = dstY;
-	} while (child);
-
-	return (dstXid);
-}
-/* DND_HACK end */
-
-static int ConstructSiteList(Display *dpy, Window dest_window, long *prop,
-		Dnd_site_desc **dsite, unsigned int *nsites)
-{
-	long *data;
-	unsigned int i, j;
-	Dnd_site_desc *drop_site;
-
-	data = prop;
-	(void)*data++;	/* Version Number */
-
-	*nsites = (int)*data++;
-
-	drop_site = (Dnd_site_desc *) xv_calloc(*nsites,
-								(unsigned)sizeof(Dnd_site_desc));
-
-	for (i = 0; i < *nsites; i++) {
-		drop_site[i].window = (Window) * data++;
-		drop_site[i].site_id = (long)*data++;
-		drop_site[i].flags = (unsigned long)*data++;	/* flags */
-		if (*data++ == DND_RECT_SITE) {
-			drop_site[i].nrects = (int)*data++;
-			drop_site[i].rect = (DndRect *) xv_calloc(drop_site[i].nrects,
-					(unsigned)sizeof(DndRect));
-			for (j = 0; j < drop_site[i].nrects; j++) {
-				drop_site[i].rect[j].x = (int)*data++;
-				drop_site[i].rect[j].y = (int)*data++;
-				drop_site[i].rect[j].w = (unsigned int)*data++;
-				drop_site[i].rect[j].h = (unsigned int)*data++;
-			}
-		}
-		else {	/* DND_WINDOW_SITE */
-			drop_site[i].nrects = (int)*data++;
-			drop_site[i].rect = (DndRect *) xv_calloc(drop_site[i].nrects,
-					(unsigned)sizeof(DndRect));
-			for (j = 0; j < drop_site[i].nrects; j++) {
-				Window root;
-				int x, y;
-				unsigned int w, h;
-				unsigned int bw, depth;
-
-				if (!XGetGeometry(dpy, (Window) * data,
-								&root, &x, &y, &w, &h, &bw, &depth)) {
-					/* XXX: Handle Bad Window */
-					(void)*data++;
-					/* XXX: Skip it for now */
-					drop_site[i].rect[j].x = 0;
-					drop_site[i].rect[j].y = 0;
-					drop_site[i].rect[j].w = 0;
-					drop_site[i].rect[j].h = 0;
-				}
-				else {
-					int dstX, dstY;
-					Window child;
-
-					/* Window coords must be in coord space of top level
-					 * window.
-					 */
-					if (!XTranslateCoordinates(dpy, (Window) * data++,
-									dest_window, x, y, &dstX, &dstY, &child)) {
-						/* Different Screens */
-						break;
-					}
-					else {
-						drop_site[i].rect[j].x = dstX;
-						drop_site[i].rect[j].y = dstY;
-						drop_site[i].rect[j].w = w + 2 * bw;	/*Includes border */
-						drop_site[i].rect[j].h = h + 2 * bw;
-					}
-				}
-			}
-		}
-	}
-	*dsite = drop_site;
-	return (DND_SUCCEEDED);
-}
-
-static int FindDropSite(Dnd_info *dnd, Dnd_site_desc *dsl, /* drop site list */
- unsigned int nsites, Dnd_site_desc *site)
-{
-	int i, j;
-
-	for (i = 0; i < nsites; i++) {
-		for (j = 0; j < dsl[i].nrects; j++) {
-			if (DND_POINT_IN_RECT(&dsl[i].rect[j], dnd->drop_target_x,
-							dnd->drop_target_y)) {
-				site->window = dsl[i].window;
-				site->site_id = dsl[i].site_id;
-				site->flags = dsl[i].flags;
-				return (True);
-			}
-		}
-	}
-	return (False);
-}
 
 /* This ***new*** function - YES, Xv_public - can be used by a
  * 'preview receiver' to reject a drop....
@@ -1782,6 +1763,7 @@ Xv_public void dnd_preview_reply(Event *ev, int reject)
 	/* in the beginning we used _SUN_DRAGDROP_PREVIEW here, but then
 	 * win_input.c complains about 'unexpected event type'
 	 */
+	/* Reference (jklvtrdgkhbegtr) */
 	xv_send_message(event_window(ev), dragger, "_SUN_DRAGDROP_ACK", 32,
 								data, (int)sizeof(data));
 }
