@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.22 2026/01/15 20:45:01 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.23 2026/01/17 11:05:38 dra Exp $ ";
 #endif
 #endif
 
@@ -1066,7 +1066,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 		dnd->numtargets = 0;
 	}
 
-	if (dnd->numtargets > 0) {
+	if (dnd->numtargets > 0) {    /* Reference (khvertgkhbwerfv)  */
 		XChangeProperty(dpy, xv_xid(info), dnd->atom[PREVIEW], XA_ATOM, 32,
 						PropModeReplace, (unsigned char *)dnd->targetlist,
 						dnd->numtargets);
@@ -1802,6 +1802,7 @@ Xv_public void dnd_reject_unless(Event *ev, Atom first, ...)
 		return;
 	}
 
+	/* new preview events have the drag source window in data.l[4] ! */
 	sender = xcl->data.l[4];
 	requested[cnt++] = first;
 
@@ -1809,6 +1810,11 @@ Xv_public void dnd_reject_unless(Event *ev, Atom first, ...)
 	while ((requested[cnt++] = va_arg(ap, Atom)));
 	va_end(ap);
 
+	/* Some drag sources set a _SUN_DRAGDROP_PREVIEW property on their
+	 * window. The intention is for the "preview receiver" to have a
+	 * (preliminary) list of "data format atoms" (usually a subset of
+	 * the TARGETS).  Reference (khvertgkhbwerfv)
+	 */
 	if (XGetWindowProperty(xcl->display, sender,
 				xcl->message_type, 0L, 1000L, FALSE, XA_ATOM, &act_type,
 				&act_format, &items, &left_to_be_read,
@@ -1820,11 +1826,13 @@ Xv_public void dnd_reject_unless(Event *ev, Atom first, ...)
 	if (act_format != 32) return;
 	if (act_type != XA_ATOM) return;
 
+	/* this is the list of "data format atoms" that the drag source offers */
 	offered = (Atom *)bp;
 
 	for (j = 0; j < items; j++) {
 		for (i = 0; i < cnt; i++) {
 			if (offered[j] == requested[i]) {
+				/* a matching atom found: we do NOT reject */
 				reject = FALSE;
 				break;
 			}
@@ -1834,6 +1842,7 @@ Xv_public void dnd_reject_unless(Event *ev, Atom first, ...)
 	XFree(bp);
 
 	if (reject) {
+		/* send a rejection client message */
 		dnd_preview_reply(ev, TRUE);
 	}
 }
