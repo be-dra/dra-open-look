@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.31 2025/11/06 18:01:57 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.32 2026/01/18 21:57:54 dra Exp $";
 #endif
 #endif
 
@@ -101,6 +101,10 @@ static Xv_opaque sel_owner_set_avlist(Selection_owner sel_owner_public,
 					else
 						owner = TRUE;
 				}
+				break;
+			case SEL_DRAGDROP_DONE:
+				/* this is for subclasses... */
+				ATTR_CONSUME(*attrs);
 				break;
 		}
 	}
@@ -707,7 +711,10 @@ Pkg_private int sel_wrap_convert_proc(Selection_owner owner, Atom *type,
 	 */
 	if (*type == xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_DONE")) {
 		/* we do the same thing as DndConvertProc im txt_move.c */
-		xv_set(owner, SEL_OWN, FALSE, NULL);
+		xv_set(owner,
+				SEL_DRAGDROP_DONE,
+				SEL_OWN, FALSE,
+				NULL);
 		*format = 32;
 		*length = 0;
 		*value = XV_NULL;
