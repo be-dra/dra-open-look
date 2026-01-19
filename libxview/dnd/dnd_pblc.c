@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.10 2025/11/01 14:53:47 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.11 2026/01/18 21:58:05 dra Exp $ ";
 #endif
 #endif
 
@@ -106,6 +106,17 @@ static Xv_opaque dnd_set_avlist(Dnd dnd_public, Attr_attribute *avlist)
 			case DND_TIMEOUT_VALUE:
 				XV_BCOPY((struct timeval *)attrs[1], &(dnd->timeout),
 						sizeof(struct timeval));
+				ADONE;
+			case SEL_DRAGDROP_DONE:
+				{
+					Xv_Drawable_info *info;
+
+					DRAWABLE_INFO_MACRO(dnd->parent, info);
+
+					/* there **might** be a property from dnd_send_drop */
+					XDeleteProperty(xv_display(info), xv_xid(info),
+							dnd->atom[PREVIEW]);
+				}
 				ADONE;
 #ifdef NO_XDND
 #else /* NO_XDND */
