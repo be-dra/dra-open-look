@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.9 2025/07/22 17:11:05 dra Exp $";
+static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.10 2026/01/18 21:57:41 dra Exp $";
 #endif
 #endif
 
@@ -163,11 +163,12 @@ typedef enum {
 	SEL_FORMAT		= SEL_ATTR(ATTR_INT,			140),
 	SEL_LENGTH		= SEL_ATTR(ATTR_LONG,			145),
 	SEL_REPLY_TYPE	= SEL_ATTR(ATTR_LONG,			150),
-	SEL_BLOCKSIZE	= SEL_ATTR(ATTR_INT,			151)
+	SEL_BLOCKSIZE	= SEL_ATTR(ATTR_INT,			151),
 
 	/*
 	 * Private Attributes 
 	 */
+	SEL_DRAGDROP_DONE = SEL_ATTR(ATTR_NO_VALUE, 1)      /* -S- */
 } Selection_attr;
 
 typedef Bool (*selection_convert_proc_t)(Selection_owner,Atom *,Xv_opaque *,unsigned long *,int *);
