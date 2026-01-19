@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.7 2025/07/22 17:00:58 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.8 2026/01/18 21:22:37 dra Exp $ ";
 #endif
 #endif
 
@@ -30,14 +30,38 @@ extern int DndSendEvent(Display *dpy, XEvent *, const char *);
 /* trace level: */
 #define TLXDND 411
 
-static int SendACK(Selection_requestor sel_req, Event *ev);
-
 typedef struct dnd_drop_site {
     Xv_sl_link           next;
     Xv_drop_site         drop_item;
 } Dnd_drop_site;
 
 static int dnd_is_xdnd_key, dnd_transient_key = 0;
+
+static int SendACK(Selection_requestor sel_req, Event *ev)
+{
+	Xv_Server server = XV_SERVER_FROM_WINDOW(event_window(ev));
+
+	if (dnd_is_local(ev)) {	/* flag set to True in local case */
+		Attr_attribute dndKey = xv_get(server, SERVER_DND_ACK_KEY);
+
+		xv_set(server, XV_KEY_DATA, dndKey, True, NULL);
+		return DND_SUCCEEDED;
+	}
+	else {	/* Remote case */
+		char *data;
+		int format;
+		long length;
+
+		xv_set(sel_req, SEL_TYPE_NAME, "_SUN_DRAGDROP_ACK", NULL);
+		data = (char *)xv_get(sel_req, SEL_DATA, &length, &format);
+    	if (data) XFree(data);
+		if (length == SEL_ERROR) {
+			return DND_ERROR;
+		}
+		return DND_SUCCEEDED;
+	}
+}
+
 
 Xv_public Xv_opaque dnd_decode_drop(Selection_requestor sel_req, Event *event)
 {
@@ -99,31 +123,6 @@ Xv_public Xv_opaque dnd_decode_drop(Selection_requestor sel_req, Event *event)
 	}
 
 	return (DND_ERROR);
-}
-
-static int SendACK(Selection_requestor sel_req, Event *ev)
-{
-	Xv_Server server = XV_SERVER_FROM_WINDOW(event_window(ev));
-
-	if (dnd_is_local(ev)) {	/* flag set to True in local case */
-		Attr_attribute dndKey = xv_get(server, SERVER_DND_ACK_KEY);
-
-		xv_set(server, XV_KEY_DATA, dndKey, True, NULL);
-		return DND_SUCCEEDED;
-	}
-	else {	/* Remote case */
-		char *data;
-		int format;
-		long length;
-
-		xv_set(sel_req, SEL_TYPE_NAME, "_SUN_DRAGDROP_ACK", NULL);
-		data = (char *)xv_get(sel_req, SEL_DATA, &length, &format);
-    	if (data) XFree(data);
-		if (length == SEL_ERROR) {
-			return DND_ERROR;
-		}
-		return DND_SUCCEEDED;
-	}
 }
 
 Xv_public void dnd_done(Selection_requestor sel_req)
