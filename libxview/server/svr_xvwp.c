@@ -15,7 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.17 2025/12/18 21:07:28 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.18 2026/01/18 19:26:28 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -531,19 +531,6 @@ static wm_type_t determine_window_manager(Xv_server srv)
 	unsigned long nelem, rest;
 	unsigned char *data;
 
-	if (XGetWindowProperty(dpy, root,
-					xv_get(srv, SERVER_ATOM, "_SUN_WM_PROTOCOLS"),
-					0L, 30L, False, XA_ATOM,
-					&typeatom, &act_format, &nelem, &rest,
-					&data) == Success)
-	{
-		XFree(data);
-
-		if (typeatom == XA_ATOM && act_format == 32) {
-			return WM_OLWM;
-		}
-	}
-
 	if (XGetWindowProperty(dpy, root, xv_get(srv, SERVER_ATOM,"_MOTIF_WM_INFO"),
 					0L, 30L, False, xv_get(srv, SERVER_ATOM, "_MOTIF_WM_INFO"),
 					&typeatom, &act_format, &nelem, &rest,
@@ -554,6 +541,19 @@ static wm_type_t determine_window_manager(Xv_server srv)
 			&& act_format == 32)
 		{
 			return WM_MWM;
+		}
+	}
+
+	if (XGetWindowProperty(dpy, root,
+					xv_get(srv, SERVER_ATOM, "_SUN_WM_PROTOCOLS"),
+					0L, 30L, False, XA_ATOM,
+					&typeatom, &act_format, &nelem, &rest,
+					&data) == Success)
+	{
+		XFree(data);
+
+		if (typeatom == XA_ATOM && act_format == 32) {
+			return WM_OLWM;
 		}
 	}
 
