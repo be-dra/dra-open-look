@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.4 2026/01/15 20:45:29 dra Exp $ ";
+static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.5 2026/01/18 21:22:37 dra Exp $ ";
 #endif
 #endif
 
@@ -16,8 +16,6 @@ static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.
 #include <xview/server.h>
 #include <xview/dragdrop.h>
 #include <xview_private/dndimpl.h>
-
-static Atom InternSelection(Xv_server server, int n, XID xid);
 
 /* 
  * Determine what cursor to use, create one if none defined.  Return the XID.
@@ -43,6 +41,18 @@ Xv_private XID DndGetCursor(Dnd_info *dnd)
 		return ((XID) xv_get(dnd->cursor, XV_XID));
 	else
 		return ((XID) dnd->xCursor);
+}
+
+/* I'm just 'saving atoms' .... */
+static Atom InternSelection(Xv_server server, int n, XID xid)
+{
+    char buf[60]; 
+
+	/* orig was
+	 * sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d_%ld", n, xid);
+	 */
+    sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d", n);
+    return xv_get(server, SERVER_ATOM, buf);
 }
 
 Xv_private int DndGetSelection(Dnd_info *dnd, Display *dpy)
@@ -75,18 +85,6 @@ Xv_private int DndGetSelection(Dnd_info *dnd, Display *dpy)
 		}
 	}
 	return DND_SUCCEEDED;
-}
-
-/* I'm just 'saving atoms' .... */
-static Atom InternSelection(Xv_server server, int n, XID xid)
-{
-    char buf[60]; 
-
-	/* orig was
-	 * sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d_%ld", n, xid);
-	 */
-    sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d", n);
-    return xv_get(server, SERVER_ATOM, buf);
 }
 
 static int sendEventError;
