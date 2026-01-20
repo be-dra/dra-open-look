@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.32 2026/01/18 21:57:54 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.33 2026/01/19 15:18:54 dra Exp $";
 #endif
 #endif
 
@@ -701,7 +701,12 @@ Pkg_private int sel_wrap_convert_proc(Selection_owner owner, Atom *type,
 
 	priv = SEL_OWNER_PRIVATE(owner);
 	val = (*priv->convert_proc)(owner, type, value, length, format);
-	if (val) return val;
+	if (val) {
+		if (*type == xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_DONE")) {
+			xv_set(owner, SEL_DRAGDROP_DONE, NULL);
+		}
+		return val;
+	}
 
 	parent = xv_get(owner, XV_OWNER);
 	srv = XV_SERVER_FROM_WINDOW(parent);
