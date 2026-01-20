@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.23 2026/01/17 11:05:38 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.24 2026/01/19 16:03:03 dra Exp $ ";
 #endif
 #endif
 
@@ -1067,6 +1067,9 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	}
 
 	if (dnd->numtargets > 0) {    /* Reference (khvertgkhbwerfv)  */
+		/* this property is supposed to be used only during the
+		 * preview phase
+		 */
 		XChangeProperty(dpy, xv_xid(info), dnd->atom[PREVIEW], XA_ATOM, 32,
 						PropModeReplace, (unsigned char *)dnd->targetlist,
 						dnd->numtargets);
@@ -1261,6 +1264,13 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 #else
 	XUngrabKeyboard(dpy, lasttime);
 #endif
+
+	if (dnd->numtargets > 0) {
+		/* this property is supposed to be used only during the
+		 * preview phase - the preview phase is now over!
+		 */
+		XDeleteProperty(dpy, xv_xid(info), dnd->atom[PREVIEW]);
+	}
 
 	if (stop) {
 		status = DND_ABORTED;
