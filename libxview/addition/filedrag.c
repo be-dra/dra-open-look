@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.9 2025/06/06 18:26:13 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.10 2026/01/19 15:19:24 dra Exp $";
 #endif
 
 typedef struct {
@@ -384,10 +384,13 @@ static int convert_next_file(FileDrag_private *priv, Xv_server server,
 	return convert_file_name(priv, server, type, data, length, format);
 }
 
-static int convert_sel_end(FileDrag_private *priv, Xv_server server,
+static int convert_dragdrop_done(FileDrag_private *priv, Xv_server server,
 				Atom *type, Xv_opaque *data, unsigned long *length, int *format)
 {
-	xv_set(FILEDRAGPUB(priv), SEL_OWN, FALSE, NULL);
+	xv_set(FILEDRAGPUB(priv),
+					SEL_DRAGDROP_DONE,
+					SEL_OWN, FALSE,
+					NULL);
 	*format = 32;
 	*length = 0;
 	*data = XV_NULL;
@@ -442,7 +445,7 @@ static struct { char *name;
 	{ "_SUN_ENUMERATION_COUNT", convert_enum_count },
 	{ "_SUN_DATA_LABEL", convert_base_name },
 	{ "_DRA_STRING_IS_FILENAMES", convert_string_is_filenames },
-	{ "_SUN_DRAGDROP_DONE", convert_sel_end },
+	{ "_SUN_DRAGDROP_DONE", convert_dragdrop_done },
 	/* Xt-applications cannot use "_SUN_ENUMERATION_ITEM" */
 	{ "_DRA_NEXT_FILE", convert_next_file },
 	{ "_DRA_FILE_STAT", convert_file_stat },
@@ -710,7 +713,7 @@ static Xv_opaque filedrag_set(FileDrag self, Attr_avlist avlist)
 			/* Convention: we are dragging **files**   */
 			{
 				Xv_server server = XV_SERVER_FROM_WINDOW(xv_get(self,XV_OWNER));
-				Atom *tl = xv_calloc(4, (unsigned)sizeof(Atom));
+				Atom *tl = xv_calloc(2, (unsigned)sizeof(Atom));
 
 				tl[0] = xv_get(server, SERVER_ATOM, "FILE_NAME");
 
