@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.11 2026/01/18 21:58:05 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_pblc.c 1.17 93/06/28 DRA: $Id: dnd_pblc.c,v 4.12 2026/01/19 16:03:32 dra Exp $ ";
 #endif
 #endif
 
@@ -113,7 +113,10 @@ static Xv_opaque dnd_set_avlist(Dnd dnd_public, Attr_attribute *avlist)
 
 					DRAWABLE_INFO_MACRO(dnd->parent, info);
 
-					/* there **might** be a property from dnd_send_drop */
+					/* there **might** be a property from dnd_send_drop -
+					 * actually, it should have been deleted in dnd_send_drop
+					 * immediately BEFORE the trigger message has been sent....
+					 */
 					XDeleteProperty(xv_display(info), xv_xid(info),
 							dnd->atom[PREVIEW]);
 				}
