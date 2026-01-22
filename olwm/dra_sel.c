@@ -7,7 +7,7 @@
 #include "selection.h"
 #include "atom.h"
 
-char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.20 2025/02/25 12:09:27 dra Exp $";
+char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.21 2026/01/21 17:17:50 dra Exp $";
 
 extern Window NoFocusWin;
 
@@ -336,6 +336,8 @@ void dra_sel_init(Display *dpy, Window win, Time ts)
 	 * answers a STRING request with an empty string AND attempts to
 	 * request _SUN_SELECTION_END against SECONDARY. So, I need a translation
 	 * <KeyRelease>F18: insert-selection(SECONDARY,CLIPBOARD,NIX1,NIX2,NIX3) insert-selection(_DRA_PSEUDO_SECONDARY)
+	 *
+	 * Now, xterm can be the **target** of a quick duplicate.
 	 */
     SelectionRegister(AtomPseudoSecondary, handlePseudoSelections);
 	XSetSelectionOwner(dpy, AtomPseudoSecondary, win, ts);
