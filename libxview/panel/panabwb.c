@@ -28,7 +28,7 @@
 #include <xview_private/panel_impl.h>
 #include <xview_private/draw_impl.h>
 
-char panabwb_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: panabwb.c,v 4.3 2025/03/08 13:08:26 dra Exp $";
+char panabwb_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: panabwb.c,v 4.4 2026/01/22 16:18:28 dra Exp $";
 
 typedef Frame (*creation_proc_t)(Panel_item);
 
@@ -50,7 +50,7 @@ typedef struct {
 
 #define ADONE ATTR_CONSUME(*attrs);break
 
-#define AMB_OFFSET	4	/* gap between label and Abbrev. Window Button */
+#define AWB_OFFSET	4	/* gap between label and Abbrev. Window Button */
 
 static void awbtn_paint_value(Panel_item self, int state)
 {
@@ -64,7 +64,7 @@ static void awbtn_paint_value(Panel_item self, int state)
 
 		DRAWABLE_INFO_MACRO(pw, info);
 		olgx_draw_abbrev_button(ip->panel->ginfo, xv_xid(info),
-					ip->value_rect.r_left + AMB_OFFSET, ip->value_rect.r_top,
+					ip->value_rect.r_left + AWB_OFFSET, ip->value_rect.r_top,
 					OLGX_ABBREV | state);
 	PANEL_END_EACH_PAINT_WINDOW
 }
@@ -80,9 +80,9 @@ static void panabwb_begin_preview(Panel_item item, Event *event)
 		Item_info *ip = ITEM_PRIVATE(item);
 		Rect awb_rect;
 
-		rect_construct(&awb_rect, ip->value_rect.r_left + AMB_OFFSET,
+		rect_construct(&awb_rect, ip->value_rect.r_left + AWB_OFFSET,
 								ip->value_rect.r_top,
-								ip->value_rect.r_width - AMB_OFFSET,
+								ip->value_rect.r_width - AWB_OFFSET,
 								ip->value_rect.r_height);
 		awb_invoked = rect_includespoint(&awb_rect, event_x(event),
 											event_y(event));
@@ -218,14 +218,14 @@ static void end_create(Panel_abbrev_window_item self,
 {
 	Item_info *ip = ITEM_PRIVATE(self);
 	Graphics_info *ginfo = ip->panel->ginfo;
-	Rect vr;
 
-	priv->abbrev_width = AMB_OFFSET + Abbrev_MenuButton_Width(ginfo);
+	/* an abbreviated WINDOW button has the same size as an
+	 * abbreviated MENU button.
+	 */
+	priv->abbrev_width = AWB_OFFSET + Abbrev_MenuButton_Width(ginfo);
 
-	vr = (ip->value_rect);
-	vr.r_width = priv->abbrev_width;
-	vr.r_height = Abbrev_MenuButton_Height(ginfo);
-	ip->value_rect = vr;
+	ip->value_rect.r_width = priv->abbrev_width;
+	ip->value_rect.r_height = Abbrev_MenuButton_Height(ginfo);
 }
 
 static Xv_opaque panabwb_set(Panel_abbrev_window_item self, Attr_avlist avlist)
@@ -283,7 +283,7 @@ static int panabwb_destroy(Panel_abbrev_window_item self, Destroy_status status)
 }
 
 const Xv_pkg xv_panel_awbtn_pkg = {
-	"PanelAbbrevWindowItem",
+    "Abbreviated Window Button Item",
 	ATTR_PKG_PANEL,
 	sizeof(Xv_panel_abbrev_window),
 	PANEL_ITEM,
