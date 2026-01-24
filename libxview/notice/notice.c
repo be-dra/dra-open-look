@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.16 2025/11/01 14:54:36 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.17 2026/01/24 07:59:48 dra Exp $ ";
 #endif
 #endif
 
@@ -2051,7 +2051,7 @@ static int notice_block_popup(Notice_info *notice)
 				 */
 				DRAWABLE_INFO_MACRO(notice->fullscreen_window, notice_window_info);
 
-				server_time = xv_sel_get_last_event_time(
+				server_time = xv_sel_get_last_event_time(xv_server(p.info), 
 									xv_display(notice_window_info),
 									xv_xid(notice_window_info));
 
@@ -2171,7 +2171,7 @@ static int notice_block_popup(Notice_info *notice)
 			DRAWABLE_INFO_MACRO(notice->fullscreen_window, notice_window_info);
 
 			if (!first_repaint_set) {
-				repaint_time = xv_sel_get_last_event_time(
+				repaint_time = xv_sel_get_last_event_time(xv_server(notice_window_info), 
 									xv_display(notice_window_info),
 									xv_xid(notice_window_info));
 				first_repaint_set = TRUE;
