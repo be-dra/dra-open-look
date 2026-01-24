@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.8 2026/01/18 21:22:37 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd_decode.c 1.15 93/06/28 DRA: $Id: dnd_decode.c,v 4.9 2026/01/24 07:56:31 dra Exp $ ";
 #endif
 #endif
 
@@ -177,12 +177,12 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 		srpriv->reply_proc = reply_proc;
 
 		{
-			Xv_window win;
-			Display *dpy;
-			win = xv_get(sel_req, XV_OWNER);
-			dpy = XV_DISPLAY_FROM_WINDOW(win);
+			Xv_window win = xv_get(sel_req, XV_OWNER);
+			Display *dpy = XV_DISPLAY_FROM_WINDOW(win);
+			Xv_server srv = XV_SERVER_FROM_WINDOW(win);
+
 			/* das soll fuer ALLE properties 'avail = TRUE' setzen */
-    		xv_sel_free_property(dpy, 0L);
+    		xv_sel_free_property(srv, dpy, 0L);
 		}
 	}
 
