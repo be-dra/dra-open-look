@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.25 2025/11/06 18:02:05 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.26 2026/01/24 07:53:51 dra Exp $";
 #endif
 #endif
 
@@ -89,11 +89,12 @@ Pkg_private Sel_owner_info * xv_sel_set_selection_data(Display *dpy, Atom select
  * REMINDER: This needs to be changed to a more efficient way of getting
  *  last event time.
 */
-Xv_private Time xv_sel_get_last_event_time(Display  *dpy, Window   win)
+Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
+										Window   win)
 {
     XEvent         event;
     XPropertyEvent *ev;
-    Atom  prop = xv_sel_get_property( dpy );
+    Atom  prop = xv_sel_get_property(srv, dpy );
     XWindowAttributes  winAttr;
     int    arg;
     int  status = xv_sel_add_prop_notify_mask( dpy, win, &winAttr );
@@ -111,7 +112,7 @@ Xv_private Time xv_sel_get_last_event_time(Display  *dpy, Window   win)
 	return ( (Time) NULL );
     }
 
-    xv_sel_free_property( dpy, prop );
+    xv_sel_free_property(srv, dpy, prop );
 
     /*
      * If we have added PropertyChangeMask to the win, reset the mask to
@@ -183,7 +184,7 @@ Pkg_private Sel_atom_list *xv_sel_find_atom_list(Display *dpy, Window xid)
 XContext  propCtx;
 
 /* Pkg_private */
-static Sel_prop_list * xv_sel_get_prop_list(Display *dpy)
+static Sel_prop_list * xv_sel_get_prop_list(Xv_server srv, Display *dpy)
 {
 	Sel_prop_list *list;
 
@@ -196,7 +197,7 @@ static Sel_prop_list * xv_sel_get_prop_list(Display *dpy)
 			return ((Sel_prop_list *) NULL);
 		}
 
-		list->prop = XInternAtom(dpy, "XV_SELECTION_0", FALSE);
+		list->prop = xv_get(srv, SERVER_ATOM, "XV_SELECTION_0");
 		list->avail = TRUE;
 		list->next = NULL;
 
@@ -208,13 +209,13 @@ static Sel_prop_list * xv_sel_get_prop_list(Display *dpy)
 
 
 /* NOTE: the avail field should be reset to TRUE after a complete transaction. */
-Pkg_private Atom xv_sel_get_property(Display  *dpy)
+Pkg_private Atom xv_sel_get_property(Xv_server srv, Display  *dpy)
 {
 	Sel_prop_list *cPtr;
 	char str[100];
 	int i = 0;
 
-	cPtr = xv_sel_get_prop_list(dpy);
+	cPtr = xv_sel_get_prop_list(srv, dpy);
 
 	do {
 		if (cPtr->avail) {
@@ -235,18 +236,18 @@ Pkg_private Atom xv_sel_get_property(Display  *dpy)
 	}
 	cPtr = cPtr->next;
 	sprintf(str, "XV_SELECTION_%d", i);
-	cPtr->prop = XInternAtom(dpy, str, FALSE);
+	cPtr->prop = xv_get(srv, SERVER_ATOM, str);
 	cPtr->avail = FALSE;
 	cPtr->next = NULL;
 	return (cPtr->prop);
 }
 
 
-Pkg_private void xv_sel_free_property(Display *dpy, Atom prop)
+Pkg_private void xv_sel_free_property(Xv_server srv, Display *dpy, Atom prop)
 {
 	Sel_prop_list *plPtr;
 
-	plPtr = xv_sel_get_prop_list(dpy);
+	plPtr = xv_sel_get_prop_list(srv, dpy);
 
 	do {
 		if (prop == None) {
@@ -695,7 +696,7 @@ int xv_sel_end_request(Sel_reply_info *reply)
 			XDeleteContext(reply->sri_dpy, sele, selCtx);
 		}
 
-		xv_sel_free_property(reply->sri_dpy, prop);
+		xv_sel_free_property(reply->sri_srv, reply->sri_dpy, prop);
 
 		/* here, I always saw reply == reqTbl->reply */
 		if (reply->sri_target) xv_free(reply->sri_target);
@@ -727,14 +728,13 @@ static int SelFindReply(Sel_reply_info *r1, Sel_reply_info *r2)
  * Free all the properties that were created for the multiple
  * request.
  */
-static void
-FreeMultiProp(Sel_reply_info  *reply)
+static void FreeMultiProp(Sel_reply_info  *reply)
 {
     int            i;
 
     if ( reply->sri_multiple_count ) {
         for ( i=0; i < reply->sri_multiple_count; i++ )
-	    xv_sel_free_property( reply->sri_dpy, reply->sri_atomPair[i].property );
+	    xv_sel_free_property(reply->sri_srv,  reply->sri_dpy, reply->sri_atomPair[i].property );
     }
 }
 
