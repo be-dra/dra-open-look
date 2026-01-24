@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.21 2025/11/06 18:01:46 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.23 2026/01/24 07:53:21 dra Exp $";
 #endif
 #endif
 
@@ -188,6 +188,7 @@ typedef struct {
 	int            sri_status;
 	int            sri_during_incr;
 	Atom           sri_selection;
+	Xv_server      sri_srv;
 	Display        *sri_dpy;
 	Atom           sri_incr;
 	Atom           sri_multiple;
@@ -204,8 +205,8 @@ typedef struct sel_client_info {
 
 
 Pkg_private int xv_sel_add_prop_notify_mask(Display *dpy, Window win,XWindowAttributes *winAttr);
-Pkg_private Atom xv_sel_get_property(Display *);
-Pkg_private void xv_sel_free_property(Display *, Atom);
+Pkg_private Atom xv_sel_get_property(Xv_server, Display *);
+Pkg_private void xv_sel_free_property(Xv_server, Display *, Atom);
 Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args);
 Pkg_private int xv_sel_check_property_event(Display *display, XEvent *xevent, char *args);
 Xv_private int xv_sel_handle_incr(Sel_owner_info *selection);
@@ -226,7 +227,7 @@ Xv_private void xv_sel_send_old_owner_sel_clear(Display *dpy, Atom selection, Wi
 Xv_private void xv_sel_set_compat_data(Display *dpy, Atom selection, Window xid, int clientType);
 Pkg_private Sel_owner_info  *xv_sel_find_selection_data(Display *,Atom,Window);
 Pkg_private Sel_owner_info * xv_sel_set_selection_data(Display *dpy, Atom selection, Sel_owner_info *sel_owner);
-Xv_private Time xv_sel_get_last_event_time(Display *, Window);
+Xv_private Time xv_sel_get_last_event_time(Xv_server , Display  *, Window);
 Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int seconds, int (*predicate)(Display *, XEvent *, char *), char *arg);
 Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *req);
 Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent, char *args);
