@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svr_atom.c 1.7 93/06/28 DRA: $Id: svr_atom.c,v 4.12 2025/12/16 16:33:15 dra Exp $";
+static char     sccsid[] = "@(#)svr_atom.c 1.7 93/06/28 DRA: $Id: svr_atom.c,v 4.14 2026/01/24 05:25:39 dra Exp $";
 #endif
 #endif
 
@@ -171,6 +171,11 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"MOVE",
 		"MULTIPLE",
 		"NAME",
+		"OWNER_OS",
+		"HOST_NAME",
+		"USER",
+		"PROCESS",
+		"TASK",
 		"NULL",
 		"PIXEL",
 		"TARGETS",
@@ -184,9 +189,12 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"WM_SAVE_YOURSELF",
 		"WM_STATE",
 		"WM_TAKE_FOCUS",
+		"WM_CLIENT_LEADER",
 		"XV_DO_DRAG_COPY",
 		"XV_DO_DRAG_LOAD",
 		"XV_DO_DRAG_MOVE",
+		"XV_SELECTION_0",
+		"XV_SELECTION_1",
 		"XdndActionAsk",
 		"XdndActionCopy",
 		"XdndActionDescription",
@@ -203,8 +211,10 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"XdndSelection",
 		"XdndStatus",
 		"XdndTypeList",
+		"_DRA_ENHANCED_OLWM",
 		"_DRA_DROP_REJECTED",
 		"_DRA_FILE_STAT",
+		"_DRA_FILE_NAME",
 		"_DRA_NEXT_FILE",
 		"_DRA_RESCALE",
 		"_DRA_STRING_IS_FILENAMES",
@@ -316,14 +326,12 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 		"_SUN_SELN_YIELD",
 		"_SUN_SELN_FIRST",
 		"_SUN_SELN_LAST",
-		"_DRA_FILE_NAME",
 		"_SUN_WINDOW_STATE",
 		"_SUN_WM_PROTOCOLS",
 		"_SUN_WM_REREAD_MENU_FILE",
 		"_XVIEW_V2_APP",
 		"text/plain",
-		"text/uri-list",
-		NULL
+		"text/uri-list"
 	};
 	Atom *atoms;
 	int i, num_names;
@@ -332,7 +340,7 @@ Pkg_private void server_initialize_atoms(Server_info *server)
 	 * and about 80 ms through a VPN connection.
 	 */
 
-	for (num_names = 0; atns[num_names]; num_names++);
+	num_names = sizeof(atns) / sizeof(atns[0]);
 	atoms = xv_alloc_n(Atom, (unsigned long)num_names);
 
 	XInternAtoms(server->xdisplay, atns, num_names, FALSE, atoms);
