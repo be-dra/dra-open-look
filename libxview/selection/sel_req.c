@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.36 2025/11/07 16:10:39 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.37 2026/01/24 07:53:56 dra Exp $";
 #endif
 #endif
 
@@ -393,6 +393,7 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 	numTarget = selReq->nbr_types;
 	replyInfo->sri_local_owner = selection;
 	replyInfo->sri_selection = xv_get(req, SEL_RANK);
+	replyInfo->sri_srv = srv;
 	replyInfo->sri_dpy = (Display *)xv_get(srv, XV_DISPLAY);
 	replyInfo->sri_incr = xv_get(srv, SERVER_ATOM, "INCR");
 	replyInfo->sri_multiple = xv_get(srv, SERVER_ATOM, "MULTIPLE");
@@ -416,10 +417,10 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 		XV_BCOPY((char *)&target, replyInfo->sri_target, numTarget * sizeof(Atom));
 	}
 
-	replyInfo->sri_property = xv_sel_get_property(replyInfo->sri_dpy);
+	replyInfo->sri_property = xv_sel_get_property(replyInfo->sri_srv, replyInfo->sri_dpy);
 	replyInfo->sri_requestor = win;
 	if (time == 0)
-		replyInfo->sri_time = xv_sel_get_last_event_time(replyInfo->sri_dpy, win);
+		replyInfo->sri_time = xv_sel_get_last_event_time(srv, replyInfo->sri_dpy, win);
 	else
 		replyInfo->sri_time = time;
 
@@ -455,7 +456,7 @@ static void SetupMultipleRequest(Sel_reply_info *reply, int numTarget)
 	for (i = 1, pairPtr = reply->sri_atomPair; count > 0;
 			pairPtr++, count--, i++) {
 		pairPtr->target = *(reply->sri_target + i);
-		pairPtr->property = xv_sel_get_property(reply->sri_dpy);
+		pairPtr->property = xv_sel_get_property(reply->sri_srv, reply->sri_dpy);
 		SetExtendedData(reply, pairPtr->property, i - 1);
 	}
 
@@ -645,7 +646,7 @@ static int TransferLocalData(Sel_req_info *selReq, Sel_reply_info *reply,
 					reply->sri_local_owner->atomList->integer,
 					reply->sri_propdata, reply->sri_length, reply->sri_format);
 		}
-		xv_sel_free_property(reply->sri_dpy, reply->sri_property);
+		xv_sel_free_property(reply->sri_srv,reply->sri_dpy,reply->sri_property);
 		return TRUE;
 	}
 
@@ -666,7 +667,7 @@ static int TransferLocalData(Sel_req_info *selReq, Sel_reply_info *reply,
 		if (selReq->reply_proc != NULL)
 			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,TRUE);
 
-		xv_sel_free_property(reply->sri_dpy, reply->sri_property);
+		xv_sel_free_property(reply->sri_srv,reply->sri_dpy,reply->sri_property);
 		return FALSE;
 	}
 
@@ -688,7 +689,7 @@ static int TransferLocalData(Sel_req_info *selReq, Sel_reply_info *reply,
 		 * registered a reply_proc, reject the data transfer.
 		 */
 		if (blocking && (selReq->reply_proc == NULL)) {
-			xv_sel_free_property(reply->sri_dpy, reply->sri_property);
+			xv_sel_free_property(reply->sri_srv,reply->sri_dpy,reply->sri_property);
 			return FALSE;
 		}
 		return HandleLocalIncr(selReq, replyBuff, reply, target, replyType);
@@ -706,7 +707,7 @@ static int TransferLocalData(Sel_req_info *selReq, Sel_reply_info *reply,
 		/* nage, cawson ni 'invalid free': if (replyBuff) xv_free(replyBuff); */
 	}
 
-	xv_sel_free_property(reply->sri_dpy, reply->sri_property);
+	xv_sel_free_property(reply->sri_srv,reply->sri_dpy,reply->sri_property);
 	return TRUE;
 }
 
@@ -756,11 +757,11 @@ static int LocalMultipleTrans(Sel_reply_info *reply, Sel_req_info *selReq,
 			multipleIndex = SEL_END_MULTIPLE;
 
 		TransferLocalData(selReq, reply, atomPair->target, blocking, multipleIndex);
-		xv_sel_free_property(reply->sri_dpy, atomPair->property);
+		xv_sel_free_property(reply->sri_srv, reply->sri_dpy, atomPair->property);
 		multipleIndex = SEL_MULTIPLE;
 	}
 
-	xv_sel_free_property(reply->sri_dpy, reply->sri_property);
+	xv_sel_free_property(reply->sri_srv, reply->sri_dpy, reply->sri_property);
 	XFree((char *)prop);
 	return TRUE;
 }
@@ -997,7 +998,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	}
 
 	XDeleteProperty(ev->display, replyInfo->sri_requestor, property);
-	xv_sel_free_property(ev->display, property);
+	xv_sel_free_property(replyInfo->sri_srv, ev->display, property);
 	return (TRUE);
 }
 
@@ -1117,14 +1118,14 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 					xv_sel_check_selnotify, (char *)replyInfo)) {
 		xv_sel_handle_error(SEL_TIMEDOUT, selReq, replyInfo,
 				*replyInfo->sri_target, FALSE);
-		xv_sel_free_property(dpy, replyInfo->sri_property);
+		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
 		return FALSE;
 	}
 	ev = (XSelectionEvent *)&event;
 
 	if (!CheckSelectionNotify(selReq, replyInfo, ev, 1))
 	{
-		xv_sel_free_property(dpy, replyInfo->sri_property);
+		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
 		return FALSE;
 	}
 
@@ -1137,7 +1138,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 		 * registered, reject the data transfer.
 		 */
 		if (selReq->reply_proc == NULL) {
-			xv_sel_free_property(dpy, replyInfo->sri_property);
+			xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
 			return FALSE;
 		}
 
@@ -1152,7 +1153,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 		 * registered, reject the data transfer.
 		 */
 		if (selReq->reply_proc == NULL) {
-			xv_sel_free_property(dpy, replyInfo->sri_property);
+			xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
 			return FALSE;
 		}
 
@@ -1187,9 +1188,10 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 	xt = xv_sel_cvt_timeval_to_xtime(time);
 
 	if (xt == 0) {
+		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
         struct timeval tv;
 
-		xt = xv_sel_get_last_event_time(dpy, xid);
+		xt = xv_sel_get_last_event_time(srv, dpy, xid);
 		xv_sel_cvt_xtime_to_timeval(xt, &tv);
 		xv_set(requestor, SEL_TIME, &tv, NULL);
 	}
@@ -1635,9 +1637,10 @@ int sel_post_req(Selection_requestor sel)
     XTime = xv_sel_cvt_timeval_to_xtime( time );
 
     if ( XTime == 0 )  {
+		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
         struct timeval tv;
 
-		XTime = xv_sel_get_last_event_time( dpy, xid );
+		XTime = xv_sel_get_last_event_time(srv, dpy, xid );
 		xv_sel_cvt_xtime_to_timeval(XTime, &tv);
 		xv_set(sel, SEL_TIME, &tv, NULL);
     }
