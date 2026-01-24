@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_win.c 20.31 90/11/08 DRA: $Id: fm_win.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_win.c 20.31 90/11/08 DRA: $Id: fm_win.c,v 4.2 2026/01/24 05:51:00 dra Exp $ ";
 #endif
 #endif
 
@@ -57,70 +57,70 @@ Pkg_private void frame_set_position(unsigned long parent, Frame_class_info *fram
     frame->rectcache.r_left = frame->rectcache.r_top = 0;
 }
 
+/* INCOMPLETE: there seems to be not a single call of this function !?!? */
 Pkg_private int frame_is_exposed(Frame frame)
 {
-    XID             root, frame_xid, tmp;
-    XID            *children;
-    Display        *display;
-    Rect            child_rect, frame_rect;
-    Xv_Drawable_info *frame_info;
-    Xv_Drawable_info *root_info;
-    Xv_object       rootwindow;
-    unsigned int    nchildren;
+	XID root, frame_xid, tmp;
+	XID *children;
+	Display *display;
+	Rect child_rect, frame_rect;
+	Xv_Drawable_info *frame_info;
+	Xv_Drawable_info *root_info;
+	Xv_object rootwindow;
+	unsigned int nchildren;
 
-    DRAWABLE_INFO_MACRO(frame, frame_info);
-    frame_xid = xv_xid(frame_info);
-    (void) win_getrect(frame, &frame_rect);
-
-    /*
-     * It is assumed that the frame is a child of root window
-     */
-    rootwindow = xv_get(frame, XV_ROOT);
-    DRAWABLE_INFO_MACRO(rootwindow, root_info);
-    root = xv_xid(root_info);
-    display = xv_display(frame_info);
-
-
-    if (XQueryTree(display, root, &tmp, &tmp, &children, &nchildren) == 0) {
-	xv_error(frame,
-		 ERROR_STRING,
-		 XV_MSG("frame_is_exposed(): XQueryTree failed!"),
-		 ERROR_PKG, FRAME,
-		 NULL);
-	goto deallocate;
-    }
-    if (nchildren) {
-	register XID   *c;
+	DRAWABLE_INFO_MACRO(frame, frame_info);
+	frame_xid = xv_xid(frame_info);
+	(void)win_getrect(frame, &frame_rect);
 
 	/*
-	 * Find the frame_xid among the children. No frame_xid among Children
-	 * indicates error
+	 * It is assumed that the frame is a child of root window.
+	 * INCOMPLETE: this is wrong with a reparenting window manager...
 	 */
-	for (c = children; nchildren && (*c != frame_xid); nchildren--, c++);
-	if (*c++ != frame_xid) {
-	    xv_error(frame,
-		     ERROR_STRING,
-		     XV_MSG("frame_is_exposed(): window not in tree"),
-		     ERROR_PKG, FRAME,
-		     NULL);
-	    goto deallocate;
-	}
-	/*
-	 * Scan through all the children of the root window that are above
-	 * this frame
-	 */
-	for (--nchildren; nchildren; nchildren--, c++) {
-	    if (win_view_state(display, *c) != IsViewable)
-		continue;
-	    win_x_getrect(display, *c, &child_rect);
-	    if (rect_intersectsrect(&frame_rect, &child_rect))
-		break;
+	rootwindow = xv_get(frame, XV_ROOT);
+	DRAWABLE_INFO_MACRO(rootwindow, root_info);
+	root = xv_xid(root_info);
+	display = xv_display(frame_info);
 
+
+	if (XQueryTree(display, root, &tmp, &tmp, &children, &nchildren) == 0) {
+		xv_error(frame,
+				ERROR_STRING, XV_MSG("frame_is_exposed(): XQueryTree failed!"),
+				ERROR_PKG, FRAME,
+				NULL);
+		goto deallocate;
 	}
-	return (nchildren ? FALSE : TRUE);
-    }
-deallocate:
-    if (children)
-	xv_free(children);
-    return (FALSE);
+	if (nchildren) {
+		register XID *c;
+
+		/*
+		 * Find the frame_xid among the children. No frame_xid among Children
+		 * indicates error
+		 */
+		for (c = children; nchildren && (*c != frame_xid); nchildren--, c++);
+		if (*c++ != frame_xid) {
+			xv_error(frame,
+					ERROR_STRING,
+					XV_MSG("frame_is_exposed(): window not in tree"),
+					ERROR_PKG, FRAME, NULL);
+			goto deallocate;
+		}
+		/*
+		 * Scan through all the children of the root window that are above
+		 * this frame
+		 */
+		for (--nchildren; nchildren; nchildren--, c++) {
+			if (win_view_state(display, *c) != IsViewable)
+				continue;
+			win_x_getrect(display, *c, &child_rect);
+			if (rect_intersectsrect(&frame_rect, &child_rect))
+				break;
+
+		}
+		return (nchildren ? FALSE : TRUE);
+	}
+  deallocate:
+	if (children)
+		xv_free(children);
+	return (FALSE);
 }
