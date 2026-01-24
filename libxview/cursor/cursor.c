@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.8 2025/11/01 14:53:37 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.9 2026/01/24 05:47:31 dra Exp $";
 #endif
 #endif
 
@@ -373,24 +373,22 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 	return (Xv_opaque) XV_OK;
 }
 
-Xv_private void
-cursor_set_cursor(window, cursor_public)
-    Xv_object       window;
-    Xv_Cursor       cursor_public;
+Xv_private void cursor_set_cursor(Xv_object window, Xv_Cursor cursor_public)
 {
-    Cursor_info    *cursor = CURSOR_PRIVATE(cursor_public);
-    Xv_Drawable_info *window_info;
+	Cursor_info *cursor = CURSOR_PRIVATE(cursor_public);
+	Xv_Drawable_info *window_info;
 
-    if (xv_get(window, XV_ROOT) != cursor->root) {
-	xv_error((Xv_object)cursor,
-		 ERROR_STRING,
-		   XV_MSG("Window and cursor have different roots! Can't set cursor"),
-		 ERROR_PKG, CURSOR,
-		 NULL);
-    } else {
-	DRAWABLE_INFO_MACRO(window, window_info);
-	cursor_set_cursor_internal(window_info, cursor->cursor_id);
-    }
+	if (xv_get(window, XV_ROOT) != cursor->root) {
+		xv_error((Xv_object) cursor,
+				ERROR_STRING,
+				XV_MSG
+				("Window and cursor have different roots! Can't set cursor"),
+				ERROR_PKG, CURSOR, NULL);
+	}
+	else {
+		DRAWABLE_INFO_MACRO(window, window_info);
+		cursor_set_cursor_internal(window_info, cursor->cursor_id);
+	}
 }
 
 /* returns XV_OK or XV_ERROR */
