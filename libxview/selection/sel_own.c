@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.33 2026/01/19 15:18:54 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.34 2026/01/24 07:54:06 dra Exp $";
 #endif
 #endif
 
@@ -265,8 +265,12 @@ static int sel_set_ownership(Sel_owner_info *sel_owner)
 	Selection_owner sel_owner_public;
 	struct timeval *time;
 	Time lastEventTime;
+	Xv_window parent;
+	Xv_server srv;
 
 	sel_owner_public = SEL_OWNER_PUBLIC(sel_owner);
+	parent = xv_get(sel_owner_public, XV_OWNER);
+	srv = XV_SERVER_FROM_WINDOW(parent);
 
 	/* Get the selection rank  */
 	seln = xv_get(sel_owner_public, SEL_RANK);
@@ -284,12 +288,7 @@ static int sel_set_ownership(Sel_owner_info *sel_owner)
 	 */
 	lastEventTime = xv_sel_get_last_event_time(sel_owner->dpy, sel_owner->xid);
 #else /* BEFORE_DRA_CHANGED */
-	{
-		Xv_window parent = xv_get(sel_owner_public, XV_OWNER);
-		Xv_server srv = XV_SERVER_FROM_WINDOW(parent);
-
-		lastEventTime = server_get_timestamp(srv);
-	}
+	lastEventTime = server_get_timestamp(srv);
 #endif /* BEFORE_DRA_CHANGED */
 
 	if (owner->time == (Time) 0 || owner->time < lastEventTime) {
@@ -307,7 +306,7 @@ static int sel_set_ownership(Sel_owner_info *sel_owner)
 			struct timeval tv;
 
 			/* this can only mean "owner->time too old" */
-			owner->time = xv_sel_get_last_event_time(sel_owner->dpy,
+			owner->time = xv_sel_get_last_event_time(srv, sel_owner->dpy,
 														sel_owner->xid);
 
 			xv_sel_cvt_xtime_to_timeval(owner->time, &tv);
