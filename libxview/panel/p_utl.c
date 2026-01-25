@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.14 2025/10/19 08:07:07 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.15 2026/01/24 12:00:34 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -1125,41 +1125,42 @@ Pkg_private int panel_is_multiclick(Panel_info *panel,
 static void panel_set_cursor(Panel_info *panel, Xv_Window window,
 			Attr_attribute attr) /* CURSOR_QUESTION_MARK_PTR or NULL = restore default cursor */
 {
-    Cursor	    cursor;
-    Server_image    image;
-    Xv_Drawable_info *info;
+	Cursor cursor;
+	Server_image image;
+	Xv_Drawable_info *info;
 
-    DRAWABLE_INFO_MACRO(window, info);
-    if (attr) {
-	if (panel->status.nonstd_cursor)
-	    return;	/* previous cursor not restored yet */
-	panel->cursor = xv_get(window, WIN_CURSOR);
-	cursor = xv_get(xv_screen(info), XV_KEY_DATA, attr);
-	if (!cursor) {
-	    /* Note: put a switch statement here to handle more cursors */
-	    image = xv_create(xv_screen(info), SERVER_IMAGE,
-			      XV_HEIGHT, 16,
-			      XV_WIDTH, 16,
-			      SERVER_IMAGE_BITS, qmark_cursor_data,
-			      NULL);
-	    cursor = xv_create(xv_root(info), CURSOR,
-			       CURSOR_IMAGE, image,
-			       CURSOR_XHOT, 6,
-			       CURSOR_YHOT, 12,
-			       NULL);
-	    xv_set(xv_screen(info), XV_KEY_DATA, attr, cursor, NULL);
+	DRAWABLE_INFO_MACRO(window, info);
+	if (attr) {
+		if (panel->status.nonstd_cursor)
+			return;	/* previous cursor not restored yet */
+		panel->cursor = xv_get(window, WIN_CURSOR);
+		cursor = xv_get(xv_screen(info), XV_KEY_DATA, attr);
+		if (!cursor) {
+			/* Note: put a switch statement here to handle more cursors */
+			image = xv_create(xv_screen(info), SERVER_IMAGE,
+					XV_HEIGHT, 16,
+					XV_WIDTH, 16,
+					SERVER_IMAGE_BITS, qmark_cursor_data,
+					NULL);
+			cursor = xv_create(xv_root(info), CURSOR,
+					CURSOR_IMAGE, image,
+					CURSOR_XHOT, 6,
+					CURSOR_YHOT, 12,
+					NULL);
+			xv_set(xv_screen(info), XV_KEY_DATA, attr, cursor, NULL);
+		}
+		if (cursor) {
+			xv_set(window, WIN_CURSOR, cursor, NULL);
+			panel->status.nonstd_cursor = TRUE;
+		}
 	}
-	if (cursor) {
-	    xv_set(window, WIN_CURSOR, cursor, NULL);
-	    panel->status.nonstd_cursor = TRUE;
+	else {
+		/* Restore basic pointer */
+		if (!panel->status.nonstd_cursor)
+			return;	/* cursor is already the basic pointer */
+		xv_set(window, WIN_CURSOR, panel->cursor, NULL);
+		panel->status.nonstd_cursor = FALSE;
 	}
-    } else {
-	/* Restore basic pointer */
-	if (!panel->status.nonstd_cursor)
-	    return;	/* cursor is already the basic pointer */
-	xv_set(window, WIN_CURSOR, panel->cursor, NULL);
-	panel->status.nonstd_cursor = FALSE;
-    }
 }
 
 
