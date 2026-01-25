@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.17 2025/11/01 14:55:28 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.18 2026/01/24 12:26:08 dra Exp $ ";
 #endif
 #endif
 
@@ -95,6 +95,7 @@ typedef struct _screen_info {
 	/* atoms I want to know in order to handle them */
 	Atom sun_wm_p;
 	Xv_Cursor busy_pointer;
+	Xv_Cursor basic_pointer;
 } Screen_info;
 
 #define	SCREEN_PRIVATE(screen) XV_PRIVATE(Screen_info, Xv_screen_struct, screen)
@@ -736,6 +737,18 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
 			value = screen->busy_pointer;
 			break;
 
+		case SCREEN_BASIC_CURSOR:
+			if (! screen->basic_pointer) {
+				screen->basic_pointer = xv_create(screen_public, CURSOR,
+									CURSOR_SRC_CHAR, OLC_BASIC_PTR,
+									CURSOR_MASK_CHAR, OLC_BASIC_MASK_PTR,
+									/* Can never free */
+									XV_INCREMENT_REF_COUNT,
+									NULL);
+			}
+			value = screen->basic_pointer;
+			break;
+
 		default:
 			if (xv_check_bad_attr(SCREEN, attr) == XV_ERROR) {
 				*status = XV_ERROR;
@@ -1114,6 +1127,7 @@ static int screen_destroy(Xv_Screen screen_public, Destroy_status status)
 	XFree((char *)(screen->visual_infos));
 	if (screen->sun_wm_protocols) XFree((char *)(screen->sun_wm_protocols));
 	if (screen->busy_pointer) xv_destroy(screen->busy_pointer);
+	if (screen->basic_pointer) xv_destroy(screen->basic_pointer);
 	free(screen);
 
 	return XV_OK;
