@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.6 2025/11/01 14:57:02 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.8 2026/01/25 18:33:23 dra Exp $";
 #endif
 #endif
 
@@ -401,18 +401,8 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	}
 
 	if (!is_root && !is_sel_window) {
-		default_cursor = (Xv_Cursor) xv_get(screen, XV_KEY_DATA, WIN_CURSOR);
-		if (!default_cursor) {
-			default_cursor = xv_create(screen, CURSOR,
-					CURSOR_SRC_CHAR, OLC_BASIC_PTR,
-					CURSOR_MASK_CHAR, OLC_BASIC_MASK_PTR,
-					/* Can never free */
-					XV_INCREMENT_REF_COUNT, NULL);
-			(void)xv_set(screen, XV_KEY_DATA, CURSOR_BASIC_PTR,
-					default_cursor, NULL);
-			(void)xv_set(screen, XV_KEY_DATA, WIN_CURSOR, default_cursor, NULL);
-		}
-		(void)xv_set(default_cursor, XV_INCREMENT_REF_COUNT, NULL);
+		default_cursor = xv_get(screen, SCREEN_BASIC_CURSOR);
+		xv_set(default_cursor, XV_INCREMENT_REF_COUNT, NULL);
 		win->cursor = (Xv_opaque) default_cursor;
 	}
 	else {
@@ -555,6 +545,7 @@ Pkg_private XID window_new(Display *display, Xv_opaque screen, Window_info *win,
     Xv_object       	    win_public = win->public_self;
     Xv_Drawable_info        *info;
     int			     transparent;
+    struct window_info	*w;
 
     DRAWABLE_INFO_MACRO(win_public, info);
 
@@ -605,7 +596,18 @@ Pkg_private XID window_new(Display *display, Xv_opaque screen, Window_info *win,
 
     }
     XSaveContext(display, new_window, CONTEXT, (caddr_t)win_public);
-    return (new_window);
+
+	/* AQT (= Avoid Query Tree) : */
+	for (w = win->owner; w; w = w->owner) {
+		if (w->aqt_descendants) {
+			xv_free(w->aqt_descendants);
+			w->aqt_descendants = NULL;
+			/* leave win->aqt_allocated as it is! */
+			break;
+		}
+	}
+
+    return new_window;
 }
 
 Xv_private void window_set_bit_gravity(Xv_Window win_public, int value)
@@ -730,6 +732,20 @@ static int window_destroy_win_struct(Xv_Window win_public, Destroy_status status
 					win->xic = (XIC) NULL;
 				}
 #endif /* OW_I18N */
+
+				/* AQT (= Avoid Query Tree) : */
+				{
+    				struct window_info	*w;
+
+					for (w = win->owner; w; w = w->owner) {
+						if (w->aqt_descendants) {
+							xv_free(w->aqt_descendants);
+							w->aqt_descendants = NULL;
+							/* leave win->aqt_allocated as it is! */
+							break;
+						}
+					}
+				}
 
 				DRAWABLE_INFO_MACRO(win_public, info);
 				/*
