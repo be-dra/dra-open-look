@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.45 2026/01/22 21:57:34 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.46 2026/01/25 20:35:26 dra Exp $";
 #endif
 #endif
 
@@ -24,6 +24,7 @@ static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xfixes.h>
 #include <xview_private/svr_impl.h>
 
 /*
@@ -822,6 +823,24 @@ Xv_object xview_x_input_readevent(Display *display, Event *event,
 	return (window);
 }
 
+static void handle_extension_event(Xv_server server, Display *dpy, XEvent *xev,
+									Xv_window window)
+{
+	Server_info *srv = SERVER_PRIVATE(server);
+
+	if (xev->type == srv->xfixEventBase + XFixesSelectionNotify) {
+		Atom sftk_process = xv_get(server,SERVER_ATOM,"_OL_SOFT_KEYS_PROCESS");
+
+		/* something has changed with the sftk_process selection,
+		 * we fetch the current owner
+		 */
+		srv->softkey_xid = XGetSelectionOwner(dpy, sftk_process);
+	}
+
+	if (srv->extensionProc) {
+		(*srv->extensionProc)(server, dpy, xev, window);
+	}
+}
 
 /*
  * This converts an xevent to an XView event. If the event was invalid i.e.
@@ -924,8 +943,6 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 #endif
 
 				if (xevent->type >= LASTEvent) {
-					server_extension_proc_t extensionProc;
-
 					if (! srv) {
 						XFindContext(display, (Window) display,
 									(XContext) xv_get(xv_default_server,
@@ -938,12 +955,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						return 1;
 					}
 
-					extensionProc = (server_extension_proc_t)xv_get(srv,
-													SERVER_EXTENSION_PROC);
-
-					if (extensionProc) {
-						(*extensionProc)(srv, display, xevent, window);
-					}
+					handle_extension_event(srv, display, xevent, window);
 				}
 				*pwindow = XV_NULL;
 				return 1;
@@ -1989,18 +2001,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 			 * NULL.
 			 */
 		default:
-			{
-				/*
-				 * I would like to cache the extensionProc, but then we run into
-				 * the problem where the extensionProc is sporatically changed
-				 * by the programmer.
-				 */
-				server_extension_proc_t extensionProc =
-					(server_extension_proc_t)xv_get(srv, SERVER_EXTENSION_PROC);
-
-				if (extensionProc)
-					(*extensionProc)(srv, display, xevent, window);
-			}
+			handle_extension_event(srv, display, xevent, window);
 			*pwindow = XV_NULL;
 			return 1;
 	}
@@ -3403,13 +3404,32 @@ Bool win_check_lang_mode(Xv_server server, Display *display, Event *event)
 
 Xv_private XID xv_get_softkey_xid(Xv_server server, Display *display)
 {
-	Atom sftk_process_atom;
-	Window seln_owner;
+	Server_info *srv = SERVER_PRIVATE(server);
+	Atom sftk_process = xv_get(server,SERVER_ATOM,"_OL_SOFT_KEYS_PROCESS");
 
-	sftk_process_atom = xv_get(server, SERVER_ATOM, "_OL_SOFT_KEYS_PROCESS");
-	seln_owner = XGetSelectionOwner(display, sftk_process_atom);
-	return (seln_owner);
+	if (srv->xfixEventBase < 0) {
+		int  XFIXErrorBase, XFIXRequestBase;
 
+		srv->softkey_xid = None;
+
+		if (XQueryExtension(display, "XFIXES", &XFIXRequestBase,
+							&srv->xfixEventBase, &XFIXErrorBase))
+		{   
+			if (srv->top_level_win) {
+				XFixesSelectSelectionInput(display,
+						xv_get(srv->top_level_win, XV_XID), sftk_process,
+						XFixesSetSelectionOwnerNotifyMask
+						| XFixesSelectionWindowDestroyNotifyMask
+						| XFixesSelectionClientCloseNotifyMask);
+				/* see handle_extension_event */
+				srv->softkey_xid = XGetSelectionOwner(display, sftk_process);
+			}           
+		}
+	}
+
+	if (srv->softkey_xid) return srv->softkey_xid;
+
+	return XGetSelectionOwner(display, sftk_process);
 }
 
 static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
