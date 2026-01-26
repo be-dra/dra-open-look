@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.35 2025/12/30 16:30:11 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.36 2026/01/25 20:33:19 dra Exp $";
 #endif
 #endif
 
@@ -704,6 +704,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	server_object = (Xv_server_struct *) server_public;
 	server_object->private_data = (Xv_opaque) server;
 	server->ui_reg_proc = server_note_register_ui;
+	server->xfixEventBase = -1;
 
 	server->display_name = xv_strsave(server_name ? server_name : ":0");
 
