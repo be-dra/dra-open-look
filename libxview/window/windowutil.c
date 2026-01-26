@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.14 2025/11/06 18:01:28 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.17 2026/01/25 18:32:40 dra Exp $";
 #endif
 #endif
 /*
@@ -27,16 +27,9 @@ static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowuti
 #include <xview_private/draw_impl.h>
 #include <xview_private/sel_impl.h>
 #include <xview_private/svr_impl.h>
-#include <xview/server.h>
-#include <xview/screen.h>
 #include <xview/win_notify.h>
-#include <xview/frame.h>
-#include <xview/font.h>
-#include <xview/sel_attrs.h>
-#include <X11/Xatom.h>
-#include <X11/Xutil.h>
-
 #include <xview_private/i18n_impl.h>
+#include <xview/defaults.h>
 
 #define WIN_SET_FLAG(deaf, win, flag) \
 	((deaf) ? WIN_SET_DEAF(win, flag) : WIN_SET_LOOP(win, flag))
@@ -1106,69 +1099,50 @@ Xv_window	window;
 }
 
 /*
- * window_set_tree_flag(topLevel, pointer, deafBit, on)
- * Sets the flag bit in the private data of the window 'topLevel'
- * and all it's subwindows to 'flag'. flag is either deaf or window_loop.
- * This is controlled by 'deafBit'. If other flag's need to be manipulated
- * by this function, modify the macros WIN_IS_FLAG and WIN_CHECK_FLAG
- * and how 'deafBit' is interpreted in this function.
- *
- * If 'pointer' is not NULL, all windows in the tree will use it as the new pointer
- * if 'flag' is TRUE. Upon calling this function with 'flag' = FALSE, the old pointer
- * will be restored to all the windows in the tree.
+ * set_flag_cursor(window, pointer, flag)
+ * Makes 'window' use 'pointer' as a cursor if 'flag' is TRUE
  */
-Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
-							int deafBit, Bool flag)
+static int set_flag_cursor(Xv_window window, Xv_cursor pointer,
+									Bool flag)
 {
-	Window_info *win;
+	Window_info *win_private;
 
-	if (!topLevel) return XV_OK;
-
-	win = WIN_PRIVATE(topLevel);
-
-	/*
-	 * Return if the window is already in the state we want to set it to
-	 */
-	if (WIN_IS_FLAG(deafBit, win) == flag) return XV_OK;
-
-	/*
-	 * Otherwise, set bit in window private data
-	 */
-	WIN_SET_FLAG(deafBit, win, flag);
-
-	/*
-	 * If cursor provided, make window use it
-	 */
-	if (pointer) {
-		window_set_flag_cursor(topLevel, pointer, flag);
+	if (!window) {
+		return (XV_OK);
 	}
 
-	/*
-	 * Do the same for ALL children/descendants.
-	 */
-	if (window_set_tree_child_flag(topLevel, pointer, deafBit, flag) != XV_OK) {
-		/*
-		 * If unsuccessful, return error code
-		 */
-		return XV_ERROR;
+	win_private = WIN_PRIVATE(window);
+
+	if (flag) {
+		if (pointer) {
+			win_private->normal_cursor = win_private->cursor;
+			xv_set(window, WIN_CURSOR, pointer, NULL);
+		}
+	}
+	else {
+		if (win_private->normal_cursor) {
+			xv_set(window, WIN_CURSOR, win_private->normal_cursor, NULL);
+		}
 	}
 
-	return XV_OK;
+	return (XV_OK);
 }
 
 /*
- * window_set_tree_child_flag(query, pointer, deafBit, flag)
+ * set_tree_child_flag(query, pointer, deafBit, flag)
  * Traverses the window tree rooted at 'query', setting the flag bit
  * in the private data of all windows in the tree to 'flag'. flag is either
  * deaf or window_loop. This is controlled by 'deafBit'. If other flag's
  * need to be manipulated by this function, modify the macros WIN_IS_FLAG
  * and WIN_CHECK_FLAG (and how 'deafBit) is interpreted in this function.
  *
- * If 'pointer' is not NULL, all windows in the tree will use it as the new pointer
- * if 'flag' is TRUE. Upon calling this function with 'flag' = FALSE, the old pointer
- * will be restored to all the windows in the tree.
+ * If 'pointer' is not NULL, all windows in the tree will use it as the
+ * new pointer if 'flag' is TRUE. Upon calling this function with
+ * 'flag' = FALSE, the old pointer will be restored to all the windows
+ * in the tree.
  */
-Xv_private int window_set_tree_child_flag(Xv_window query, Xv_cursor pointer, int deafBit, Bool flag)
+static int set_tree_child_flag(Xv_window query, Xv_cursor pointer,
+								int deafBit, Bool flag)
 {
 	Display *display;
 	Xv_Drawable_info *info;
@@ -1223,13 +1197,13 @@ Xv_private int window_set_tree_child_flag(Xv_window query, Xv_cursor pointer, in
 				 * Set cursor to busy cursor
 				 */
 				if (pointer) {
-					(void)window_set_flag_cursor(win_obj, pointer, flag);
+					(void)set_flag_cursor(win_obj, pointer, flag);
 				}
 
 				/*
 				 * make children of this window deaf also
 				 */
-				if (window_set_tree_child_flag(win_obj, pointer, deafBit,
+				if (set_tree_child_flag(win_obj, pointer, deafBit,
 								flag) != XV_OK) {
 					return_code = XV_ERROR;
 				}
@@ -1243,34 +1217,165 @@ Xv_private int window_set_tree_child_flag(Xv_window query, Xv_cursor pointer, in
 	return (return_code);
 }
 
-/*
- * window_set_flag_cursor(window, pointer, flag)
- * Makes 'window' use 'pointer' as a cursor if 'flag' is TRUE
- */
-Xv_private int window_set_flag_cursor(Xv_window window, Xv_cursor pointer,
-									Bool flag)
+static Window *collect_descendants(Display *dpy, Window xid, unsigned long *idx,
+								unsigned long *numalloc, Window *wins)
 {
-	Window_info *win_private;
+	Window root, parent, *children;
+	unsigned int numchildren, i;
 
-	if (!window) {
-		return (XV_OK);
+	if (!(XQueryTree(dpy, xid, &root, &parent, &children, &numchildren))) {
+		xv_error(XV_NULL,
+				ERROR_STRING, XV_MSG("Attempt to query the window tree failed"),
+				NULL);
+
+		return wins;
 	}
 
-	win_private = WIN_PRIVATE(window);
+	if (*idx + numchildren >= *numalloc) {
+		Window *ow;
+		int i, oal;
 
-	if (flag) {
-		if (pointer) {
-			win_private->normal_cursor = win_private->cursor;
-			xv_set(window, WIN_CURSOR, pointer, NULL);
+		oal = *numalloc;
+		ow = wins;
+		*numalloc = *idx + numchildren + 8;
+		wins = xv_alloc_n(Window, *numalloc);
+		fprintf(stderr, "%s: %s-%d: realloc needed for %ld\n", xv_app_name,
+								__FILE__, __LINE__, *idx + numchildren);
+		for (i = 0; i < oal; i++) {
+			if (! ow[i]) break;
+			wins[i] = ow[i];
+		}
+		xv_free(ow);
+	}
+
+	for (i = 0; i < numchildren; i++) {
+		wins[(*idx)++] = children[i];
+		wins = collect_descendants(dpy, children[i], idx, numalloc, wins);
+	}
+	return wins;
+}
+
+/*
+ * window_set_tree_flag(topLevel, pointer, deafBit, on)
+ * Sets the flag bit in the private data of the window 'topLevel'
+ * and all it's subwindows to 'flag'. flag is either deaf or window_loop.
+ * This is controlled by 'deafBit'. If other flag's need to be manipulated
+ * by this function, modify the macros WIN_IS_FLAG and WIN_CHECK_FLAG
+ * and how 'deafBit' is interpreted in this function.
+ *
+ * If 'pointer' is not NULL, all windows in the tree will use it as the
+ * new pointer if 'flag' is TRUE. Upon calling this function with
+ * 'flag' = FALSE, the old pointer will be restored to all the windows in
+ * the tree.
+ */
+Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
+							int deafBit, Bool flag)
+{
+	Window_info *win;
+
+	if (!topLevel) return XV_OK;
+
+	win = WIN_PRIVATE(topLevel);
+
+	/*
+	 * Return if the window is already in the state we want to set it to
+	 */
+	if (WIN_IS_FLAG(deafBit, win) == flag) return XV_OK;
+
+	/*
+	 * Otherwise, set bit in window private data
+	 */
+	WIN_SET_FLAG(deafBit, win, flag);
+
+	/*
+	 * If cursor provided, make window use it
+	 */
+	if (pointer) {
+		set_flag_cursor(topLevel, pointer, flag);
+	}
+
+	if (defaults_get_boolean("window.avoidQueryTree", "Window.AvoidQueryTree",
+										True))
+	{
+		Display *dpy;
+		Xv_Drawable_info *info;
+		unsigned long idx;
+
+		/* The AQT (= Avoid Query Tree) was invented when I found out that
+		 * quite a lot of XQueryTree roundtrips were performed every time
+		 * the application became busy or unbusy.
+		 * Recursive XQueryTree calls were made EVERY TIME.
+		 * The idea behind this AQT-solution is that usually, a user interface
+		 * (aka the window tree) is not very dynamic, i.e. stays the same
+		 * throughout the life cycle of a program. So, for each 'topLevel'
+		 * window we run through those QueryTrees only once.
+		 * 
+		 * However, think of OPENWIN view splitting and joining. So, the UI
+		 * is not as static as I thought initially.
+		 * Therefore, have a look at window_init and window_destroy_win_struct.
+		 */
+
+		DRAWABLE_INFO_MACRO(topLevel, info);
+		dpy = xv_display(info);
+
+		if (! win->aqt_descendants) {
+			Window queryXid;
+
+			queryXid = xv_xid(info);
+			if (win->aqt_allocated == 0) {
+				win->aqt_allocated = defaults_get_integer(
+										"window.avoidQueryTreeCount",
+										"Window.AvoidQueryTreeCount", 16);
+			}
+			win->aqt_descendants = xv_alloc_n(Window, win->aqt_allocated);
+			idx  = 0L;
+
+			win->aqt_descendants = collect_descendants(dpy, queryXid, &idx,
+									&win->aqt_allocated, win->aqt_descendants);
+		}
+
+		for (idx = 0; idx < win->aqt_allocated; idx++) {
+			Window w;
+			Xv_window win_obj;
+
+			if (! (w = win->aqt_descendants[idx])) break;
+
+			if ((win_obj = win_data(dpy, w))) {
+				Window_info *win_private = WIN_PRIVATE(win_obj);
+
+				/*
+				 * Do only if the window is not already in the state we
+				 * want to set it to
+				 */
+				if (WIN_IS_FLAG(deafBit, win_private) != flag) {
+					/*
+					 * Set bit in window private data
+					 */
+					WIN_SET_FLAG(deafBit, win_private, flag);
+
+					/*
+					 * Set cursor to busy cursor
+					 */
+					if (pointer) {
+						(void)set_flag_cursor(win_obj, pointer, flag);
+					}
+				}
+			}
 		}
 	}
 	else {
-		if (win_private->normal_cursor) {
-			xv_set(window, WIN_CURSOR, win_private->normal_cursor, NULL);
+		/*
+		 * Do the same for ALL children/descendants.
+		 */
+		if (set_tree_child_flag(topLevel, pointer, deafBit, flag) != XV_OK) {
+			/*
+			 * If unsuccessful, return error code
+			 */
+			return XV_ERROR;
 		}
 	}
 
-	return (XV_OK);
+	return XV_OK;
 }
 
 #ifdef OW_I18N
