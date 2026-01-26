@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.29 2025/06/19 04:38:18 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.30 2026/01/25 18:36:58 dra Exp $";
 #endif
 
 /*
@@ -838,7 +838,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 	}
 	else {
 		xv_set(client_window,
-				WIN_CURSOR, xv_get(screen, XV_KEY_DATA, WIN_CURSOR),
+				WIN_CURSOR, xv_get(screen, SCREEN_BASIC_CURSOR),
 				NULL);
 	}
 
