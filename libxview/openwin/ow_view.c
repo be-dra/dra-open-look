@@ -1,5 +1,5 @@
 #ifndef lint
-char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.10 2025/11/01 13:01:24 dra Exp $ ";
+char     ow_view_c_sccsid[] = "@(#)ow_view.c 1.43 91/04/24 DRA: $Id: ow_view.c,v 4.11 2026/01/25 09:32:33 dra Exp $ ";
 #endif
 
 /*
@@ -634,7 +634,7 @@ static void do_join(Openwin_view_info *vp)
 				Xv_screen screen = XV_SCREEN_FROM_WINDOW(self);
 
 				xv_set(VIEW_PUBLIC(owin->views),
-						 WIN_CURSOR, xv_get(screen, XV_KEY_DATA, WIN_CURSOR),
+						 WIN_CURSOR, xv_get(screen, SCREEN_BASIC_CURSOR),
 						 NULL);
 			}
 		}
