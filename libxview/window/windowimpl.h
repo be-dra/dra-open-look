@@ -1,4 +1,4 @@
-/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.2 2024/12/05 06:30:25 dra Exp $      */
+/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.3 2026/01/25 16:04:13 dra Exp $      */
 
 /***********************************************************************/
 /*	                      window_impl.h			       */
@@ -211,10 +211,15 @@ typedef struct window_info {
 	/* window that sent the XdndDrop
 	 * Sigh, I need that in order to send the XdndFinished message...
 	 * Again, an idiotic protocol - why couldn't they use a dedicated
-	 * selection request (like _SUN_SELECTION_END or _SUN_DRAGDROP_DONE)
+	 * selection request (analogous to _SUN_SELECTION_END or
+	 * _SUN_DRAGDROP_DONE) - they could even use XdndFinished as target...
 	 */
 	Window xdnd_sender;
 #endif /* NO_XDND */
+
+	/* aqt is an abbreviation of "Avoid QueryTree' */
+	Window *aqt_descendants;
+	unsigned long aqt_allocated;
 } Window_info;
 
 
@@ -285,8 +290,6 @@ Xv_private Xv_opaque win_get_top_level(Xv_Window window);
 Xv_private void win_set_wm_command(Xv_window window);
 Xv_private void	win_set_wm_class(Xv_window);
 Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer, int deafBit, Bool flag);
-Xv_private int window_set_tree_child_flag(Xv_window query, Xv_cursor pointer, int deafBit, Bool flag);
-Xv_private int window_set_flag_cursor(Xv_window window, Xv_cursor , Bool );
 Xv_private void window_set_map_cache(Xv_Window window, int flag);
 Xv_private void window_adjust_rects(Window_rescale_rect_obj *rect_obj_list, Xv_Window parent_public, int num_elems, int parent_width, int parent_height);
 Xv_private void window_calculate_new_size(Xv_Window parent, Xv_Window window,
