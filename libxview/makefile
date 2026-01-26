@@ -179,7 +179,7 @@ CXXEXTRA_INCLUDES =
     SHAREDCODEDEF =
          SHLIBDEF =
 
-     SHLIBLDFLAGS = -shared -lXext -ltirpc
+     SHLIBLDFLAGS = -shared -lXext -lXfixes -ltirpc
 
          PICFLAGS = -fPIC
 
@@ -518,7 +518,7 @@ XMULIB = $(XMULIBONLY) $(XTOOLLIB) $(XLIB)
            XV_CFLAGS.optimized =
            XV_CFLAGS.shared = -DDYNAMICLIB
 
-           SHLIBLDFLAGS=-shared -lXext -ltirpc
+           SHLIBLDFLAGS=-shared -lXext -lXfixes -ltirpc
 
                 DEFINES = $(LOCALE_DEFINES) $(MMAP_DEFINES) $(XV_ALLOC_DEFINES) 			  $(XV_STRDUP_DEFINES) $(XV_CFLAGS.optimized) $(XV_CFLAGS.shared)
 
