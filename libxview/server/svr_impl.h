@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.13 2026/01/23 09:31:35 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.14 2026/01/25 20:32:12 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -187,6 +187,8 @@ typedef struct {
 	char *app_help_file;
 	int want_rows_and_columns;
 	struct _xvwp *xvwp;
+	int xfixEventBase;
+	Window softkey_xid;
 } Server_info;
 
 typedef struct _Server_atom_list {
