@@ -15,7 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.18 2026/01/18 19:26:28 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.21 2026/01/25 19:36:50 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -1170,8 +1170,6 @@ Pkg_private void server_xvwp_init(Server_info *srv, char **argv)
 	}
 }
 
-#ifndef ONLY_ONE_PALETTE
-
 typedef struct { int h, s, v; } HSV;
 #define	MAXRGB	0xff
 #define	MAXSV	MAXRGB
@@ -1291,7 +1289,6 @@ static void rgb_to_hsv(Xv_singlecolor *rgb, HSV *hsv)
     hsv->s = (s * MAXSV) / MAXRGB;
     hsv->v = (v * MAXSV) / MAXRGB;
 }
-#endif /* ONLY_ONE_PALETTE */
 
 #ifdef NOT_NEEDED
 static void tell_res(s)
@@ -1502,7 +1499,6 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 		xv_free(forecol);
 	}
 
-#ifndef ONLY_ONE_PALETTE
 	{
 		int i;
 		int bright_perc=defaults_get_integer("openWindows.brightnessPercentage",
@@ -1528,7 +1524,6 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 			hsv_to_rgb(&hsv, my_colors + i);
 		}
 	}
-#endif /* ONLY_ONE_PALETTE */
 
 	XParseColor(display, cmap, def_back_color, &xcol);
 	my_colors[0].red = (xcol.red >> 8);
@@ -1930,6 +1925,15 @@ static void fill_me(Frame prop)
 
 	color_columns = (int)sqrt((double)fore_start) - 1;
 	if (color_columns < 1) color_columns = 1;
+
+	if (want_color) {
+		cms = xv_create(screen, CMS,
+				CMS_CONTROL_CMS, TRUE,
+				CMS_SIZE, CMS_CONTROL_COLORS + total_num_colors,
+				CMS_COLORS, my_colors,
+				NULL);
+		xv_set(pan, WIN_CMS, cms, NULL);
+	}
 
 	xv_set(inst->propwin,
 				FRAME_PROPS_CREATE_ITEM,
@@ -2350,12 +2354,10 @@ Pkg_private void server_xvwp_install(Frame base)
 	Server_info *srvpriv = SERVER_PRIVATE(srv);
 	xvwp_t *inst = srvpriv->xvwp;
 	char *app, buf[200];
-	Panel pan;
 	Display *dpy;
 	Window xid;
 	Xv_screen screen;
 	screen_ui_style_t ui_style;
-	Cms cms;
 	Atom atoms[8], show_props_atom;
 	int want_color;
 	int cnt = 0;
@@ -2363,6 +2365,7 @@ Pkg_private void server_xvwp_install(Frame base)
 	if (inst->installed) return;
 
 	inst->installed = TRUE;
+    srvpriv->top_level_win = base;
 
 	dpy = (Display *)xv_get(base, XV_DISPLAY);
 	xid = (Window)xv_get(base, XV_XID);
@@ -2480,15 +2483,6 @@ Pkg_private void server_xvwp_install(Frame base)
 
 	inst->data.base = base;
 
-	if (want_color) {
-		cms = xv_create(screen, CMS,
-				CMS_CONTROL_CMS, TRUE,
-				CMS_SIZE, CMS_CONTROL_COLORS + total_num_colors,
-				CMS_COLORS, my_colors,
-				NULL);
-	}
-	else cms = (Cms)0;
-
 	app = (char *)xv_get(srv, XV_APP_NAME);
 	if (! app) app = (char *)xv_get(base, XV_LABEL);
 	if (! app) app = "no app name ???";
@@ -2505,11 +2499,7 @@ Pkg_private void server_xvwp_install(Frame base)
 				FRAME_PROPS_CREATE_CONTENTS_PROC, fill_me,
 				XV_KEY_DATA, XV_DEPTH, want_color,
 				XV_SET_POPUP, XV_AUTO_CREATE, XV_SHOW, XV_WIDTH, NULL,
-				cms ? WIN_CMS : (Window_attribute)0, cms,
 				NULL);
-
-	pan = xv_get(inst->propwin, FRAME_PROPS_PANEL);
-	if (cms) xv_set(pan, WIN_CMS, cms, NULL);
 
 	xv_set(base,
 				WIN_CONSUME_EVENTS, WIN_REPAINT, ACTION_HELP, NULL,
