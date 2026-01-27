@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.17 2026/01/25 18:32:40 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.18 2026/01/26 11:14:42 dra Exp $";
 #endif
 #endif
 /*
@@ -162,7 +162,7 @@ Pkg_private Notify_value window_default_event_func(Xv_Window win_public, Event *
 					ldata[0] = (event_action(event)==KBD_USE) ? xv_xid(info): 0;
 					ldata[1] = xv_get(server_public, SERVER_FOCUS_TIMESTAMP);
 
-					sfk_win = (Window) xv_get_softkey_xid(server_public,
+					sfk_win = xv_get_softkey_xid(server_public,
 													xv_display(info));
 					if (sfk_win != None)
 						xv_send_message(win_public, sfk_win,
@@ -1217,13 +1217,14 @@ static int set_tree_child_flag(Xv_window query, Xv_cursor pointer,
 	return (return_code);
 }
 
-static Window *collect_descendants(Display *dpy, Window xid, unsigned long *idx,
-								unsigned long *numalloc, Window *wins)
+		
+static Window *collect_descendants(Server_info *srv, Window xid,
+					unsigned long *idx, unsigned long *numalloc, Window *wins)
 {
 	Window root, parent, *children;
 	unsigned int numchildren, i;
 
-	if (!(XQueryTree(dpy, xid, &root, &parent, &children, &numchildren))) {
+	if (!(XQueryTree(srv->xdisplay,xid,&root,&parent,&children,&numchildren))) {
 		xv_error(XV_NULL,
 				ERROR_STRING, XV_MSG("Attempt to query the window tree failed"),
 				NULL);
@@ -1239,8 +1240,7 @@ static Window *collect_descendants(Display *dpy, Window xid, unsigned long *idx,
 		ow = wins;
 		*numalloc = *idx + numchildren + 8;
 		wins = xv_alloc_n(Window, *numalloc);
-		fprintf(stderr, "%s: %s-%d: realloc needed for %ld\n", xv_app_name,
-								__FILE__, __LINE__, *idx + numchildren);
+		server_update_aqt(srv, (int)*numalloc);
 		for (i = 0; i < oal; i++) {
 			if (! ow[i]) break;
 			wins[i] = ow[i];
@@ -1250,7 +1250,7 @@ static Window *collect_descendants(Display *dpy, Window xid, unsigned long *idx,
 
 	for (i = 0; i < numchildren; i++) {
 		wins[(*idx)++] = children[i];
-		wins = collect_descendants(dpy, children[i], idx, numalloc, wins);
+		wins = collect_descendants(srv, children[i], idx, numalloc, wins);
 	}
 	return wins;
 }
@@ -1297,9 +1297,10 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 	if (defaults_get_boolean("window.avoidQueryTree", "Window.AvoidQueryTree",
 										True))
 	{
-		Display *dpy;
+		Xv_server server;
 		Xv_Drawable_info *info;
 		unsigned long idx;
+		Server_info *srv;
 
 		/* The AQT (= Avoid Query Tree) was invented when I found out that
 		 * quite a lot of XQueryTree roundtrips were performed every time
@@ -1316,7 +1317,8 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 		 */
 
 		DRAWABLE_INFO_MACRO(topLevel, info);
-		dpy = xv_display(info);
+		server = xv_server(info);
+		srv = SERVER_PRIVATE(server);
 
 		if (! win->aqt_descendants) {
 			Window queryXid;
@@ -1330,7 +1332,7 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 			win->aqt_descendants = xv_alloc_n(Window, win->aqt_allocated);
 			idx  = 0L;
 
-			win->aqt_descendants = collect_descendants(dpy, queryXid, &idx,
+			win->aqt_descendants = collect_descendants(srv, queryXid, &idx,
 									&win->aqt_allocated, win->aqt_descendants);
 		}
 
@@ -1340,7 +1342,7 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 
 			if (! (w = win->aqt_descendants[idx])) break;
 
-			if ((win_obj = win_data(dpy, w))) {
+			if ((win_obj = win_data(srv->xdisplay, w))) {
 				Window_info *win_private = WIN_PRIVATE(win_obj);
 
 				/*
