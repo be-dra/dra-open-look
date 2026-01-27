@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.8 2026/01/25 18:33:23 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.9 2026/01/26 21:50:58 dra Exp $";
 #endif
 #endif
 
@@ -545,7 +545,6 @@ Pkg_private XID window_new(Display *display, Xv_opaque screen, Window_info *win,
     Xv_object       	    win_public = win->public_self;
     Xv_Drawable_info        *info;
     int			     transparent;
-    struct window_info	*w;
 
     DRAWABLE_INFO_MACRO(win_public, info);
 
@@ -596,16 +595,6 @@ Pkg_private XID window_new(Display *display, Xv_opaque screen, Window_info *win,
 
     }
     XSaveContext(display, new_window, CONTEXT, (caddr_t)win_public);
-
-	/* AQT (= Avoid Query Tree) : */
-	for (w = win->owner; w; w = w->owner) {
-		if (w->aqt_descendants) {
-			xv_free(w->aqt_descendants);
-			w->aqt_descendants = NULL;
-			/* leave win->aqt_allocated as it is! */
-			break;
-		}
-	}
 
     return new_window;
 }
