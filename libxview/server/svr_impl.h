@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.14 2026/01/25 20:32:12 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.15 2026/01/26 10:52:04 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -233,7 +233,8 @@ Xv_private Xv_opaque server_get_timestamp(Xv_Server server_public);
 Xv_private Xv_opaque server_get_fullscreen(Xv_Server server_public);
 Xv_private void server_set_timestamp(Xv_Server server_public, struct timeval *ev_time, unsigned long xtime);
 Xv_private void server_set_fullscreen(Xv_Server server_public, int in_fullscreen);
-Xv_private 	void server_do_xevent_callback(Server_info *server, Display *display, XEvent	*xevent);
+Xv_private void server_do_xevent_callback(Server_info *server, Display *display, XEvent	*xevent);
+Xv_private void server_update_aqt(Server_info *server, int count);
 
 Xv_private int server_get_seln_function_pending(Xv_Server server_public);
 Xv_private void server_set_seln_function_pending(Xv_Server server_public, int);
