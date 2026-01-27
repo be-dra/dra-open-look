@@ -15,7 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.21 2026/01/25 19:36:50 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.22 2026/01/26 11:13:45 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -86,6 +86,7 @@ typedef struct {
 	int width;
 	int height;
 	int popup_relative;
+	int avoid_query_tree_count;
 	int manage_wins;
 	int base_scale;
 	int use_base_scale; /* == base_scale except WIN_SCALE_DEFAULT */
@@ -210,7 +211,11 @@ static Permprop_res_res_t res_base[] = {
 	{ "xvwp.manage_windows", PRC_U, DAP_int, OFF(manage_wins), 0 },
 	{ "xvwp.base_scale", PRC_D, DAP_enum, OFF(base_scale), (Ppmt)scale_enum },
 	{ "xvwp.popup_scale", PRC_D, DAP_enum, OFF(popup_scale), (Ppmt)scale_enum },
-	/* Sonderbehandlung: */
+
+	/* must be before the last, see ref (chjbvhjsdfgv) */
+	{ "avoidQueryTreeCount",PRC_U, DAP_int,OFF(avoid_query_tree_count), 16 },
+
+	/* special handling: must be last, see ref (drghjbvewrfvdfgh) */
 	{ "xvwp.window_menu.default", PRC_D, DAP_int, OFF(win_menu_default), 0 }
 	/* das hier nicht auf 2 setzen, Index 2 ist
 	 * der 'moveButton' -  siehe windowMenuFullButtons in usermenu.c 
@@ -889,6 +894,7 @@ static int note_apply(Frame f)
 		/* jetzt noch das WM-Menue auf dem Baseframe: */
 		inst->data.win_menu_default = get_wm_menu_default(dpy, inst->data.base);
 
+		/* ref (drghjbvewrfvdfgh) */
 		Permprop_res_update_dbs(inst->xvwp_xrmdb, inst->xvwp_prefix,
 					(char *)&inst->data,
 					res_base + PERM_NUMBER(res_base) - 1, 1);
@@ -1599,6 +1605,9 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 	Permprop_res_read_dbs(srvpriv->xvwp->xvwp_xrmdb, srvpriv->xvwp->xvwp_prefix,
 				(char *)&srvpriv->xvwp->data, res_base, 
 				(unsigned)PERM_NUMBER(res_base));
+
+	defaults_set_integer("window.avoidQueryTreeCount",
+						srvpriv->xvwp->data.avoid_query_tree_count);
 
 	srvpriv->xvwp->data.use_base_scale = 
 		((srvpriv->xvwp->data.base_scale == WIN_SCALE_DEFAULT)
@@ -2853,4 +2862,23 @@ Xv_private void server_register_secondary_base(Xv_server srv, Frame sec,
 
 	p->next = inst->secondaries;
 	inst->secondaries = p;
+}
+
+Xv_private void server_update_aqt(Server_info *server, int count)
+{
+	xvwp_t *inst = server->xvwp;
+
+	if (! inst) {
+		fprintf(stderr, "%s: %s-%d: cannot save avoid_query_tree_count %d\n",
+						xv_instance_app_name, __FILE__, __LINE__, count);
+		return;
+	}
+
+	inst->data.avoid_query_tree_count = count;
+
+	/* ref (chjbvhjsdfgv) */
+	Permprop_res_update_dbs(inst->xvwp_xrmdb, inst->xvwp_prefix,
+					(char *)&inst->data,
+					res_base + PERM_NUMBER(res_base) - 2, 1);
+	Permprop_res_store_db(inst->xvwp_xrmdb[PRC_U], inst->appfiles[PRC_U]);
 }
