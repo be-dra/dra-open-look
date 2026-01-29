@@ -1,5 +1,5 @@
 /* #ident	"@(#)winnofoc.c	26.22	93/06/28 SMI" */
-char winnofoc_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winnofoc.c,v 1.6 2024/08/04 17:37:16 dra Exp $";
+char winnofoc_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winnofoc.c,v 1.7 2026/01/27 13:07:31 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -95,14 +95,6 @@ static int eventSelection(Display *dpy, XEvent *pEvent, WinNoFocus *winInfo)
 	SelectionResponse(pEvent);
 }
 
-extern void dra_sel_reply(XEvent *pEvent);
-
-static int eventSelectionNotify(Display *dpy, XEvent *pEvent, WinNoFocus *winInfo)
-{
-	dra_sel_reply(pEvent);
-}
-
-
 /***************************************************************************
 * global functions
 ***************************************************************************/
@@ -177,7 +169,6 @@ Display *dpy;
 	classNoFocus.core.xevents[ClientMessage] = eventClientMessage;
 	classNoFocus.core.xevents[SelectionRequest] = eventSelection;
 	classNoFocus.core.xevents[SelectionClear] = eventSelection;
-	classNoFocus.core.xevents[SelectionNotify] = eventSelectionNotify;
 	classNoFocus.core.focusfunc = NULL;
 	classNoFocus.core.drawfunc = NULL;
 	classNoFocus.core.destroyfunc = destroyNoFocus;
