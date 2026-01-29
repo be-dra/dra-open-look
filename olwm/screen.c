@@ -1,5 +1,5 @@
 /* #ident	"@(#)screen.c	26.46	93/06/28 SMI" */
-char screen_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: screen.c,v 2.3 2025/01/11 20:13:10 dra Exp $";
+char screen_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: screen.c,v 2.4 2026/01/27 13:11:32 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -2140,7 +2140,6 @@ InitScreens(dpy)
 
 		XGrabServer(dpy);
 		selectionTime = TimeFresh();
-		dra_sel_init(dpy, NoFocusWin, selectionTime);
 		if (GRV.SingleScreen) {
 			scr = DefaultScreen(dpy);
 			sprintf(selname, "WM_S%d", scr);
