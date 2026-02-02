@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.22 2025/06/28 20:16:51 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.24 2026/02/01 18:18:19 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -960,10 +960,10 @@ static void from_menu(Function_keys self, Menu menu)
 		Xv_opaque itemproc = xv_get(it, MENU_NOTIFY_PROC);
 
 		if (menuproc != XV_NULL || itemproc != XV_NULL) {
-			char *code = (char *)xv_get(it, XV_KEY_DATA, FUNCKEY_CODE);
+			char *code = (char *)xv_get(it, MENU_FUNCKEY_CODE);
 
 			if (code && *code) {
-				char *desc= (char *)xv_get(it,XV_KEY_DATA,FUNCKEY_DESCRIPTION);
+				char *desc= (char *)xv_get(it, MENU_FUNCKEY_DESCRIPTION);
 
 				if (! desc || ! *desc) 
 					desc = (char *)xv_get(it, MENU_STRING);
@@ -1219,5 +1219,5 @@ const Xv_pkg xv_funckeys_pkg = {
 	funckeys_set,
 	funckeys_get,
 	funckeys_destroy,
-	NULL
+	NULL   /* inherited from PERMANENT_LIST */
 };
