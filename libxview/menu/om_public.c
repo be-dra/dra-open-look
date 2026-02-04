@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.9 2025/07/05 12:43:38 dra Exp $";
+static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.10 2026/02/03 19:53:35 dra Exp $";
 #endif
 #endif
 
@@ -1587,7 +1587,8 @@ static void menu_create_pin_window(Menu menu_public, Frame parent_frame,
 				FRAME_CMD_PANEL_BORDERED, FALSE,
 				XV_SHOW, FALSE,
 				WIN_PARENT, xv_get(parent_frame, XV_ROOT),
-				XV_VISUAL, menu->group_info->vinfo->visual, NULL);
+				XV_VISUAL, menu->group_info->vinfo->visual,
+				NULL);
 	}
 	else {
 		cmd_frame = xv_create(parent_frame, FRAME_CMD,
@@ -1600,7 +1601,8 @@ static void menu_create_pin_window(Menu menu_public, Frame parent_frame,
 
 				FRAME_CMD_PANEL_BORDERED, FALSE,
 				XV_SHOW, FALSE,
-				WIN_PARENT, xv_get(parent_frame, XV_ROOT), NULL);
+				WIN_PARENT, xv_get(parent_frame, XV_ROOT),
+				NULL);
 	}
 
 	{
