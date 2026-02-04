@@ -15,7 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.22 2026/01/26 11:13:45 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.23 2026/02/03 19:53:58 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -2781,12 +2781,11 @@ Pkg_private void server_appl_set_busy(Server_info *srvpriv, int busy, Frame exce
 		xv_set(inst->data.base, FRAME_BUSY, busy, NULL);
 	}
 
+/* MIGHT_BE_FALSE_WHEN_BUSY_IS_FALSE_BUT_WAS_TRUE_BEFORE */
 	for (p = inst->data.popups; p; p = p->next) {
 		if (except != p->frame
 				&& p->frame
-#ifdef MIGHT_BE_FALSE_WHEN_BUSY_IS_FALSE_BUT_WAS_TRUE_BEFORE
 				&& xv_get(p->frame, XV_SHOW)
-#endif
 				)
 		{
 			xv_set(p->frame, FRAME_BUSY, busy, NULL);
@@ -2796,9 +2795,7 @@ Pkg_private void server_appl_set_busy(Server_info *srvpriv, int busy, Frame exce
 	for (p = inst->secondaries; p; p = p->next) {
 		if (except != p->frame
 				&& p->frame
-#ifdef MIGHT_BE_FALSE_WHEN_BUSY_IS_FALSE_BUT_WAS_TRUE_BEFORE
 				&& xv_get(p->frame, XV_SHOW)
-#endif
 				)
 		{
 			xv_set(p->frame, FRAME_BUSY, busy, NULL);
