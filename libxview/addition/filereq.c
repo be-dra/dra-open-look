@@ -44,9 +44,10 @@
 #include <xview/xview.h>
 #include <xview/filedrag.h>
 #include <xview/filereq.h>
+#include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.7 2025/03/08 13:37:48 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.9 2026/02/04 08:33:38 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -155,9 +156,6 @@ static int my_conversion(Xv_opaque owner, Atom *type, Xv_opaque *value,
 
 	if (!ll) return FALSE;
 
-/* 	DTRACE(DTL_SEL, "in my_conversion: requested target '%s'\n", */
-/* 						xv_get(srv, SERVER_ATOM_NAME, *type)); */
-
 	if (*type == (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME")) {
 		*type = XA_STRING;
 		*length = strlen(ll->origdropped);
@@ -220,20 +218,13 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 	Filereq_private *priv = FRPRIV(self);
 	int is_inssel = FALSE;
 
-/* 	DTRACE(DTL_SEL, "in reply proc(tgt=%ld, typ=%ld, val=%lx, len=%ld, form=%d\n", */
-/* 						target, type, value, length, format); */
-
 	if (target == (Atom)xv_get(priv->srv, SERVER_ATOM, "INSERT_SELECTION")) {
 		is_inssel = TRUE;
 	}
 
-/* 	DTRACE(DTL_SEL, "\n"); */
 	if (length == SEL_ERROR) {
 		int errcode = *(int *)value;
 
-/* 		DTRACE(DTL_SEL, "\n"); */
-/* 		DTRACE(DTL_SEL, "error in reply proc, code = %d, target=%s\n", errcode, */
-/* 								xv_get(priv->srv, SERVER_ATOM_NAME, target)); */
 		decode_error(priv, errcode);
 		if (is_inssel) inssel_answer(priv);
 		if (priv->is_string_request) {
@@ -245,7 +236,6 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 		if (priv->appl_reply) {
 			(*priv->appl_reply)(self, target, type, value, length, format);
 		}
-/* 		DTRACE(DTL_SEL, "\n"); */
 		return;
 	}
 
@@ -293,7 +283,6 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 		if (value) xv_free((char *)value);
 	}
 
-/* 		DTRACE(DTL_SEL, "\n"); */
 	if (priv->is_string_request && target == XA_STRING) {
 		if (priv->during_incr) {
 			if (length > 0) {
@@ -313,11 +302,9 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 		}
 	}
 
-/* 		DTRACE(DTL_SEL, "\n"); */
 	if (priv->appl_reply) {
 		(*priv->appl_reply)(self, target, type, value, length, format);
 	}
-/* 		DTRACE(DTL_SEL, "\n"); */
 }
 
 static void save_loaded(Filereq_private *priv, char *locfile,
@@ -341,9 +328,11 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 		char buf[200];
 		Xv_window win = xv_get(self, XV_OWNER);
 
+		/* this is the selection "S" - see the description below */
 		sprintf(buf, "_DRA_FILEREQ_%lx_%lx", (unsigned long)xv_get(win, XV_XID),
 											(unsigned long)priv);
 
+		SERVERTRACE((311, "%s: create sel owner %s\n", __FUNCTION__, buf));
 		priv->selowner = xv_create(win, FILEDRAG,
 							SEL_RANK_NAME, buf,
 							FILEDRAG_ENABLE_STRING, FILEDRAG_CONTENTS_STRING,
@@ -369,6 +358,8 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 
 	inssel[0] = (Atom)xv_get(priv->selowner, SEL_RANK);
 	inssel[1] = XA_STRING;
+	SERVERTRACE((311, "%s: assign '%s' to sel owner %ld\n", __FUNCTION__,
+						ll->localfile, inssel[0]));
 	priv->save_rank = (Atom)xv_get(self, SEL_RANK);
 	xv_set(self,
 			SEL_RANK, ll->loadsel_atom,
@@ -382,9 +373,36 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 			NULL);
 
 	priv->inssel_cb = cb;
-/* 	DTRACE(DTL_INTERN, "in save_loaded: requesting INSERT_SELECTION\n"); */
+	SERVERTRACE((311, "%s: requesting INSERT_SELECTION\n", __FUNCTION__));
 	sel_post_req(self);
 }
+
+/*
+ * When a requestor application (an editor of some kind) finds that it
+ * needs to obtain the source data through the selection service, and
+ * intends to allow the user to edit the data and then put it back, the
+ * recipient tries to convert the _DRA_LOAD target. If the selection holder
+ * supports the _DRA_LOAD target, it will respond with the name of a
+ * selection (called "H" for this discussion) that the holder guarantees
+ * will be unique and persistent for the life of the selection holder. This
+ * selection is associated with the original data in the drag and drop
+ * transfer.
+ * The editor may manipulate the data as it sees fit. When it is time
+ * to save the data back to the original location, the editor creates a new
+ * selection rank and associates it with the data that it is currently
+ * holding (call the selection rank "S"). The editor then converts the
+ * INSERT_SELECTION target against the selection H. A selection can be
+ * guaranteed as unique by converting _SUN_SELECTION_END against H when
+ * done. In the property associated with the target conversion, the editor
+ * places the name of the selection S.
+ * The conversion of INSERT_SELECTION tells the selection holder to replace
+ * the contents of the current selection (selection H, representing the
+ * original data in storage) with the contents of the new selection
+ * (selection S, whose contents represent the edited version of the data).
+ * Refer to section 2.6.3.2 of the ICCCM.
+ * The original selection may then make target conversions against
+ * selection S to get the data back from the editor.
+ */
 
 static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 {
@@ -407,6 +425,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 	}
 
 	if (adata) {
+		/* this is the selection "H" - see the description above */
 		sl = *adata;
 		xv_free(adata);
 	}
@@ -435,7 +454,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
-			SEL_TYPE, XA_STRING,
+			SEL_TYPE, XA_STRING,   /* or SEL_TYPE_NAME, "TEXT" ??? */
 			NULL);
 	priv->write_to_file = TRUE;
 	xv_get(self, SEL_DATA, &length, &format);
@@ -477,7 +496,6 @@ static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
 	int have_tim = FALSE;
 	int ev_flags = 0;
 
-/* 	DTRACE(DTL_INTERN, "start fetch_files\n"); */
 	priv->status = FR_OK;
 	tim.tv_sec = 0;
 	tim.tv_usec = 0;
@@ -491,7 +509,6 @@ static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
 			event_action(ev) != ACTION_DRAG_MOVE)
 		{
 			priv->status = FR_WRONG_EVENT;
-/* 			DTRACE(DTL_SEL, "wrong event\n"); */
 			return;
 		}
 		tim = event_time(ev);
@@ -507,7 +524,6 @@ static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
 			tim = *owntim;
 			priv->last_time = tim;
 			have_tim = TRUE;
-/* 			DTRACE(DTL_INTERN, "sel_req %x has valid time\n", sr); */
 		}
 	}
 
@@ -520,7 +536,6 @@ static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
 
 	if (! have_tim) {
 		server_set_timestamp(priv->srv, &tim, server_get_timestamp(priv->srv));
-/* 		DTRACE(DTL_INTERN, "take time from server\n"); */
 	}
 
 	free_own_files(priv);
@@ -528,7 +543,6 @@ static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
 	if (!priv->already_decoded) {
 		if (dnd_decode_drop(sr, ev) == XV_ERROR) {
 			priv->status = FR_CANNOT_DECODE;
-/* 			DTRACE(DTL_SEL, "cannot decode\n"); */
 			return;
 		}
 	}
@@ -602,14 +616,11 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 				SEL_TYPE_NAME, "text/uri-list",
 				NULL);
 		cdata = (char *)xv_get(sr, SEL_DATA, &length, &format);
-/* 		DTRACE(DTL_EV, "nach get uri-list(val=%x, len=%d, form=%d\n", */
-/* 										cdata, length, format); */
 		if (length == SEL_ERROR) {
 			request_failed(priv);
 			return;
 		}
 
-/* 		DTRACE(DTL_INTERN, "uri-list(%s)\n", cdata); */
 		/* da kommt evtl eine NEWLINE-getrennte Liste, erst mal zaehlen */
 		priv->count = 0;
 		p = cdata;
@@ -649,7 +660,7 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 						strcpy(rem_name, tmpbuf);
 						*filebegin = '/';
 						uname(&name);
-						owner_is_remote = strcmp(rem_name, name.nodename);
+						owner_is_remote = (strcmp(rem_name,name.nodename) != 0);
 					}
 					else {
 						filebegin = tmpbuf;
@@ -666,12 +677,9 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 		}
 		priv->files[i] = 0;
 		priv->count = i;
-/* 		DTRACE(DTL_INTERN, "end fetch_files, count = %d\n", priv->count); */
 		return;
 	}
 
-/* 	DTRACE(DTL_SEL, "before _SUN_ENUMERATION_COUNT time = (%d,%d)\n", */
-/* 							tim.tv_sec, tim.tv_usec); */
 	priv->status =  FR_OK;
 	xv_set(sr,
 			SEL_TIME, &tim,
@@ -679,8 +687,6 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 			NULL);
 	idata = (int *)xv_get(sr, SEL_DATA, &length, &format);
 	if (length == SEL_ERROR) {
-/* 		DTRACE(DTL_SEL, "_SUN_ENUMERATION_COUNT failed, priv->status=%d\n", */
-/* 								priv->status); */
 		priv->status = FR_CONVERSION_REJECTED;
 		return;
 	}
@@ -708,13 +714,12 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 				cdata = (char *)xv_get(sr, SEL_DATA, &length, &format);
 				if (length == SEL_ERROR) {
 					priv->status = FR_CONVERSION_REJECTED;
-/* 					DTRACE(DTL_SEL, "_SUN_FILE_HOST_NAME and HOST_NAME failed\n"); */
 					return;
 				}
 			}
 
 			uname(&name);
-			owner_is_remote = strcmp(cdata, name.nodename);
+			owner_is_remote = (strcmp(cdata, name.nodename) != 0);
 			strcpy(rem_name, cdata);
 			xv_free(cdata);
 		}
@@ -733,88 +738,62 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 				SEL_PROP_DATA, &i,
 				NULL);
 		idata = (int *)xv_get(sr, SEL_DATA, &length, &format);
-/* 		DTRACE(DTL_EV, "nach get enum_item(val=%x, len=%d, form=%d\n",idata, */
-/* 										length, format); */
 		if (length == SEL_ERROR) {
 			request_failed(priv);
 			return;
 		}
 		xv_free((char *)idata);
 
-		xv_set(sr,
-				SEL_TIME, &tim,
-				SEL_TYPE_NAME, "FILE_NAME",
-				SEL_TYPE_INDEX, 0,
-				SEL_PROP_LENGTH, 0L,
-				SEL_PROP_DATA, NULL,
-				NULL);
+		xv_set(sr, SEL_TYPE_NAME, "FILE_NAME", NULL);
 		cdata = (char *)xv_get(sr, SEL_DATA, &length, &format);
-/* 		DTRACE(DTL_EV, "nach get file_name(val=%x, len=%d, form=%d\n", */
-/* 										cdata, length, format); */
 		if (length == SEL_ERROR) {
 			request_failed(priv);
 			return;
 		}
 
-		if (priv->check_access) {
-			if (owner_is_remote) {
-				struct stat sb;
-				char *locnam;
+		if (priv->check_access && owner_is_remote) {
+			struct stat sb;
+			char *locnam;
 
-				if (stat(cdata, &sb)) {
-					/* stat failed */
+			if (stat(cdata, &sb)) {
+				/* stat failed: no such file on local disk */
 
-					if (priv->use_load) {
-						locnam = perform_dra_load(priv, cdata, rem_name);
-						if (locnam) priv->files[j++] = locnam;
-					}
+				if (priv->use_load) {
+					locnam = perform_dra_load(priv, cdata, rem_name);
+					if (locnam) priv->files[j++] = locnam;
 				}
-				else {
-					Filereq_remote_stat *rs;
+			}
+			else {
+				Filereq_remote_stat *rs;
 
-					/* stat succeeded */
+				/* stat succeeded */
 
-					xv_set(sr,
-							SEL_TIME, &tim,
-							SEL_TYPE_NAME, "_DRA_FILE_STAT",
-							NULL);
-					rs = (Filereq_remote_stat *)xv_get(sr, SEL_DATA, &length,
-															&format);
-					if (length == sizeof(Filereq_remote_stat)/sizeof(long) &&
-						format == 32)
+				xv_set(sr, SEL_TYPE_NAME, "_DRA_FILE_STAT", NULL);
+				rs = (Filereq_remote_stat *)xv_get(sr, SEL_DATA, &length,
+														&format);
+				if (length == sizeof(Filereq_remote_stat)/sizeof(long) &&
+					format == 32)
+				{
+					if ((long)sb.st_size == rs->size &&
+						(long)sb.st_ino == rs->inode &&
+						(long)sb.st_mtime == rs->mtime)
 					{
-						if ((long)sb.st_size == rs->size &&
-							(long)sb.st_ino == rs->inode &&
-							(long)sb.st_mtime == rs->mtime)
-						{
-							/* we seem to talk about the same file */
-							priv->files[j++] = cdata;
-							/* don't free */
-							cdata = NULL;
-						}
-						else {
-							locnam = perform_dra_load(priv, cdata, rem_name);
-							if (locnam) priv->files[j++] = locnam;
-						}
+						/* we seem to talk about the same file */
+						priv->files[j++] = cdata;
+						/* don't free */
+						cdata = NULL;
 					}
 					else {
 						locnam = perform_dra_load(priv, cdata, rem_name);
 						if (locnam) priv->files[j++] = locnam;
 					}
-
-					if (rs) xv_free((char *)rs);
-				}
-			}
-			else {
-				if (access(cdata, F_OK)) {
-					xv_free(cdata);
-					cdata = NULL;
 				}
 				else {
-					priv->files[j++] = cdata;
-					/* don't free */
-					cdata = NULL;
+					locnam = perform_dra_load(priv, cdata, rem_name);
+					if (locnam) priv->files[j++] = locnam;
 				}
+
+				if (rs) xv_free((char *)rs);
 			}
 		}
 		else {	
@@ -827,7 +806,6 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 	}
 
 	priv->count = j;
-/* 	DTRACE(DTL_INTERN, "end fetch_files, count = %d\n", priv->count); */
 }
 
 static void request_delete(Filereq_private *priv, int ind)
@@ -880,7 +858,6 @@ static int filereq_init(Xv_window owner, Xv_opaque xself, Attr_avlist avlist,
 
 	if (!priv) return XV_ERROR;
 
-/* 	DTRACE(DTL_INTERN+50, "in filereq_init(%x)\n", self); */
 	priv->public_self = (Xv_opaque)self;
 	self->private_data = (Xv_opaque)priv;
 
@@ -922,14 +899,12 @@ static Xv_opaque filereq_set(File_requestor self, Attr_avlist avlist)
 			break;
 
 		case FILE_REQ_FETCH:
-/* 			DTRACE(DTL_INTERN, "set FILE_REQ_FETCH\n"); */
 			priv->own_request = TRUE;
 			fetch_files(priv, self, (Event *)A1);
 			priv->own_request = FALSE;
 			ADONE;
 
 		case FILE_REQ_FETCH_VIA:
-/* 			DTRACE(DTL_INTERN, "set FILE_REQ_FETCH_VIA\n"); */
 			priv->already_decoded = TRUE;
 			priv->check_access = FALSE;
 			fetch_files(priv, (Selection_requestor)A1, (Event *)0);
@@ -1046,10 +1021,8 @@ static Xv_opaque filereq_get(File_requestor self, int *status,
 			{
 				int *cntp = va_arg(vali, int *);
 
-/* 				DTRACE(DTL_GET, "start get FILE_REQ_FILES\n"); */
 				if (! priv->files) {
 					if (! priv->single && cntp) *cntp = 0;
-/* 					DTRACE(DTL_GET, "\thave no files\n"); */
 					return XV_NULL;
 				}
 
@@ -1060,7 +1033,6 @@ static Xv_opaque filereq_get(File_requestor self, int *status,
 				}
 				else {
 					if (cntp) *cntp = priv->count;
-/* 					DTRACE(DTL_GET, "\thave %d files\n", priv->count); */
 
 					if (priv->allocate) {
 						int i;
