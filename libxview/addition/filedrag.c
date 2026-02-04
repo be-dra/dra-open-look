@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.10 2026/01/19 15:19:24 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.11 2026/02/03 19:50:58 dra Exp $";
 #endif
 
 typedef struct {
@@ -72,16 +72,16 @@ typedef struct {
 
 #define ADONE ATTR_CONSUME(*attrs);break
 
-/* ARGSUSED */
 static void filedrag_done_proc(FileDrag self, Xv_opaque buf, Atom target)
 {
-/* 	Xv_server server; */
+	Xv_server server;
 
-/* 	server = XV_SERVER_FROM_WINDOW(xv_get(self, XV_OWNER)); */
-/* 	DTRACE(DTL_SEL+70, "filedrag_done_proc called for target '%s'\n", */
-/* 			(char *)xv_get(server, SERVER_ATOM_NAME, target)); */
+	server = XV_SERVER_FROM_WINDOW(xv_get(self, XV_OWNER));
 
 	if (target == XA_STRING) {
+		xv_free(buf);
+	}
+	else if (target == xv_get(server, SERVER_ATOM, "TEXT")) {
 		xv_free(buf);
 	}
 }
@@ -118,6 +118,39 @@ static void internal_convert_namestring(FileDrag_private *priv, Xv_opaque *data,
 
 	*length = strlen(buffer);
 	*data = (Xv_opaque)buffer;
+}
+
+static int convert_text(FileDrag_private *priv, Xv_server server, Atom *type,
+				Xv_opaque *data, unsigned long *length, int *format)
+{
+	int fd;
+	struct stat sb;
+	char *buffer;
+
+	*format = 8;
+
+	if (stat(priv->files[priv->current], &sb)) return FALSE;
+	if (! S_ISREG(sb.st_mode)) return FALSE;
+
+	*length = sb.st_size;
+
+	if (sb.st_size == 0) {
+		*data = (Xv_opaque)0;
+		return TRUE;
+	}
+
+	if (!(buffer = xv_malloc((unsigned long)(sb.st_size + 1)))) return FALSE;
+
+	if ((fd = open(priv->files[priv->current], O_RDONLY)) < 0) {
+		free(buffer);
+		return FALSE;
+	}
+
+	read(fd, buffer, (size_t)sb.st_size);
+	close(fd);
+	*data = (Xv_opaque)buffer;
+
+	return TRUE;
 }
 
 static int convert_string(FileDrag_private *priv, Xv_server server, Atom *type,
@@ -454,6 +487,7 @@ static struct { char *name;
 	{ "text/uri-list", convert_kde_text_uri_list },
 /* lieber nicht: der will sich nach China verbinden oder sowas... */
 /* 	{ "text/x-moz-url", convert_netscape_url }, */
+	{ "TEXT", convert_text },
 	{ "STRING", convert_string } /* must be the last */
 };
 
