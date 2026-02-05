@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)site_pblc.c 1.13 93/06/28 DRA: $Id: site_pblc.c,v 4.5 2025/11/01 14:53:47 dra Exp $ ";
+static char     sccsid[] = "@(#)site_pblc.c 1.13 93/06/28 DRA: $Id: site_pblc.c,v 4.6 2026/02/04 13:05:12 dra Exp $ ";
 #endif
 #endif
 
@@ -24,11 +24,11 @@ static int dnd_site_init(Xv_Window owner, Xv_drop_site site_public,
 								Attr_avlist avlist, int *u)
 {
 	Dnd_site_info *site = NULL;
-	Xv_drop_site_struct *site_object;
+	Xv_dropsite *site_object;
 
 	site = xv_alloc(Dnd_site_info);
 	site->public_self = site_public;
-	site_object = (Xv_drop_site_struct *) site_public;
+	site_object = (Xv_dropsite *) site_public;
 	site_object->private_data = (Xv_opaque) site;
 
 	dnds_status_reset(site, site_id_set);
@@ -238,7 +238,7 @@ static int dnd_site_destroy(Xv_drop_site site_public, Destroy_status state)
 
 const Xv_pkg		xv_drop_site_item = {
     "DropSite", ATTR_PKG_DND,
-    sizeof(Xv_drop_site_struct),
+    sizeof(Xv_dropsite),
     XV_GENERIC_OBJECT,
     dnd_site_init,
     dnd_site_set_avlist,
