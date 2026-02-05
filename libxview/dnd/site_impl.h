@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)site_impl.h 1.5 93/06/28 DRA: $Id: site_impl.h,v 4.2 2024/05/22 18:23:20 dra Exp $ ";
+static char     sccsid[] = "@(#)site_impl.h 1.5 93/06/28 DRA: $Id: site_impl.h,v 4.3 2026/02/04 13:04:36 dra Exp $ ";
 #endif
 #endif
 
@@ -29,7 +29,7 @@ static char     sccsid[] = "@(#)site_impl.h 1.5 93/06/28 DRA: $Id: site_impl.h,v
 
 
 #define DND_SITE_PRIVATE(dnd_site_public) \
-		XV_PRIVATE(Dnd_site_info, Xv_drop_site_struct, dnd_site_public)
+		XV_PRIVATE(Dnd_site_info, Xv_dropsite, dnd_site_public)
 #define DND_SITE_PUBLIC(site)         XV_PUBLIC(site)
 
 typedef enum dnd_region_ops {
