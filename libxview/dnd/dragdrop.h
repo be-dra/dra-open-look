@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.2 2025/03/08 13:30:00 dra Exp $ ";
+static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.3 2026/02/04 13:05:09 dra Exp $ ";
 #endif
 #endif
 
@@ -109,9 +109,14 @@ typedef enum {
 } Dnd_attribute;
 
 typedef struct {
-	Xv_sel_owner		parent_data;
+	Xv_sel_owner	parent_data;
 	Xv_opaque		private_data;
-} Xv_dnd_struct, Xv_drop_site_struct;
+} Xv_dnd_struct;
+
+typedef struct {
+    Xv_generic_struct	parent_data;
+	Xv_opaque			private_data;
+} Xv_dropsite;
 
 /*
  * Public Functions 
