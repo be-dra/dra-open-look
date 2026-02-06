@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.9 2026/02/04 08:33:38 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.10 2026/02/05 19:09:24 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -116,6 +116,13 @@ static loadlist_t release_loaded(Filereq_private *priv, loadlist_t ll,
 
 	if (!strcmp(ll->localfile, locname)) {
 		loadlist_t p = ll->next;
+		File_requestor self = FRPUB(priv);
+
+		xv_set(self,
+				SEL_RANK, ll->loadsel_atom,
+				SEL_TYPE_NAME, "_SUN_SELECTION_END",
+				NULL);
+		sel_post_req(self);
 
 		if (priv->selowner) {
 			if (ll==(loadlist_t)xv_get(priv->selowner,XV_KEY_DATA,fr_load_key))
@@ -378,6 +385,9 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 }
 
 /*
+ * This text is copied from the Solaris 2.2 Desktop Integration Guide.
+ *
+ * ====================================================================
  * When a requestor application (an editor of some kind) finds that it
  * needs to obtain the source data through the selection service, and
  * intends to allow the user to edit the data and then put it back, the
@@ -402,6 +412,24 @@ static void save_loaded(Filereq_private *priv, char *locfile,
  * Refer to section 2.6.3.2 of the ICCCM.
  * The original selection may then make target conversions against
  * selection S to get the data back from the editor.
+ * ====================================================================
+ *
+ * Now, in our implementation, the editor loads the data via the original
+ * dnd-selection, saves it into a temporary file (see [jgsvergfnkbwrf])
+ * which the editor (which is "our caller") loads.
+ * When the user wants to "Save" this file, we end up in "save_loaded"
+ * and perform that INSERT_SELECTION. The remote entity (say a file manager)
+ * fetches the modified data and stores them into the original dragged file.
+ *
+ * So far, so good. But our editor is still running on the temporary file -
+ * a situation that the above text says nothing about. 
+ * Can we request _SUN_SELECTION_END now???
+ * Should the editor be terminated and the temp file removed?????
+ * We will have to leave this to the editor that uses the 
+ * attribute FILE_REQ_SAVE... - however, on the application level nothing
+ * is known about the selection H, so, we need an attribute that leads
+ * to a request of _SUN_SELECTION_END: 
+		FILE_REQ_RELEASE:
  */
 
 static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
@@ -445,6 +473,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 	if (base) ++base;
 	else base = file;
 
+	/* Reference [jgsvergfnkbwrf] */
 	sprintf(buf, "/tmp/%s@%s", base, rem_name);
 	priv->fildesc = open(buf, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (priv->fildesc < 0) {
