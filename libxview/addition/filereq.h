@@ -2,7 +2,7 @@
 #define filereq_h_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: filereq.h,v 4.3 2025/03/08 13:37:48 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: filereq.h,v 4.4 2026/02/06 17:13:18 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -97,7 +97,7 @@ typedef void (*Filereq_remote_save_proc)(File_requestor fr,
 typedef enum {
 	FILE_REQ_STRING_ERROR, /* length is a Filereq_status */
 	FILE_REQ_STRING, /* not incr, value is the whole received string */
-	FILE_REQ_INCR, /* announcement, length is the announced length */
+	FILE_REQ_INCR_START, /* announcement, length is the announced length */
 	FILE_REQ_INCR_PACKET, /* partial string during incr */
 	FILE_REQ_INCR_END  /* end of incremental transfer */
 } Filereq_string_op;
