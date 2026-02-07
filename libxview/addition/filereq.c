@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.10 2026/02/05 19:09:24 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.12 2026/02/06 23:05:37 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -255,8 +255,8 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 	if (type == (Atom)xv_get(priv->srv, SERVER_ATOM, "INCR")) {
 		priv->during_incr = TRUE;
 		if (priv->is_string_request) {
-			(*(priv->string_proc))(self, FILE_REQ_INCR,
-								(char *)0, (unsigned long)(*(int *)value));
+			(*(priv->string_proc))(self, FILE_REQ_INCR_START,
+								(char *)0, *((unsigned long *)value));
 		}
 		/* if we go ahead here, the file will contain the file length
 		 * in the first 4 Bytes..
@@ -266,24 +266,48 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 
 	if (priv->write_to_file) {
 		if (priv->fildesc >= 0 && priv->status == FR_OK) {
-			size_t bytelen;
 
-			bytelen = (size_t)length * (format / 8);
-			if (bytelen > 0) {
-				int writelen;
-
-				writelen = write(priv->fildesc, (char *)value, bytelen);
-				if (writelen < bytelen) {
-					priv->status = FR_WRITE_FAILED;
-					close(priv->fildesc);
-					priv->fildesc = -1;
-				}
-			}
-			else {
+			if (length == 0) {
 				/* end of INCR */
 				priv->during_incr = FALSE;
 				close(priv->fildesc);
 				priv->fildesc = -1;
+			}
+			else {
+				int writelen;
+				size_t bytelen;
+
+				if (format == 32) {
+					int intbuf[1000];
+					long *propval = (long *)value;
+					unsigned long i, rest = length;
+
+					while (rest > 0) {
+						for (i = 0; i < 1000; i++) {
+							intbuf[i] = (int)*propval;
+							++propval;
+							--rest;
+							if (rest == 0) break;
+						}
+						bytelen = i * sizeof(int);
+						writelen = write(priv->fildesc, (char *)intbuf,bytelen);
+						if (writelen < bytelen) {
+							priv->status = FR_WRITE_FAILED;
+							close(priv->fildesc);
+							priv->fildesc = -1;
+						}
+					}
+				}
+				else {
+
+					bytelen = (size_t)length * (format / 8);
+					writelen = write(priv->fildesc, (char *)value, bytelen);
+					if (writelen < bytelen) {
+						priv->status = FR_WRITE_FAILED;
+						close(priv->fildesc);
+						priv->fildesc = -1;
+					}
+				}
 			}
 		}
 
@@ -439,7 +463,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 	loadlist_t newl;
 	int format;
 	long length;
-	char *base, buf[500];
+	char *base, buf[550], dirbuf[500];
 
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
@@ -474,7 +498,14 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 	else base = file;
 
 	/* Reference [jgsvergfnkbwrf] */
-	sprintf(buf, "/tmp/%s@%s", base, rem_name);
+	sprintf(dirbuf, "/tmp/load_%s", rem_name);
+	sprintf(buf, "%s/%s", dirbuf, base);
+	if (mkdir(dirbuf, 0700) < 0) {
+		int e = errno;
+		if (e != EEXIST) {
+			sprintf(buf, "/tmp/%s@%s", base, rem_name);
+		}
+	}
 	priv->fildesc = open(buf, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (priv->fildesc < 0) {
 		priv->status = FR_OPEN_FAILED;
