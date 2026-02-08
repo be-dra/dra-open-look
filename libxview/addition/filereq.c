@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.12 2026/02/06 23:05:37 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.13 2026/02/07 13:38:59 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -155,31 +155,7 @@ static void free_own_files(Filereq_private *priv)
 	priv->count = 0;
 }
 
-static int my_conversion(Xv_opaque owner, Atom *type, Xv_opaque *value,
-				unsigned long *length, int *format)
-{
-	Xv_server srv = XV_SERVER_FROM_WINDOW(xv_get(owner, XV_OWNER));
-	loadlist_t ll = (loadlist_t)xv_get(owner, XV_KEY_DATA, fr_load_key);
-
-	if (!ll) return FALSE;
-
-	if (*type == (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME")) {
-		*type = XA_STRING;
-		*length = strlen(ll->origdropped);
-		*format = 8;
-		*value = (Xv_opaque)ll->origdropped;
-		return TRUE;
-	}
-
-	return xv_iccc_convert(owner, type, value, length, format);
-}
-
-static void request_failed(Filereq_private *priv)
-{
-	free_own_files(priv);
-}
-
-static void inssel_answer(Filereq_private *priv)
+static void insert_selection_done(Filereq_private *priv)
 {
 	File_requestor self = FRPUB(priv);
 	loadlist_t ll = (loadlist_t)xv_get(priv->selowner,XV_KEY_DATA,fr_load_key);
@@ -194,6 +170,40 @@ static void inssel_answer(Filereq_private *priv)
 				XV_KEY_DATA, fr_load_key, 0,
 				SEL_OWN, FALSE,
 				NULL);
+}
+
+static int note_dra_load_save_conversion(Xv_opaque owner, Atom *type,
+			Xv_opaque *value, unsigned long *length, int *format)
+{
+	Xv_server srv = XV_SERVER_FROM_WINDOW(xv_get(owner, XV_OWNER));
+	loadlist_t ll = (loadlist_t)xv_get(owner, XV_KEY_DATA, fr_load_key);
+	Filereq_private *priv = (Filereq_private *)xv_get(owner,XV_KEY_DATA,fr_key);
+
+	if (!ll) return FALSE;
+
+	if (*type == (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME")) {
+		*type = XA_STRING;
+		*length = strlen(ll->origdropped);
+		*format = 8;
+		*value = (Xv_opaque)ll->origdropped;
+		return TRUE;
+	}
+
+	if (*type == (Atom)xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END")) {
+		insert_selection_done(priv);
+        *type = xv_get(srv, SERVER_ATOM, "NULL");
+        *value = XV_NULL;
+        *length = 0;
+        *format = 32;
+		return TRUE;
+	}
+
+	return xv_iccc_convert(owner, type, value, length, format);
+}
+
+static void request_failed(Filereq_private *priv)
+{
+	free_own_files(priv);
 }
 
 static void decode_error(Filereq_private *priv, int err)
@@ -233,7 +243,7 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 		int errcode = *(int *)value;
 
 		decode_error(priv, errcode);
-		if (is_inssel) inssel_answer(priv);
+		if (is_inssel) insert_selection_done(priv);
 		if (priv->is_string_request) {
 			(*(priv->string_proc))(self, FILE_REQ_STRING_ERROR,
 										(char *)0, (unsigned long)priv->status);
@@ -247,7 +257,6 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 	}
 
 	if (is_inssel) {
-		inssel_answer(priv);
 		if (value) xv_free((char *)value);
 		return;
 	}
@@ -367,7 +376,7 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 		priv->selowner = xv_create(win, FILEDRAG,
 							SEL_RANK_NAME, buf,
 							FILEDRAG_ENABLE_STRING, FILEDRAG_CONTENTS_STRING,
-							SEL_CONVERT_PROC, my_conversion,
+							SEL_CONVERT_PROC, note_dra_load_save_conversion,
 							XV_KEY_DATA, fr_key, priv,
 							NULL);
 	}
@@ -403,6 +412,7 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 			SEL_PROP_DATA, inssel,
 			NULL);
 
+	priv->status = FR_OK;
 	priv->inssel_cb = cb;
 	SERVERTRACE((311, "%s: requesting INSERT_SELECTION\n", __FUNCTION__));
 	sel_post_req(self);
