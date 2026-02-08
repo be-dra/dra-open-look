@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.34 2026/01/24 07:54:06 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.35 2026/02/07 13:47:24 dra Exp $";
 #endif
 #endif
 
@@ -20,8 +20,6 @@ static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.3
 #include <stdlib.h>
 #endif  /* SVR4 */
 
-static int DoConversion(Sel_owner_info *, Atom , Atom , int );
-static int OwnerHandleReply(Sel_owner_info *, XSelectionEvent *);
 static int SelLoseOwnership( Sel_owner_info *sel_owner);
 static int sel_set_ownership(Sel_owner_info *sel_owner);
 static int (*OldErrorHandler)(Display *, XErrorEvent *);
@@ -30,7 +28,6 @@ static int ValidatePropertyEvent(Display *display, XEvent *xevent, char *args);
 static int SendIncr(Sel_owner_info *seln);
 
 static void SelClean(Sel_owner_info *owner);
-static int HandleMultipleReply(Sel_owner_info *seln);
 static void ReplyTimestamp(Sel_owner_info *, Atom *, char **, unsigned long *, int *);
 static void SendIncrMessage( Sel_owner_info *sel);
 static void SetupPropInfo(Sel_owner_info *sel);
@@ -395,12 +392,246 @@ static void do_refuse(XSelectionEvent *reply, Sel_owner_info *owner)
 	if (owner) SelClean(owner);
 }
 
+static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
+							int multipleIndex, int *sendEventReq, XEvent *ev)
+{
+	Atom replyType;
+	char *replyBuff;
+	unsigned long length;
+	int format = 0;
+	unsigned long svr_max_req_size;
+
+
+	selection->req->property = property;
+
+	if (target == selection->atomList->timestamp) {
+		ReplyTimestamp(selection, &replyType, &replyBuff, &length, &format);
+		selection->req->type = replyType;
+		selection->req->target = target;
+		selection->req->property = property;
+		goto Done;
+	}
+
+	replyType = target;
+
+	/*
+	 * set the length to the max_server-buffer size; set the format to
+	 * indicate the beginning or end of a multiple conversion.
+	 * MAX_SEL_BUF_SIZE returns the size in long words. hence the
+	 * multiplication by 4 to convert the size to bytes.
+	 * MAX_SEL_BUFF_SIZE = XMaxRequestSize, und das sind '4-byte units' !!
+	 */
+
+	svr_max_req_size = (MAX_SEL_BUFF_SIZE(selection->dpy) << 2) - 100;
+
+	length = svr_max_req_size;
+	format = multipleIndex;
+
+
+	/*
+	 * Run the user defined convert proc.
+	 */
+	if (!sel_wrap_convert_proc(selection->public_self, &replyType,
+					(Xv_opaque *)&replyBuff, &length, &format)) {
+		return (FALSE);
+	}
+
+	/*
+	 * If the user defined convert proc has set the incr to TRUE,
+	 * send data in increments.
+	 */
+	if (replyType == selection->atomList->incr)
+		selection->req->incr = TRUE;
+
+	selection->req->target = target;
+	selection->req->bytelength = BYTE_SIZE(length, format);
+	selection->req->offset = 0;
+	selection->req->format = format;
+	selection->req->type = replyType;
+	selection->req->data = (char *)replyBuff;
+	/*
+	 * If the data size is bigger than the server's maximum_request_size
+	 * send the data in increments or if the selection owner has explicitly
+	 * asked for incremental transfer; do incr
+	 */
+
+
+	if ((selection->req->bytelength>svr_max_req_size) || selection->req->incr) {
+		XWindowAttributes winAttr;
+		int status;
+
+
+		status = xv_sel_add_prop_notify_mask(selection->dpy,
+				selection->req->requestor, &winAttr);
+
+		if (status)
+			selection->status |= SEL_ADD_PROP_NOTIFY;
+
+		SendIncrMessage(selection);
+		selection->req->incr = FALSE;
+
+		return SEL_INCREMENT;
+	}
+	/*
+	 * Successfully converted none incremental data.
+	 * Cleanup!!
+	 * NOTE: The application is responsible for deallocating replyBuff.
+	 */
+	if (target == selection->atomList->timestamp)
+		XFree((char *)replyBuff);
+
+  Done:
+
+	/*
+	 * Place the data resulting from the selection conversion into the
+	 * specified property on the requestor window.
+	 */
+	XChangeProperty(selection->dpy, selection->req->requestor,
+			selection->req->property, selection->req->type,
+			format, PropModeReplace, (unsigned char *)replyBuff, (int)length);
+	if (sendEventReq) {
+		ev->xselection.property = selection->req->property;
+		*sendEventReq = FALSE;
+		XSendEvent(selection->dpy, ev->xselection.requestor, False,
+					(unsigned long)NULL, ev);
+	}
+	/* do we really need this? XFlush(selection->dpy); */
+
+	if (selection->done_proc) {
+		(*selection->done_proc) (selection->public_self,
+				(Xv_opaque) selection->req->data, target);
+
+		selection->to_be_freed = NULL;
+	}
+	if (selection->to_be_freed) xv_free(selection->to_be_freed);
+	selection->to_be_freed = NULL;
+
+	return TRUE;
+}
+
+static int HandleMultipleReply(Sel_owner_info *seln)
+{
+	atom_pair *atomPair;
+	unsigned long bytesafter;
+	unsigned char *prop;
+	unsigned long length;
+	int format;
+	Atom target;
+	int byteLen, set = 0;
+	int ret, multipleIndex = SEL_MULTIPLE, firstTarget = 1;
+
+
+	/*
+	 * The contents of the property named in the request is a list
+	 * of atom pairs, the first atom naming a target, and the second
+	 * naming a property. Do not delete the data. The requestor needs to
+	 * access this data.
+	 */
+
+	if (XGetWindowProperty(seln->dpy, seln->req->requestor,
+					seln->req->property, 0L, 1000000L,
+					False, (Atom) AnyPropertyType, &target, &format,
+					&length, &bytesafter, &prop) != Success)
+	{
+		xv_error(seln->public_self,
+				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
+				ERROR_PKG, SELECTION,
+				NULL);
+		return FALSE;
+	}
+
+	if (format != 32) {
+		xv_error(seln->public_self,
+				ERROR_STRING, XV_MSG("Format of MULTIPLE prop must be 32"),
+				ERROR_PKG, SELECTION,
+				NULL);
+		return FALSE;
+	}
+
+	if (target != seln->atomList->atom_pair) {
+		xv_error(seln->public_self,
+				ERROR_STRING, XV_MSG("MULTIPLE prop must have type ATOM_PAIR"),
+				ERROR_PKG, SELECTION,
+				NULL);
+		return FALSE;
+	}
+
+	byteLen = BYTE_SIZE(length, format) / sizeof(atom_pair);
+
+	for (atomPair = (atom_pair *) prop; byteLen; atomPair++, byteLen--) {
+		if (firstTarget) {
+			multipleIndex = SEL_BEGIN_MULTIPLE;
+			firstTarget = 0;
+		}
+
+		if (!(byteLen - 1))
+			multipleIndex = SEL_END_MULTIPLE;
+
+		ret = DoConversion(seln, atomPair->target, atomPair->property,
+				multipleIndex, NULL, NULL);
+		if (!ret) {
+			/*
+			 * Replace in the MULTIPLE property any property atoms for targets
+			 * it failed to convert with None.
+			 */
+			atomPair->property = None;
+			set = TRUE;
+		}
+		multipleIndex = SEL_MULTIPLE;
+	}
+
+
+	/*
+	 * We have replaced in the MULTIPLE property any property atoms for
+	 * targets it failed to convert with None.
+	 */
+	if (set)
+		XChangeProperty(seln->dpy, seln->req->requestor, seln->property,
+				target, format, PropModeReplace, prop, (int)length);
+
+	XFree((char *)prop);
+	return TRUE;
+}
+
+static int OwnerHandleReply(Sel_owner_info *owner, XSelectionEvent *replyEvent,
+						int *sendEventReq)
+{
+	/*
+	 * We are going to a busy state.
+	 */
+	owner->status |= SEL_BUSY;
+
+	/* Handle MULTIPLE target */
+	if (owner->req->target == owner->atomList->multiple) {
+		owner->req->multiple = TRUE;
+		if (! HandleMultipleReply(owner)) {
+			/* bad MULTIPLE request */
+			replyEvent->property = None;
+			return FALSE;
+		}
+	}
+	else {	/* Handle normal */
+		replyEvent->property = None;
+		if (DoConversion(owner, owner->req->target, owner->req->property, 0,
+							sendEventReq, (XEvent *)replyEvent))
+		{
+			replyEvent->property = owner->req->property;
+			return TRUE;
+		}
+		else {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 /* we do no longer return FALSE here, the old sel svc is about to die */
 Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent)
 {
 	Sel_owner_info *owner;
 	Requestor *req;
 	XSelectionEvent replyEvent;
+	int sendEventRequired = TRUE;
 
 	owner = xv_sel_find_selection_data(reqEvent->display, reqEvent->selection,
 			reqEvent->owner);
@@ -471,7 +702,7 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 	if (OldErrorHandler == NULL)
 		OldErrorHandler = XSetErrorHandler(SelOwnerErrorHandler);
 
-	if (OwnerHandleReply(owner, &replyEvent))
+	if (OwnerHandleReply(owner, &replyEvent, &sendEventRequired))
 		if (replyEvent.property == None) {
 			/*
 			 * We have finished transferring INCR. DO not need to send
@@ -486,9 +717,10 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 	 * Send the requestor window a SelectionNotify event specifying the
 	 * the end of transaction.
 	 */
-	(void)XSendEvent(owner->dpy, replyEvent.requestor, False,
-			(unsigned long)NULL, (XEvent *) & replyEvent);
-
+	if (sendEventRequired) {
+		XSendEvent(owner->dpy, replyEvent.requestor, False,
+					(unsigned long)NULL, (XEvent *) & replyEvent);
+	}
 	OwnerProcessIncr(owner);
 
 	SelClean(owner);
@@ -577,119 +809,6 @@ static void SelClean(Sel_owner_info *owner)
 	owner->req = NULL;
 }
 
-static int OwnerHandleReply(Sel_owner_info *owner, XSelectionEvent *replyEvent)
-{
-	/*
-	 * We are going to a busy state.
-	 */
-	owner->status |= SEL_BUSY;
-
-	/* Handle MULTIPLE target */
-	if (owner->req->target == owner->atomList->multiple) {
-		owner->req->multiple = TRUE;
-		if (! HandleMultipleReply(owner)) {
-			/* bad MULTIPLE request */
-			replyEvent->property = None;
-			return FALSE;
-		}
-	}
-	else {	/* Handle normal */
-		if (DoConversion(owner, owner->req->target, owner->req->property, 0)) {
-			replyEvent->property = owner->req->property;
-			return TRUE;
-		}
-		else {
-			replyEvent->property = None;
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-static int HandleMultipleReply(Sel_owner_info *seln)
-{
-	atom_pair *atomPair;
-	unsigned long bytesafter;
-	unsigned char *prop;
-	unsigned long length;
-	int format;
-	Atom target;
-	int byteLen, set = 0;
-	int ret, multipleIndex = SEL_MULTIPLE, firstTarget = 1;
-
-
-	/*
-	 * The contents of the property named in the request is a list
-	 * of atom pairs, the first atom naming a target, and the second
-	 * naming a property. Do not delete the data. The requestor needs to
-	 * access this data.
-	 */
-
-	if (XGetWindowProperty(seln->dpy, seln->req->requestor,
-					seln->req->property, 0L, 1000000L,
-					False, (Atom) AnyPropertyType, &target, &format,
-					&length, &bytesafter, &prop) != Success)
-	{
-		xv_error(seln->public_self,
-				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
-				ERROR_PKG, SELECTION,
-				NULL);
-		return FALSE;
-	}
-
-	if (format != 32) {
-		xv_error(seln->public_self,
-				ERROR_STRING, XV_MSG("Format of MULTIPLE prop must be 32"),
-				ERROR_PKG, SELECTION,
-				NULL);
-		return FALSE;
-	}
-
-	if (target != seln->atomList->atom_pair) {
-		xv_error(seln->public_self,
-				ERROR_STRING, XV_MSG("MULTIPLE prop must have type ATOM_PAIR"),
-				ERROR_PKG, SELECTION,
-				NULL);
-		return FALSE;
-	}
-
-	byteLen = BYTE_SIZE(length, format) / sizeof(atom_pair);
-
-	for (atomPair = (atom_pair *) prop; byteLen; atomPair++, byteLen--) {
-		if (firstTarget) {
-			multipleIndex = SEL_BEGIN_MULTIPLE;
-			firstTarget = 0;
-		}
-
-		if (!(byteLen - 1))
-			multipleIndex = SEL_END_MULTIPLE;
-
-		ret = DoConversion(seln, atomPair->target, atomPair->property,
-				multipleIndex);
-		if (!ret) {
-			/*
-			 * Replace in the MULTIPLE property any property atoms for targets
-			 * it failed to convert with None.
-			 */
-			atomPair->property = None;
-			set = TRUE;
-		}
-		multipleIndex = SEL_MULTIPLE;
-	}
-
-
-	/*
-	 * We have replaced in the MULTIPLE property any property atoms for
-	 * targets it failed to convert with None.
-	 */
-	if (set)
-		XChangeProperty(seln->dpy, seln->req->requestor, seln->property,
-				target, format, PropModeReplace, prop, (int)length);
-
-	XFree((char *)prop);
-	return TRUE;
-}
-
 Pkg_private int sel_wrap_convert_proc(Selection_owner owner, Atom *type,
 					Xv_opaque *value, unsigned long *length, int *format)
 {
@@ -729,119 +848,6 @@ Pkg_private int sel_wrap_convert_proc(Selection_owner owner, Atom *type,
 	return FALSE;
 }
 
-
-static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
-									int multipleIndex)
-{
-	Atom replyType;
-	char *replyBuff;
-	unsigned long length;
-	int format = 0;
-	unsigned long svr_max_req_size;
-
-
-	selection->req->property = property;
-
-	if (target == selection->atomList->timestamp) {
-		ReplyTimestamp(selection, &replyType, &replyBuff, &length, &format);
-		selection->req->type = replyType;
-		selection->req->target = target;
-		selection->req->property = property;
-		goto Done;
-	}
-
-	replyType = target;
-
-	/*
-	 * set the length to the max_server-buffer size; set the format to
-	 * indicate the beginning or end of a multiple conversion.
-	 * MAX_SEL_BUF_SIZE returns the size in long words. hence the
-	 * multiplication by 4 to convert the size to bytes.
-	 * MAX_SEL_BUFF_SIZE = XMaxRequestSize, und das sind '4-byte units' !!
-	 */
-
-	svr_max_req_size = (MAX_SEL_BUFF_SIZE(selection->dpy) << 2) - 100;
-
-	length = svr_max_req_size;
-	format = multipleIndex;
-
-
-	/*
-	 * Run the user defined convert proc.
-	 */
-	if (!sel_wrap_convert_proc(selection->public_self, &replyType,
-					(Xv_opaque *) & replyBuff, &length, &format)) {
-
-		return (FALSE);
-	}
-
-	/*
-	 * If the user defined convert proc has set the incr to TRUE,
-	 * send data in increments.
-	 */
-	if (replyType == selection->atomList->incr)
-		selection->req->incr = TRUE;
-
-	selection->req->target = target;
-	selection->req->bytelength = BYTE_SIZE(length, format);
-	selection->req->offset = 0;
-	selection->req->format = format;
-	selection->req->type = replyType;
-	selection->req->data = (char *)replyBuff;
-	/*
-	 * If the data size is bigger than the server's maximum_request_size
-	 * send the data in increments or if the selection owner has explicitly
-	 * asked for incremental transfer; do incr
-	 */
-
-
-	if ((selection->req->bytelength>svr_max_req_size) || selection->req->incr) {
-		XWindowAttributes winAttr;
-		int status;
-
-
-		status = xv_sel_add_prop_notify_mask(selection->dpy,
-				selection->req->requestor, &winAttr);
-
-		if (status)
-			selection->status |= SEL_ADD_PROP_NOTIFY;
-
-		SendIncrMessage(selection);
-		selection->req->incr = FALSE;
-
-		return SEL_INCREMENT;
-	}
-	/*
-	 * Successfully converted none incremental data.
-	 * Cleanup!!
-	 * NOTE: The application is responsible for deallocating replyBuff.
-	 */
-	if (target == selection->atomList->timestamp)
-		XFree((char *)replyBuff);
-	goto Done;
-
-  Done:
-
-	/*
-	 * Place the data resulting from the selection conversion into the
-	 * specified property on the requestor window.
-	 */
-	XChangeProperty(selection->dpy, selection->req->requestor,
-			selection->req->property, selection->req->type,
-			format, PropModeReplace, (unsigned char *)replyBuff, (int)length);
-	XFlush(selection->dpy);
-
-	if (selection->done_proc) {
-		(*selection->done_proc) (selection->public_self,
-				(Xv_opaque) selection->req->data, target);
-
-		selection->to_be_freed = NULL;
-	}
-	if (selection->to_be_freed) xv_free(selection->to_be_freed);
-	selection->to_be_freed = NULL;
-
-	return TRUE;
-}
 
 
 /* return the timestamp the owner used to acquire ownership. */
