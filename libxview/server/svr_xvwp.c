@@ -15,7 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.23 2026/02/03 19:53:58 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.24 2026/02/07 19:43:18 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -24,17 +24,8 @@ char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.23 2026/02/03 
 
 #define W_ATOM(f,s) (Atom)xv_get(XV_SERVER_FROM_WINDOW(f), SERVER_ATOM, s)
 
-#if XV_VERSION_NUMBER >= 3200
-#  define SCRES "openWindows.scale"
-#  define SCCLASS "OpenWindows.Scale"
-#  define FNRES "openwindows.regularfont"
-#  define FNCLASS "OpenWindows.RegularFont"
-#else
-#  define SCRES "window.scale"
-#  define SCCLASS "Window.Scale"
-#  define FNRES "font.name"
-#  define FNCLASS "Font.Name"
-#endif
+#define FNRES "openwindows.regularfont"
+#define FNCLASS "OpenWindows.RegularFont"
 
 /* for delayed_action */
 #define BIT_POS 1
@@ -1456,12 +1447,10 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 	xv_set_popup_frame_initializer(initialize_popup_frames);
 	xv_set(srv, QUEUE_REQUESTS, TRUE, NULL);
 
-#if XV_VERSION_NUMBER >= 3200
 	/* otherwise no other font can be used */
 	if (! srvpriv->xvwp->argv_contains.scale) {
 		defaults_set_string("window.scale.cmdline", "");
 	}
-#endif
 
 	ui_style = (screen_ui_style_t)xv_get(xv_get(srv, SERVER_NTH_SCREEN, 0),
 											SCREEN_UI_STYLE);
@@ -1477,7 +1466,8 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 									"Window.Color.Foreground", "#000000");
 	def_fore_color = xv_strsave(def_fore_color);
 
-	global_scale = defaults_get_enum(SCRES, SCCLASS, scale_enum);
+	global_scale = defaults_get_enum("openWindows.scale", "OpenWindows.Scale",
+												scale_enum);
 
 	display = (Display *)xv_get(srv, XV_DISPLAY);
 	cmap = DefaultColormap(display, 0);
@@ -1686,7 +1676,6 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 			srvpriv->xvwp->font_for_root_and_frame = font;
 		}
 
-#if XV_VERSION_NUMBER >= 3200
 		if (defaults_exists("openwindows.boldfont", "OpenWindows.BoldFont")) {
 			char *fontname = defaults_get_string("openwindows.boldfont",
 							"OpenWindows.BoldFont",
@@ -1734,7 +1723,6 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 				}
 			}
 		}
-#endif /* XV_VERSION_NUMBER */
 	}
 
 /* 	tell_res("after font action"); */
@@ -1773,7 +1761,7 @@ Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name)
 
 		if (scale_enum[iii].name) {
 /*     		defaults_set_string("window.scale.cmdline", scale_enum[iii].name); */
-			defaults_set_string(SCCLASS, scale_enum[iii].name);
+			defaults_set_string("OpenWindows.Scale", scale_enum[iii].name);
 		}
 	}
 
