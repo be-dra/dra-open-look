@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.35 2026/02/07 13:47:24 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.37 2026/02/08 16:07:28 dra Exp $";
 #endif
 #endif
 
@@ -393,7 +393,7 @@ static void do_refuse(XSelectionEvent *reply, Sel_owner_info *owner)
 }
 
 static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
-							int multipleIndex, int *sendEventReq, XEvent *ev)
+							int multipleIndex, int *sendEventReqPtr, XEvent *ev)
 {
 	Atom replyType;
 	char *replyBuff;
@@ -489,13 +489,24 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	XChangeProperty(selection->dpy, selection->req->requestor,
 			selection->req->property, selection->req->type,
 			format, PropModeReplace, (unsigned char *)replyBuff, (int)length);
-	if (sendEventReq) {
+
+	/* In earlier versions this function didn't have the parameters
+	 * sendEventReqPtr and ev. The purpose was for targets like
+	 * INSERT_SELECTION we wanted to answer the INSERT_SELECTION request
+	 * (including the sending of the selection notify event) and then
+	 * be able to do the "real processing" from within the done procedure.
+	 * In this way we avoided problems like timeout from the INSERT_SELECTION
+	 * request.
+	 * Note that this is working only for non-MULTIPLE requests.
+	 *
+	 * Reference [jklewhfvbhkwegfv]
+	 */
+	if (sendEventReqPtr) {
 		ev->xselection.property = selection->req->property;
-		*sendEventReq = FALSE;
+		*sendEventReqPtr = FALSE; 
 		XSendEvent(selection->dpy, ev->xselection.requestor, False,
 					(unsigned long)NULL, ev);
 	}
-	/* do we really need this? XFlush(selection->dpy); */
 
 	if (selection->done_proc) {
 		(*selection->done_proc) (selection->public_self,
@@ -594,7 +605,7 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 }
 
 static int OwnerHandleReply(Sel_owner_info *owner, XSelectionEvent *replyEvent,
-						int *sendEventReq)
+						int *sendEventReqPtr)
 {
 	/*
 	 * We are going to a busy state.
@@ -613,7 +624,7 @@ static int OwnerHandleReply(Sel_owner_info *owner, XSelectionEvent *replyEvent,
 	else {	/* Handle normal */
 		replyEvent->property = None;
 		if (DoConversion(owner, owner->req->target, owner->req->property, 0,
-							sendEventReq, (XEvent *)replyEvent))
+							sendEventReqPtr, (XEvent *)replyEvent))
 		{
 			replyEvent->property = owner->req->property;
 			return TRUE;
