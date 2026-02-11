@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.46 2026/01/25 20:35:26 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.48 2026/02/10 20:44:22 dra Exp $";
 #endif
 #endif
 
@@ -3571,5 +3571,16 @@ Xv_private void win_repaint_application(Display *dpy)
 			}
 			win_clear_damage(window);
 		}
+	}
+}
+
+Xv_private void win_dispatch_expose(Display *dpy, XEvent *xev)
+{
+	Event event;
+	Xv_object window = XV_NULL;
+
+	xevent_to_event(dpy, xev, &event, &window);
+	if (window && event_id(&event) == WIN_REPAINT) {
+		win_post_event(window, &event, NOTIFY_IMMEDIATE);
 	}
 }
