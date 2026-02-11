@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.26 2026/01/24 07:53:51 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.28 2026/02/10 20:45:34 dra Exp $";
 #endif
 #endif
 
@@ -300,7 +300,7 @@ Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
  *
  */
 Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent,
-										char *args)
+										XPointer args)
 {
 	Sel_reply_info reply;
 
@@ -632,12 +632,6 @@ static Sel_req_list *SelMatchReqTbl(Sel_reply_info  *reply)
 
     if (XFindContext(reply->sri_dpy, DefaultRootWindow(reply->sri_dpy), replyCtx, (caddr_t *)&reqTbl))
 		return FALSE;
-	/*
-	 * #0  SelMatchReqTbl (reply=0x253779e0) at sel_util.c:743
-	 * #1  xv_sel_end_request (reply=0x253779e0) at sel_util.c:770
-	 * #2  xv_sel_handle_selection_notify(ev=0x7fffc20898a0) at sel_req.c:1440
-	 * #3  window_default_event_func ()
-	 */
 
     rPtr = reqTbl;
 
@@ -739,32 +733,49 @@ static void FreeMultiProp(Sel_reply_info  *reply)
 }
 
 
-
-
-
-/*ARGSUSED*/
-Pkg_private int xv_sel_check_property_event(Display *display, XEvent *xevent, char *args)
+/*
+ * Predicate function for XCheckIfEvent
+ *
+ * This is used during an incremental transfer
+ */
+Pkg_private int xv_sel_check_property_event(Display *display, XEvent *xevent,
+								XPointer args)
 {
-    Sel_reply_info   reply;
+	Sel_reply_info reply;
 
-    XV_BCOPY( (char *) args, (char *) &reply, sizeof(Sel_reply_info) );
+	/* BEGIN try to dispatch Expose  events */
+	if ((xevent->type & 0177) == Expose) {
 
-    /*
-     * If some other process wants to become the selection owner, let
-     * it do so but continue handling the current transaction.
-     */
-    if ( ( xevent->type & 0177) == SelectionClear )  {
-	xv_sel_handle_selection_clear( (XSelectionClearEvent * ) xevent );
-	return FALSE;
-    }
+		/* this didn't work - we are in a predicate function.... */
+		/* 	if (! XCheckTypedEvent(dpy, Expose, &xev)) return; */
 
-    if ( ( xevent->type & 0177) == PropertyNotify )  {
-	XPropertyEvent *ev = (XPropertyEvent *) xevent;
-	if ( ev->state == PropertyNewValue && ev->atom == reply.sri_property &&
-		ev->time > reply.sri_time )
-	    return ( TRUE );
-    }
-    return ( FALSE );
+		win_dispatch_expose(display, xevent);
+		/* this FALSE means that the Expose event will be
+		 * dispatched AGAIN later
+		 */
+		return FALSE;
+	}
+	/* END try to dispatch Expose  events */
+
+	XV_BCOPY((char *)args, (char *)&reply, sizeof(Sel_reply_info));
+
+	/*
+	 * If some other process wants to become the selection owner, let
+	 * it do so but continue handling the current transaction.
+	 */
+	if ((xevent->type & 0177) == SelectionClear) {
+		xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
+		return FALSE;
+	}
+
+	if ((xevent->type & 0177) == PropertyNotify) {
+		XPropertyEvent *ev = (XPropertyEvent *) xevent;
+
+		if (ev->state == PropertyNewValue && ev->atom == reply.sri_property &&
+				ev->time > reply.sri_time)
+			return (TRUE);
+	}
+	return (FALSE);
 }
 
 
