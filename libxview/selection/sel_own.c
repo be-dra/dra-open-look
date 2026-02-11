@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.37 2026/02/08 16:07:28 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.38 2026/02/10 23:05:02 dra Exp $";
 #endif
 #endif
 
@@ -14,6 +14,7 @@ static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.3
 #include <xview_private/i18n_impl.h>
 #include <xview_private/sel_impl.h>
 #include <xview_private/svr_impl.h>
+#include <xview_private/win_info.h>
 #include <xview/window.h>
 #include <X11/Xproto.h>
 #ifdef SVR4
@@ -1167,10 +1168,27 @@ static void SendIncrMessage( Sel_owner_info *sel)
 			(caddr_t) incrReq);
 }
 
+/*
+ * Predicate function for XCheckIfEvent
+ *
+ */
 static int ValidatePropertyEvent(Display *display, XEvent *xevent, char *args)
 {
 	Requestor req;
 
+	/* BEGIN try to dispatch Expose  events */
+	if ((xevent->type & 0177) == Expose) {
+
+		/* this didn't work - we are in a predicate function.... */
+		/* 	if (! XCheckTypedEvent(dpy, Expose, &xev)) return; */
+
+		win_dispatch_expose(display, xevent);
+		/* this FALSE means that the Expose event will be
+		 * dispatched AGAIN later
+		 */
+		return FALSE;
+	}
+	/* END try to dispatch Expose  events */
 
 	XV_BCOPY((char *)args, (char *)&req, sizeof(Requestor));
 	/*
