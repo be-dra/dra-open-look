@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.23 2026/01/24 07:53:21 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.25 2026/02/10 19:40:48 dra Exp $";
 #endif
 #endif
 
@@ -208,7 +208,8 @@ Pkg_private int xv_sel_add_prop_notify_mask(Display *dpy, Window win,XWindowAttr
 Pkg_private Atom xv_sel_get_property(Xv_server, Display *);
 Pkg_private void xv_sel_free_property(Xv_server, Display *, Atom);
 Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args);
-Pkg_private int xv_sel_check_property_event(Display *display, XEvent *xevent, char *args);
+Pkg_private int xv_sel_check_property_event(Display *display, XEvent *xevent, 
+										XPointer args);
 Xv_private int xv_sel_handle_incr(Sel_owner_info *selection);
 Pkg_private void xv_sel_cvt_xtime_to_timeval(Time, struct timeval *);
 Pkg_private Time xv_sel_cvt_timeval_to_xtime(struct timeval *);
@@ -228,16 +229,20 @@ Xv_private void xv_sel_set_compat_data(Display *dpy, Atom selection, Window xid,
 Pkg_private Sel_owner_info  *xv_sel_find_selection_data(Display *,Atom,Window);
 Pkg_private Sel_owner_info * xv_sel_set_selection_data(Display *dpy, Atom selection, Sel_owner_info *sel_owner);
 Xv_private Time xv_sel_get_last_event_time(Xv_server , Display  *, Window);
-Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int seconds, int (*predicate)(Display *, XEvent *, char *), char *arg);
+
+typedef int (*x_predicate_func_t)(Display *, XEvent *, XPointer);
+Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
+				int seconds, x_predicate_func_t predicate, XPointer arg);
 Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *req);
-Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent, char *args);
+Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent, 
+										XPointer args);
 Pkg_private char * xv_sel_atom_to_str(Display *dpy, Atom atom, XID xid);
 Pkg_private Atom xv_sel_str_to_atom(Display *dpy, char *str, XID xid);
 Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel, Sel_reply_info *replyInfo, Atom target, int sendEv);
 Pkg_private Notify_value xv_sel_handle_sel_timeout(Notify_client client, int which);
 Pkg_private int xv_sel_end_request(Sel_reply_info *reply);
 Xv_private void xv_sel_handle_selection_clear(XSelectionClearEvent *clrEv);
-Xv_private int xv_sel_handle_selection_notify(XSelectionEvent *ev);
+Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev);
 Pkg_private int sel_wrap_convert_proc(Selection_owner owner, Atom *type,
 					Xv_opaque *value, unsigned long *length, int *format);
 
