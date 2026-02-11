@@ -1,4 +1,4 @@
-/*	@(#)win_info.h 20.17 93/06/28 SMI  DRA: $Id: win_info.h,v 4.2 2024/10/25 15:04:31 dra Exp $	*/
+/*	@(#)win_info.h 20.17 93/06/28 SMI  DRA: $Id: win_info.h,v 4.4 2026/02/10 20:44:10 dra Exp $	*/
 
 /****************************************************************************/
 /*	
@@ -101,6 +101,7 @@ Xv_private void win_private_gc(Xv_object window, int create_private_gc);
 Xv_private int win_convert_to_x_rectlist(Rectlist *rl, XRectangle *xrect_array,
 										int xrect_count);
 Xv_private void win_repaint_application(Display *dpy);
+Xv_private void win_dispatch_expose(Display *dpy, XEvent *);
 
 #define CONTEXT		1
 #endif
