@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.37 2026/01/24 07:53:56 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.39 2026/02/10 20:00:41 dra Exp $";
 #endif
 #endif
 
@@ -680,7 +680,8 @@ static int TransferLocalData(Sel_req_info *selReq, Sel_reply_info *reply,
 	if (((Atom) replyType == reply->sri_incr)
 		|| (BYTE_SIZE(reply->sri_length, reply->sri_format) >= svr_max_req_size)) {
 
-		reply->sri_during_incr = TRUE;
+		reply->sri_during_incr = 1;
+		SERVERTRACE((355, "%s: sri_during_incr = 1\n", __FUNCTION__));
 
 		/*
 		 * If we are processing a blocking request and the selection owner is
@@ -735,7 +736,8 @@ static int LocalMultipleTrans(Sel_reply_info *reply, Sel_req_info *selReq,
 					&length, &bytesafter, &prop) != Success) {
 		xv_error(selReq->public_self,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
-				ERROR_PKG, SELECTION, NULL);
+				ERROR_PKG, SELECTION,
+				NULL);
 		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 				reply->sri_local_owner->atomList->multiple, TRUE);
 	}
@@ -971,7 +973,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		 * if we decide to go back to a non-blocking schem.
 
 		 if ( !blocking ) {
-		 replyInfo->incr++;
+		 replyInfo->sri_during_incr++;
 		 ProcessNonBlkIncr( selReq, replyInfo, ev, target );
 		 return TRUE;
 
@@ -1146,7 +1148,20 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 			return TRUE;
 
 	}
+
+	/* Is this condition EVER true???
+	 * The event's target is probably never INCR
+	 */
+	SERVERTRACE((355, "%s: tgt %d <--> %d\n", __FUNCTION__, ev->target, replyInfo->sri_incr));
 	if (ev->target == replyInfo->sri_incr) {
+		char buf[500];
+
+		sprintf(buf, "UNEXPECTED: %s-%d: target %ld == INCR ????", __FUNCTION__,
+							__LINE__, ev->target);
+		xv_error(XV_NULL,
+				ERROR_STRING, buf,
+				ERROR_PKG, SELECTION,
+				NULL);
 		/*
 		 * If we are processing a blocking request and the selection
 		 * owner is transferring the data in increments with no reply_proc
@@ -1310,43 +1325,39 @@ static int sel_req_destroy(Selection_requestor sel_req_public, Destroy_status st
     return XV_OK;
 }
 
-
-
-
-
-
-static int ProcessNonBlkIncr(Sel_req_info *selReq, Sel_reply_info *reply, XSelectionEvent *ev, Atom target)
+static int ProcessNonBlkIncr(Sel_req_info *selReq, Sel_reply_info *reply,
+								XSelectionEvent *ev, Atom target)
 {
-    unsigned long  length;
-    unsigned long  bytesafter;
-    unsigned char  *propValue;
-    int            format;
-    Atom           type;
+	unsigned long length;
+	unsigned long bytesafter;
+	unsigned char *propValue;
+	int format;
+	Atom type;
 
-    /*
-     * We should start the transfer process by deleting the (type==INCR)
-     * property and by calling the requestor reply_proc with "type" set to
-     * INCR and replyBuf set to a lower bound on the number of bytes of
-     * data in the selection.
-     */
-    if ( XGetWindowProperty( ev->display, reply->sri_requestor,
-			    reply->sri_property, 0L,10000000L,True, AnyPropertyType,
-			    &type, &format,  &length, &bytesafter,
-			    (unsigned char **) &propValue) != Success ) {
-	xv_error( selReq->public_self,
-		  ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
-                  ERROR_PKG,SELECTION,
-		  NULL );
-	xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, *reply->sri_target,
-									ev->send_event);
-	return FALSE;
-    }
+	/*
+	 * We should start the transfer process by deleting the (type==INCR)
+	 * property and by calling the requestor reply_proc with "type" set to
+	 * INCR and replyBuf set to a lower bound on the number of bytes of
+	 * data in the selection.
+	 */
+	if (XGetWindowProperty(ev->display, reply->sri_requestor,
+					reply->sri_property, 0L, 10000000L, True, AnyPropertyType,
+					&type, &format, &length, &bytesafter,
+					(unsigned char **)&propValue) != Success) {
+		xv_error(selReq->public_self,
+				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
+				ERROR_PKG, SELECTION,
+				NULL);
+		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+				*reply->sri_target, ev->send_event);
+		return FALSE;
+	}
 
-    (*selReq->reply_proc)( SEL_REQUESTOR_PUBLIC(selReq), target,
-			   type, (Xv_opaque)propValue, length, format );
+	(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target,
+			type, (Xv_opaque) propValue, length, format);
 
 
-    return TRUE;
+	return TRUE;
 }
 
 
@@ -1410,7 +1421,7 @@ static void XvGetSeln(Display *dpy, XID xid, Sel_req_info *selReq, Time time)
 }
 
 
-Xv_private int xv_sel_handle_selection_notify(XSelectionEvent *ev)
+Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev)
 {
 	Sel_reply_info *reply;
 	Sel_req_info *selReq;
@@ -1418,22 +1429,33 @@ Xv_private int xv_sel_handle_selection_notify(XSelectionEvent *ev)
 
 	reply = (Sel_reply_info *) xv_sel_get_reply((XEvent *)ev);
 
-	if (reply == NULL) return FALSE;
+	if (reply == NULL) return;
 
 	if (!CheckSelectionNotify(reply->sri_req_info, reply, ev, 0))
-		return FALSE;
+		return;
 
 	selReq = reply->sri_req_info;
 
+	/* Is this condition EVER true???
+	 * The event's target is probably never INCR
+	 */
 	if (ev->target == reply->sri_incr) {
-		reply->sri_during_incr = TRUE;
+		char buf[500];
+
+		sprintf(buf, "UNEXPECTED: %s-%d: target %ld == INCR ????", __FUNCTION__,
+							__LINE__, ev->target);
+		xv_error(XV_NULL,
+				ERROR_STRING, buf,
+				ERROR_PKG, SELECTION,
+				NULL);
+		reply->sri_during_incr = 1;
 
 		reply->sri_status =
 				xv_sel_add_prop_notify_mask(ev->display, reply->sri_requestor,
 				&winAttr);
 
 		if (ProcessNonBlkIncr(selReq, reply, ev, *reply->sri_target))
-			return TRUE;
+			return;
 
 	}
 	if (ev->target==reply->sri_multiple||reply->sri_multiple_count) {
@@ -1444,19 +1466,16 @@ Xv_private int xv_sel_handle_selection_notify(XSelectionEvent *ev)
 		if (ProcessMultiple(selReq, reply, ev, 0)) {
 			if (!reply->sri_during_incr)
 				xv_sel_end_request(reply);
-			return TRUE;
+			return;
 		}
 	}
-	reply->sri_during_incr = FALSE;
+	reply->sri_during_incr = 0;
 	if (XvGetRequestedValue(selReq,ev,reply,ev->property,*reply->sri_target,0))
 	{
 		if (!reply->sri_during_incr) {
 			xv_sel_end_request(reply);
 		}
-
-		return TRUE;
 	}
-	return FALSE;
 }
 
 
@@ -1537,7 +1556,8 @@ static int ProcessReply(Sel_reply_info  *reply, XPropertyEvent  *ev)
 					(unsigned char **)&propValue) != Success) {
 		xv_error(selReq->public_self,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
-				ERROR_PKG, SELECTION, NULL);
+				ERROR_PKG, SELECTION,
+				NULL);
 		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 									*reply->sri_target, TRUE);
 		return FALSE;
