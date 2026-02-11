@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.18 2026/01/24 12:26:08 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.20 2026/02/10 23:03:53 dra Exp $ ";
 #endif
 #endif
 
@@ -15,7 +15,6 @@ static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v
 #include <xview_private/scrn_vis.h>
 #include <xview_private/xview_impl.h>
 #include <xview_private/svr_impl.h>
-#include <xview_private/cms_impl.h>
 #include <xview_private/windowimpl.h>
 #include <xview_private/win_info.h>
 #include <xview/notify.h>
@@ -100,6 +99,9 @@ typedef struct _screen_info {
 
 #define	SCREEN_PRIVATE(screen) XV_PRIVATE(Screen_info, Xv_screen_struct, screen)
 #define	SCREEN_PUBLIC(screen)	XV_PUBLIC(screen)
+
+Xv_private Xv_opaque cms_default_colormap(Xv_Server server, Display	*display,
+							int screen_number, XVisualInfo *vinfo);
 
 static Screen_visual * screen_new_visual(Display *display, Screen_info *screen,
 					XID xid, unsigned int depth, XVisualInfo *visual_info)
