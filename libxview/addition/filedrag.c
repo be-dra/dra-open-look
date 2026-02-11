@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.11 2026/02/03 19:50:58 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.12 2026/02/10 23:04:31 dra Exp $";
 #endif
 
 typedef struct {
@@ -441,6 +441,19 @@ static int convert_string_is_filenames(FileDrag_private *priv, Xv_server server,
 	*data = XV_NULL;
 	*type = (Atom)xv_get(server, SERVER_ATOM, "NULL");
 	priv->send_filenames_on_STRING = TRUE;
+	priv->convert_string = FILEDRAG_NAME_STRING;
+	return TRUE;
+}
+
+static int convert_string_is_contents(FileDrag_private *priv, Xv_server server,
+		Atom *type, Xv_opaque *data, unsigned long *length, int *format)
+{
+	*format = 32;
+	*length = 0;
+	*data = XV_NULL;
+	*type = (Atom)xv_get(server, SERVER_ATOM, "NULL");
+	priv->send_filenames_on_STRING = FALSE;
+	priv->convert_string = FILEDRAG_CONTENTS_STRING;
 	return TRUE;
 }
 
@@ -478,6 +491,7 @@ static struct { char *name;
 	{ "_SUN_ENUMERATION_COUNT", convert_enum_count },
 	{ "_SUN_DATA_LABEL", convert_base_name },
 	{ "_DRA_STRING_IS_FILENAMES", convert_string_is_filenames },
+	{ "_DRA_STRING_IS_CONTENTS", convert_string_is_contents },
 	{ "_SUN_DRAGDROP_DONE", convert_dragdrop_done },
 	/* Xt-applications cannot use "_SUN_ENUMERATION_ITEM" */
 	{ "_DRA_NEXT_FILE", convert_next_file },
