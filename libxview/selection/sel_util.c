@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.28 2026/02/10 20:45:34 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.29 2026/02/11 14:08:13 dra Exp $";
 #endif
 #endif
 
@@ -414,7 +414,7 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 		 * Check for data on the connection.  Read it and scan it.
 		 */
 		if (XCheckIfEvent(display, xevent, predicate, (char *)arg))
-			return (TRUE);
+			return TRUE;
 
 		/*
 		 * We've drained the queue, so we must select for more.
@@ -422,6 +422,7 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 		FD_ZERO(&rfds);
 		FD_SET(ConnectionNumber(display), &rfds);
 
+		SERVERTRACE((355, "%s: before select\n", __FUNCTION__));
 		result = select(ConnectionNumber(display) + 1, &rfds, NULL,
 				NULL, &timeout);
 
@@ -430,6 +431,7 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 			/* REMINDER: Do we need this ^^^ here? */
 
 			/* we timed out without getting anything */
+			SERVERTRACE((355, "%s: FALSE\n", __FUNCTION__));
 			return FALSE;
 		}
 
@@ -449,8 +451,10 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 		tvdiff(&diff1, &timeout, &diff2);
 		timeout = diff2;
 		starttime = curtime;
-		if (timeout.tv_sec < 0)
+		if (timeout.tv_sec < 0) {
+			SERVERTRACE((355, "%s: FALSE\n", __FUNCTION__));
 			return False;
+		}
 	}
 }
 
@@ -731,54 +735,6 @@ static void FreeMultiProp(Sel_reply_info  *reply)
 	    xv_sel_free_property(reply->sri_srv,  reply->sri_dpy, reply->sri_atomPair[i].property );
     }
 }
-
-
-/*
- * Predicate function for XCheckIfEvent
- *
- * This is used during an incremental transfer
- */
-Pkg_private int xv_sel_check_property_event(Display *display, XEvent *xevent,
-								XPointer args)
-{
-	Sel_reply_info reply;
-
-	/* BEGIN try to dispatch Expose  events */
-	if ((xevent->type & 0177) == Expose) {
-
-		/* this didn't work - we are in a predicate function.... */
-		/* 	if (! XCheckTypedEvent(dpy, Expose, &xev)) return; */
-
-		win_dispatch_expose(display, xevent);
-		/* this FALSE means that the Expose event will be
-		 * dispatched AGAIN later
-		 */
-		return FALSE;
-	}
-	/* END try to dispatch Expose  events */
-
-	XV_BCOPY((char *)args, (char *)&reply, sizeof(Sel_reply_info));
-
-	/*
-	 * If some other process wants to become the selection owner, let
-	 * it do so but continue handling the current transaction.
-	 */
-	if ((xevent->type & 0177) == SelectionClear) {
-		xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
-		return FALSE;
-	}
-
-	if ((xevent->type & 0177) == PropertyNotify) {
-		XPropertyEvent *ev = (XPropertyEvent *) xevent;
-
-		if (ev->state == PropertyNewValue && ev->atom == reply.sri_property &&
-				ev->time > reply.sri_time)
-			return (TRUE);
-	}
-	return (FALSE);
-}
-
-
 
 static XContext cmpatCtx;
 
