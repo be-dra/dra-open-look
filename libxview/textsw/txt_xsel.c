@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.59 2026/01/11 19:58:37 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.61 2026/02/11 21:21:53 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -149,7 +149,7 @@ Pkg_private int textsw_internal_convert(Textsw_private priv,
 		*type = priv->atoms.null;
 		return TRUE;
 	}
-	else if (*type == priv->atoms.ol_sel_word) {
+	else if (*type == priv->atoms.sel_is_word) {
 		/* wie findet man das heraus */
 		/* siehe start_seln_tracking */
 		priv->sel_reply = priv->select_is_word[rank_index];
@@ -980,7 +980,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 	priv->atoms.targets = xv_get(srv, SERVER_ATOM, "TARGETS");
 	priv->atoms.text = xv_get(srv, SERVER_ATOM, "TEXT");
 	priv->atoms.timestamp = xv_get(srv, SERVER_ATOM, "TIMESTAMP");
-	priv->atoms.ol_sel_word = xv_get(srv, SERVER_ATOM, "_OL_SELECTION_IS_WORD");
+	priv->atoms.sel_is_word = xv_get(srv, SERVER_ATOM, "_OL_SELECTION_IS_WORD");
 	priv->atoms.dragdrop_ack = xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_ACK");
 	priv->atoms.dragdrop_done = xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_DONE");
 	priv->atoms.selection_end = xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END");
@@ -1014,7 +1014,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 							SEL_COPY, SEL_COPY_BLOCKED,
 							NULL);
 	additional_items(priv->sel_owner[TSW_SEL_PRIMARY],
-							priv->atoms.ol_sel_word,
+							priv->atoms.sel_is_word,
 							priv->atoms.delete,
 							priv->atoms.first,
 							priv->atoms.last,
@@ -1036,7 +1036,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 							SEL_COPY, SEL_COPY_BLOCKED,
 							NULL);
 	additional_items(priv->sel_owner[TSW_SEL_SECONDARY],
-							priv->atoms.ol_sel_word,
+							priv->atoms.sel_is_word,
 							priv->atoms.selection_end,
 							priv->atoms.seln_is_readonly,
 							priv->atoms.delete,
@@ -1059,7 +1059,7 @@ Pkg_private void textsw_new_selection_init(Textsw tsw)
 							SEL_COPY, SEL_COPY_BLOCKED,
 							NULL);
 	additional_items(priv->sel_owner[TSW_SEL_CLIPBOARD],
-							priv->atoms.ol_sel_word,
+							priv->atoms.sel_is_word,
 							priv->atoms.seln_is_readonly,
 							priv->atoms.first,
 							priv->atoms.last,
