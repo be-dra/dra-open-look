@@ -1,5 +1,5 @@
 #ifndef lint
-char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.6 2025/04/03 14:12:28 dra Exp $";
+char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.7 2026/02/11 21:26:01 dra Exp $";
 #endif
 
 /*
@@ -512,7 +512,7 @@ static void ttysw_post_error(Xv_opaque public_folio_or_view, char *msg1, char *m
 	size_t size_to_use = sizeof(buf);
 
 	buf[0] = '\0';
-	strncat(buf, msg1, size_to_use);
+	strncat(buf, msg1, size_to_use-1);
 	if (msg2) {
 		unsigned len = strlen(buf);
 
@@ -661,7 +661,7 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 			TEXTSW_INSERTION_POINT_I18N);
 	int length = (Textsw_index) xv_get(textsw, TEXTSW_LENGTH_I18N);
 	Textsw_index insert_at;
-	Textsw_mark insert_mark;
+	Textsw_mark insert_mark = TEXTSW_NULL_MARK;
 
 	if (termsw->append_only_log) {
 		textsw_remove_mark(textsw, termsw->read_only_mark);
