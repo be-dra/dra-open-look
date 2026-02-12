@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.38 2026/02/10 23:05:02 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.39 2026/02/11 14:07:52 dra Exp $";
 #endif
 #endif
 
@@ -25,8 +25,6 @@ static int SelLoseOwnership( Sel_owner_info *sel_owner);
 static int sel_set_ownership(Sel_owner_info *sel_owner);
 static int (*OldErrorHandler)(Display *, XErrorEvent *);
 static int SelOwnerErrorHandler(Display *, XErrorEvent *);
-static int ValidatePropertyEvent(Display *display, XEvent *xevent, char *args);
-static int SendIncr(Sel_owner_info *seln);
 
 static void SelClean(Sel_owner_info *owner);
 static void ReplyTimestamp(Sel_owner_info *, Atom *, char **, unsigned long *, int *);
@@ -872,80 +870,44 @@ static void ReplyTimestamp(Sel_owner_info *owner, Atom *replyType, char **replyB
     *format = 32;
 }
 
-
-
 /*
- * Handle incremental data transfer.
+ * Predicate function for XCheckIfEvent
+ * This is used in the owner's side of an incremental transfer.
+ * We want to be able to handle and dispatch (and remove from the
+ * input queue for a few event types: Expose, SelectionClear
+ * and PropertyNotify
  */
-Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
+static int ValidatePropertyEvent(Display *display, XEvent *xevent, char *args)
 {
-	XEvent event;
-	int endTransfer = FALSE;
-	unsigned long length;
-	unsigned long svr_max_req_size;
-	Requestor *req;
+	Requestor *req = (Requestor *)args;
 
-	req = selection->req;
-	req->type = req->target;
+	/* BEGIN try to dispatch Expose  events */
+	if ((xevent->type & 0177) == Expose) {
 
-	/*
-	 * If the selection owner has choosen to send the data in increments,
-	 * call it's convert proc to get the data.
-	 */
-
-	if (req->incr) {
-		svr_max_req_size = (MAX_SEL_BUFF_SIZE(selection->dpy) << 2) - 100;
-		length = svr_max_req_size;
-		if (!sel_wrap_convert_proc(selection->public_self, &req->type,
-						(Xv_opaque *) & req->data, &length, &req->format))
-			return FALSE;
-
-		req->bytelength = BYTE_SIZE(length, req->format);
-		req->offset = 0;
-	}
-
-	/*
-	 * The requestor should start the transfer process by deleting the
-	 * (type==INCR) property forming the reply to the selection.
-	 * Here, we block for PropertyNotify event and process the data transfer.
-	 */
-	while (1) {
-		if (xv_sel_block_for_event(selection->dpy, &event,
-						selection->req->timeout, ValidatePropertyEvent,
-						(char *)req)) {
-			if (endTransfer)
-				break;
-			endTransfer = SendIncr(selection);
-		}
-		else {
-			/*
-			 * If timedout call the owner done_proc.
-			 */
-
-			if (selection->done_proc)
-				(*selection->done_proc) (selection->public_self,
-						(Xv_opaque) selection->req->data, req->target);
-
-			return FALSE;
-		}
-	}
-
-	/*
-	 * We are now done sending all the data.
-	 * Finish the transaction by sending zero-length data to the requestor.
-	 */
-	if (selection->status & SEL_INTERNAL_ERROR)
+		win_dispatch_expose(display, xevent);
 		return FALSE;
+	}
+	/* END try to dispatch Expose  events */
 
-	XChangeProperty(selection->dpy, selection->req->requestor,
-			selection->req->property, selection->req->type,
-			selection->req->format, PropModeReplace, (unsigned char *)NULL, 0);
+	/*
+	 * If some other process wants to become the selection owner, let
+	 * it do so but continue handling the current transaction.
+	 */
+	if ((xevent->type & 0177) == SelectionClear) {
+		xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
+		return FALSE;
+	}
 
-	if (selection->done_proc)
-		(*selection->done_proc) (selection->public_self,
-				(Xv_opaque) selection->req->data, req->target);
+	if ((xevent->type & 0177) == PropertyNotify) {
+		XPropertyEvent *ev = (XPropertyEvent *) xevent;
 
-	return TRUE;
+
+		if (ev->state == PropertyDelete && ev->atom == req->property &&
+				ev->time > req->time) {
+			return TRUE;
+		}
+	}
+	return FALSE;
 }
 
 static int SendIncr(Sel_owner_info *seln)
@@ -1021,6 +983,80 @@ static int SendIncr(Sel_owner_info *seln)
 		return (TRUE);
 
 	return (FALSE);
+}
+
+/*
+ * Handle incremental data transfer.
+ */
+Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
+{
+	XEvent event;
+	int endTransfer = FALSE;
+	unsigned long length;
+	unsigned long svr_max_req_size;
+	Requestor *req;
+
+	req = selection->req;
+	req->type = req->target;
+
+	/*
+	 * If the selection owner has choosen to send the data in increments,
+	 * call it's convert proc to get the data.
+	 */
+
+	if (req->incr) {
+		svr_max_req_size = (MAX_SEL_BUFF_SIZE(selection->dpy) << 2) - 100;
+		length = svr_max_req_size;
+		if (!sel_wrap_convert_proc(selection->public_self, &req->type,
+						(Xv_opaque *) & req->data, &length, &req->format))
+			return FALSE;
+
+		req->bytelength = BYTE_SIZE(length, req->format);
+		req->offset = 0;
+	}
+
+	/*
+	 * The requestor should start the transfer process by deleting the
+	 * (type==INCR) property forming the reply to the selection.
+	 * Here, we block for PropertyNotify event and process the data transfer.
+	 */
+	while (1) {
+		if (xv_sel_block_for_event(selection->dpy, &event,
+					req->timeout, ValidatePropertyEvent, (char *)req))
+		{
+			if (endTransfer) break;
+			endTransfer = SendIncr(selection);
+		}
+		else {
+			/*
+			 * If timedout call the owner done_proc.
+			 */
+
+			if (selection->done_proc)
+				(*selection->done_proc) (selection->public_self,
+						(Xv_opaque) selection->req->data, req->target);
+
+			return FALSE;
+		}
+	}
+
+	/*
+	 * We are now done sending all the data.
+	 * Finish the transaction by sending zero-length data to the requestor.
+	 */
+	if (selection->status & SEL_INTERNAL_ERROR)
+		return FALSE;
+
+	SERVERTRACE((355, "%s: terminating 0 size property\n", __FUNCTION__));
+	XChangeProperty(selection->dpy, selection->req->requestor,
+			selection->req->property, selection->req->type,
+			selection->req->format, PropModeReplace, (unsigned char *)NULL, 0);
+
+	if (selection->done_proc)
+		(*selection->done_proc) (selection->public_self,
+				(Xv_opaque) selection->req->data, req->target);
+
+	return TRUE;
 }
 
 
@@ -1166,50 +1202,6 @@ static void SendIncrMessage( Sel_owner_info *sel)
 
 	(void)XSaveContext(sel->dpy, (Window) incrReq->property, reqCtx,
 			(caddr_t) incrReq);
-}
-
-/*
- * Predicate function for XCheckIfEvent
- *
- */
-static int ValidatePropertyEvent(Display *display, XEvent *xevent, char *args)
-{
-	Requestor req;
-
-	/* BEGIN try to dispatch Expose  events */
-	if ((xevent->type & 0177) == Expose) {
-
-		/* this didn't work - we are in a predicate function.... */
-		/* 	if (! XCheckTypedEvent(dpy, Expose, &xev)) return; */
-
-		win_dispatch_expose(display, xevent);
-		/* this FALSE means that the Expose event will be
-		 * dispatched AGAIN later
-		 */
-		return FALSE;
-	}
-	/* END try to dispatch Expose  events */
-
-	XV_BCOPY((char *)args, (char *)&req, sizeof(Requestor));
-	/*
-	 * If some other process wants to become the selection owner, let
-	 * it do so but continue handling the current transaction.
-	 */
-	if ((xevent->type & 0177) == SelectionClear) {
-		xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
-		return FALSE;
-	}
-
-	if ((xevent->type & 0177) == PropertyNotify) {
-		XPropertyEvent *ev = (XPropertyEvent *) xevent;
-
-
-		if (ev->state == PropertyDelete && ev->atom == req.property &&
-				ev->time > req.time) {
-			return (TRUE);
-		}
-	}
-	return (FALSE);
 }
 
 
