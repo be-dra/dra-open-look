@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.39 2026/02/10 20:00:41 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.40 2026/02/11 14:08:22 dra Exp $";
 #endif
 #endif
 
@@ -813,6 +813,44 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 	return (TRUE);
 }
 
+/*
+ * Predicate function for XCheckIfEvent
+ *
+ * This is used during an incremental transfer
+ */
+static int check_property_event(Display *display, XEvent *xevent,
+								XPointer args)
+{
+	Sel_reply_info *reply = (Sel_reply_info *)args;
+
+	/* BEGIN try to dispatch Expose  events */
+	if ((xevent->type & 0177) == Expose) {
+		win_dispatch_expose(display, xevent);
+		return FALSE;
+	}
+	/* END try to dispatch Expose  events */
+
+	/*
+	 * If some other process wants to become the selection owner, let
+	 * it do so but continue handling the current transaction.
+	 */
+	if ((xevent->type & 0177) == SelectionClear) {
+		xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
+		return FALSE;
+	}
+
+	if ((xevent->type & 0177) == PropertyNotify) {
+		XPropertyEvent *ev = (XPropertyEvent *) xevent;
+
+		if (ev->state == PropertyNewValue && ev->atom == reply->sri_property &&
+				ev->time > reply->sri_time)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 
 static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 								XSelectionEvent *ev)
@@ -851,18 +889,20 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	/*
 	 * Note: The user reply_proc should free "propValue".
 	 */
+	SERVERTRACE((355, "%s: init incr\n", __FUNCTION__));
 	(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, type,
 			(Xv_opaque) propValue, length, format);
 
 	do {
 		/* Wait for PropertyNotify with stat==NewValue */
 		if (!xv_sel_block_for_event(ev->display, &event, reply->sri_timeout,
-						xv_sel_check_property_event, (char *)reply))
+						check_property_event, (char *)reply))
 		{
 			if (status)
 				XSelectInput(ev->display, reply->sri_requestor,
 						winAttr.your_event_mask);
 
+			SERVERTRACE((355, "%s: incr timeout\n", __FUNCTION__));
 			xv_sel_handle_error(SEL_TIMEDOUT, selReq, reply, target,
 										ev->send_event);
 			return FALSE;
@@ -905,6 +945,7 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 		 * the zero length data  to indicate to the client the end of
 		 * incremental data transfer.
 		 */
+		SERVERTRACE((355, "%s: in incr, length=%ld\n", __FUNCTION__, length));
 		(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, type,
 				(Xv_opaque) propValue, length, format);
 	} while (length);
