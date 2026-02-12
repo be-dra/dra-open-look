@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.25 2026/02/10 19:40:48 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.26 2026/02/11 14:07:24 dra Exp $";
 #endif
 #endif
 
@@ -208,8 +208,6 @@ Pkg_private int xv_sel_add_prop_notify_mask(Display *dpy, Window win,XWindowAttr
 Pkg_private Atom xv_sel_get_property(Xv_server, Display *);
 Pkg_private void xv_sel_free_property(Xv_server, Display *, Atom);
 Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args);
-Pkg_private int xv_sel_check_property_event(Display *display, XEvent *xevent, 
-										XPointer args);
 Xv_private int xv_sel_handle_incr(Sel_owner_info *selection);
 Pkg_private void xv_sel_cvt_xtime_to_timeval(Time, struct timeval *);
 Pkg_private Time xv_sel_cvt_timeval_to_xtime(struct timeval *);
