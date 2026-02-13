@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_file_c_sccsid[] = "@(#)txt_file.c 20.81 93/06/28 DRA: $Id: txt_file.c,v 4.13 2025/01/01 20:35:21 dra Exp $";
+char     txt_file_c_sccsid[] = "@(#)txt_file.c 20.81 93/06/28 DRA: $Id: txt_file.c,v 4.14 2026/02/12 12:38:06 dra Exp $";
 #endif
 
 /*
@@ -1663,7 +1663,7 @@ textsw_change_directory(Textsw_private textsw, char *filename,
 		result = errno;
 		goto Error;
 	}
-	textsw_notify((Textsw_view_private) textsw,	/* Cast is for lint */
+	textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(textsw), OPENWIN_NTH_VIEW, 0)),
 			TEXTSW_ACTION_CHANGED_DIRECTORY, filename,
 
 #ifdef OW_I18N
