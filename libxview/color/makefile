@@ -596,7 +596,7 @@ STD_DEFINES = -Dlinux -D_POSIX_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE -DX_LOCALE
 # @(#)Imakefile	1.8 28 Jun 1993 SMI
 
 HDRSPUBLIC=     cms.h
-HDRSPRIVATE= 
+HDRSPRIVATE= cms_impl.h
 
 SRCS=	cms.c
 OBJS=$(SRCS:.c=.o)
@@ -801,8 +801,9 @@ cms.o: cms.c /usr/include/stdc-predef.h /usr/include/X11/Xlib.h \
  /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
  /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
  ../../build/include/xview_private/scrn_vis.h \
+ ../../build/include/xview_private/cms_impl.h \
  ../../build/include/xview/cms.h ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h \
  ../../build/include/xview/xv_error.h ../../build/include/xview/sun.h \
- ../../build/include/xview/server.h ../../build/include/xview/screen.h \
+ ../../build/include/xview/screen.h ../../build/include/xview/server.h \
  ../../build/include/xview/defaults.h ../../build/include/olgx/olgx.h
