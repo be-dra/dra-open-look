@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.29 2026/02/11 14:08:13 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.31 2026/02/12 12:40:40 dra Exp $";
 #endif
 #endif
 
@@ -86,6 +86,32 @@ Pkg_private Sel_owner_info * xv_sel_set_selection_data(Display *dpy, Atom select
 }
 
 /*
+ * Predicate function for XCheckIfEvent
+ *
+ */
+static int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
+{
+	int eventType;
+
+	XV_BCOPY((char *)args, (char *)&eventType, sizeof(int));
+
+	if ((xevent->type & 0177) == eventType)
+		return (TRUE);
+
+	/*
+	 * If we receive a SelectionRequest while waiting, handle selection request
+	 * to avoid a dead lock.
+	 */
+	if ((xevent->type & 0177) == SelectionRequest) {
+		XSelectionRequestEvent *reqEvent = (XSelectionRequestEvent *) xevent;
+
+		xv_sel_handle_selection_request(reqEvent);
+	}
+
+	return (FALSE);
+}
+
+/*
  * REMINDER: This needs to be changed to a more efficient way of getting
  *  last event time.
 */
@@ -104,12 +130,14 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
 
     /* Wait for the PropertyNotify */
     arg = PropertyNotify;
-    if ( !xv_sel_block_for_event( dpy, &event, 3 , xv_sel_predicate, (char *) &arg ) ) {
-	xv_error(XV_NULL,
-                 ERROR_STRING,XV_MSG("xv_sel_get_last_event_time: Unable to get the last event time"),
-	         ERROR_PKG,SELECTION,
-                 NULL);
-	return ( (Time) NULL );
+    if (!xv_sel_block_for_event(dpy, &event, 3, xv_sel_predicate, (char *)&arg,
+								NULL))
+	{
+		xv_error(XV_NULL,
+                ERROR_STRING,XV_MSG("xv_sel_get_last_event_time: Unable to get the last event time"),
+	         	ERROR_PKG,SELECTION,
+                NULL);
+		return ( (Time) NULL );
     }
 
     xv_sel_free_property(srv, dpy, prop );
@@ -273,32 +301,6 @@ Pkg_private void xv_sel_free_property(Xv_server srv, Display *dpy, Atom prop)
  * Predicate function for XCheckIfEvent
  *
  */
-Pkg_private int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
-{
-	int eventType;
-
-	XV_BCOPY((char *)args, (char *)&eventType, sizeof(int));
-
-	if ((xevent->type & 0177) == eventType)
-		return (TRUE);
-
-	/*
-	 * If we receive a SelectionRequest while waiting, handle selection request
-	 * to avoid a dead lock.
-	 */
-	if ((xevent->type & 0177) == SelectionRequest) {
-		XSelectionRequestEvent *reqEvent = (XSelectionRequestEvent *) xevent;
-
-		xv_sel_handle_selection_request(reqEvent);
-	}
-
-	return (FALSE);
-}
-
-/*
- * Predicate function for XCheckIfEvent
- *
- */
 Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent,
 										XPointer args)
 {
@@ -397,7 +399,7 @@ Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel,
  * certain timeout period has elapsed.  Return value indicates whether the
  * specified event  was seen.
  */
-Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int seconds, int (*predicate)(Display *, XEvent *, char *), char *arg)
+Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int seconds, int (*predicate)(Display *, XEvent *, char *), char *arg, int *evtypeptr)
 {
 	fd_set rfds;
 	int result;
@@ -413,8 +415,19 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 		/*
 		 * Check for data on the connection.  Read it and scan it.
 		 */
-		if (XCheckIfEvent(display, xevent, predicate, (char *)arg))
-			return TRUE;
+		while (XCheckIfEvent(display, xevent, predicate, (char *)arg)) {
+			if (! evtypeptr) return TRUE;
+			if (*evtypeptr == PropertyNotify) return TRUE;
+
+			if (*evtypeptr == Expose) {
+				win_dispatch_expose(display, xevent);
+			}
+			else if (*evtypeptr == SelectionClear) {
+				xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
+			}
+
+			/* others (with *evtypeptr == 0) should just be discarded */
+		}
 
 		/*
 		 * We've drained the queue, so we must select for more.
