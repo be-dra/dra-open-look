@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.12 2026/02/10 23:04:31 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.14 2026/02/12 19:48:18 dra Exp $";
 #endif
 
 typedef struct {
