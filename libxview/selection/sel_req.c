@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.40 2026/02/11 14:08:22 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.45 2026/02/13 08:56:24 dra Exp $";
 #endif
 #endif
 
@@ -817,36 +817,55 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
  * Predicate function for XCheckIfEvent
  *
  * This is used during an incremental transfer
+ * See also xv_sel_block_for_event in sel_util.c
  */
-static int check_property_event(Display *display, XEvent *xevent,
+static int check_incr_prop_newval(Display *display, XEvent *xevent,
 								XPointer args)
 {
 	Sel_reply_info *reply = (Sel_reply_info *)args;
 
-	/* BEGIN try to dispatch Expose  events */
 	if ((xevent->type & 0177) == Expose) {
-		win_dispatch_expose(display, xevent);
-		return FALSE;
+		if (0 == xevent->xexpose.count) reply->checkedEventType = Expose;
+		else reply->checkedEventType = 0;
+		return TRUE;
 	}
-	/* END try to dispatch Expose  events */
 
 	/*
 	 * If some other process wants to become the selection owner, let
 	 * it do so but continue handling the current transaction.
 	 */
 	if ((xevent->type & 0177) == SelectionClear) {
-		xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
-		return FALSE;
+		reply->checkedEventType = SelectionClear;
+		return TRUE;
 	}
 
 	if ((xevent->type & 0177) == PropertyNotify) {
 		XPropertyEvent *ev = (XPropertyEvent *) xevent;
 
-		if (ev->state == PropertyNewValue && ev->atom == reply->sri_property &&
-				ev->time > reply->sri_time)
-		{
+		if (ev->atom == reply->sri_property) { /* the interesting property ! */
+			if (ev->state == PropertyNewValue && ev->time > reply->sri_time) {
+				reply->checkedEventType = PropertyNotify;
+				return TRUE;
+			}
+
+			reply->checkedEventType = 0;
+			/* we want to get rid of the PropertyDelete events -
+			 * they are interesting only for the selection owner.
+			 * Let's remove them from the input queue:
+			 */
 			return TRUE;
 		}
+	}
+
+	/* during lengthy incremental transfers I saw the following event types
+	 * (filling the input queue), that we might remove from the queue:
+	 */
+	if (xevent->type == EnterNotify
+		|| xevent->type == LeaveNotify
+		|| xevent->type == FocusOut
+		) {
+		reply->checkedEventType = 0;
+		return TRUE;
 	}
 	return FALSE;
 }
@@ -896,7 +915,7 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	do {
 		/* Wait for PropertyNotify with stat==NewValue */
 		if (!xv_sel_block_for_event(ev->display, &event, reply->sri_timeout,
-						check_property_event, (char *)reply))
+				check_incr_prop_newval, (char *)reply, &reply->checkedEventType))
 		{
 			if (status)
 				XSelectInput(ev->display, reply->sri_requestor,
@@ -1158,7 +1177,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	 * Wait for the SelectionNotify event.
 	 */
 	if (!xv_sel_block_for_event(dpy, &event, replyInfo->sri_timeout,
-					xv_sel_check_selnotify, (char *)replyInfo)) {
+					xv_sel_check_selnotify, (char *)replyInfo, NULL)) {
 		xv_sel_handle_error(SEL_TIMEDOUT, selReq, replyInfo,
 				*replyInfo->sri_target, FALSE);
 		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
@@ -1193,7 +1212,6 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	/* Is this condition EVER true???
 	 * The event's target is probably never INCR
 	 */
-	SERVERTRACE((355, "%s: tgt %d <--> %d\n", __FUNCTION__, ev->target, replyInfo->sri_incr));
 	if (ev->target == replyInfo->sri_incr) {
 		char buf[500];
 
@@ -1552,12 +1570,22 @@ CheckPropertyNotify(XPropertyEvent *ev, Sel_reply_info *reply)
 
 static int ProcessReq(Requestor  *req, XPropertyEvent  *ev)
 {
-    if ( ev->window != req->owner->xid ||  ev->atom != req->property ||
-	 ev->state != PropertyDelete || ev->time < req->time )
-        return FALSE;
+	Selection_owner sp;
+	Xv_window win;
+	Xv_server srv;
 
-    xv_sel_handle_incr( req->owner );
-    return TRUE;
+	if (ev->window != req->owner->xid || ev->atom != req->property ||
+			ev->state != PropertyDelete || ev->time < req->time)
+		return FALSE;
+
+	sp = SEL_OWNER_PUBLIC(req->owner);
+	win = xv_get(sp, XV_OWNER);
+	srv = XV_SERVER_FROM_WINDOW(win);
+
+	xv_set(srv, SERVER_APPL_BUSY, TRUE, XV_NULL, NULL);
+	xv_sel_handle_incr(req->owner);
+	xv_set(srv, SERVER_APPL_BUSY, FALSE, XV_NULL, NULL);
+	return TRUE;
 }
 
 static Requestor * SelGetReq(XPropertyEvent *ev)
