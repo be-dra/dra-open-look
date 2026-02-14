@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.31 2026/02/12 12:40:40 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.32 2026/02/13 09:21:04 dra Exp $";
 #endif
 #endif
 
@@ -421,6 +421,9 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 
 			if (*evtypeptr == Expose) {
 				win_dispatch_expose(display, xevent);
+			}
+			else if (*evtypeptr == FocusOut) {
+				win_dispatch_focus_out(display, xevent);
 			}
 			else if (*evtypeptr == SelectionClear) {
 				xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
