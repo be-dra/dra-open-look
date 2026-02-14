@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.45 2026/02/13 08:56:24 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.47 2026/02/13 14:43:52 dra Exp $";
 #endif
 #endif
 
@@ -857,13 +857,15 @@ static int check_incr_prop_newval(Display *display, XEvent *xevent,
 		}
 	}
 
+	if (xevent->type == FocusOut) {
+		reply->checkedEventType = FocusOut;
+		return TRUE;
+	}
+
 	/* during lengthy incremental transfers I saw the following event types
 	 * (filling the input queue), that we might remove from the queue:
 	 */
-	if (xevent->type == EnterNotify
-		|| xevent->type == LeaveNotify
-		|| xevent->type == FocusOut
-		) {
+	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
 		reply->checkedEventType = 0;
 		return TRUE;
 	}
@@ -980,6 +982,18 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	return TRUE;
 }
 
+static int internalProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply,
+							Atom target, XSelectionEvent *ev)
+{
+	int retval;
+
+	xv_set(reply->sri_srv, SERVER_APPL_BUSY, TRUE, XV_NULL, NULL);
+	retval = ProcessIncr(selReq, reply, target, ev);
+	xv_set(reply->sri_srv, SERVER_APPL_BUSY, FALSE, XV_NULL, NULL);
+
+	return retval;
+}
+
 static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 			Sel_reply_info *replyInfo, Atom property, Atom target,
 			int unused_blocking)
@@ -1041,7 +1055,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		 */
 
 
-		ProcessIncr(selReq, replyInfo, target, ev);
+		internalProcessIncr(selReq, replyInfo, target, ev);
 		XFree(propValue);
 		return (SEL_INCREMENT);
 	}
@@ -1231,7 +1245,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 			return FALSE;
 		}
 
-		if (ProcessIncr(selReq, replyInfo, *replyInfo->sri_target, ev)) {
+		if (internalProcessIncr(selReq,replyInfo,*replyInfo->sri_target, ev)) {
 			return TRUE;
 		}
 	}
