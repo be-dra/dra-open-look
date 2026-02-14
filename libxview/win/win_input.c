@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.48 2026/02/10 20:44:22 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.49 2026/02/13 09:18:31 dra Exp $";
 #endif
 #endif
 
@@ -3582,5 +3582,19 @@ Xv_private void win_dispatch_expose(Display *dpy, XEvent *xev)
 	xevent_to_event(dpy, xev, &event, &window);
 	if (window && event_id(&event) == WIN_REPAINT) {
 		win_post_event(window, &event, NOTIFY_IMMEDIATE);
+	}
+}
+
+Xv_private void win_dispatch_focus_out(Display *dpy, XEvent *xev)
+{
+	Event event;
+	Xv_object window = XV_NULL;
+
+	xevent_to_event(dpy, xev, &event, &window);
+	if (window && event_id(&event) == KBD_DONE) {
+		Xv_Drawable_info *info;
+		DRAWABLE_INFO_MACRO(window, info);
+
+		xv_set_has_focus(info, FALSE);
 	}
 }
