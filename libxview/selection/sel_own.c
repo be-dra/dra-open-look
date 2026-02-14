@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.44 2026/02/12 20:00:44 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.45 2026/02/13 09:20:44 dra Exp $";
 #endif
 #endif
 
@@ -752,6 +752,11 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 		return TRUE;
 	}
 
+	if (xevent->type == FocusOut) {
+		req->checkedEventType = FocusOut;
+		return TRUE;
+	}
+
 	if ((xevent->type & 0177) == PropertyNotify) {
 		XPropertyEvent *ev = (XPropertyEvent *) xevent;
 
@@ -773,10 +778,7 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 	/* during lengthy incremental transfers I saw the following event types
 	 * (filling the input queue), that we might remove from the queue:
 	 */
-	if (xevent->type == EnterNotify
-		|| xevent->type == LeaveNotify
-		|| xevent->type == FocusOut
-		) {
+	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
 		req->checkedEventType = 0;
 		return TRUE;
 	}
