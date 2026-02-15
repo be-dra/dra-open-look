@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.52 2025/12/22 13:03:20 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.54 2026/02/14 11:38:00 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -2972,8 +2972,10 @@ static Xv_opaque dir_set(Xv_opaque self, Attr_avlist avlist)
 
 		case SCROLLWIN_DROP_EVENT:
 				{
+					Atom dndsel;
 					Scrollwin_drop_struct *drop = (Scrollwin_drop_struct *)A1;
 
+					dndsel = xv_get(drop->sel_req, SEL_RANK);
 					xv_set(drop->sel_req,
 								FILE_REQ_ALLOCATE, FALSE,
 								FILE_REQ_ALREADY_DECODED, TRUE,
@@ -2983,6 +2985,7 @@ static Xv_opaque dir_set(Xv_opaque self, Attr_avlist avlist)
 												&drop->cnt);
 
 					xv_set(self, SCROLLWIN_HANDLE_DROP, drop, NULL);
+					xv_set(drop->sel_req, SEL_RANK, dndsel, NULL);
 
 					dnd_done(drop->sel_req);
 				}
@@ -3277,7 +3280,6 @@ static Xv_opaque dir_get(Xv_opaque self, int *status, Attr_attribute attr, va_li
 		case SCROLLWIN_CREATE_SEL_REQ:
 			return xv_create(self, FILE_REQUESTOR,
 						FILE_REQ_CHECK_ACCESS, TRUE,
-						FILE_REQ_USE_LOAD, TRUE,
 						NULL);
 		default:
 			*status = xv_check_bad_attr(DIRCANVAS, attr);
