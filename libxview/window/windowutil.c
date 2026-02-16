@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.18 2026/01/26 11:14:42 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.19 2026/02/15 10:24:06 dra Exp $";
 #endif
 #endif
 /*
@@ -1252,6 +1252,7 @@ static Window *collect_descendants(Server_info *srv, Window xid,
 		wins[(*idx)++] = children[i];
 		wins = collect_descendants(srv, children[i], idx, numalloc, wins);
 	}
+	if (children) XFree(children);
 	return wins;
 }
 
