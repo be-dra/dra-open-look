@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.47 2026/02/13 14:43:52 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.48 2026/02/15 10:23:35 dra Exp $";
 #endif
 #endif
 
@@ -957,8 +957,10 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 			continue;
 		}
 
-		if (length == 0)
+		if (length == 0) {
+			if (propValue) xv_free(propValue);
 			propValue = (unsigned char *)NULL;
+		}
 
 		/*
 		 * The owner calls us with a zero length data to indicate the end of
