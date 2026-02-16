@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.13 2026/02/07 13:38:59 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.14 2026/02/15 09:53:28 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -267,6 +267,7 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 			(*(priv->string_proc))(self, FILE_REQ_INCR_START,
 								(char *)0, *((unsigned long *)value));
 		}
+		xv_free((char *)value);
 		/* if we go ahead here, the file will contain the file length
 		 * in the first 4 Bytes..
 		 */
