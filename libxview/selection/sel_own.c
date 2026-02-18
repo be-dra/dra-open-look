@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.45 2026/02/13 09:20:44 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.46 2026/02/17 17:24:35 dra Exp $";
 #endif
 #endif
 
@@ -275,8 +275,8 @@ static void SetupPropInfo(Sel_owner_info *sel)
 		return;
 	}
 
-	if (XGetWindowProperty(sel->dpy, sel->req->requestor,
-					sel->req->property, 0L, 1000000L,
+	if (XGetWindowProperty(sel->dpy, sel->req->rq_requestor,
+					sel->req->rq_property, 0L, 1000000L,
 					False, (Atom) AnyPropertyType, &target, &format,
 					&length, &bytesafter, &prop) != Success)
 		xv_error(sel->public_self,
@@ -387,18 +387,18 @@ static void SelClean(Sel_owner_info *owner)
 			unsigned int mask;
 
 			mask = PropertyChangeMask;
-			XGetWindowAttributes(owner->dpy, owner->req->requestor, &winAttr);
+			XGetWindowAttributes(owner->dpy, owner->req->rq_requestor,&winAttr);
 
-			XSelectInput(owner->dpy, owner->req->requestor,
+			XSelectInput(owner->dpy, owner->req->rq_requestor,
 					(long)(winAttr.your_event_mask & (~mask)));
 		}
 	}
 
 	owner->status = 0;
 
-	if (XFindContext(owner->dpy, owner->req->property, reqCtx,
+	if (XFindContext(owner->dpy, owner->req->rq_property, reqCtx,
 					(caddr_t *) & req) != XCNOENT)
-		XDeleteContext(owner->dpy, owner->req->property, reqCtx);
+		XDeleteContext(owner->dpy, owner->req->rq_property, reqCtx);
 
 	XFree((char *)owner->req);
 	owner->req = NULL;
@@ -435,14 +435,14 @@ static void SendIncrMessage( Sel_owner_info *sel)
 	/* We are setting the size to a lower bound on the number of bytes of
 	 * data in the selection.
 	 */
-	if (sel->req->incr)
+	if (sel->req->rq_incr)
 		/*
 		 * If the user has decided to send the data in increments, the
 		 * selection->req->data should be the size.
 		 */
-		propData = (char *)sel->req->data;
+		propData = (char *)sel->req->rq_data;
 	else {
-		size = sel->req->bytelength;
+		size = sel->req->rq_bytelength;
 		propData = (char *)&size;
 	}
 
@@ -451,24 +451,24 @@ static void SendIncrMessage( Sel_owner_info *sel)
 	 * If this is INCR from a multiple request; we need to call the
 	 * user defined convert_proc with format set to SEL_MULTIPLE.
 	 */
-	if (sel->req->multiple)
-		sel->req->format = SEL_MULTIPLE;
+	if (sel->req->rq_multiple)
+		sel->req->rq_format = SEL_MULTIPLE;
 
-	XChangeProperty(sel->dpy, sel->req->requestor,
-			sel->req->property, sel->atomList->incr,
+	XChangeProperty(sel->dpy, sel->req->rq_requestor,
+			sel->req->rq_property, sel->atomList->incr,
 			32, PropModeReplace, (unsigned char *)propData, 1);
 
-	sel->req->numIncr++;
+	sel->req->rq_numIncr++;
 
 
-	if (sel->req->numIncr == 1)
-		sel->req->incrPropList = xv_alloc(Atom);
+	if (sel->req->rq_numIncr == 1)
+		sel->req->rq_incrPropList = xv_alloc(Atom);
 	else
-		sel->req->incrPropList =
-				(Atom *) xv_realloc((char *)sel->req->incrPropList,
-				(size_t)(sel->req->numIncr * sizeof(Atom)));
+		sel->req->rq_incrPropList =
+				(Atom *) xv_realloc((char *)sel->req->rq_incrPropList,
+				(size_t)(sel->req->rq_numIncr * sizeof(Atom)));
 
-	sel->req->incrPropList[sel->req->numIncr - 1] = sel->req->property;
+	sel->req->rq_incrPropList[sel->req->rq_numIncr - 1] = sel->req->rq_property;
 
 	if (reqCtx == 0)
 		reqCtx = XUniqueContext();
@@ -477,7 +477,7 @@ static void SendIncrMessage( Sel_owner_info *sel)
 
 	XV_BCOPY((char *)sel->req, (char *)incrReq, sizeof(Requestor));
 
-	(void)XSaveContext(sel->dpy, (Window) incrReq->property, reqCtx,
+	(void)XSaveContext(sel->dpy, (Window) incrReq->rq_property, reqCtx,
 			(caddr_t) incrReq);
 }
 
@@ -491,13 +491,13 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	unsigned long svr_max_req_size;
 
 
-	selection->req->property = property;
+	selection->req->rq_property = property;
 
 	if (target == selection->atomList->timestamp) {
 		ReplyTimestamp(selection, &replyType, &replyBuff, &length, &format);
-		selection->req->type = replyType;
-		selection->req->target = target;
-		selection->req->property = property;
+		selection->req->rq_type = replyType;
+		selection->req->rq_target = target;
+		selection->req->rq_property = property;
 		goto Done;
 	}
 
@@ -530,14 +530,14 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	 * send data in increments.
 	 */
 	if (replyType == selection->atomList->incr)
-		selection->req->incr = TRUE;
+		selection->req->rq_incr = TRUE;
 
-	selection->req->target = target;
-	selection->req->bytelength = BYTE_SIZE(length, format);
-	selection->req->offset = 0;
-	selection->req->format = format;
-	selection->req->type = replyType;
-	selection->req->data = (char *)replyBuff;
+	selection->req->rq_target = target;
+	selection->req->rq_bytelength = BYTE_SIZE(length, format);
+	selection->req->rq_offset = 0;
+	selection->req->rq_format = format;
+	selection->req->rq_type = replyType;
+	selection->req->rq_data = (char *)replyBuff;
 	/*
 	 * If the data size is bigger than the server's maximum_request_size
 	 * send the data in increments or if the selection owner has explicitly
@@ -545,19 +545,21 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	 */
 
 
-	if ((selection->req->bytelength>svr_max_req_size) || selection->req->incr) {
+	if ((selection->req->rq_bytelength > svr_max_req_size)
+		|| selection->req->rq_incr)
+	{
 		XWindowAttributes winAttr;
 		int status;
 
 
 		status = xv_sel_add_prop_notify_mask(selection->dpy,
-				selection->req->requestor, &winAttr);
+				selection->req->rq_requestor, &winAttr);
 
 		if (status)
 			selection->status |= SEL_ADD_PROP_NOTIFY;
 
 		SendIncrMessage(selection);
-		selection->req->incr = FALSE;
+		selection->req->rq_incr = FALSE;
 
 		return SEL_INCREMENT;
 	}
@@ -575,8 +577,8 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	 * Place the data resulting from the selection conversion into the
 	 * specified property on the requestor window.
 	 */
-	XChangeProperty(selection->dpy, selection->req->requestor,
-			selection->req->property, selection->req->type,
+	XChangeProperty(selection->dpy, selection->req->rq_requestor,
+			selection->req->rq_property, selection->req->rq_type,
 			format, PropModeReplace, (unsigned char *)replyBuff, (int)length);
 
 	/* In earlier versions this function didn't have the parameters
@@ -591,7 +593,7 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	 * Reference [jklewhfvbhkwegfv]
 	 */
 	if (sendEventReqPtr) {
-		ev->xselection.property = selection->req->property;
+		ev->xselection.property = selection->req->rq_property;
 		*sendEventReqPtr = FALSE; 
 		XSendEvent(selection->dpy, ev->xselection.requestor, False,
 					(unsigned long)NULL, ev);
@@ -599,7 +601,7 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 
 	if (selection->done_proc) {
 		(*selection->done_proc) (selection->public_self,
-				(Xv_opaque) selection->req->data, target);
+				(Xv_opaque) selection->req->rq_data, target);
 
 		selection->to_be_freed = NULL;
 	}
@@ -628,8 +630,8 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 	 * access this data.
 	 */
 
-	if (XGetWindowProperty(seln->dpy, seln->req->requestor,
-					seln->req->property, 0L, 1000000L,
+	if (XGetWindowProperty(seln->dpy, seln->req->rq_requestor,
+					seln->req->rq_property, 0L, 1000000L,
 					False, (Atom) AnyPropertyType, &target, &format,
 					&length, &bytesafter, &prop) != Success)
 	{
@@ -686,7 +688,7 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 	 * targets it failed to convert with None.
 	 */
 	if (set)
-		XChangeProperty(seln->dpy, seln->req->requestor, seln->property,
+		XChangeProperty(seln->dpy, seln->req->rq_requestor, seln->property,
 				target, format, PropModeReplace, prop, (int)length);
 
 	XFree((char *)prop);
@@ -702,8 +704,8 @@ static int OwnerHandleReply(Sel_owner_info *owner, XSelectionEvent *replyEvent,
 	owner->status |= SEL_BUSY;
 
 	/* Handle MULTIPLE target */
-	if (owner->req->target == owner->atomList->multiple) {
-		owner->req->multiple = TRUE;
+	if (owner->req->rq_target == owner->atomList->multiple) {
+		owner->req->rq_multiple = TRUE;
 		if (! HandleMultipleReply(owner)) {
 			/* bad MULTIPLE request */
 			replyEvent->property = None;
@@ -712,10 +714,10 @@ static int OwnerHandleReply(Sel_owner_info *owner, XSelectionEvent *replyEvent,
 	}
 	else {	/* Handle normal */
 		replyEvent->property = None;
-		if (DoConversion(owner, owner->req->target, owner->req->property, 0,
+		if (DoConversion(owner, owner->req->rq_target, owner->req->rq_property, 0,
 							sendEventReqPtr, (XEvent *)replyEvent))
 		{
-			replyEvent->property = owner->req->property;
+			replyEvent->property = owner->req->rq_property;
 			return TRUE;
 		}
 		else {
@@ -738,8 +740,8 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 	Requestor *req = (Requestor *)args;
 
 	if ((xevent->type & 0177) == Expose) {
-		if (0 == xevent->xexpose.count) req->checkedEventType = Expose;
-		else req->checkedEventType = 0;
+		if (0 == xevent->xexpose.count) req->rq_checkedEventType = Expose;
+		else req->rq_checkedEventType = 0;
 		return TRUE;
 	}
 
@@ -748,25 +750,25 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 	 * it do so but continue handling the current transaction.
 	 */
 	if ((xevent->type & 0177) == SelectionClear) {
-		req->checkedEventType = SelectionClear;
+		req->rq_checkedEventType = SelectionClear;
 		return TRUE;
 	}
 
 	if (xevent->type == FocusOut) {
-		req->checkedEventType = FocusOut;
+		req->rq_checkedEventType = FocusOut;
 		return TRUE;
 	}
 
 	if ((xevent->type & 0177) == PropertyNotify) {
 		XPropertyEvent *ev = (XPropertyEvent *) xevent;
 
-		if (ev->atom == req->property) { /* the interesting property ! */
-			if (ev->state == PropertyDelete && ev->time > req->time) {
-				req->checkedEventType = PropertyNotify;
+		if (ev->atom == req->rq_property) { /* the interesting property ! */
+			if (ev->state == PropertyDelete && ev->time > req->rq_time) {
+				req->rq_checkedEventType = PropertyNotify;
 				return TRUE;
 			}
 
-			req->checkedEventType = 0;
+			req->rq_checkedEventType = 0;
 			/* we want to get rid of the PropertyNewValue events -
 			 * they are interesting only for the requestor.
 			 * Let's remove them from the input queue:
@@ -779,7 +781,7 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 	 * (filling the input queue), that we might remove from the queue:
 	 */
 	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
-		req->checkedEventType = 0;
+		req->rq_checkedEventType = 0;
 		return TRUE;
 	}
 	return FALSE;
@@ -797,31 +799,31 @@ static int SendIncr(Sel_owner_info *seln)
 
 
 
-	size = ((req->bytelength - req->offset) > svr_max_req_size) ?
-			svr_max_req_size : (req->bytelength - req->offset);
+	size = ((req->rq_bytelength - req->rq_offset) > svr_max_req_size) ?
+			svr_max_req_size : (req->rq_bytelength - req->rq_offset);
 
 
-	XChangeProperty(seln->dpy, req->requestor, req->property, req->type,
-			req->format, PropModeReplace,
-			(unsigned char *)&req->data[req->offset],
-			(size / (req->format >> 3)));
+	XChangeProperty(seln->dpy, req->rq_requestor, req->rq_property,req->rq_type,
+			req->rq_format, PropModeReplace,
+			(unsigned char *)&req->rq_data[req->rq_offset],
+			(size / (req->rq_format >> 3)));
 
 	if (sizeof(size) != sizeof(seln)) {
 		/* 64bit-appl: size / (req->format>>3)  is WRONG for format = 32 */
-		if (req->format == 32) {
+		if (req->rq_format == 32) {
 			fprintf(stderr, "%s-%d: wrong length calculation, aborting\n",
 					__FILE__, __LINE__);
 			abort();
 		}
 	}
 
-	req->offset += size;
+	req->rq_offset += size;
 
 	/*
 	 * If the selection owner has explicitly asked for incremental data
 	 * transfer; execute the passed-in convert routine again.
 	 */
-	if (req->incr) {
+	if (req->rq_incr) {
 		unsigned long length;
 
 		/*
@@ -829,17 +831,17 @@ static int SendIncr(Sel_owner_info *seln)
 		 */
 		length = svr_max_req_size;
 
-		req->type = req->target;
+		req->rq_type = req->rq_target;
 
 		/*
 		 * If this is INCR from a multiple request; we need to call the
 		 * user defined convert_proc with format set to SEL_MULTIPLE.
 		 */
-		if (req->multiple)
-			req->format = SEL_MULTIPLE;
+		if (req->rq_multiple)
+			req->rq_format = SEL_MULTIPLE;
 
-		if (!sel_wrap_convert_proc(seln->public_self, &req->type,
-						(Xv_opaque *) & req->data, &length, &req->format)) {
+		if (!sel_wrap_convert_proc(seln->public_self, &req->rq_type,
+					(Xv_opaque *) & req->rq_data, &length, &req->rq_format)) {
 
 			/*
 			 * REMINDER: The return value needs to be changed!
@@ -850,11 +852,11 @@ static int SendIncr(Sel_owner_info *seln)
 		/* The client selection owners are required to set the length to
 		 * zero, after the completion of data conversion.
 		 */
-		req->bytelength = BYTE_SIZE(length, req->format);
-		req->offset = 0;
+		req->rq_bytelength = BYTE_SIZE(length, req->rq_format);
+		req->rq_offset = 0;
 	}
 
-	if (!(req->bytelength - req->offset))
+	if (!(req->rq_bytelength - req->rq_offset))
 		return (TRUE);
 
 	return (FALSE);
@@ -872,22 +874,22 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
 	Requestor *req;
 
 	req = selection->req;
-	req->type = req->target;
+	req->rq_type = req->rq_target;
 
 	/*
 	 * If the selection owner has choosen to send the data in increments,
 	 * call it's convert proc to get the data.
 	 */
 
-	if (req->incr) {
+	if (req->rq_incr) {
 		svr_max_req_size = (MAX_SEL_BUFF_SIZE(selection->dpy) << 2) - 100;
 		length = svr_max_req_size;
-		if (!sel_wrap_convert_proc(selection->public_self, &req->type,
-						(Xv_opaque *) & req->data, &length, &req->format))
+		if (!sel_wrap_convert_proc(selection->public_self, &req->rq_type,
+						(Xv_opaque *)&req->rq_data, &length, &req->rq_format))
 			return FALSE;
 
-		req->bytelength = BYTE_SIZE(length, req->format);
-		req->offset = 0;
+		req->rq_bytelength = BYTE_SIZE(length, req->rq_format);
+		req->rq_offset = 0;
 	}
 
 	/*
@@ -896,8 +898,8 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
 	 * Here, we block for PropertyNotify event and process the data transfer.
 	 */
 	while (1) {
-		if (xv_sel_block_for_event(selection->dpy, &event, req->timeout,
-				check_incr_prop_delete, (char *)req, &req->checkedEventType))
+		if (xv_sel_block_for_event(selection->dpy, &event, req->rq_timeout,
+				check_incr_prop_delete, (char *)req, &req->rq_checkedEventType))
 		{
 			if (endTransfer) break;
 			endTransfer = SendIncr(selection);
@@ -909,7 +911,7 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
 
 			if (selection->done_proc)
 				(*selection->done_proc) (selection->public_self,
-						(Xv_opaque) selection->req->data, req->target);
+						(Xv_opaque) selection->req->rq_data, req->rq_target);
 
 			return FALSE;
 		}
@@ -923,13 +925,14 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
 		return FALSE;
 
 	SERVERTRACE((355, "%s: terminating 0 size property\n", __FUNCTION__));
-	XChangeProperty(selection->dpy, selection->req->requestor,
-			selection->req->property, selection->req->type,
-			selection->req->format, PropModeReplace, (unsigned char *)NULL, 0);
+	XChangeProperty(selection->dpy, selection->req->rq_requestor,
+			selection->req->rq_property, selection->req->rq_type,
+			selection->req->rq_format, PropModeReplace,
+			(unsigned char *)NULL, 0);
 
 	if (selection->done_proc)
 		(*selection->done_proc) (selection->public_self,
-				(Xv_opaque) selection->req->data, req->target);
+				(Xv_opaque) selection->req->rq_data, req->rq_target);
 
 	return TRUE;
 }
@@ -938,23 +941,23 @@ static void OwnerProcessIncr(Sel_owner_info *sel)
 {
 	int i;
 	Requestor *req;
-	int numIncr = sel->req->numIncr;
+	int numIncr = sel->req->rq_numIncr;
 
 	for (i = 0; i < numIncr; i++) {
-		if (sel->req->incrPropList[i] != 0) {
-			if (XFindContext(sel->dpy, sel->req->incrPropList[i],
+		if (sel->req->rq_incrPropList[i] != 0) {
+			if (XFindContext(sel->dpy, sel->req->rq_incrPropList[i],
 							reqCtx, (caddr_t *) & req))
 				continue;
 
-			req->incrPropList = sel->req->incrPropList;
-			req->owner->req = req;
+			req->rq_incrPropList = sel->req->rq_incrPropList;
+			req->rq_owner->req = req;
 			{
-				Selection_owner sp = SEL_OWNER_PUBLIC(req->owner);
+				Selection_owner sp = SEL_OWNER_PUBLIC(req->rq_owner);
 				Xv_window win = xv_get(sp, XV_OWNER);
 				Xv_server srv = XV_SERVER_FROM_WINDOW(win);
 
 				xv_set(srv, SERVER_APPL_BUSY, TRUE, XV_NULL, NULL);
-				xv_sel_handle_incr(req->owner);
+				xv_sel_handle_incr(req->rq_owner);
 				xv_set(srv, SERVER_APPL_BUSY, FALSE, XV_NULL, NULL);
 			}
 		}
@@ -1039,16 +1042,16 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 
 	owner->property = reqEvent->property;
 	req = xv_alloc(Requestor);
-	req->requestor = reqEvent->requestor;
-	req->target = reqEvent->target;
-	req->property = reqEvent->property;
-	req->time = reqEvent->time;
-	req->multiple = FALSE;
-	req->timeout = xv_get(owner->public_self, SEL_TIMEOUT_VALUE);
-	req->incr = FALSE;
-	req->numIncr = 0;
+	req->rq_requestor = reqEvent->requestor;
+	req->rq_target = reqEvent->target;
+	req->rq_property = reqEvent->property;
+	req->rq_time = reqEvent->time;
+	req->rq_multiple = FALSE;
+	req->rq_timeout = xv_get(owner->public_self, SEL_TIMEOUT_VALUE);
+	req->rq_incr = FALSE;
+	req->rq_numIncr = 0;
 	owner->req = req;
-	req->owner = owner;
+	req->rq_owner = owner;
 
 	/*
 	 * Save the client's error handler.
