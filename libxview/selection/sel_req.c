@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.48 2026/02/15 10:23:35 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.49 2026/02/17 17:24:35 dra Exp $";
 #endif
 #endif
 
@@ -1590,16 +1590,16 @@ static int ProcessReq(Requestor  *req, XPropertyEvent  *ev)
 	Xv_window win;
 	Xv_server srv;
 
-	if (ev->window != req->owner->xid || ev->atom != req->property ||
-			ev->state != PropertyDelete || ev->time < req->time)
+	if (ev->window != req->rq_owner->xid || ev->atom != req->rq_property ||
+			ev->state != PropertyDelete || ev->time < req->rq_time)
 		return FALSE;
 
-	sp = SEL_OWNER_PUBLIC(req->owner);
+	sp = SEL_OWNER_PUBLIC(req->rq_owner);
 	win = xv_get(sp, XV_OWNER);
 	srv = XV_SERVER_FROM_WINDOW(win);
 
 	xv_set(srv, SERVER_APPL_BUSY, TRUE, XV_NULL, NULL);
-	xv_sel_handle_incr(req->owner);
+	xv_sel_handle_incr(req->rq_owner);
 	xv_set(srv, SERVER_APPL_BUSY, FALSE, XV_NULL, NULL);
 	return TRUE;
 }
