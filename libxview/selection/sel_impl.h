@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.27 2026/02/12 11:04:13 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.28 2026/02/17 17:24:35 dra Exp $";
 #endif
 #endif
 
@@ -81,23 +81,23 @@ typedef struct sel_req_info {
  * Selection_owner object private data
  */
 typedef struct requestor {
-    XID        requestor;
-    Atom       property;
-    Atom       target;
-    Atom       type;
-    int        format;
-    char       *data;
-    int        bytelength;
-    int        offset;
-    int        timeout;
-    Time       time;
-    int        incr;              /* reply in increments */
-    int        numIncr;           /* number of incrs in a request */
-    int        multiple;
-    selection_reply_proc_t reply_proc;
-    Atom       *incrPropList;
-    struct sel_owner_info  *owner;
-	int checkedEventType;
+    XID        rq_requestor;
+    Atom       rq_property;
+    Atom       rq_target;
+    Atom       rq_type;
+    int        rq_format;
+    char       *rq_data;
+    int        rq_bytelength;
+    int        rq_offset;
+    int        rq_timeout;
+    Time       rq_time;
+    int        rq_incr;              /* reply in increments */
+    int        rq_numIncr;           /* number of incrs in a request */
+    int        rq_multiple;
+    selection_reply_proc_t rq_reply_proc;
+    Atom       *rq_incrPropList;
+    struct sel_owner_info  *rq_owner;
+	int rq_checkedEventType;
 } Requestor;
 
 
