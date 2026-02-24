@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.49 2026/02/17 17:24:35 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.50 2026/02/23 19:28:32 dra Exp $";
 #endif
 #endif
 
@@ -397,6 +397,7 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 	replyInfo->sri_dpy = (Display *)xv_get(srv, XV_DISPLAY);
 	replyInfo->sri_incr = xv_get(srv, SERVER_ATOM, "INCR");
 	replyInfo->sri_multiple = xv_get(srv, SERVER_ATOM, "MULTIPLE");
+	replyInfo->sri_atom_pair = xv_get(srv, SERVER_ATOM, "ATOM_PAIR");
 
 	/* MLK */
 	replyInfo->sri_target = (Atom *) xv_calloc((unsigned)numTarget + 1,
@@ -448,12 +449,12 @@ static void SetupMultipleRequest(Sel_reply_info *reply, int numTarget)
 	atom_pair *pairPtr;
 	int i, count;
 
-	reply->sri_atomPair = (atom_pair *) xv_calloc((unsigned)numTarget + 1,
+	reply->sri_atomPairData = (atom_pair *) xv_calloc((unsigned)numTarget + 1,
 			(unsigned)sizeof(atom_pair));
 
 	count = numTarget;
 
-	for (i = 1, pairPtr = reply->sri_atomPair; count > 0;
+	for (i = 1, pairPtr = reply->sri_atomPairData; count > 0;
 			pairPtr++, count--, i++) {
 		pairPtr->target = *(reply->sri_target + i);
 		pairPtr->property = xv_sel_get_property(reply->sri_srv, reply->sri_dpy);
@@ -461,8 +462,8 @@ static void SetupMultipleRequest(Sel_reply_info *reply, int numTarget)
 	}
 
 	XChangeProperty(reply->sri_dpy, reply->sri_requestor,
-			reply->sri_property, reply->sri_property, 32, PropModeReplace,
-			(unsigned char *)reply->sri_atomPair, numTarget * 2);
+			reply->sri_property, reply->sri_atom_pair, 32, PropModeReplace,
+			(unsigned char *)reply->sri_atomPairData, numTarget * 2);
 
 	reply->sri_multiple_count = numTarget;
 }
@@ -1572,7 +1573,7 @@ CheckPropertyNotify(XPropertyEvent *ev, Sel_reply_info *reply)
 
     if ( reply->sri_multiple_count )
         for ( i=0; i < reply->sri_multiple_count; i++ )    {
-	    if ( ev->atom == reply->sri_atomPair[i].property )
+	    if ( ev->atom == reply->sri_atomPairData[i].property )
 	        return TRUE;
 	}
 
@@ -1654,8 +1655,8 @@ static int ProcessReply(Sel_reply_info  *reply, XPropertyEvent  *ev)
 	target = *reply->sri_target;
 	if (reply->sri_multiple_count) {
 		for (i = 0; i < reply->sri_multiple_count; i++) {
-			if (ev->atom == reply->sri_atomPair[i].property)
-				target = reply->sri_atomPair[i].target;
+			if (ev->atom == reply->sri_atomPairData[i].property)
+				target = reply->sri_atomPairData[i].target;
 		}
 	}
 
