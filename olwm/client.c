@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.4 2025/06/20 20:37:10 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.5 2026/02/23 18:06:53 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -323,24 +323,56 @@ Bool ClientShowHelp(Client *cli, int rootx, int rooty, char *hlp)
 	if (! cliLead) return False;
 	if (! (cliLead->protocols & OWN_HELP)) return False;
 
-	/* the group leader has promised to handle help events */
-	XChangeProperty(cli->dpy, PANEWINOFCLIENT(cliLead), AtomOwnHelp,
+	xcl.xclient.type = ClientMessage;
+	xcl.xclient.window = PANEWINOFCLIENT(cliLead);
+	if (strlen(hlp) < sizeof(xcl.xclient.data.b)) {
+		/* That was a nice idea: send the help text directly in 
+		 * the twenty bytes xcl.xclient.data.b.
+		 *
+		 * However, that means that we cannot include the root coordinates
+		 * in the client message - the resulting help window's
+		 * magnifying glass always contained the top left corner of the 
+		 * workspace.... so: not useful.
+		 *
+		 * Now we call XQueryPointer in the client to find the root 
+		 * coordinates.
+		 *
+		 * Comparing the two methods - counting requests and replies:
+		 *
+		 * +++ old: 1 change property
+		 *          2 send event
+		 *          3 event to client
+		 *          4 get property
+		 *          5 get property reply
+		 *
+		 * +++ new: 1 send event
+		 *          2 event to client
+		 *          3 query pointer
+		 *          4 query pointer reply
+		 */
+		xcl.xclient.message_type = AtomOwnHelp;
+		xcl.xclient.format = 8;
+
+		memset(xcl.xclient.data.b, 0, sizeof(xcl.xclient.data.b));
+		strcpy(xcl.xclient.data.b, hlp);
+	}
+	else {
+		fprintf(stderr, "olwm:%s-%d: help '%s' too long for a client message\n",
+					__FILE__,__LINE__, hlp);
+		/* the group leader has promised to handle help events */
+		XChangeProperty(cli->dpy, PANEWINOFCLIENT(cliLead), AtomOwnHelp,
 						AtomOwnHelp, 8, PropModeReplace,
 						(unsigned char *)hlp, strlen(hlp));
 
-	xcl.xclient.type = ClientMessage;
-	xcl.xclient.message_type = AtomProtocols;
-	xcl.xclient.format = 32;
-	xcl.xclient.display = cli->dpy;
-	xcl.xclient.window = PANEWINOFCLIENT(cliLead);
+		xcl.xclient.message_type = AtomProtocols;
+		xcl.xclient.format = 32;
 
-	/* evtl auch PANEWINOFCLIENT(cli) */
-
-	xcl.xclient.data.l[0] = AtomOwnHelp;
-	xcl.xclient.data.l[1] = LastEventTime;
-	xcl.xclient.data.l[2] = rootx;
-	xcl.xclient.data.l[3] = rooty;
-	xcl.xclient.data.l[4] = 0;
+		xcl.xclient.data.l[0] = AtomOwnHelp;
+		xcl.xclient.data.l[1] = LastEventTime;
+		xcl.xclient.data.l[2] = rootx;
+		xcl.xclient.data.l[3] = rooty;
+		xcl.xclient.data.l[4] = 0;
+	}
 
 	XSendEvent(cli->dpy, xcl.xclient.window, False, NoEventMask, &xcl);
 	return True;
