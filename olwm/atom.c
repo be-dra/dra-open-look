@@ -1,5 +1,5 @@
 /* #ident	"@(#)atom.c	26.24	93/06/28 SMI" */
-char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.15 2025/03/01 12:25:28 dra Exp $";
+char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.16 2026/02/23 16:38:58 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -151,8 +151,6 @@ void InitAtoms(Display *dpy)
 		"_OL_COLORS_FOLLOW",
 
 		"CLIPBOARD",
-		"_DRA_PSEUDO_CLIPBOARD",
-		"_DRA_PSEUDO_SECONDARY",
 		"_SUN_SELECTION_END",
 
 		"_OL_FUNC_CLOSE",
