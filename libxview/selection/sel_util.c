@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.32 2026/02/13 09:21:04 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.33 2026/02/23 19:28:32 dra Exp $";
 #endif
 #endif
 
@@ -748,7 +748,8 @@ static void FreeMultiProp(Sel_reply_info  *reply)
 
     if ( reply->sri_multiple_count ) {
         for ( i=0; i < reply->sri_multiple_count; i++ )
-	    xv_sel_free_property(reply->sri_srv,  reply->sri_dpy, reply->sri_atomPair[i].property );
+	    xv_sel_free_property(reply->sri_srv,  reply->sri_dpy,
+								reply->sri_atomPairData[i].property );
     }
 }
 
