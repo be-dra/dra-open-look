@@ -15,7 +15,7 @@
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.24 2026/02/07 19:43:18 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.25 2026/02/23 18:07:49 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -583,11 +583,31 @@ Pkg_private int server_xvwp_is_own_help(Xv_server srv, Frame fr, Event *ev)
 				event_init(&my_event);
 				event_set_action(&my_event, ACTION_HELP);
 				event_set_xevent(&my_event, event_xevent(ev));
+				event_set_x(&my_event, (int)xcl->data.l[2]);
+				event_set_y(&my_event, (int)xcl->data.l[3]);
 
 				xv_help_show(fr, (char *)hlp, &my_event);
 				XFree(hlp);
 				return TRUE;
 			}
+		}
+		else if (xcl->message_type == xv_get(srv,SERVER_ATOM, _OL_OWN_HELP)) {
+			Event my_event;
+			Xv_window rt = xv_get(fr, XV_ROOT);
+			Window root, rr, wr;
+			int rx, ry, wx, wy;
+			unsigned mr;
+
+			root = xv_get(rt, XV_XID);
+			event_init(&my_event);
+			event_set_action(&my_event, ACTION_HELP);
+			event_set_xevent(&my_event, event_xevent(ev));
+			XQueryPointer(xcl->display, root, &rr, &wr, &rx, &ry, &wx,&wy,&mr);
+			event_set_x(&my_event, rx);
+			event_set_y(&my_event, ry);
+
+			xv_help_show(fr, xcl->data.b, &my_event);
+			return TRUE;
 		}
 	}
 	return FALSE;
@@ -620,6 +640,9 @@ static Notify_value base_interposer(Frame fram, Notify_event event,
 				popup_propwin(inst, fram);
 				return NOTIFY_DONE;
 			}
+			if (server_xvwp_is_own_help(srv, fram, ev)) return NOTIFY_DONE;
+		}
+		if (xcl->message_type == W_ATOM(fram, _OL_OWN_HELP)) {
 			if (server_xvwp_is_own_help(srv, fram, ev)) return NOTIFY_DONE;
 		}
 		if (xcl->message_type == W_ATOM(fram, "_MOTIF_WM_MESSAGES") &&
