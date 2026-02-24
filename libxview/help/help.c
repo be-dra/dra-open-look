@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.30 2026/01/25 18:36:58 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.31 2026/02/23 18:07:33 dra Exp $";
 #endif
 
 /*
@@ -947,19 +947,15 @@ Xv_public int xv_help_show(Xv_Window client_window, char *client_data,
 
 		if (xev) {
 			if (xev->type == ClientMessage) {
-				XClientMessageEvent *xcl = (XClientMessageEvent *)xev;
-				int rootx, rooty;
-
 				window = client_window;
-				rootx = (int)xcl->data.l[2];
-				rooty = (int)xcl->data.l[3];
 
 				/* convention - REF (erthlkhbtrgkgc)
 				 * This was sent by olwm - with root window coordinates!
 				 * See also the Atom _OL_OWN_HELP.
 				 */
 				/* this copies (part of) the root window into help_image */
-				xv_help_save_image(window, 0,0, rootx, rooty);
+				xv_help_save_image(window, 0, 0,
+								event_x(client_event), event_y(client_event));
 			}
 			else {
 				int client_height = (int)xv_get(client_window, XV_HEIGHT);
