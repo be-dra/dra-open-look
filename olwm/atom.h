@@ -1,7 +1,7 @@
 #ifndef _OLWM_ATOM_H
 #define _OLWM_ATOM_H
 
-/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.14 2025/03/01 12:25:26 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.15 2026/02/23 16:39:06 dra Exp $ */
 enum atom_index_t {
 	OL_AtomColorMapWindows,
 	OL_AtomWMState,
@@ -78,8 +78,6 @@ enum atom_index_t {
 	OL_AtomWinColors,
 	OL_AtomColorsFollow,
 	OL_AtomClipBoard,
-	OL_AtomPseudoClipBoard,
-	OL_AtomPseudoSecondary,
 	OL_AtomSelectEnd,
 	OL_AtomMenuFunctionClose,
 	OL_AtomMenuFunctionFullsize,
@@ -190,8 +188,6 @@ extern Atom atoms[];
 #define AtomWinColors atoms[OL_AtomWinColors]
 #define AtomColorsFollow atoms[OL_AtomColorsFollow]
 #define AtomClipBoard atoms[OL_AtomClipBoard]
-#define AtomPseudoClipBoard atoms[OL_AtomPseudoClipBoard]
-#define AtomPseudoSecondary atoms[OL_AtomPseudoSecondary]
 #define AtomSelectEnd atoms[OL_AtomSelectEnd]
 #define AtomMenuFunctionClose atoms[OL_AtomMenuFunctionClose]
 #define AtomMenuFunctionFullsize atoms[OL_AtomMenuFunctionFullsize]
