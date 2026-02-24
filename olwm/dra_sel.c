@@ -1,3 +1,8 @@
+/* no longer used - 
+		"_DRA_PSEUDO_SECONDARY",
+		"_DRA_PSEUDO_CLIPBOARD",
+	have been moved to vkbd
+*/
 #include <stdio.h>
 #include <X11/Xos.h>
 #include <X11/Xlib.h>
@@ -7,7 +12,7 @@
 #include "selection.h"
 #include "atom.h"
 
-char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.21 2026/01/21 17:17:50 dra Exp $";
+char dra_sel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_sel.c,v 1.22 2026/02/23 16:38:40 dra Exp $";
 
 extern Window NoFocusWin;
 
