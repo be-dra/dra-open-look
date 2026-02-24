@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.20 2026/02/10 23:03:53 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.21 2026/02/23 09:28:05 dra Exp $ ";
 #endif
 #endif
 
@@ -425,7 +425,10 @@ static GC *screen_get_cached_gc_list(Screen_info *screen, Xv_Window window)
 					gm = vis->green_mask / lowbit(vis->green_mask) + 1;
 					bm = vis->blue_mask / lowbit(vis->blue_mask) + 1;
 
-					/* die rm etc sind alle = 0x100 */
+					/* I don't remember from where I had these calculations
+					 * but currently, I only have the TrueColor case -
+					 * and then rm, gm, and bm are all = 100.
+					 */
 
 					rf = rm / (gm | bm);
 					if (rf < 1) rf = 1;
@@ -434,7 +437,7 @@ static GC *screen_get_cached_gc_list(Screen_info *screen, Xv_Window window)
 					bf = bm / (gm | rm);
 					if (bf < 1) bf = 1;
 
-					/* die rf etc sind alle = 1 */
+					/* And, of course, the rf, gf, and bf are all = 1 */
 
 					/* that '0x95' is not at all a secret - it is just the
 					 * result of many tryouts
@@ -446,8 +449,8 @@ static GC *screen_get_cached_gc_list(Screen_info *screen, Xv_Window window)
 								& (gf * 0x95 * lowbit(vis->green_mask))) +
 							(vis->blue_mask
 								& (bf * 0x95 * lowbit(vis->blue_mask)));
-					/* damit wird das 0x959595 - ein simples Ergebnis
-					 * fuer soviel Rechnerei
+					/* so this will be 0x959595 - a very simple result
+					 * of so much calculation...
 					 */
 
 					gc_value.function = GXand;
