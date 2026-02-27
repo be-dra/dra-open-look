@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.6 2025/11/01 13:02:02 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.7 2026/02/27 08:27:56 dra Exp $ ";
 #endif
 #endif
 
@@ -2652,6 +2652,9 @@ static void scrollbar_parse_attr(Xv_scrollbar_info *sb, Attr_avlist avlist)
 				ADONE;
 			case SCROLLBAR_PAGE_HEIGHT:
 				sb->page_height = (int)attrs[1];
+				ADONE;
+			case SCROLLBAR_UPDATE_MENU:
+				scrollbar_update_menu(sb);
 				ADONE;
 
 			case SCROLLBAR_NORMALIZE_PROC:
