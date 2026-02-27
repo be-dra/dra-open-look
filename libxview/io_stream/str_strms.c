@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)str_strms.c 20.17 93/06/28 DRA: $Id: str_strms.c,v 4.1 2024/03/28 18:02:44 dra Exp $";
+static char     sccsid[] = "@(#)str_strms.c 20.17 93/06/28 DRA: $Id: str_strms.c,v 4.2 2026/02/26 17:57:12 dra Exp $";
 #endif
 #endif
 
@@ -17,22 +17,18 @@ static char     sccsid[] = "@(#)str_strms.c 20.17 93/06/28 DRA: $Id: str_strms.c
 
 #define GetSISData struct string_input_stream_data	*data = (struct string_input_stream_data*) in->client_data
 
-static struct string_input_stream_data {
+typedef struct string_input_stream_data {
     char           *string;
     int             charpos;
-};
+} string_input_stream_data_t;
 
-static void
-string_input_stream_close(in)
-    STREAM         *in;
+static void string_input_stream_close(STREAM *in)
 {
     GetSISData;
     free((char *) data);
 }
 
-static int
-string_input_stream_getc(in)
-    STREAM         *in;
+static int string_input_stream_getc(STREAM *in)
 {
     GetSISData;
     char            c = data->string[data->charpos];
@@ -44,10 +40,7 @@ string_input_stream_getc(in)
 }
 
 /*ARGSUSED*/
-static struct posrec
-string_input_stream_get_pos(in, n)
-    STREAM         *in;
-    int             n;
+static struct posrec string_input_stream_get_pos(STREAM *in)
 {
     struct posrec   p;
     GetSISData;
@@ -57,20 +50,14 @@ string_input_stream_get_pos(in, n)
     return (p);
 }
 
-static int
-string_input_stream_set_pos(in, n)
-    STREAM         *in;
-    int             n;
+static int string_input_stream_set_pos(int n, STREAM *in)
 {
     GetSISData;
     data->charpos = n;
     return (0);
 }
 
-static int
-string_input_stream_ungetc(c, in)
-    char            c;
-    STREAM         *in;
+static int string_input_stream_ungetc(char c, STREAM *in)
 {
     GetSISData;
 
@@ -82,9 +69,7 @@ string_input_stream_ungetc(c, in)
 	return (EOF);
 }
 
-static int
-string_input_stream_chars_avail(in)
-    STREAM         *in;
+static int string_input_stream_chars_avail(STREAM *in)
 {
     GetSISData;
 
@@ -102,44 +87,39 @@ static struct input_ops_vector string_input_stream_ops = {
 };
 
 
-STREAM         *
-string_input_stream(s, in)
-    char           *s;
-    STREAM         *in;		/* if NULL, creates new one, otherwise reuses
-				 * this one */
+STREAM   *string_input_stream(char *s, STREAM *in)
+					/* if NULL, creates new one, otherwise reuses this one */
 {
-    STREAM         *value;
-    if (in != NULL) {
-	GetSISData;
-	data->string = s;
-	data->charpos = 0;
-	return (in);
-    } else {
-	struct string_input_stream_data *data;
+	STREAM *value;
 
-	value = (STREAM *) xv_malloc(sizeof(STREAM));
-	if (value == NULL) {	/* malloc can fail */
-	    xv_error(NULL,
-		     ERROR_LAYER, ERROR_SYSTEM,
-		     NULL);
-	    return ((STREAM *)NULL);
+	if (in != NULL) {
+		GetSISData;
+		data->string = s;
+		data->charpos = 0;
+		return (in);
 	}
-	value->stream_type = Input;
-	value->stream_class = "Input Stream From String";
-	value->ops.input_ops = &string_input_stream_ops;
-	data = (struct string_input_stream_data *) xv_malloc(
-				   sizeof(struct string_input_stream_data));
-	if (data == NULL) {
-	    xv_error(NULL,
-		     ERROR_LAYER, ERROR_SYSTEM,
-		     NULL);
-	    return ((STREAM *)NULL);
+	else {
+		struct string_input_stream_data *data;
+
+		value = (STREAM *) xv_malloc(sizeof(STREAM));
+		if (value == NULL) {	/* malloc can fail */
+			xv_error(XV_NULL, ERROR_LAYER, ERROR_SYSTEM, NULL);
+			return ((STREAM *) NULL);
+		}
+		value->stream_type = Input;
+		value->stream_class = "Input Stream From String";
+		value->ops.input_ops = &string_input_stream_ops;
+		data = (struct string_input_stream_data *)xv_malloc(sizeof(struct
+						string_input_stream_data));
+		if (data == NULL) {
+			xv_error(XV_NULL, ERROR_LAYER, ERROR_SYSTEM, NULL);
+			return ((STREAM *) NULL);
+		}
+		data->string = s;
+		data->charpos = 0;
+		value->client_data = (caddr_t) data;
+		return (value);
 	}
-	data->string = s;
-	data->charpos = 0;
-	value->client_data = (caddr_t) data;
-	return (value);
-    }
 }
 
 
@@ -148,23 +128,18 @@ string_input_stream(s, in)
 
 #define GetSOSData struct string_output_stream_data *data = (struct string_output_stream_data*) out->client_data
 
-static struct string_output_stream_data {
+typedef struct string_output_stream_data {
     char           *string;
     int             charpos;
-};
+} string_output_stream_data_t;
 
-static void
-string_output_stream_close(out)
-    STREAM         *out;
+static void string_output_stream_close(STREAM *out)
 {
     GetSOSData;
     free((char *) data);
 }
 
-static int
-string_output_stream_putc(c, out)
-    char            c;
-    STREAM         *out;
+static int string_output_stream_putc(char c, STREAM *out)
 {
     GetSOSData;
 
@@ -174,10 +149,7 @@ string_output_stream_putc(c, out)
 }
 
 /*ARGSUSED*/
-static struct posrec
-string_output_stream_getpos(n, out)
-    int             n;
-    STREAM         *out;
+static struct posrec string_output_stream_getpos(STREAM *out)
 {
     struct posrec   p;
     GetSOSData;
@@ -196,11 +168,8 @@ static struct output_ops_vector string_output_stream_ops = {
 };
 
 
-STREAM         *
-string_output_stream(s, out)
-    char           *s;
-    STREAM         *out;	/* if NULL, creates new one, otherwise reuses
-				 * this one */
+STREAM         *string_output_stream(char *s, STREAM *out)
+			/* if NULL, creates new one, otherwise reuses this one */
 {
     STREAM         *value;
     if (out != NULL) {
@@ -213,7 +182,7 @@ string_output_stream(s, out)
 
 	value = (STREAM *) xv_malloc(sizeof(STREAM));
 	if (value == NULL) {	/* malloc can fail */
-	    xv_error(NULL,
+	    xv_error(XV_NULL,
 		     ERROR_LAYER, ERROR_SYSTEM,
 		     NULL);
 	    return ((STREAM *)NULL);
@@ -224,7 +193,7 @@ string_output_stream(s, out)
 	data = (struct string_output_stream_data *) xv_malloc(
 				  sizeof(struct string_output_stream_data));
 	if (data == NULL) {
-	    xv_error(NULL,
+	    xv_error(XV_NULL,
 		     ERROR_LAYER, ERROR_SYSTEM,
 		     NULL);
 	    return ((STREAM *)NULL);
