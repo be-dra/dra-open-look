@@ -1,4 +1,4 @@
-/*      @(#)scrollbar.h 1.35 91/03/19	RCS: $Id: scrollbar.h,v 4.5 2025/07/22 16:30:37 dra Exp $ */
+/*      @(#)scrollbar.h 1.35 91/03/19	RCS: $Id: scrollbar.h,v 4.6 2026/02/27 08:15:06 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -9,7 +9,7 @@
 #ifndef	xview_scrollbar_DEFINED
 #define	xview_scrollbar_DEFINED
 
-/* $Id: scrollbar.h,v 4.5 2025/07/22 16:30:37 dra Exp $ */
+/* $Id: scrollbar.h,v 4.6 2026/02/27 08:15:06 dra Exp $ */
 /*
  * Module:	scrollbar.h
  * Library:	libxview.a
@@ -93,6 +93,7 @@ typedef enum {
 	SCROLLBAR_SHOW_PAGE 		= SCROLLBAR_ATTR(ATTR_BOOLEAN,	 17),
 	SCROLLBAR_PAGE 				= SCROLLBAR_ATTR(ATTR_INT,	 18),
 	SCROLLBAR_PAGE_HEIGHT		= SCROLLBAR_ATTR(ATTR_INT,	 19),
+	SCROLLBAR_UPDATE_MENU       = SCROLLBAR_ATTR(ATTR_NO_VALUE, 20),
 	SCROLLBAR_VIEW_LENGTH		= SCROLLBAR_ATTR(ATTR_INT,	  3)
 } Scrollbar_attribute;
 
