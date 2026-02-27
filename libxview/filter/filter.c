@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)filter.c 20.28 93/06/28 DRA: $Id: filter.c,v 2.3 2024/11/06 16:44:57 dra Exp $ ";
+static char     sccsid[] = "@(#)filter.c 20.28 93/06/28 DRA: $Id: filter.c,v 2.4 2026/02/26 17:55:54 dra Exp $ ";
 #endif
 #endif
 
@@ -174,6 +174,7 @@ struct filter_rec **xv_parse_filter_table(STREAM *in, char *filename)	/* use thi
 		val[j] = rec_array[j];
 
 	if (scratch_stream) {
+		if (scratch_stream->client_data) xv_free(scratch_stream->client_data);
 		xv_free((char *)scratch_stream);
 	}
 	return (val);
