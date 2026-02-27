@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.20 2025/03/16 13:37:28 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.21 2026/02/26 17:58:05 dra Exp $";
 #endif
 
 /*
@@ -961,6 +961,16 @@ static void textsw_folio_cleanup(Textsw_private priv)
 
 			for (this_key = priv->key_maps; this_key; this_key = next_key) {
 				next_key = this_key->next;
+
+				if (this_key->maps_to) {
+					int i;
+					char **mt = (char **)this_key->maps_to;
+
+					for (i = 0; mt[i]; i++) {
+						xv_free(mt[i]);
+					}
+					xv_free(this_key->maps_to);
+				}
 				free((char *)this_key);
 			}
 		}
