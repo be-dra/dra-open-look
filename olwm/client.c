@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.5 2026/02/23 18:06:53 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.6 2026/02/28 13:43:22 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -23,6 +23,7 @@ char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.5 2026/02/23 1
 
 #include "i18n.h"		/* needed by olgx.h */
 #include <olgx/olgx.h>
+#include <arpa/inet.h>
 
 #include "ollocale.h"
 #include "events.h"
@@ -315,7 +316,19 @@ static void ClientSendProtocol(Client *cli, Atom proto, Time evtime)
 	XSendEvent(cli->dpy, xcl.xclient.window, False, NoEventMask, &xcl);
 }
 
+/*********************************************************\
+ * Originally (until 2026-02-28), olwn sent very different 
+ * help strings: "olwm:PushPin", "workspace:NoHelp", "window:Properties".
+ * Therefore, we had three help files: olwm.info, workspace.info and
+ * window.info.
+ * My decision is to keep workspace.info and window.info as they are (for
+ * old versions of olwm) and to append the contents of those two files to
+ * olwm.info.
+ * So, **this** olwm only uses the help prefix "olwm:" - and omits this prefix
+ * when the help request is sent to a OWN_HELP-client.
+\*********************************************************/
 Bool ClientShowHelp(Client *cli, int rootx, int rooty, char *hlp)
+	/* the parameter hlp is no longer "olwm:PushPin", but only "PushPin" */
 {
 	Client *cliLead = GroupLeader(cli->groupid);
 	XEvent xcl;
@@ -325,36 +338,22 @@ Bool ClientShowHelp(Client *cli, int rootx, int rooty, char *hlp)
 
 	xcl.xclient.type = ClientMessage;
 	xcl.xclient.window = PANEWINOFCLIENT(cliLead);
-	if (strlen(hlp) < sizeof(xcl.xclient.data.b)) {
-		/* That was a nice idea: send the help text directly in 
-		 * the twenty bytes xcl.xclient.data.b.
-		 *
-		 * However, that means that we cannot include the root coordinates
-		 * in the client message - the resulting help window's
-		 * magnifying glass always contained the top left corner of the 
-		 * workspace.... so: not useful.
-		 *
-		 * Now we call XQueryPointer in the client to find the root 
-		 * coordinates.
-		 *
-		 * Comparing the two methods - counting requests and replies:
-		 *
-		 * +++ old: 1 change property
-		 *          2 send event
-		 *          3 event to client
-		 *          4 get property
-		 *          5 get property reply
-		 *
-		 * +++ new: 1 send event
-		 *          2 event to client
-		 *          3 query pointer
-		 *          4 query pointer reply
+	if (strlen(hlp) < sizeof(xcl.xclient.data.b) - 4) {
+		/* The idea is: of the 20 bytes in xcl.xclient.data.b, we use
+		 * the first four bytes as two shorts containing the root
+		 * coordinates... the question is "what do we do about a potential
+		 * byte swapping?"
+		 * For now, we assume that the X server will do **no** byte swapping
+		 * when we say "format = 8". So, we use the good old functions
+		 * htons (and ntohs on the receiver side)...
 		 */
 		xcl.xclient.message_type = AtomOwnHelp;
 		xcl.xclient.format = 8;
 
 		memset(xcl.xclient.data.b, 0, sizeof(xcl.xclient.data.b));
-		strcpy(xcl.xclient.data.b, hlp);
+		xcl.xclient.data.s[0] = htons((uint16_t)rootx);
+		xcl.xclient.data.s[1] = htons((uint16_t)rooty);
+		strcpy(xcl.xclient.data.b + 4, hlp);
 	}
 	else {
 		fprintf(stderr, "olwm:%s-%d: help '%s' too long for a client message\n",
