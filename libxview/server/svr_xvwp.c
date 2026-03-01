@@ -14,8 +14,9 @@
 #include <X11/Xresource.h>
 #include <X11/Xatom.h>
 #include <xview_private/svr_impl.h>
+#include <arpa/inet.h>
 
-char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.25 2026/02/23 18:07:49 dra Exp $";
+char xvwp_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: svr_xvwp.c,v 4.26 2026/02/28 13:43:58 dra Exp $";
 
 #define RESCALE_WORKS 0
 #define MIN_DEPTH 4
@@ -593,20 +594,19 @@ Pkg_private int server_xvwp_is_own_help(Xv_server srv, Frame fr, Event *ev)
 		}
 		else if (xcl->message_type == xv_get(srv,SERVER_ATOM, _OL_OWN_HELP)) {
 			Event my_event;
-			Xv_window rt = xv_get(fr, XV_ROOT);
-			Window root, rr, wr;
-			int rx, ry, wx, wy;
-			unsigned mr;
+			int rx, ry;
+			char hlpbuf[30];
 
-			root = xv_get(rt, XV_XID);
+			rx = ntohs((uint16_t)xcl->data.s[0]);
+			ry = ntohs((uint16_t)xcl->data.s[1]);
 			event_init(&my_event);
 			event_set_action(&my_event, ACTION_HELP);
 			event_set_xevent(&my_event, event_xevent(ev));
-			XQueryPointer(xcl->display, root, &rr, &wr, &rx, &ry, &wx,&wy,&mr);
 			event_set_x(&my_event, rx);
 			event_set_y(&my_event, ry);
+			sprintf(hlpbuf, "olwm:%s", xcl->data.b + 4);
 
-			xv_help_show(fr, xcl->data.b, &my_event);
+			xv_help_show(fr, hlpbuf, &my_event);
 			return TRUE;
 		}
 	}
