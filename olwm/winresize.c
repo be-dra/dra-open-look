@@ -1,5 +1,5 @@
 /* #ident	"@(#)winresize.c	26.27	93/06/28 SMI" */
-char winresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winresize.c,v 1.5 2025/01/11 20:39:00 dra Exp $";
+char winresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winresize.c,v 1.6 2026/02/28 13:42:16 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -272,7 +272,7 @@ int x,y;
 	w->core.dirtyconfig = CWX | CWY | CWWidth | CWHeight;
 	w->core.exposures = NULL;
 	w->which = which;
-	w->core.helpstring = "olwm:ResizeCorner";
+	w->core.helpstring = "ResizeCorner";
 
 	/* register the window */
 	WIInstallInfo(w);
