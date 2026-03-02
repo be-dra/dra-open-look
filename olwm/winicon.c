@@ -1,5 +1,5 @@
 /* #ident	"@(#)winicon.c	26.42	93/06/28 SMI" */
-char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.8 2025/06/20 20:36:58 dra Exp $";
+char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.9 2026/02/28 13:42:18 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -496,7 +496,7 @@ XWindowAttributes *paneattrs;
 	w->core.dirtyconfig = CWX|CWY|CWWidth|CWHeight;
 	w->core.colormap = None;
 	w->core.exposures = NULL;
-	w->core.helpstring = "olwm:Icon";
+	w->core.helpstring = "Icon";
 
 	/* create the icon frame */
 
