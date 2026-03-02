@@ -1,5 +1,5 @@
 /* #ident	"@(#)winroot.c	26.60	93/06/28 SMI" */
-char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.4 2025/01/04 21:58:14 dra Exp $";
+char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.5 2026/02/28 13:42:37 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -637,7 +637,7 @@ MakeRoot(dpy, cli)
 	w->core.dirtyconfig = False;
 	w->core.colormap = cli->scrInfo->colormap;
 	w->core.exposures = NULL;
-	w->core.helpstring = "olwm:Workspace";
+	w->core.helpstring = "Workspace";
 	w->currentAction = ACTION_NONE;
 
 	/* Write properties on the root window */
