@@ -57,7 +57,7 @@ HEADERS=cmdstream.h debug.h defaults.h dsdm.h environ.h   \
 	  ollocale.h olwm.h properties.h resources.h atom.h \
 	  screen.h selection.h services.h slots.h st.h win.h gettext.h
 
-SRCS=atom.c client.c cmdstream.c debug.c dra_signal.c dra_sel.c \
+SRCS=atom.c client.c cmdstream.c debug.c dra_signal.c \
 	  defaults.c dra_color.c dsdm.c environ.c error.c evbind.c events.c \
 	  fontset.c group.c helpsend.c i18n.c info.c kbdfuncs.c \
 	  list.c mem.c menu.c moveresize.c notice.c olwm.c properties.c\
@@ -82,7 +82,6 @@ $(LOLWM):$(LOLWM)(atom.o) \
          $(LOLWM)(defaults.o) \
          $(LOLWM)(dra_color.o) \
          $(LOLWM)(dra_signal.o) \
-         $(LOLWM)(dra_sel.o) \
          $(LOLWM)(dra_quick.o) \
          $(LOLWM)(dsdm.o) \
          $(LOLWM)(environ.o) \
@@ -203,142 +202,145 @@ depend: FORCE
 # DO NOT DELETE
 
 libolwm_$(HOSTMTYPE).a(atom.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h 
-libolwm_$(HOSTMTYPE).a(atom.o): olwm.h atom.h
+libolwm_$(HOSTMTYPE).a(atom.o): olwm.h 
+libolwm_$(HOSTMTYPE).a(atom.o): atom.h
 libolwm_$(HOSTMTYPE).a(client.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(client.o): i18n.h ollocale.h 
-libolwm_$(HOSTMTYPE).a(client.o): events.h mem.h olwm.h win.h list.h screen.h group.h globals.h dsdm.h resources.h atom.h
+libolwm_$(HOSTMTYPE).a(client.o): i18n.h ../build/include/olgx/olgx.h 
+libolwm_$(HOSTMTYPE).a(client.o): ollocale.h events.h mem.h screen.h olwm.h win.h list.h group.h globals.h dsdm.h resources.h atom.h
 libolwm_$(HOSTMTYPE).a(cmdstream.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(cmdstream.o): cmdstream.h mem.h
 libolwm_$(HOSTMTYPE).a(debug.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(debug.o): i18n.h olwm.h win.h list.h events.h screen.h debug.h
+libolwm_$(HOSTMTYPE).a(debug.o): i18n.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h 
+libolwm_$(HOSTMTYPE).a(debug.o): debug.h
 libolwm_$(HOSTMTYPE).a(dra_signal.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h 
 libolwm_$(HOSTMTYPE).a(dra_signal.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h
-libolwm_$(HOSTMTYPE).a(dra_signal.o): i18n.h ollocale.h events.h olwm.h globals.h list.h
-libolwm_$(HOSTMTYPE).a(dra_sel.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(dra_sel.o): events.h properties.h selection.h atom.h
+libolwm_$(HOSTMTYPE).a(dra_signal.o): i18n.h 
+libolwm_$(HOSTMTYPE).a(dra_signal.o): ollocale.h events.h olwm.h globals.h list.h
 libolwm_$(HOSTMTYPE).a(defaults.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h
 libolwm_$(HOSTMTYPE).a(defaults.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(defaults.o): i18n.h ollocale.h olwm.h defaults.h globals.h list.h resources.h
 libolwm_$(HOSTMTYPE).a(dra_color.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(dra_color.o): i18n.h ollocale.h olwm.h globals.h list.h resources.h events.h mem.h win.h screen.h group.h
+libolwm_$(HOSTMTYPE).a(dra_color.o): i18n.h ollocale.h ../build/include/olgx/olgx.h olwm.h atom.h globals.h list.h resources.h events.h mem.h win.h screen.h group.h
 libolwm_$(HOSTMTYPE).a(dsdm.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(dsdm.o): i18n.h ollocale.h mem.h olwm.h properties.h selection.h win.h list.h events.h screen.h
-libolwm_$(HOSTMTYPE).a(dsdm.o): error.h dsdm.h atom.h
+libolwm_$(HOSTMTYPE).a(dsdm.o): i18n.h ollocale.h mem.h olwm.h properties.h selection.h win.h 
+libolwm_$(HOSTMTYPE).a(dsdm.o): list.h events.h screen.h ../build/include/olgx/olgx.h error.h dsdm.h atom.h
 libolwm_$(HOSTMTYPE).a(environ.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(environ.o): mem.h atom.h
 libolwm_$(HOSTMTYPE).a(error.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(error.o): i18n.h ollocale.h error.h olwm.h globals.h list.h
 libolwm_$(HOSTMTYPE).a(evbind.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(evbind.o): i18n.h ollocale.h olwm.h win.h list.h events.h screen.h 
-libolwm_$(HOSTMTYPE).a(evbind.o): globals.h mem.h kbdfuncs.h resources.h error.h
+libolwm_$(HOSTMTYPE).a(evbind.o): i18n.h ollocale.h olwm.h win.h list.h events.h screen.h
+libolwm_$(HOSTMTYPE).a(evbind.o): ../build/include/olgx/olgx.h globals.h mem.h kbdfuncs.h resources.h error.h
 libolwm_$(HOSTMTYPE).a(events.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(events.o): i18n.h
-libolwm_$(HOSTMTYPE).a(events.o): ollocale.h olwm.h win.h list.h events.h screen.h debug.h globals.h mem.h error.h atom.h
+libolwm_$(HOSTMTYPE).a(events.o): ollocale.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h debug.h globals.h mem.h error.h atom.h
 libolwm_$(HOSTMTYPE).a(group.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(group.o): i18n.h mem.h st.h olwm.h win.h list.h events.h screen.h group.h
+libolwm_$(HOSTMTYPE).a(group.o): i18n.h mem.h st.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h group.h
 libolwm_$(HOSTMTYPE).a(helpsend.o): helpcmd.h cmdstream.h
 libolwm_$(HOSTMTYPE).a(i18n.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(i18n.o): i18n.h 
 libolwm_$(HOSTMTYPE).a(i18n.o): mem.h ollocale.h olwm.h globals.h list.h
 libolwm_$(HOSTMTYPE).a(info.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(info.o): i18n.h olwm.h win.h list.h
-libolwm_$(HOSTMTYPE).a(info.o): events.h screen.h st.h mem.h error.h
+libolwm_$(HOSTMTYPE).a(info.o): i18n.h olwm.h win.h
+libolwm_$(HOSTMTYPE).a(info.o): list.h events.h screen.h ../build/include/olgx/olgx.h st.h mem.h error.h
 libolwm_$(HOSTMTYPE).a(kbdfuncs.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(kbdfuncs.o): i18n.h ollocale.h olwm.h win.h list.h events.h screen.h menu.h globals.h group.h resources.h
+libolwm_$(HOSTMTYPE).a(kbdfuncs.o): i18n.h ollocale.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h menu.h globals.h group.h resources.h
 libolwm_$(HOSTMTYPE).a(list.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(list.o): mem.h list.h
 libolwm_$(HOSTMTYPE).a(mem.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(mem.o): i18n.h mem.h error.h 
 libolwm_$(HOSTMTYPE).a(menu.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(menu.o): i18n.h 
-libolwm_$(HOSTMTYPE).a(menu.o): ollocale.h mem.h events.h olwm.h win.h list.h screen.h menu.h globals.h error.h atom.h
+libolwm_$(HOSTMTYPE).a(menu.o): ../build/include/olgx/olgx.h ollocale.h mem.h events.h olwm.h win.h list.h screen.h menu.h globals.h error.h atom.h
 libolwm_$(HOSTMTYPE).a(moveresize.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(moveresize.o): i18n.h ollocale.h mem.h olwm.h
-libolwm_$(HOSTMTYPE).a(moveresize.o): win.h list.h events.h screen.h globals.h error.h group.h
+libolwm_$(HOSTMTYPE).a(moveresize.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(moveresize.o): mem.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h globals.h error.h group.h
 libolwm_$(HOSTMTYPE).a(notice.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(notice.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(notice.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(notice.o): olwm.h screen.h notice.h globals.h list.h mem.h events.h error.h
 libolwm_$(HOSTMTYPE).a(olwm.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h 
 libolwm_$(HOSTMTYPE).a(olwm.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(olwm.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/limits.h /usr/lib64/gcc/x86_64-suse-linux/14/include/syslimits.h 
-libolwm_$(HOSTMTYPE).a(olwm.o): i18n.h ollocale.h events.h mem.h olwm.h win.h list.h screen.h menu.h defaults.h resources.h globals.h group.h selection.h slots.h error.h dsdm.h
+libolwm_$(HOSTMTYPE).a(olwm.o): i18n.h ollocale.h events.h mem.h olwm.h win.h list.h screen.h ../build/include/olgx/olgx.h menu.h defaults.h resources.h globals.h group.h selection.h slots.h error.h dsdm.h atom.h
 libolwm_$(HOSTMTYPE).a(properties.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(properties.o): i18n.h olwm.h win.h list.h
-libolwm_$(HOSTMTYPE).a(properties.o): events.h screen.h mem.h properties.h atom.h
+libolwm_$(HOSTMTYPE).a(properties.o): i18n.h olwm.h win.h
+libolwm_$(HOSTMTYPE).a(properties.o): list.h events.h screen.h ../build/include/olgx/olgx.h mem.h properties.h atom.h
 libolwm_$(HOSTMTYPE).a(resources.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(resources.o): i18n.h mem.h olwm.h ollocale.h defaults.h globals.h list.h resources.h win.h events.h screen.h olcursor.h error.h
+libolwm_$(HOSTMTYPE).a(resources.o): i18n.h ../build/include/olgx/olgx.h mem.h olwm.h ollocale.h defaults.h globals.h list.h resources.h win.h events.h screen.h olcursor.h error.h
 libolwm_$(HOSTMTYPE).a(screen.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(screen.o): i18n.h ollocale.h mem.h olwm.h defaults.h globals.h list.h resources.h selection.h environ.h win.h events.h screen.h menu.h slots.h atom.h iconimage.h iconmask.h
+libolwm_$(HOSTMTYPE).a(screen.o): i18n.h ../build/include/olgx/olgx.h ollocale.h mem.h olwm.h defaults.h globals.h list.h resources.h selection.h environ.h win.h events.h screen.h menu.h slots.h atom.h
+libolwm_$(HOSTMTYPE).a(screen.o): iconimage.h iconmask.h 
 libolwm_$(HOSTMTYPE).a(selection.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(selection.o): i18n.h olwm.h win.h list.h events.h screen.h
-libolwm_$(HOSTMTYPE).a(selection.o): mem.h atom.h selection.h
+libolwm_$(HOSTMTYPE).a(selection.o): i18n.h olwm.h win.h list.h events.h
+libolwm_$(HOSTMTYPE).a(selection.o): screen.h ../build/include/olgx/olgx.h mem.h atom.h selection.h
 libolwm_$(HOSTMTYPE).a(services.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(services.o): services.h win.h list.h events.h screen.h
+libolwm_$(HOSTMTYPE).a(services.o): services.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h
 libolwm_$(HOSTMTYPE).a(services.o): olwm.h i18n.h menu.h ollocale.h notice.h globals.h group.h mem.h resources.h error.h dsdm.h atom.h
 libolwm_$(HOSTMTYPE).a(slave.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h 
 libolwm_$(HOSTMTYPE).a(slave.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(slave.o): cmdstream.h error.h
 libolwm_$(HOSTMTYPE).a(slots.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(slots.o): i18n.h ollocale.h mem.h st.h olwm.h win.h list.h events.h screen.h globals.h
-libolwm_$(HOSTMTYPE).a(slots.o): slots.h
+libolwm_$(HOSTMTYPE).a(slots.o): i18n.h ollocale.h mem.h st.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h 
+libolwm_$(HOSTMTYPE).a(slots.o): globals.h slots.h
 libolwm_$(HOSTMTYPE).a(st.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(st.o): st.h mem.h
 libolwm_$(HOSTMTYPE).a(states.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(states.o): i18n.h ollocale.h mem.h olwm.h win.h
-libolwm_$(HOSTMTYPE).a(states.o): list.h events.h screen.h group.h globals.h properties.h atom.h
+libolwm_$(HOSTMTYPE).a(states.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(states.o): mem.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h group.h globals.h properties.h atom.h
 libolwm_$(HOSTMTYPE).a(usermenu.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(usermenu.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/limits.h /usr/lib64/gcc/x86_64-suse-linux/14/include/syslimits.h 
-libolwm_$(HOSTMTYPE).a(usermenu.o): i18n.h ollocale.h olwm.h globals.h list.h mem.h win.h 
-libolwm_$(HOSTMTYPE).a(usermenu.o): events.h screen.h menu.h services.h
+libolwm_$(HOSTMTYPE).a(usermenu.o): i18n.h ollocale.h olwm.h globals.h list.h mem.h win.h
+libolwm_$(HOSTMTYPE).a(usermenu.o): events.h screen.h ../build/include/olgx/olgx.h menu.h services.h
 libolwm_$(HOSTMTYPE).a(usleep.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h 
 libolwm_$(HOSTMTYPE).a(win.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(win.o): i18n.h olwm.h win.h list.h events.h screen.h mem.h st.h
-libolwm_$(HOSTMTYPE).a(win.o): notice.h
+libolwm_$(HOSTMTYPE).a(win.o): i18n.h olwm.h win.h list.h events.h screen.h ../build/include/olgx/olgx.h 
+libolwm_$(HOSTMTYPE).a(win.o): mem.h st.h notice.h
 libolwm_$(HOSTMTYPE).a(winbusy.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winbusy.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winbusy.o): ../build/include/olgx/olgx.h i18n.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winbusy.o): mem.h olwm.h win.h list.h events.h screen.h globals.h
 libolwm_$(HOSTMTYPE).a(winbutton.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winbutton.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winbutton.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winbutton.o): mem.h olwm.h win.h list.h events.h screen.h globals.h menu.h atom.h
 libolwm_$(HOSTMTYPE).a(wincolor.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(wincolor.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(wincolor.o): ../build/include/olgx/olgx.h i18n.h ollocale.h
 libolwm_$(HOSTMTYPE).a(wincolor.o): mem.h olwm.h win.h list.h events.h screen.h globals.h atom.h
 libolwm_$(HOSTMTYPE).a(winframe.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winframe.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winframe.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winframe.o): mem.h olwm.h win.h list.h events.h screen.h menu.h group.h globals.h error.h atom.h
 libolwm_$(HOSTMTYPE).a(wingframe.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(wingframe.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(wingframe.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(wingframe.o): mem.h olwm.h win.h list.h events.h screen.h globals.h
 libolwm_$(HOSTMTYPE).a(winicon.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winicon.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winicon.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winicon.o): mem.h olwm.h win.h list.h events.h screen.h menu.h globals.h slots.h group.h
 libolwm_$(HOSTMTYPE).a(winipane.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winipane.o): i18n.h ollocale.h 
-libolwm_$(HOSTMTYPE).a(winipane.o): mem.h olwm.h win.h list.h events.h screen.h menu.h globals.h error.h atom.h
+libolwm_$(HOSTMTYPE).a(winipane.o): i18n.h ../build/include/olgx/olgx.h ollocale.h mem.h olwm.h win.h list.h events.h screen.h menu.h globals.h error.h atom.h
 libolwm_$(HOSTMTYPE).a(winmenu.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winmenu.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winmenu.o): ../build/include/olgx/olgx.h i18n.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winmenu.o): mem.h olwm.h win.h list.h events.h screen.h menu.h globals.h
 libolwm_$(HOSTMTYPE).a(winnofoc.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winnofoc.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winnofoc.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winnofoc.o): mem.h olwm.h win.h list.h events.h screen.h globals.h selection.h atom.h
 libolwm_$(HOSTMTYPE).a(winpane.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winpane.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winpane.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winpane.o): mem.h olwm.h win.h list.h events.h screen.h globals.h atom.h
 libolwm_$(HOSTMTYPE).a(winpinmenu.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winpinmenu.o): i18n.h ollocale.h
-libolwm_$(HOSTMTYPE).a(winpinmenu.o): mem.h olwm.h win.h list.h events.h screen.h menu.h globals.h atom.h
+libolwm_$(HOSTMTYPE).a(winpinmenu.o): i18n.h 
+libolwm_$(HOSTMTYPE).a(winpinmenu.o): ../build/include/olgx/olgx.h ollocale.h mem.h olwm.h win.h list.h events.h screen.h menu.h globals.h atom.h
 libolwm_$(HOSTMTYPE).a(winpush.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winpush.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winpush.o): ../build/include/olgx/olgx.h i18n.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winpush.o): mem.h olwm.h win.h list.h events.h screen.h globals.h atom.h
 libolwm_$(HOSTMTYPE).a(winresize.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winresize.o): ollocale.h i18n.h
+libolwm_$(HOSTMTYPE).a(winresize.o): ../build/include/olgx/olgx.h ollocale.h i18n.h
 libolwm_$(HOSTMTYPE).a(winresize.o): mem.h olwm.h win.h list.h events.h screen.h globals.h
 libolwm_$(HOSTMTYPE).a(winroot.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
-libolwm_$(HOSTMTYPE).a(winroot.o): i18n.h ollocale.h 
+libolwm_$(HOSTMTYPE).a(winroot.o): i18n.h ../build/include/olgx/olgx.h ollocale.h
 libolwm_$(HOSTMTYPE).a(winroot.o): mem.h olwm.h win.h list.h events.h screen.h menu.h globals.h group.h error.h atom.h selection.h
 libolwm_$(HOSTMTYPE).a(gettext.o): gettext.h 
 libolwm_$(HOSTMTYPE).a(gettext.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(gettext.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/limits.h /usr/lib64/gcc/x86_64-suse-linux/14/include/syslimits.h 
+libolwm_$(HOSTMTYPE).a(gettext.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stdint.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdint-gcc.h
 libolwm_$(HOSTMTYPE).a(dra_quick.o): /usr/lib64/gcc/x86_64-suse-linux/14/include/stddef.h /usr/lib64/gcc/x86_64-suse-linux/14/include/stdarg.h 
 libolwm_$(HOSTMTYPE).a(dra_quick.o): win.h 
-libolwm_$(HOSTMTYPE).a(dra_quick.o): list.h events.h screen.h olwm.h i18n.h 
+libolwm_$(HOSTMTYPE).a(dra_quick.o): list.h events.h screen.h ../build/include/olgx/olgx.h olwm.h i18n.h atom.h ollocale.h
+libolwm_$(HOSTMTYPE).a(dra_quick.o): globals.h 
