@@ -362,7 +362,7 @@ int x,y;
 	w->core.height = Abbrev_MenuButton_Height(gisNormal);
 	w->core.dirtyconfig = 0;
 	w->core.exposures = NULL;
-	w->core.helpstring = "olwm:CloseButton";
+	w->core.helpstring = "CloseButton";
 	w->ignore = False;
 
 	/* register the window */
