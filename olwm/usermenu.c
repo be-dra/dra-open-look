@@ -1,5 +1,5 @@
 /* #ident	"@(#)usermenu.c	26.62	93/06/28 SMI" */
-char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.3 2025/03/12 21:40:40 dra Exp $";
+char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.6 2026/03/01 14:46:51 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -116,7 +116,6 @@ char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.3 2025/03/
 #include "services.h"
 
 static char *menuFileName	= "openwin-menu";
-static char *workspaceHelpStub	= "workspace";
 static int  menuRecursionCount;
 
 extern char *getenv();
@@ -124,7 +123,7 @@ extern char *getenv();
 #define TOKLEN		300
 
 #define DEFAULT_WORKSPACE_TITLE		"Workspace"
-#define DEFAULT_WORKSPACE_HELPSTR	"workspace:DefaultMenu"
+#define DEFAULT_WORKSPACE_HELPSTR	"DefaultMenu"
 
 
 /* parseMenu return values */
@@ -1391,12 +1390,12 @@ static Menu * buildFromSpec(Display *dpy, menudata *pmenu, char *deftitle)
 	menuHelp = NULL;
 
 	if (tit != NULL) {
-		sprintf(helpbuff, "%s:wsm_%s", workspaceHelpStub, tit);
+		sprintf(helpbuff, "wsm_%s", tit);
 		menuHelp = MemNewString(helpbuff);
 	}
 
 	if (menuHelp == NULL && deftitle != NULL) {
-		sprintf(helpbuff, "%s:wsm_%s", workspaceHelpStub, deftitle);
+		sprintf(helpbuff, "wsm_%s", deftitle);
 		menuHelp = MemNewString(helpbuff);
 	}
 
@@ -1441,7 +1440,7 @@ static Menu * buildFromSpec(Display *dpy, menudata *pmenu, char *deftitle)
 
 			strcpy(labbuf, b->label[0]);
 			ReplaceChars(labbuf, " \t:;.", '_');
-			sprintf(helpbuff, "%s:wsm_%s", workspaceHelpStub, labbuf);
+			sprintf(helpbuff, "wsm_%s", labbuf);
 			b->helpstring[0] = MemNewString(helpbuff);
 		}
 		b->helpstring[1] = NULL;
@@ -1695,7 +1694,7 @@ extern int  WindowDismissAllAction(), WindowFlashOwnerAction();
  *	Title and help strings
  */
 static Text *windowTitle;
-static char *windowMenuHelpString = "window:WindowMenu";
+static char *windowMenuHelpString = "WindowMenu";
 
 /*
  *	Buttons used to build the frame and icon menus
@@ -1706,7 +1705,7 @@ static char *windowMenuHelpString = "window:WindowMenu";
 static Button
 openButton = {
     { NULL, NULL },
-    { "window:Open", "window:Close" },
+    { "Open", "Close" },
     0,
     False, 
     True,
@@ -1719,7 +1718,7 @@ openButton = {
 static Button
 fullSizeButton = {
     { NULL, NULL },
-    { "window:FullSize", "window:RestoreSize" },
+    { "FullSize", "RestoreSize" },
     0,
     False,
     True,
@@ -1732,7 +1731,7 @@ fullSizeButton = {
 static Button
 moveButton = {
     { NULL, NULL },
-    { "window:Move", NULL },
+    { "Move", NULL },
     0,
     False, 
     True,
@@ -1745,7 +1744,7 @@ moveButton = {
 static Button
 resizeButton = {
     { NULL, NULL },
-    { "window:Resize", NULL },
+    { "Resize", NULL },
     0,
     False, 
     True,
@@ -1758,7 +1757,7 @@ resizeButton = {
 static Button
 propertiesButton = {
     { NULL, NULL },
-    { "window:Properties", NULL },
+    { "Properties", NULL },
     0,
     False, 
     False,
@@ -1771,7 +1770,7 @@ propertiesButton = {
 static Button
 backButton = {
     { NULL, NULL },
-    { "window:Back", NULL },
+    { "Back", NULL },
     0,
     False, 
     True,
@@ -1784,7 +1783,7 @@ backButton = {
 static Button
 refreshButton = {
     { NULL, NULL },
-    { "window:Refresh", NULL },
+    { "Refresh", NULL },
     0,
     False, 
     True,
@@ -1797,7 +1796,7 @@ refreshButton = {
 static Button
 quitButton = {
     { NULL, NULL },
-    { "window:Quit", NULL },
+    { "Quit", NULL },
     0, 
     False, 
     True,
@@ -1809,7 +1808,7 @@ quitButton = {
 
 static Button dismissButton = {
     { NULL, NULL },
-    { "window:Dismiss", "window:Cancel" }, /* REMIND "window:Cancel" ? */
+    { "Dismiss", "Cancel" }, /* REMIND "Cancel" ? */
     0,
     False,
     True,
@@ -1822,7 +1821,7 @@ static Button dismissButton = {
 static Button 
 dismissThisButton = {
     { NULL, NULL },
-    { "window:DismissThis", NULL },
+    { "DismissThis", NULL },
     0,
     False, 
     True,
@@ -1835,7 +1834,7 @@ dismissThisButton = {
 static Button
 dismissAllButton = {
     { NULL, NULL },
-    { "window:DismissAll", NULL },
+    { "DismissAll", NULL },
     0,
     False, 
     True,
@@ -1848,7 +1847,7 @@ dismissAllButton = {
 static Button
 ownerButton = {
     { NULL, NULL },
-    { "window:Owner", NULL },
+    { "Owner", NULL },
     0,
     False, 
     True,
@@ -2033,7 +2032,7 @@ void
 InitAllButtons()
 {
     InitButton(&openButton, 
-		"window:Open", "window:Close", 
+		"Open", "Close", 
 		0, 
 		False, 
 		True, 
@@ -2042,7 +2041,7 @@ InitAllButtons()
 		ACTION_OPEN_CLOSE);
 
     InitButton(&fullSizeButton, 
-		"window:FullSize", "window:RestoreSize", 
+		"FullSize", "RestoreSize", 
 		0, 
 		False, 
 		True, 
@@ -2051,7 +2050,7 @@ InitAllButtons()
 		ACTION_FULL_RESTORE);
 
     InitButton(&moveButton, 
-		"window:Move", NULL, 
+		"Move", NULL, 
 		0, 
 		False, 
 		True, 
@@ -2060,7 +2059,7 @@ InitAllButtons()
 		ACTION_MOVE);
 
     InitButton(&resizeButton, 
-		"window:Resize", NULL, 
+		"Resize", NULL, 
 		0, 
 		False, 
 		True, 
@@ -2069,7 +2068,7 @@ InitAllButtons()
 		ACTION_RESIZE);
 
     InitButton(&propertiesButton, 
-		"window:Properties", NULL, 
+		"Properties", NULL, 
 		0, 
 		False, 
 		False, 
@@ -2078,7 +2077,7 @@ InitAllButtons()
 		ACTION_PROPS);
 
     InitButton(&backButton, 
-		"window:Back", NULL, 
+		"Back", NULL, 
 		0, 
 		False, 
 		True, 
@@ -2087,7 +2086,7 @@ InitAllButtons()
 		ACTION_BACK);
 
     InitButton(&refreshButton, 
-		"window:Refresh", NULL, 
+		"Refresh", NULL, 
 		0, 
 		False, 
 		True, 
@@ -2096,7 +2095,7 @@ InitAllButtons()
 		ACTION_REFRESH);
 
     InitButton(&quitButton, 
-		"window:Quit", NULL, 
+		"Quit", NULL, 
 		0, 
 		False, 
 		True, 
@@ -2105,7 +2104,7 @@ InitAllButtons()
 		ACTION_QUIT);
 
     InitButton(&dismissButton, 
-		"window:Dismiss", "window:Dismiss", 
+		"Dismiss", "Dismiss", 
 		0, 
 		False, 
 		True, 
@@ -2114,7 +2113,7 @@ InitAllButtons()
 		ACTION_NONE);
 
     InitButton(&dismissThisButton, 
-		"window:DismissThis", NULL,
+		"DismissThis", NULL,
 		0, 
 		False, 
 		True, 
@@ -2123,7 +2122,7 @@ InitAllButtons()
 		ACTION_OPEN_CLOSE);
 
     InitButton(&dismissAllButton, 
-		"window:DismissAll", NULL,
+		"DismissAll", NULL,
 		0, 
 		False, 
 		True, 
@@ -2132,7 +2131,7 @@ InitAllButtons()
 		ACTION_NONE);
 
     InitButton(&ownerButton, 
-		"window:Owner", NULL,
+		"Owner", NULL,
 		0, 
 		False, 
 		True, 
@@ -2168,12 +2167,12 @@ InitMenus(dpy)
     MenuTable[MENU_FULL] = CreateMenu(windowTitle, windowMenuFullButtons, 
 		COUNT(windowMenuFullButtons), False, windowMenuHelpString);
     MenuTable[MENU_LIMITED] = CreateMenu(windowTitle, windowMenuLimitedButtons, 
-		COUNT(windowMenuLimitedButtons), False, "window:limitedWindowMenu");
+		COUNT(windowMenuLimitedButtons), False, "limWinMenu");
 
     SetMenuHier(MenuTable[MENU_LIMITED], popup_dismissitem,
 		CreateMenu(0 /* no title for dismiss submenu according to OL */
 			, windowMenuDismissButtons, 
-		COUNT(windowMenuDismissButtons), False, "window:limitedWindowMenu"));
+		COUNT(windowMenuDismissButtons), False, "limWinMenu"));
 
     /* this sets ROOT_MENU */
     InitUserMenu(dpy);
