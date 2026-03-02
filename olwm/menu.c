@@ -1,5 +1,5 @@
 /* #ident	"@(#)menu.c	26.76	93/06/28 SMI" */
-char menu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: menu.c,v 2.3 2025/03/10 18:24:15 dra Exp $";
+char menu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: menu.c,v 2.5 2026/02/28 13:42:33 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -139,7 +139,7 @@ static int  menuHide();
 static void unmapChildren();
 static void activateButton();
 static void setMenuPin();
-static void activateSubMenu();
+static void activateSubMenu(Display *dpy, MenuInfo *mInfo, int bindex, int x);
 static void drawButton();
 static void drawRevButton();
 static Bool isClick();
@@ -793,7 +793,8 @@ MenuShowSync(dpy, winInfo, menu, pevent, sfunc, sinfo, flkbd, flbutton)
 	if (prevColorFocusWindow == NULL && ColorFocusLocked(menuInfo->menuWin))
 		prevColorFocusWindow = ColorFocusWindow(menuInfo->menuWin);
 
-	InstallColormap(dpy, menuInfo->menuWin->core.client->scrInfo->rootwin);
+	InstallColormap(dpy, 
+		(struct _wingeneric *)menuInfo->menuWin->core.client->scrInfo->rootwin);
 
 	switch (pevent->type) {
 		case ButtonPress:
@@ -1771,11 +1772,7 @@ void ReplaceChars(char *buff, char *sstr, char rc)
 		*p = rc;
 }
 
-static void
-menuHelpCommand(dpy, xke, closure)
-    Display *dpy;
-    XKeyEvent *xke;
-    void *closure;
+static void menuHelpCommand(Display *dpy, XKeyEvent *xke, void *closure)
 {
 	int bindex;
 	MenuInfo *mInfo = menuSearch(xke);
@@ -1783,10 +1780,11 @@ menuHelpCommand(dpy, xke, closure)
 	char helpbuff[255];
 	char *helpstring;
 	Button *pb;
+	Client *client;
 
 	switch (status) {
 		case ML_PIN:
-			helpstring = "olwm:PushPin";
+			helpstring = "PushPin";
 			break;
 		case ML_BUTTON:
 		case ML_MENU:
@@ -1810,16 +1808,17 @@ menuHelpCommand(dpy, xke, closure)
 		if (mInfo->menu->helpstring != NULL)
 			helpstring = mInfo->menu->helpstring;
 		else if (mInfo->menu->title != NULL) {
-			sprintf(helpbuff, "workspace:%s", mInfo->menu->title);
+			sprintf(helpbuff, "%s", mInfo->menu->title);
 			ReplaceChars(helpbuff, " \t", '_');
 			helpstring = helpbuff;
 		}
 		else
-			helpstring = "workspace:NoHelp";
+			helpstring = "NoHelp";
 	}
+	client = mInfo->menu->client;
 	menuHide(dpy, closure, False);
-	if (mInfo->menu->client) {
-		if (ClientShowHelp(mInfo->menu->client, xke->x_root, xke->y_root, helpstring)) return;
+	if (client) {
+		if (ClientShowHelp(client, xke->x_root, xke->y_root, helpstring)) return;
 	}
 	ShowHelpWindow(mInfo->menuWin->core.client->screen,
 						xke->x_root, xke->y_root, helpstring);
@@ -2940,12 +2939,7 @@ setMenuPin(dpy, mInfo, state, flsetdefault)
  * being activated again.  This occurs if a submenu is much narrower than its
  * parent, and you pull off the right of the submenu back into the parent.
  */
-static void
-activateSubMenu(dpy, mInfo, bindex, x)
-    Display    *dpy;
-    MenuInfo   *mInfo;
-    int         bindex;
-    int         x;
+static void activateSubMenu(Display *dpy, MenuInfo *mInfo, int bindex, int x)
 {
 	MenuInfo *subMenu;
 	MenuCache *menuCache = mInfo->menuWin->core.client->scrInfo->menuCache;
@@ -2990,6 +2984,9 @@ activateSubMenu(dpy, mInfo, bindex, x)
 
 		ypos += mInfo->buttons[bindex].buttonY;
 
+		if (! subMenu->menu->client) {
+			subMenu->menu->client = mInfo->menu->client;
+		}
 		showMenu(dpy, subMenu, x - MENU_HORIZ_OFFSET, ypos, True, True);
 	}
 }
