@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.8 2025/02/26 22:39:52 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.9 2026/02/28 13:42:41 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -1666,7 +1666,7 @@ WinPaneFrame *MakeFrame(Client *cli, Window panewin,
 	w->core.dirtyconfig = CWX | CWY | CWHeight | CWWidth | CWStackMode;
 	w->core.colormap = None;
 	w->core.exposures = NULL;
-	w->core.helpstring = "olwm:Frame";
+	w->core.helpstring = "Frame";
 
 	cli->framewin = w;
 
