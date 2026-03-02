@@ -1,5 +1,5 @@
 /* #ident	"@(#)winpush.c	26.23	93/06/28 SMI" */
-char winpush_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpush.c,v 1.5 2025/01/11 19:17:09 dra Exp $";
+char winpush_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpush.c,v 1.6 2026/02/28 13:42:20 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -300,7 +300,7 @@ int x,y;
 	w->core.height = PushPinOut_Height(gisNormal);
 	w->core.dirtyconfig = CWX | CWY | CWWidth | CWHeight;
 	w->core.exposures = NULL;
-	w->core.helpstring = "olwm:PushPin";
+	w->core.helpstring = "PushPin";
 
         /* Determine initial state of push pin. */
         w->pushpinin =  
