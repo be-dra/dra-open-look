@@ -445,7 +445,7 @@ WinIconPane * MakeIconPane(Client *cli, WinGeneric *par, XWMHints *wmHints,
 	w->core.colormap = cli->scrInfo->colormap;
 	w->core.dirtyconfig = CWX | CWY | CWWidth | CWHeight;
 	w->core.exposures = NULL;
-	w->core.helpstring = "olwm:Icon";
+	w->core.helpstring = "Icon";
 	w->iconClientWindow = False;
 	w->iconPixmap = None;
 	w->iconPixmapDepth = 1;
