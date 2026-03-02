@@ -1,5 +1,5 @@
 /* #ident	"@(#)wincolor.c	26.24	93/06/28 SMI" */
-char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.7 2025/06/09 19:22:32 dra Exp $";
+char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.9 2026/02/25 17:44:06 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -12,6 +12,9 @@ char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.7 2025/06/
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <setjmp.h>
+#include <signal.h>
 #include <X11/Xos.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -76,38 +79,38 @@ static ClassColormap classColormap;
  */
 static int eventDestroy(Display	*dpy, XEvent	*event, WinColormap *winInfo)
 {
-    Client *cli;
-    List *cli_list = winInfo->core.colormapClients;
-    List **win_list;
-    WinGeneric *newfocuswin;
+	Client *cli;
+	List *cli_list = winInfo->core.colormapClients;
+	List **win_list;
+	WinGeneric *newfocuswin;
 
-    /*
-     * For every client in this window's client list, search that client's 
-     * window list and remove this window from it.
-     */
-    for (cli = ListEnum(&cli_list); cli != NULL; cli = ListEnum(&cli_list)) {
-	win_list = &(cli->colormapWins);
-	while (*win_list != NULL) {
-	    if ((*win_list)->value == winInfo) {
-		ListDestroyCell(win_list);
-		break;
-	    }
-	    win_list = &((*win_list)->next);
+	/*
+	 * For every client in this window's client list, search that client's 
+	 * window list and remove this window from it.
+	 */
+	for (cli = ListEnum(&cli_list); cli != NULL; cli = ListEnum(&cli_list)) {
+		win_list = &(cli->colormapWins);
+		while (*win_list != NULL) {
+			if ((*win_list)->value == winInfo) {
+				ListDestroyCell(win_list);
+				break;
+			}
+			win_list = &((*win_list)->next);
+		}
+		if (ColorFocusLocked(winInfo) &&
+				ColorFocusWindow(winInfo) == winInfo &&
+				ColorFocusClient(winInfo) == cli) {
+			if (cli->colormapWins)
+				newfocuswin = cli->colormapWins->value;
+			else
+				newfocuswin = (WinGeneric *) PANEOFCLIENT(cli);
+			InstallColormap(dpy, newfocuswin);
+		}
 	}
-	if (ColorFocusLocked(winInfo) && 
-	    ColorFocusWindow(winInfo) == winInfo &&
-	    ColorFocusClient(winInfo) == cli) {
-	    if (cli->colormapWins)
-		newfocuswin = cli->colormapWins->value;
-	    else
-		newfocuswin = (WinGeneric *) PANEOFCLIENT(cli);
-	    InstallColormap(dpy, newfocuswin);
-	}
-    }
 
-    ListDestroy(winInfo->core.colormapClients);
-    winInfo->core.colormapClients = NULL_LIST;
-    (WinFunc(winInfo,core.destroyfunc))(dpy, winInfo);
+	ListDestroy(winInfo->core.colormapClients);
+	winInfo->core.colormapClients = NULL_LIST;
+	(WinFunc(winInfo, core.destroyfunc)) (dpy, winInfo);
 
 	return 0;
 }
@@ -239,9 +242,7 @@ ColormapInhibit(inhibit)
  * destroyed.  If the client owns the information in the colormap inhibition 
  * structure, it is cleaned up.
  */
-void
-PreenColormapInhibit(cli)
-    Client *cli;
+void PreenColormapInhibit(Client *cli)
 {
     if (cir.cli == cli) {
 	cir.inhibited = False;
@@ -259,10 +260,7 @@ PreenColormapInhibit(cli)
  * This can occur if a client creates a window, sets its colormap 
  * attribute to a particular colormap, and then destroys that colormap.
  */
-void
-InstallColormap(dpy, winInfo)
-    Display         *dpy;
-    WinGeneric	    *winInfo;
+void InstallColormap(Display *dpy, WinGeneric *winInfo)
 {
     Colormap 	cmap = winInfo->core.colormap;
 
@@ -294,7 +292,7 @@ InstallDefaultColormap(dpy,winInfo,lock)
 {
     WinRoot *rootwin = winInfo->core.client->scrInfo->rootwin;
 
-    InstallColormap(dpy, rootwin);
+    InstallColormap(dpy, (WinGeneric *)rootwin);
     if (lock) {
 	ColorFocusClient(rootwin) = rootwin->core.client;
 	ColorFocusLocked(rootwin) = True;
@@ -484,6 +482,16 @@ ColorWindowCrossing(dpy, event, winInfo)
 	InstallColormap(dpy, winInfo);
 }
 
+static jmp_buf act_env;
+
+static void catch_alarm(int s)
+{
+	if (fork() == 0) {
+		chdir("/tmp");
+		abort();
+	}
+	longjmp(act_env, 1);
+}
 
 /* values for tag field */
 #define TAG_NEITHER 0
@@ -508,6 +516,7 @@ void TrackSubwindows(Client *cli)
 	WinGeneric *cmwi;
 	int i;
 	WinGenericPane *paneinfo = PANEOFCLIENT(cli);
+	int uid = getuid();
 
 	if (!PropGetWMColormapWindows(dpy, pane, &cmapwindata, &nItems))
 		return;
@@ -517,7 +526,7 @@ void TrackSubwindows(Client *cli)
 	 * Xnest is the only program that sets the WM_COLORMAP_WINDOWS property...
 	 */
 
-	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
+	if (uid == 53) fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	/*
 	 * Register all the windows on the new list, taking care to not touch any 
@@ -559,43 +568,57 @@ void TrackSubwindows(Client *cli)
 	cli->colormapWins = NULL_LIST;
 
 	/* step (1) */
-	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
+	if (uid == 53) fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	l = oldlist;
 	for (cmwi = ListEnum(&l); cmwi != NULL; cmwi = ListEnum(&l))
 		cmwi->core.tag = TAG_OLDLIST;
 
 	/* step (2) */
-	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
+	if (uid == 53) fprintf(stderr, "%s`%s-%d: nItems = %d\n", __FILE__,__FUNCTION__,__LINE__,
+								nItems);
 
-	last = &cli->colormapWins;
-	for (i = 0; i < nItems; ++i) {
-		cmwi = WIGetInfo(cmapwindata[i]);
+	/* here begins the dangerous zone with xnest */
+	signal(SIGALRM, catch_alarm);
+	alarm(5);
+	if (0 == setjmp(act_env)) {
+		last = &cli->colormapWins;
+		for (i = 0; i < nItems; ++i) {
+			cmwi = WIGetInfo(cmapwindata[i]);
 
-		/* Check for case (a), convert to case (b). */
-		if (cmwi == NULL) {
-			cmwi = MakeColormap(cli, cmapwindata[i]);
-			if (cmwi == NULL)
-				continue;
+			/* Check for case (a), convert to case (b). */
+			if (cmwi == NULL) {
+				cmwi = MakeColormap(cli, cmapwindata[i]);
+				if (cmwi == NULL)
+					continue;
+			}
+
+			switch (cmwi->core.tag) {
+				case TAG_NEITHER:	/* case (b) */
+					WinAddColorClient(cmwi, cli);
+					/* FALL THRU */
+				case TAG_OLDLIST:	/* case (c) */
+					(*last) = ListCons(cmwi, NULL_LIST);
+					last = &((*last)->next);
+					cmwi->core.tag = TAG_NEWLIST;
+					break;
+				case TAG_NEWLIST:	/* case (d) */
+					break;
+			}
 		}
 
-		switch (cmwi->core.tag) {
-			case TAG_NEITHER:	/* case (b) */
-				WinAddColorClient(cmwi, cli);
-				/* FALL THRU */
-			case TAG_OLDLIST:	/* case (c) */
-				(*last) = ListCons(cmwi, NULL_LIST);
-				last = &((*last)->next);
-				cmwi->core.tag = TAG_NEWLIST;
-				break;
-			case TAG_NEWLIST:	/* case (d) */
-				break;
-		}
+		alarm(0);
 	}
+	else {
+		/* here we end up after longjmp */
+		if (uid == 53) fprintf(stderr, "%s`%s-%d from longjmp\n", __FILE__,__FUNCTION__,__LINE__);
+		XFlush(dpy);
+	}
+
 	XFree((char *)cmapwindata);
 
 	/* step (3) */
-	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
+	if (uid == 53) fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	switch (paneinfo->core.tag) {
 		case TAG_NEITHER:
@@ -611,7 +634,6 @@ void TrackSubwindows(Client *cli)
 	}
 
 	/* step (4) */
-	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	l = oldlist;
 	for (cmwi = ListEnum(&l); cmwi != NULL; cmwi = ListEnum(&l)) {
@@ -622,7 +644,6 @@ void TrackSubwindows(Client *cli)
 	ListDestroy(oldlist);
 
 	/* step (5) */
-	fprintf(stderr, "%s`%s-%d\n", __FILE__,__FUNCTION__,__LINE__);
 
 	l = cli->colormapWins;
 	for (cmwi = ListEnum(&l); cmwi != NULL; cmwi = ListEnum(&l))
@@ -637,9 +658,9 @@ void TrackSubwindows(Client *cli)
 		if (cli->colormapWins)
 			InstallColormap(dpy, (WinGeneric *) cli->colormapWins->value);
 		else
-			InstallColormap(dpy, paneinfo);
+			InstallColormap(dpy, (WinGeneric *)paneinfo);
 	}
-	fprintf(stderr, "%s`%s-%d done\n", __FILE__,__FUNCTION__,__LINE__);
+	if (uid == 53) fprintf(stderr, "%s`%s-%d >>>>>>>>> done\n", __FILE__,__FUNCTION__,__LINE__);
 }
 
 
@@ -649,9 +670,7 @@ void TrackSubwindows(Client *cli)
  * the colormap focus.  If not, the color focus window is transferred to this
  * client's pane.
  */
-void UnTrackSubwindows(cli, destroyed)
-    Client *cli;
-    Bool destroyed;
+void UnTrackSubwindows(Client *cli, Bool destroyed)
 {
 	WinGeneric *wi;
 	List *l;
@@ -668,7 +687,7 @@ void UnTrackSubwindows(cli, destroyed)
 			ColorFocusClient(paneinfo) = NULL;
 			if (GRV.ColorLocked) {
 				/* lock in the root's colormap */
-				InstallColormap(cli->dpy, cli->scrInfo->rootwin);
+				InstallColormap(cli->dpy, (WinGeneric *)cli->scrInfo->rootwin);
 			}
 			else {
 				/* revert to follow-mouse */
@@ -677,7 +696,7 @@ void UnTrackSubwindows(cli, destroyed)
 			}
 		}
 		else {
-			InstallColormap(cli->dpy, paneinfo);
+			InstallColormap(cli->dpy, (WinGeneric *)paneinfo);
 		}
 	}
 }
