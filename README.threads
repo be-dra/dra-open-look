@@ -1,0 +1,60 @@
+About threads, XCB and similar things.
+======================================
+
+
+Yes, in fact, my XView4.0 still is based on Xlib.
+And, as I have never used threads (neither in my private nor in
+my professional life), I saw no necessity....
+
+Some time (around July 2022) I found that the libX11 calls
+(unconditionally !!) XInitThreads.
+
+From that day all my XView programs were hanging during startup...
+I found out that XInternAtom(dpy, "lala", True) was now very dangerous...
+
+Researching about XInitThreads I found a sentence
+
+"It is recommended that single-threaded programs not call this function."
+
+But the funny Xlib people obviously think that nowadays all programs 
+are multi threaded.
+
+What did I do?
+I implemented a function (in my libxview)
+
+Status XInitThreads(void)
+
+that simply does nothing. And that solved my problem. As a side effect
+(as I found out by looking into the xlib sources) things like 
+
+LockDisplay are not called.
+
+
+By the way, talking about thread safety - this was mentioned to be one of
+the advantages of using XCB.
+
+But when I read those articles that sing a love song about XCB, I saw that
+they were talking about the big advantage of separating things like
+
+xcb_get_property
+xcb_get_property_reply
+
+(opposite to the Xlib where, basically, those two were always called
+one immediately after the other in XGetWindowProperty).
+
+Yes, that's just phantastic: I can call xcb_get_property, save the cookie
+somewhere, and then - LATER, when??? - can call xcb_get_property_reply.
+
+Now people, please tell me: how does a reasonable program look like
+that wants to read a property (e.g. because it has just received a
+SelectionNotify event) but does not want the result IMMEDIATELY?
+
+And the same is true not only for XGetWindowProperty, but also for
+XGetSelectionOwner (because I want to know whether my previous 
+XSetSelectionOwner was successful) and basically for **all** requests
+that initiate a response: the response tells me what I want to know.
+
+What nonsense is that?
+
+
+For me, XCB is dead. No matter how often I read "Xlib is deprecated".
