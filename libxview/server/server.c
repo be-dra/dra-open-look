@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.36 2026/01/25 20:33:19 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.37 2026/03/01 09:51:29 dra Exp $";
 #endif
 #endif
 
@@ -1915,6 +1915,17 @@ Status XInitThreads(void)
 	x_init_threads_called = 1;
 	return 0;
 }
+
+/********************************************************************
+ The real XInitThreads performs a lot of initializations, especially
+ registers _XInitDisplayLock in a variable _XInitDisplayLock_fn.
+ _XInitDisplayLock_fn in turn allocates a lot of things to the display,
+ especially dpy->lock_fns and dpy->lock. Those fields would be used
+ in LockDisplay etc.... , so, my hope is that all that locking and
+ thread handling will not be called....
+
+ In fact, dpy->lock_fns and dpy->lock turned out to be nil...
+ ********************************************************************/
 
 static int xv_set_scheduler(void)
 {
