@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.6 2026/02/28 13:43:22 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.7 2026/03/02 19:38:50 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -317,7 +317,7 @@ static void ClientSendProtocol(Client *cli, Atom proto, Time evtime)
 }
 
 /*********************************************************\
- * Originally (until 2026-02-28), olwn sent very different 
+ * Originally (until 2026-02-28), olwm sent very different 
  * help strings: "olwm:PushPin", "workspace:NoHelp", "window:Properties".
  * Therefore, we had three help files: olwm.info, workspace.info and
  * window.info.
