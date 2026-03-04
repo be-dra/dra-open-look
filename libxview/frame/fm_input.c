@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.24 2025/06/29 06:11:14 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.25 2026/03/03 21:33:55 dra Exp $ ";
 #endif
 #endif
 
@@ -366,9 +366,6 @@ static void start_quick_dup(Xv_window footer, Event *ev)
 {
 	Quick_owner qo;
 	quick_data_t *qd;
-	char *s;
-	int sx, ex;
-	int left_start, left_w, right_start, right_w;
 
 	qo = xv_get(footer, XV_KEY_DATA,quick_dupl_key);
 	if (! qo) {
@@ -384,8 +381,11 @@ static void start_quick_dup(Xv_window footer, Event *ev)
 	}
 
 	if (xv_get(qo, QUICK_NEED_START)) {
+		char *s;
+		int sx, ex;
 		Frame fram;
 		Frame_class_info *priv;
+		int left_start, left_w, right_start, right_w;
 
 		fram = xv_get(footer, XV_OWNER);
 		priv = FRAME_CLASS_PRIVATE(fram);
