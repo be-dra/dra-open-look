@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.30 2025/04/03 06:18:53 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.31 2026/03/03 21:34:11 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -517,14 +517,51 @@ static XFontStruct *get_fontstruct(Item_info *ip)
 	return fs;
 }
 
+static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
+{
+	Quick_owner qo;
+	quick_data_t *qd;
+	Panel pan = xv_get(item, XV_OWNER);
+
+	qo = xv_get(pan, XV_KEY_DATA,quick_dupl_key);
+	if (! qo) {
+		qd = xv_alloc(quick_data_t);
+		qo = xv_create(pan, QUICK_OWNER,
+					QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
+					QUICK_CLIENT_DATA, qd,
+					NULL);
+		xv_set(pan, XV_KEY_DATA,quick_dupl_key, qo, NULL);
+	}
+	else {
+		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
+	}
+
+	if (xv_get(qo, QUICK_NEED_START)) {
+		char *s;
+		int sx, ex;
+
+		qd->priv = ip;
+		s = image_string(&ip->label);
+		sx = ip->label_rect.r_left;
+		ex = rect_right(&ip->label_rect);
+
+		xv_set(qo,
+			QUICK_BASELINE,
+						(int)xv_get(item, PANEL_ITEM_LABEL_BASELINE)+2,
+			QUICK_FONTINFO, get_fontstruct(ip),
+			QUICK_START, s, sx, ex,
+			NULL);
+	}
+
+	xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+}
+
 static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 {
 	Quick_owner qo;
 	quick_data_t *qd;
 	Item_info *ip;
 	Panel pan;
-	char *s;
-	int sx, ex;
 
 	if (! item) return FALSE;
 
@@ -542,44 +579,16 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 				return FALSE;
 			}
 
-			pan = xv_get(item, XV_OWNER);
-
-			qo = xv_get(pan, XV_KEY_DATA,quick_dupl_key);
-			if (! qo) {
-				qd = xv_alloc(quick_data_t);
-				qo = xv_create(pan, QUICK_OWNER,
-							QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
-							QUICK_CLIENT_DATA, qd,
-							NULL);
-				xv_set(pan, XV_KEY_DATA,quick_dupl_key, qo, NULL);
-			}
-			else {
-				qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
-			}
-
-			if (xv_get(qo, QUICK_NEED_START)) {
-				qd->priv = ip;
-				s = image_string(&ip->label);
-				sx = ip->label_rect.r_left;
-				ex = rect_right(&ip->label_rect);
-
-				xv_set(qo,
-					QUICK_BASELINE,
-								(int)xv_get(item, PANEL_ITEM_LABEL_BASELINE)+2,
-					QUICK_FONTINFO, get_fontstruct(ip),
-					QUICK_START, s, sx, ex,
-					NULL);
-			}
-
-			xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+			start_quick_dup(item, ip, ev);
 			return TRUE;
 
 		case LOC_DRAG:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (! quick_dupl_key) return FALSE;
+			if (! quick_dupl_key) return TRUE;
+
 			qo = xv_get(xv_get(item, XV_OWNER), XV_KEY_DATA,quick_dupl_key);
-			if (! qo) return FALSE;
-			if (! xv_get(qo, SEL_OWN)) return FALSE;
+			if (! qo) return TRUE;
+			if (! xv_get(qo, SEL_OWN)) return TRUE;
 			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
 			return TRUE;
 
