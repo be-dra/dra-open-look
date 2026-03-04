@@ -1,4 +1,4 @@
-char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.19 2025/12/31 16:59:05 dra Exp $";
+char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.20 2026/03/03 21:34:15 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -1757,17 +1757,70 @@ static void q_remove_underline(Quick_owner qo)
 	qd->row = NULL;
 }
 
-extern char *xv_app_name;
+static void start_quick_dup(Panel_list_info *dp, Event *ev, Row_info *row)
+{
+	Quick_owner qo;
+	quick_data_t *qd;
+
+	qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
+	if (! qo) {
+		qd = xv_alloc(quick_data_t);
+		qo = xv_create(dp->parent_panel, QUICK_OWNER,
+					QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
+					QUICK_CLIENT_DATA, qd,
+					NULL);
+		xv_set(dp->parent_panel, XV_KEY_DATA,quick_dupl_key, qo, NULL);
+	}
+	else {
+		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
+	}
+
+	if (xv_get(qo, QUICK_NEED_START)) {
+		XFontStruct *fs;
+		char *s;
+		int ex, sx;
+		Rect row_rect;
+
+		qd->priv = dp;
+		qd->row = row;
+
+		s = qd->row->string;
+
+		if (!get_row_rect(dp, row, &row_rect)) return;
+		if (row->STRING) {
+			qd->string_rect.r_left = dp->list_box.r_left + dp->string_x;
+			qd->string_rect.r_top = row_rect.r_top;
+			qd->string_rect.r_width = row_rect.r_width - dp->string_x +
+					LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
+			qd->string_rect.r_height = row_rect.r_height;
+		}
+		else
+			qd->string_rect = row_rect;
+
+		sx = qd->string_rect.r_left;
+		ex = rect_right(&qd->string_rect);
+
+		if (row->font) fs = (XFontStruct *)xv_get(row->font, FONT_INFO);
+		else {
+			Xv_font font = xv_get(dp->parent_panel, XV_FONT);
+			fs = (XFontStruct *)xv_get(font, FONT_INFO);
+		}
+
+		xv_set(qo,
+			QUICK_BASELINE, rect_bottom(&qd->string_rect) - 2,
+			QUICK_FONTINFO, fs,
+			QUICK_START, s, sx, ex, 
+			NULL);
+	}
+
+	xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+}
 
 static int is_quick_duplicate_on_row(Panel_item list, Event *ev, Row_info *row)
 {
 	Panel_list_info *dp = PANEL_LIST_PRIVATE(list);
 	Quick_owner qo;
 	quick_data_t *qd;
-	XFontStruct *fs;
-	char *s;
-	int ex, sx;
-	Rect row_rect;
 
 	switch (event_action(ev)) {
 		case ACTION_SELECT:
@@ -1776,58 +1829,13 @@ static int is_quick_duplicate_on_row(Panel_item list, Event *ev, Row_info *row)
 
 			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
 
-			if (row->font) fs = (XFontStruct *)xv_get(row->font, FONT_INFO);
-			else {
-				Xv_font font = xv_get(dp->parent_panel, XV_FONT);
-				fs = (XFontStruct *)xv_get(font, FONT_INFO);
-			}
-
-			qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
-			if (! qo) {
-				qd = xv_alloc(quick_data_t);
-				qo = xv_create(dp->parent_panel, QUICK_OWNER,
-							QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
-							QUICK_CLIENT_DATA, qd,
-							NULL);
-				xv_set(dp->parent_panel, XV_KEY_DATA,quick_dupl_key, qo, NULL);
-			}
-			else {
-				qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
-			}
-
-			if (xv_get(qo, QUICK_NEED_START)) {
-				qd->priv = dp;
-				qd->row = row;
-
-				s = qd->row->string;
-
-				if (!get_row_rect(dp, row, &row_rect)) return TRUE;
-				if (row->STRING) {
-					qd->string_rect.r_left = dp->list_box.r_left + dp->string_x;
-					qd->string_rect.r_top = row_rect.r_top;
-					qd->string_rect.r_width = row_rect.r_width - dp->string_x +
-							LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
-					qd->string_rect.r_height = row_rect.r_height;
-				}
-				else
-					qd->string_rect = row_rect;
-
-				sx = qd->string_rect.r_left;
-				ex = rect_right(&qd->string_rect);
-
-				xv_set(qo,
-					QUICK_BASELINE, rect_bottom(&qd->string_rect) - 2,
-					QUICK_FONTINFO, fs,
-					QUICK_START, s, sx, ex, 
-					NULL);
-			}
-
-			xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+			start_quick_dup(dp, ev, row);
 			return TRUE;
 
 		case LOC_DRAG:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
 			if (! quick_dupl_key) return TRUE;
+
 			qo = xv_get(dp->parent_panel, XV_KEY_DATA,quick_dupl_key);
 			if (! qo) return TRUE;
 			if (! xv_get(qo, SEL_OWN)) return TRUE;
