@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.15 2026/01/26 10:52:04 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.16 2026/03/05 19:09:37 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -201,16 +201,7 @@ typedef struct _Server_atom_list {
 
 #define         SELN_FN_NUM     3
 
-Pkg_private Xv_opaque	server_init_x(char *);
-
-/* server_get.c */
-Pkg_private Xv_opaque server_get_attr(Xv_Server server_public, int *status, Attr_attribute attr, va_list valist);
-
 /* server_set.c */
-Pkg_private     Xv_opaque server_set_avlist(Xv_Server server_public, Attr_attribute *avlist);
-Pkg_private Server_xid_list *server_xidnode_from_xid(Server_info *server, Xv_opaque xid);
-Pkg_private Server_mask_list *server_masknode_from_xidid(Server_info *server, Xv_opaque xid, Xv_opaque pkg_id);
-Pkg_private  Server_proc_list *server_procnode_from_id(Server_info *server, Xv_opaque pkg_id);
 Xv_private void server_refresh_modifiers(Xv_opaque server_public, Bool update_map);
 Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym *keysym, short *code, unsigned int *modifiers, unsigned int diamond_mask, char *qual_str);
 
@@ -222,10 +213,6 @@ Xv_private void server_trace_set_file_line(const char *file, int line);
 Xv_private void server_trace(int level, const char *format, ...);
 #define SERVERTRACE(_a_) server_trace_set_file_line(__FILE__,__LINE__),server_trace _a_
 
-Xv_private Atom server_intern_atom(Server_info *server, char *atomName,Atom at);
-Xv_private char *server_get_atom_name(Server_info *server, Atom atom);
-Xv_private int server_set_atom_data(Server_info *server, Atom atom, Xv_opaque data);
-Xv_private Xv_opaque server_get_atom_data(Server_info *server, Atom atom, int *status);
 Xv_private Server_atom_type server_get_atom_type(Xv_Server server_public,
 													Atom atom);
 
@@ -253,5 +240,4 @@ Pkg_private void server_show_propwin(Server_info *srvpriv);
 Pkg_private void server_appl_set_busy(Server_info *srvpriv, int busy, Frame except);
 Pkg_private void server_register_secondary_base(Xv_Server srv, Frame secondary,
 													Frame baseframe);
-Pkg_private void server_initialize_atoms(Server_info *server);
 #endif
