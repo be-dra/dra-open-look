@@ -597,7 +597,7 @@ STD_DEFINES = -Dlinux -D_POSIX_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE -DX_LOCALE
 # @(#)Imakefile	1.12 28 Jun 1993 SMI
 
 HDRSPUBLIC=     server.h
-HDRSPRIVATE=    svr_impl.h svr_atom.h svr_kmdata.h
+HDRSPRIVATE=    svr_impl.h svr_atom.h
 
 SRCS = server.c svr_parse.c
 OBJS=$(SRCS:.c=.o)
@@ -701,7 +701,6 @@ retrieve: $(HEADERS)
 server.h: RCS/server.h,v
 svr_atom.h: RCS/svr_atom.h,v
 svr_impl.h: RCS/svr_impl.h,v
-svr_kmdata.h: RCS/svr_kmdata.h,v
 
 # -----------------------------------------------------------------------
 # common rules for all Makefiles - do not edit
@@ -869,7 +868,6 @@ server.o: server.c /usr/include/stdc-predef.h /usr/include/sys/types.h \
  ../../build/include/xview/drawable.h ../../build/include/xview/attrol.h \
  /usr/include/X11/Xutil.h /usr/include/X11/keysym.h \
  /usr/include/X11/keysymdef.h /usr/include/X11/Xresource.h \
- ../../build/include/xview_private/svr_kmdata.h \
  ../../build/include/xview_private/draw_impl.h \
  ../../build/include/xview/cms.h \
  ../../build/include/xview_private/scrn_vis.h \
