@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.9 2026/01/24 05:47:31 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.10 2026/03/08 09:03:49 dra Exp $";
 #endif
 #endif
 
@@ -17,19 +17,63 @@ static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,
 
 #include <X11/Xlib.h>
 #include <xview_private/portable.h>
-#include <xview_private/curs_impl.h>
 #include <xview_private/attr_impl.h>
 #include <xview_private/pw_impl.h>
+#include <xview_private/i18n_impl.h>
+#include <xview/cursor.h>
 #include <xview/font.h>
 #include <xview/notify.h>
 #include <xview/svrimage.h>
 #include <xview/window.h>
 #include <xview/screen.h>
 
-static Xv_opaque create_text_cursor(Cursor_info *cursor,Xv_Drawable_info *info);
-
 #define CURSOR_TEXT_XHOT 9
 #define CURSOR_TEXT_YHOT 9
+
+typedef enum {
+    CURSOR_TYPE_PIXMAP,	/* uses CURSOR_IMAGE */
+    CURSOR_TYPE_GLYPH,	/* uses CURSOR_SRC_CHAR */
+    CURSOR_TYPE_TEXT	/* uses CURSOR_STRING */
+} Cursor_type;
+
+typedef struct cursor_table_entry {
+    unsigned char  *src_bits;
+    unsigned char  *mask_bits;
+    int             width;
+    int             height;
+    int             x_offset;   /* pixel x-offset of text baseline */
+    int             y_offset;   /* pixel y-offset of text baseline */
+} Cursor_table_entry;
+
+typedef struct {
+    Xv_opaque	    public_self;	/* back pointer */
+    short	    cur_xhot, cur_yhot;	/* offset of mouse position from shape*/
+    int		    cur_src_char, cur_mask_char;/* source and mask characters */
+    int		    cur_function;	/* relationship of shape to screen */
+    Pixrect	   *cur_shape;		/* memory image to use */
+    unsigned long   cursor_id;		/* X cursor id		     */
+    Cursor_drag_state drag_state;	/* text cursor drag state */
+    Cursor_drag_type drag_type;		/* text cursor drag type */
+    Xv_singlecolor  fg, bg;		/* fg/bg color of cursor */
+    int		    flags;		/* various options */
+    Xv_object	    root;		/* root handle		     */
+#ifndef OW_I18N
+    char	   *string;		/* text cursor string */
+#else
+    _xv_string_attr_dup_t  string;	/* text cursor string */
+#endif
+    Cursor_type	    type;		/* pixmap, glyph or text cursor */
+} Cursor_info;
+
+#define CURSOR_PRIVATE(cursor_public)	\
+	    XV_PRIVATE(Cursor_info, Xv_cursor_struct, cursor_public)
+#define CURSOR_PUBLIC(cursor_private)  XV_PRIVATE(cursor_private)
+
+#define	FREE_SHAPE		0x00000080
+#define	DONT_SHOW_CURSOR	0x00000001
+
+#define	free_shape(cursor)		((cursor)->flags & FREE_SHAPE)
+#define	show_cursor(cursor)		(!((cursor)->flags & DONT_SHOW_CURSOR)) 
 
 static int cursor_create_internal(Xv_Screen parent, Xv_Cursor object,
 							Attr_avlist avlist, int *u)
@@ -192,6 +236,373 @@ static Xv_opaque cursor_get_internal(Xv_Cursor cursor_public, int *status,
 			return XV_NULL;
 	}
 
+}
+
+static unsigned long cursor_make_x_font(Xv_Drawable_info *root_info, unsigned int src_char, unsigned int mask_char, XColor *xfg, XColor *xbg)
+{
+    Display        *display = xv_display(root_info);
+    Font            x_cursor_font;
+    Xv_Font         xview_cursor_font;
+
+    xview_cursor_font = (Xv_Font) xv_find(xv_server(root_info), FONT,
+					  FONT_FAMILY, FONT_FAMILY_OLCURSOR,
+					  FONT_TYPE, FONT_TYPE_CURSOR,
+					  NULL);
+    if (!xview_cursor_font)
+	xv_error(XV_NULL,
+		 ERROR_STRING, 
+		 XV_MSG("Unable to find OPEN LOOK cursor font"),
+		 ERROR_PKG, CURSOR,
+		 NULL);
+    x_cursor_font = (Font) xv_get(xview_cursor_font, XV_XID);
+    if (mask_char == 0) {
+	mask_char = src_char;
+    }
+    return (XCreateGlyphCursor(display, x_cursor_font, x_cursor_font,
+		src_char, mask_char, xfg, xbg));
+}
+
+/* returns XV_OK or XV_ERROR */
+static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
+{
+	/* The cursor table indices are [drag_state][drag_type] */
+	static int cursor_table[3][2] = {
+		{ OLC_TEXT_MOVE_DRAG, OLC_TEXT_COPY_DRAG },
+		{ OLC_TEXT_MOVE_INSERT, OLC_TEXT_COPY_INSERT },
+		{ OLC_TEXT_MOVE_NODROP,	OLC_TEXT_COPY_NODROP }
+	};
+
+	unsigned int best_height;
+	unsigned int best_width;
+	XColor bg;	/* background color of cursor */
+	XColor fg;	/* foreground color of cursor */
+	Colormap cmap;
+	int src_char;
+	Display *display;
+	Xv_Font textfont, cursor_font;
+	int length;
+	int screen_nbr;
+	Pixmap mask_pixmap, src_pixmap;
+	Screen_visual *visual;
+	Status status;
+	XID xid;
+	XFontStruct *xfs;
+    int descent = 0;
+    int ascent = 0;
+    int direction = 0;
+    XCharStruct chstr;
+	unsigned pixheight, pixwidth;
+	char buf[2];
+
+	display = xv_display(info);
+	xid = xv_xid(info);
+
+#ifdef OW_I18N
+	length = STRLEN(cursor->string.pswcs.value);
+#else
+	length = strlen(cursor->string);
+#endif
+
+	src_char = cursor_table[cursor->drag_state][cursor->drag_type];
+
+    cursor_font = (Xv_Font) xv_find(xv_server(info), FONT,
+					  FONT_FAMILY, FONT_FAMILY_OLCURSOR,
+					  FONT_TYPE, FONT_TYPE_CURSOR,
+					  NULL);
+    if (!cursor_font)
+		xv_error(XV_NULL,
+					ERROR_STRING,XV_MSG("Unable to find OPEN LOOK cursor font"),
+					ERROR_PKG, CURSOR,
+					NULL);
+
+	buf[0] = src_char;
+	buf[1] = '\0';
+	xfs = (XFontStruct *)xv_get(cursor_font, FONT_INFO);
+	if (xfs->max_char_or_byte2 < 0x7c) {
+		/* old open look cursor font */
+
+		Xv_Drawable_info *root_info;
+		XColor xfg, xbg;
+
+		DRAWABLE_INFO_MACRO(cursor->root, root_info);
+		xfg.red = cursor->fg.red << 8;
+		xfg.green = cursor->fg.green << 8;
+		xfg.blue = cursor->fg.blue << 8;
+		xfg.flags = DoRed | DoGreen | DoBlue;
+		xbg.red = cursor->bg.red << 8;
+		xbg.green = cursor->bg.green << 8;
+		xbg.blue = cursor->bg.blue << 8;
+		xbg.flags = DoRed | DoGreen | DoBlue;
+
+		cursor->cursor_id = cursor_make_x_font(root_info,
+				(unsigned int)OLC_COPY_PTR, (unsigned int)OLC_COPY_PTR + 1,
+				&xfg, &xbg);
+		return XV_OK;
+	}
+
+	XTextExtents(xfs, buf, 1, &direction, &ascent, &descent, &chstr);
+
+	pixheight = (unsigned) (ascent+descent+10);
+	pixwidth = chstr.width;
+
+	/* See if we can create a cursor of this size */
+	status = XQueryBestCursor(display, xid, pixwidth,
+			pixheight, &best_width, &best_height);
+	if (!status || best_width < pixwidth || best_height < pixheight)
+		return XV_ERROR;
+
+	/* Create mask and source pixmaps */
+	mask_pixmap = XCreatePixmap(display, xid, pixwidth, pixheight, 1);
+	src_pixmap = XCreatePixmap(display, xid, pixwidth, pixheight, 1);
+
+	/* Draw text into source pixmap */
+	visual = (Screen_visual *) xv_get(xv_screen(info),
+			SCREEN_IMAGE_VISUAL, src_pixmap, 1);
+
+	XSetForeground(display, visual->gc, 0L);
+	XSetFont(display, visual->gc, xv_get(cursor_font, XV_XID));
+	XSetFillStyle(display, visual->gc, FillSolid);
+
+	XFillRectangle(display, mask_pixmap, visual->gc, 0, 0, pixwidth, pixheight);
+	XFillRectangle(display, src_pixmap, visual->gc, 0, 0, pixwidth, pixheight);
+	XSetForeground(display, visual->gc, 1L);
+
+	XDrawString(display,src_pixmap,visual->gc, -chstr.lbearing, ascent, buf, 1);
+	buf[0] = src_char + 1;
+	XDrawString(display,mask_pixmap,visual->gc,-chstr.lbearing, ascent, buf, 1);
+
+	/* the cursor_font reports size -66, scale 0, ascent 12 -
+	 * let's use the ascent as the font size of the text font:
+	 * better than the 'FONT_SIZE, FONT_SIZE_DEFAULT' as it was originally
+	 */
+	textfont = xv_find(xv_server(info), FONT,
+			FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+			FONT_STYLE, FONT_STYLE_DEFAULT,
+			FONT_SIZE, ascent,
+			NULL);
+	if (!textfont)
+		return XV_ERROR;
+
+	XSetFont(display, visual->gc, xv_get(textfont, XV_XID));
+
+	if (length <= 5) {
+		XSetForeground(display, visual->gc, 0L);
+		/* erase the "more arrow" */
+		XFillRectangle(display, src_pixmap, visual->gc, 51, 21, 6, 12);
+		XSetForeground(display, visual->gc, 1L);
+	}
+	else {
+		/* need space for the more arrow */
+		length = 4;
+	}
+
+	/* Draw string into cursor pixmap */
+
+#ifdef OW_I18N
+	XwcDrawString(display, src_pixmap, (XFontSet) xv_get(textfont, FONT_SET_ID),
+			visual->gc, 20, ascent+descent+3,
+			cursor->string.pswcs.value, length);
+#else
+	XDrawString(display,src_pixmap,visual->gc, 20, ascent+descent+3,
+									cursor->string, length);
+#endif
+
+	/* Define foreground and background colors */
+	screen_nbr = (int)xv_get(xv_screen(info), SCREEN_NUMBER);
+	fg.flags = bg.flags = DoRed | DoGreen | DoBlue;
+	fg.pixel = BlackPixel(display, screen_nbr);
+	cmap = xv_get(xv_cms(info), XV_XID);
+	XQueryColor(display, cmap, &fg);
+	bg.pixel = WhitePixel(display, screen_nbr);
+	XQueryColor(display, cmap, &bg);
+
+	/* Create Pixmap Cursor */
+	cursor->cursor_id = XCreatePixmapCursor(display, src_pixmap, mask_pixmap,
+			&fg, &bg, (unsigned)(-chstr.lbearing), (unsigned)ascent);
+
+	/* Free the src_pixmap and mask_pixmap */
+
+	XFreePixmap(display, src_pixmap);
+	XFreePixmap(display, mask_pixmap);
+
+	if (cursor->cursor_id)
+		return XV_OK;
+	else
+		return XV_ERROR;
+}
+
+static long unsigned cursor_make_x(Xv_Drawable_info *root_info, int w,
+			int h, int d, int op, int xhot, int yhot,
+			XColor *xfg, XColor *xbg, Xv_opaque pr)
+{
+	Window root = xv_xid(root_info);
+	Display *display = xv_display(root_info);
+	GC  gc;
+	Pixmap src, mask, m;
+	Cursor result;
+	int oldw = 1, oldh = 1;
+	Screen_visual *visual;
+	Xv_Drawable_info info;
+
+	if ((w <= 0) || (h <= 0) || (d <= 0)) {
+		xv_error(XV_NULL,
+				ERROR_STRING, XV_MSG("cannot create cursor with null image"),
+				ERROR_PKG, CURSOR,
+				NULL);
+		return (unsigned long)None;
+	}
+	/*
+	 * handle the case with xhot or yhot bigger than the source pixrect. BUG:
+	 * does not handle negative xhot or yhot.
+	 */
+	if ((xhot < 0) || (yhot < 0))
+		xv_error(XV_NULL,
+				ERROR_STRING, XV_MSG("cursor_make_x(): bad xhot/yhot parameters"),
+				ERROR_PKG, CURSOR,
+				NULL);
+
+	if (xhot > w) {
+		w = xhot;
+	}
+	if (yhot > h) {
+		h = yhot;
+	}
+	/* if the cursor op is XOR, create a bigger pixmap for outline cursor */
+	if ((op & PIX_NOT(0)) == (PIX_SRC ^ PIX_DST)) {
+		oldw = w;
+		oldh = h;
+		w += 2;
+		h += 2;
+		xhot++;
+		yhot++;
+	}
+	/*
+	 * BUG: both mask and src pixmaps can only be of depth 1
+	 */
+	src = XCreatePixmap(display, root, (unsigned)w, (unsigned)h, (unsigned)d);
+	/* Fake up an info struct to pass to xv_rop_internal */
+	info.visual = (Screen_visual *) xv_get(xv_screen(root_info),
+			SCREEN_IMAGE_VISUAL, src, 1);
+	info.private_gc = 0;
+	info.cms = xv_get(xv_screen(root_info), SCREEN_DEFAULT_CMS);
+
+	m = mask =
+			XCreatePixmap(display, root, (unsigned)w, (unsigned)h, (unsigned)d);
+	visual = (Screen_visual *) xv_get(xv_screen(root_info), SCREEN_IMAGE_VISUAL,
+			src, d);
+	gc = visual->gc;
+	if (!(src && mask && gc)) {
+		return (long unsigned)None;
+	}
+	/* clear the mask since XOR may be used to rop into it */
+	XSetFunction(display, gc, GXclear);
+	XFillRectangle(display, mask, gc, 0, 0, (unsigned)w, (unsigned)h);
+	/* BUG - Clear the src to workaround xnews cursor bug */
+	XFillRectangle(display, src, gc, 0, 0, (unsigned)w, (unsigned)h);
+
+	/* PIX_NOT(0) masks out color and PIX_DONTCLIP */
+	switch (op & PIX_NOT(0)) {
+		case PIX_CLR:
+			/* src is already clear, so don't need to touch it. */
+			XSetFunction(display, gc, GXclear);
+			XFillRectangle(display, src, gc, 0, 0, (unsigned)w, (unsigned)h);
+			mask = None;
+			break;
+		case PIX_SET:
+			XSetFunction(display, gc, GXset);
+			XFillRectangle(display, src, gc, 0, 0, (unsigned)oldw,
+					(unsigned)oldh);
+			mask = None;
+			break;
+		case PIX_DST:
+			XSetFunction(display, gc, GXclear);
+			XFillRectangle(display, mask, gc, 0, 0, (unsigned)w, (unsigned)h);
+			break;
+		case PIX_SRC:
+			XSetFunction(display, gc, GXcopy);
+			xv_rop_internal(display, src, gc, 0, 0, w, h, pr, 0, 0, &info);
+			mask = None;
+			break;
+		case PIX_NOT(PIX_SRC):
+			XSetFunction(display, gc, GXcopyInverted);
+			xv_rop_internal(display, src, gc, 0, 0, w, h, pr, 0, 0, &info);
+			mask = None;
+			break;
+		case PIX_SRC & PIX_DST:
+			XSetFunction(display, gc, GXcopy);
+			xv_rop_internal(display, src, gc, 0, 0, w, h, pr, 0, 0, &info);
+			XSetFunction(display, gc, GXcopyInverted);
+			xv_rop_internal(display, mask, gc, 0, 0, w, h, pr, 0, 0, &info);
+			break;
+		case PIX_NOT(PIX_SRC) & PIX_DST:
+			XSetFunction(display, gc, GXcopyInverted);
+			xv_rop_internal(display, src, gc, 0, 0, w, h, pr, 0, 0, &info);
+			XSetFunction(display, gc, GXcopy);
+			xv_rop_internal(display, mask, gc, 0, 0, w, h, pr, 0, 0, &info);
+			break;
+		case PIX_NOT(PIX_SRC) | PIX_DST:
+			XSetFunction(display, gc, GXcopyInverted);
+			xv_rop_internal(display, src, gc, 0, 0, w, h, pr, 0, 0, &info);
+			mask = src;
+			break;
+		case PIX_SRC ^ PIX_DST:{
+				short i, j;
+
+				XSetFunction(display, gc, GXcopy);
+				xv_rop_internal(display, src, gc, 1, 1, oldw, oldh, pr, 0, 0,
+						&info);
+				/* Build a mask that is a stencil around the src. */
+				XSetFunction(display, gc, GXor);
+				for (i = 0; i <= 2; i++) {
+					for (j = 0; j <= 2; j++) {
+						xv_rop_internal(display, mask, gc, i, j, oldw, oldh, pr,
+								0, 0, &info);
+					}
+				}
+				break;
+			}
+		case PIX_SRC | PIX_DST:
+			/* BUG: The following cases can't be done w/o CURSOR_OP in X */
+			/* We just pretend that it's the same as PIX_SRC | PIX_DST */
+		case PIX_SRC & PIX_NOT(PIX_DST):
+		case PIX_NOT(PIX_SRC) & PIX_NOT(PIX_DST):
+		case PIX_NOT(PIX_SRC) ^ PIX_DST:
+		case PIX_SRC | PIX_NOT(PIX_DST):
+		case PIX_NOT(PIX_SRC) | PIX_NOT(PIX_DST):
+		case PIX_NOT(PIX_DST):
+			XSetFunction(display, gc, GXcopy);
+			xv_rop_internal(display, src, gc, 0, 0, w, h, pr, 0, 0, &info);
+			mask = src;
+			break;
+		default:
+			xv_error(XV_NULL,
+					ERROR_STRING, "cursor_make_x(): unknown rasterop specified",
+					ERROR_PKG, CURSOR, NULL);
+	}
+	/*
+	 * WARNING: X server interprets "mask==None" as implying src is mask, but
+	 * we want a completely black mask, so we fill it here if appropriate.
+	 */
+	if (mask == None) {
+		/*
+		 * PERFORMANCE ALERT!  More complex code could avoid having set the
+		 * mask to 0 above when it is going to be unnecessary.
+		 */
+		mask = m;
+		XSetFunction(display, gc, GXset);
+		XFillRectangle(display, mask, gc, 0, 0, (unsigned)w, (unsigned)h);
+	}
+	result = XCreatePixmapCursor(display, src, mask, xfg, xbg, (unsigned)xhot,
+			(unsigned)yhot);
+	XFreePixmap(display, src);
+	XFreePixmap(display, m);
+	return ((long unsigned)result);
+}
+
+
+static void cursor_free_x(Xv_Drawable_info *info, Cursor old_cursor)
+{
+    XFreeCursor(xv_display(info), old_cursor);
 }
 
 /* cursor_set_attr sets the attributes mentioned in avlist. */
@@ -373,6 +784,11 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 	return (Xv_opaque) XV_OK;
 }
 
+static void cursor_set_cursor_internal(Xv_Drawable_info *info, Cursor cursor)
+{
+    XDefineCursor(xv_display(info), xv_xid(info), cursor);
+}
+
 Xv_private void cursor_set_cursor(Xv_object window, Xv_Cursor cursor_public)
 {
 	Cursor_info *cursor = CURSOR_PRIVATE(cursor_public);
@@ -391,175 +807,73 @@ Xv_private void cursor_set_cursor(Xv_object window, Xv_Cursor cursor_public)
 	}
 }
 
-/* returns XV_OK or XV_ERROR */
-static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
+
+Xv_Cursor
+#ifdef ANSI_FUNC_PROTO
+cursor_create(Attr_attribute attr1, ...)
+#else
+cursor_create(attr1, va_alist)
+    Attr_attribute attr1;
+va_dcl
+#endif
 {
-	/* The cursor table indices are [drag_state][drag_type] */
-	static int cursor_table[3][2] = {
-		{ OLC_TEXT_MOVE_DRAG, OLC_TEXT_COPY_DRAG },
-		{ OLC_TEXT_MOVE_INSERT, OLC_TEXT_COPY_INSERT },
-		{ OLC_TEXT_MOVE_NODROP,	OLC_TEXT_COPY_NODROP }
-	};
+    Xv_opaque       avlist[ATTR_STANDARD_SIZE];
+    va_list         valist;
 
-	unsigned int best_height;
-	unsigned int best_width;
-	XColor bg;	/* background color of cursor */
-	XColor fg;	/* foreground color of cursor */
-	Colormap cmap;
-	int src_char;
-	Display *display;
-	Xv_Font textfont, cursor_font;
-	int length;
-	int screen_nbr;
-	Pixmap mask_pixmap, src_pixmap;
-	Screen_visual *visual;
-	Status status;
-	XID xid;
-	XFontStruct *xfs;
-    int descent = 0;
-    int ascent = 0;
-    int direction = 0;
-    XCharStruct chstr;
-	unsigned pixheight, pixwidth;
-	char buf[2];
+    if( attr1 )
+    {
+        VA_START(valist, attr1);
+        copy_va_to_av( valist, avlist, attr1 );
+        va_end(valist);
+    }
+    else
+        avlist[0] = XV_NULL;
 
-	display = xv_display(info);
-	xid = xv_xid(info);
-
-#ifdef OW_I18N
-	length = STRLEN(cursor->string.pswcs.value);
-#else
-	length = strlen(cursor->string);
-#endif
-
-	src_char = cursor_table[cursor->drag_state][cursor->drag_type];
-
-    cursor_font = (Xv_Font) xv_find(xv_server(info), FONT,
-					  FONT_FAMILY, FONT_FAMILY_OLCURSOR,
-					  FONT_TYPE, FONT_TYPE_CURSOR,
-					  NULL);
-    if (!cursor_font)
-		xv_error(XV_NULL,
-					ERROR_STRING,XV_MSG("Unable to find OPEN LOOK cursor font"),
-					ERROR_PKG, CURSOR,
-					NULL);
-
-	buf[0] = src_char;
-	buf[1] = '\0';
-	xfs = (XFontStruct *)xv_get(cursor_font, FONT_INFO);
-	if (xfs->max_char_or_byte2 < 0x7c) {
-		/* old open look cursor font */
-
-		Xv_Drawable_info *root_info;
-		XColor xfg, xbg;
-
-		DRAWABLE_INFO_MACRO(cursor->root, root_info);
-		xfg.red = cursor->fg.red << 8;
-		xfg.green = cursor->fg.green << 8;
-		xfg.blue = cursor->fg.blue << 8;
-		xfg.flags = DoRed | DoGreen | DoBlue;
-		xbg.red = cursor->bg.red << 8;
-		xbg.green = cursor->bg.green << 8;
-		xbg.blue = cursor->bg.blue << 8;
-		xbg.flags = DoRed | DoGreen | DoBlue;
-
-		cursor->cursor_id = cursor_make_x_font(root_info,
-				(unsigned int)OLC_COPY_PTR, (unsigned int)OLC_COPY_PTR + 1,
-				&xfg, &xbg);
-		return XV_OK;
-	}
-
-	XTextExtents(xfs, buf, 1, &direction, &ascent, &descent, &chstr);
-
-	pixheight = (unsigned) (ascent+descent+10);
-	pixwidth = chstr.width;
-
-	/* See if we can create a cursor of this size */
-	status = XQueryBestCursor(display, xid, pixwidth,
-			pixheight, &best_width, &best_height);
-	if (!status || best_width < pixwidth || best_height < pixheight)
-		return XV_ERROR;
-
-	/* Create mask and source pixmaps */
-	mask_pixmap = XCreatePixmap(display, xid, pixwidth, pixheight, 1);
-	src_pixmap = XCreatePixmap(display, xid, pixwidth, pixheight, 1);
-
-	/* Draw text into source pixmap */
-	visual = (Screen_visual *) xv_get(xv_screen(info),
-			SCREEN_IMAGE_VISUAL, src_pixmap, 1);
-
-	XSetForeground(display, visual->gc, 0L);
-	XSetFont(display, visual->gc, xv_get(cursor_font, XV_XID));
-	XSetFillStyle(display, visual->gc, FillSolid);
-
-	XFillRectangle(display, mask_pixmap, visual->gc, 0, 0, pixwidth, pixheight);
-	XFillRectangle(display, src_pixmap, visual->gc, 0, 0, pixwidth, pixheight);
-	XSetForeground(display, visual->gc, 1L);
-
-	XDrawString(display,src_pixmap,visual->gc, -chstr.lbearing, ascent, buf, 1);
-	buf[0] = src_char + 1;
-	XDrawString(display,mask_pixmap,visual->gc,-chstr.lbearing, ascent, buf, 1);
-
-	/* the cursor_font reports size -66, scale 0, ascent 12 -
-	 * let's use the ascent as the font size of the text font:
-	 * better than the 'FONT_SIZE, FONT_SIZE_DEFAULT' as it was originally
-	 */
-	textfont = xv_find(xv_server(info), FONT,
-			FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-			FONT_STYLE, FONT_STYLE_DEFAULT,
-			FONT_SIZE, ascent,
-			NULL);
-	if (!textfont)
-		return XV_ERROR;
-
-	XSetFont(display, visual->gc, xv_get(textfont, XV_XID));
-
-	if (length <= 5) {
-		XSetForeground(display, visual->gc, 0L);
-		/* erase the "more arrow" */
-		XFillRectangle(display, src_pixmap, visual->gc, 51, 21, 6, 12);
-		XSetForeground(display, visual->gc, 1L);
-	}
-	else {
-		/* need space for the more arrow */
-		length = 4;
-	}
-
-	/* Draw string into cursor pixmap */
-
-#ifdef OW_I18N
-	XwcDrawString(display, src_pixmap, (XFontSet) xv_get(textfont, FONT_SET_ID),
-			visual->gc, 20, ascent+descent+3,
-			cursor->string.pswcs.value, length);
-#else
-	XDrawString(display,src_pixmap,visual->gc, 20, ascent+descent+3,
-									cursor->string, length);
-#endif
-
-	/* Define foreground and background colors */
-	screen_nbr = (int)xv_get(xv_screen(info), SCREEN_NUMBER);
-	fg.flags = bg.flags = DoRed | DoGreen | DoBlue;
-	fg.pixel = BlackPixel(display, screen_nbr);
-	cmap = xv_get(xv_cms(info), XV_XID);
-	XQueryColor(display, cmap, &fg);
-	bg.pixel = WhitePixel(display, screen_nbr);
-	XQueryColor(display, cmap, &bg);
-
-	/* Create Pixmap Cursor */
-	cursor->cursor_id = XCreatePixmapCursor(display, src_pixmap, mask_pixmap,
-			&fg, &bg, (unsigned)(-chstr.lbearing), (unsigned)ascent);
-
-	/* Free the src_pixmap and mask_pixmap */
-
-	XFreePixmap(display, src_pixmap);
-	XFreePixmap(display, mask_pixmap);
-
-	if (cursor->cursor_id)
-		return XV_OK;
-	else
-		return XV_ERROR;
+    return (xv_create_avlist(XV_NULL, CURSOR, avlist));
 }
 
+void
+cursor_destroy(cursor_public)
+    Xv_Cursor       cursor_public;
+{
+    (void) xv_destroy(cursor_public);
+}
+
+/* cursor_get returns the current value of which_attr. */
+Xv_opaque cursor_get(cursor_public, which_attr)
+    Xv_Cursor       cursor_public;
+    Cursor_attribute which_attr;
+{
+    return xv_get(cursor_public, which_attr);
+}
+
+int
+#ifdef ANSI_FUNC_PROTO
+cursor_set(Xv_Cursor cursor_public, ...)
+#else
+cursor_set(cursor_public, va_alist)
+    Xv_Cursor       cursor_public;
+va_dcl
+#endif
+{
+    AVLIST_DECL;
+    va_list         valist;
+
+    VA_START(valist, cursor_public);
+    MAKE_AVLIST( valist, avlist );
+    va_end(valist);
+
+    return (int) xv_set_avlist(cursor_public, avlist);
+}
+
+
+Xv_Cursor
+cursor_copy(cursor_public)
+    register Xv_Cursor cursor_public;
+{
+    return xv_create(xv_get(cursor_public,XV_OWNER),CURSOR,
+		     XV_COPY_OF,cursor_public,NULL);
+}
 
 const Xv_pkg          xv_cursor_pkg = {
     "Cursor",			/* seal -> package name */
