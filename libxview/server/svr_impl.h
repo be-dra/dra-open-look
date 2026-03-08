@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.16 2026/03/05 19:09:37 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.17 2026/03/07 19:57:16 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -206,7 +206,6 @@ Xv_private void server_refresh_modifiers(Xv_opaque server_public, Bool update_ma
 Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym *keysym, short *code, unsigned int *modifiers, unsigned int diamond_mask, char *qual_str);
 
 Xv_private void xv_string_to_rgb(char *buffer, unsigned char *red, unsigned char *green, unsigned char *blue);
-Xv_private void server_journal_sync_event(Xv_Server server_public, int type);
 Xv_private void server_register_ui(Xv_server srv, Xv_opaque uiElem, const char *name);
 
 Xv_private void server_trace_set_file_line(const char *file, int line);
@@ -227,17 +226,6 @@ Xv_private int server_get_seln_function_pending(Xv_Server server_public);
 Xv_private void server_set_seln_function_pending(Xv_Server server_public, int);
 Xv_private int server_sem_map_index(KeySym ks);
 
-Pkg_private void server_xvwp_init(Server_info *srv, char **argv);
-Pkg_private void server_xvwp_connect(Xv_server srv, char *base_inst_name);
-Pkg_private Xv_opaque *server_xvwp_get_db(Server_info *srvpriv);
-Pkg_private void server_xvwp_write_file(Server_info *srvpriv);
-Pkg_private void server_xvwp_install(Frame base);
-Pkg_private int server_xvwp_is_own_help(Xv_server srv, Frame fr, Event *ev);
-Pkg_private void server_note_register_ui(Xv_server srv,Xv_opaque obj,const char *name);
 Xv_private void server_set_popup(Frame, Attr_attribute *);
 Xv_private void server_set_menu(Xv_opaque menu, Xv_opaque win);
-Pkg_private void server_show_propwin(Server_info *srvpriv);
-Pkg_private void server_appl_set_busy(Server_info *srvpriv, int busy, Frame except);
-Pkg_private void server_register_secondary_base(Xv_Server srv, Frame secondary,
-													Frame baseframe);
 #endif
