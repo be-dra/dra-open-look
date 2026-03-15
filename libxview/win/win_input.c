@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.49 2026/02/13 09:18:31 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.50 2026/03/15 08:13:17 dra Exp $";
 #endif
 #endif
 
@@ -2276,6 +2276,15 @@ Xv_private void win_get_cmdline_option(Xv_object window, char *str,
 	}
 }
 
+static int appl_set(char *opt, char **appl_cmdline_argv, int appl_cmdline_argc)
+{
+	int i;
+
+	for (i = 0; i < appl_cmdline_argc; i++) {
+		if (0 == strcmp(opt, appl_cmdline_argv[i])) return TRUE;
+	}
+	return FALSE;
+}
 
 Xv_private void win_set_wm_command_prop(Xv_object window, char **argv,
 							char **appl_cmdline_argv, int appl_cmdline_argc)
@@ -2315,23 +2324,25 @@ Xv_private void win_set_wm_command_prop(Xv_object window, char **argv,
 	/*
 	 * Window position
 	 */
-	window_x[0] = window_y[0] = '\0';
-	sprintf(window_x, "%d", xwin_attr.x);
-	sprintf(window_y, "%d", xwin_attr.y);
-	argv[argc++] = "-Wp";
-	argv[argc++] = window_x;
-	argv[argc++] = window_y;
+	if (! appl_set("-Wp", appl_cmdline_argv, appl_cmdline_argc)) {
+		sprintf(window_x, "%d", xwin_attr.x);
+		sprintf(window_y, "%d", xwin_attr.y);
+		argv[argc++] = "-Wp";
+		argv[argc++] = window_x;
+		argv[argc++] = window_y;
+	}
 
 	/*
 	 * Put size in size string, if valid rect returned
 	 */
 	if (rect && want_size(window)) {
-		window_width[0] = window_height[0] = '\0';
-		sprintf(window_width, "%d", rect->r_width);
-		sprintf(window_height, "%d", rect->r_height);
-		argv[argc++] = "-Ws";
-		argv[argc++] = window_width;
-		argv[argc++] = window_height;
+		if (! appl_set("-Ws", appl_cmdline_argv, appl_cmdline_argc)) {
+			sprintf(window_width, "%d", rect->r_width);
+			sprintf(window_height, "%d", rect->r_height);
+			argv[argc++] = "-Ws";
+			argv[argc++] = window_width;
+			argv[argc++] = window_height;
+		}
 	}
 
 	icon = (Icon) xv_get(window, FRAME_ICON);
@@ -2347,13 +2358,14 @@ Xv_private void win_set_wm_command_prop(Xv_object window, char **argv,
 		win_translate_xy_internal(xv_display(info), xv_xid(icon_info), root, 0,
 				0, &icon_x, &icon_y);
 
-		icon_x_str[0] = icon_y_str[0] = '\0';
-		sprintf(icon_x_str, "%d", icon_x);
-		sprintf(icon_y_str, "%d", icon_y);
+		if (! appl_set("-WP", appl_cmdline_argv, appl_cmdline_argc)) {
+			sprintf(icon_x_str, "%d", icon_x);
+			sprintf(icon_y_str, "%d", icon_y);
 
-		argv[argc++] = "-WP";
-		argv[argc++] = icon_x_str;
-		argv[argc++] = icon_y_str;
+			argv[argc++] = "-WP";
+			argv[argc++] = icon_x_str;
+			argv[argc++] = icon_y_str;
+		}
 	}
 
 	if (xv_get(window, FRAME_CLOSED)) {
