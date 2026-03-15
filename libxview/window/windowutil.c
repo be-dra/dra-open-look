@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.19 2026/02/15 10:24:06 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.20 2026/03/15 08:14:15 dra Exp $";
 #endif
 #endif
 /*
@@ -974,79 +974,78 @@ Xv_private void win_ungrab_quick_sel_keys(Xv_Window	window)
 
 Xv_private void win_set_wm_command(Xv_window window)
 {
-    Xv_Drawable_info *info;
-    char *appl_cmdline;
-    char **appl_cmdline_argv = (char **)NULL;
-    char appl_cmdline_argc = 0;
-    int		reset = FALSE;
+	Xv_Drawable_info *info;
+	char *appl_cmdline;
+	char **appl_cmdline_argv = (char **)NULL;
+	char appl_cmdline_argc = 0;
+	int reset = FALSE;
 
-    DRAWABLE_INFO_MACRO(window, info);
-    appl_cmdline = (char *)xv_get(window, WIN_CMD_LINE);
+	DRAWABLE_INFO_MACRO(window, info);
+	appl_cmdline = (char *)xv_get(window, WIN_CMD_LINE);
 
-    if (xv_get(window, XV_IS_SUBTYPE_OF, FRAME_BASE))  {
-        appl_cmdline_argv = (char **)xv_get(window,
-		FRAME_WM_COMMAND_ARGV);
-        appl_cmdline_argc = (int)xv_get(window,
-		FRAME_WM_COMMAND_ARGC);
-    }
-    else  {
-	if (!appl_cmdline)  {
-            appl_cmdline_argv = (char **)-1;
+	if (xv_get(window, XV_IS_SUBTYPE_OF, FRAME_BASE)) {
+		appl_cmdline_argv = (char **)xv_get(window, FRAME_WM_COMMAND_ARGV);
+		appl_cmdline_argc = (int)xv_get(window, FRAME_WM_COMMAND_ARGC);
 	}
-    }
+	else {
+		if (!appl_cmdline) {
+			appl_cmdline_argv = (char **)-1;
+		}
+	}
 
-    if (!xv_app_name ||
-	(xv_get(window, XV_OWNER) != xv_get(xv_screen(info), XV_ROOT)))  {
-	reset = TRUE;
-    }
-    else  {
-        if (!appl_cmdline_argv && appl_cmdline)  {
-	    /*
-	     * WIN_CMDLINE set AND FRAME_CMD_LINE_* not used
-	     * Use old non-ICCCM compliant way of setting WM_COMMAND
-	     */
-            if ((int)((long)appl_cmdline) != -1) {
-                int   len = 1000;
-                char *str = NULL;
+	if (!xv_app_name ||
+			(xv_get(window, XV_OWNER) != xv_get(xv_screen(info), XV_ROOT))) {
+		reset = TRUE;
+	}
+	else {
+		if (!appl_cmdline_argv && appl_cmdline) {
+			/*
+			 * WIN_CMDLINE set AND FRAME_CMD_LINE_* not used
+			 * Use old non-ICCCM compliant way of setting WM_COMMAND
+			 */
+			if ((int)((long)appl_cmdline) != -1) {
+				int len = 1000;
+				char *str = NULL;
 
-                if (appl_cmdline)
-                    len += strlen(appl_cmdline);
+				if (appl_cmdline)
+					len += strlen(appl_cmdline);
 
-                str = xv_malloc((size_t)len);
-                win_get_cmdline_option(window, str, appl_cmdline);
-                win_change_property(window, (Attr_attribute)SERVER_WM_COMMAND,
+				str = xv_malloc((size_t)len);
+				win_get_cmdline_option(window, str, appl_cmdline);
+				win_change_property(window, (Attr_attribute) SERVER_WM_COMMAND,
 						XA_STRING, 8,
-			        	(unsigned char *)str, (int)strlen(str) + 1);
-                xv_free(str);
-            }
-	    else  {
-	        reset = TRUE;
-	    }
-        }
-        else  {
-	    /*
-	     * WIN_CMDLINE not set AND FRAME_CMD_LINE_* used
-	     * Use new ICCCM compliant way of setting WM_COMMAND
-	     */
-	    if ((int)((long)appl_cmdline_argv) != -1)  {
-		char	*argv[200];
-                win_set_wm_command_prop(window, argv, appl_cmdline_argv,
-						appl_cmdline_argc);
-	    }
-	    else  {
-	        reset = TRUE;
-	    }
-        }
-    }
+						(unsigned char *)str, (int)strlen(str) + 1);
+				xv_free(str);
+			}
+			else {
+				reset = TRUE;
+			}
+		}
+		else {
+			/*
+			 * WIN_CMDLINE not set AND FRAME_CMD_LINE_* used
+			 * Use new ICCCM compliant way of setting WM_COMMAND
+			 */
+			if ((int)((long)appl_cmdline_argv) != -1) {
+				char *argv[200];
 
-    if (reset)  {
-        /*
-         * If we can't save the state, perform a zero
-         * length append on WM_COMMAND.
-         */
-        win_change_property(window, (Attr_attribute)SERVER_WM_COMMAND,
-								XA_STRING, 8, NULL, 0);
-    }
+				win_set_wm_command_prop(window, argv, appl_cmdline_argv,
+						appl_cmdline_argc);
+			}
+			else {
+				reset = TRUE;
+			}
+		}
+	}
+
+	if (reset) {
+		/*
+		 * If we can't save the state, perform a zero
+		 * length append on WM_COMMAND.
+		 */
+		win_change_property(window, (Attr_attribute) SERVER_WM_COMMAND,
+				XA_STRING, 8, NULL, 0);
+	}
 }
 
 /*
