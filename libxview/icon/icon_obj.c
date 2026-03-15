@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon_obj.c 20.33 90/02/26 DRA: RCS $Id: icon_obj.c,v 4.6 2025/11/01 13:00:55 dra Exp $ ";
+static char     sccsid[] = "@(#)icon_obj.c 20.33 90/02/26 DRA: RCS $Id: icon_obj.c,v 4.7 2026/03/14 11:21:33 dra Exp $ ";
 #endif
 #endif
 
@@ -68,7 +68,8 @@ va_dcl
     return (Icon) xv_create_avlist(XV_NULL, ICON, avlist);
 }
 
-static Notify_value icon_input(Icon icon_public, Event *event, Notify_arg arg, Notify_event_type type)
+static Notify_value icon_input(Icon icon_public, Event *event,
+						Notify_arg arg, Notify_event_type type)
 {
 	if (event_action(event) == WIN_REPAINT) {
 		icon_display(icon_public, 0, 0);
@@ -77,42 +78,40 @@ static Notify_value icon_input(Icon icon_public, Event *event, Notify_arg arg, N
 	return (NOTIFY_IGNORED);
 }
 
-/*ARGSUSED*/
-static int icon_init(Xv_opaque parent, Xv_opaque object, Attr_avlist avlist, int *unused)
+static int icon_init(Xv_opaque parent, Xv_opaque object, Attr_avlist avlist,
+							int *unused)
 {
-    register Xv_icon_info *icon;
-    Rect            recticon;
+	register Xv_icon_info *icon;
+	Rect recticon;
 
-    ((Xv_icon *) (object))->private_data = (Xv_opaque) xv_alloc(Xv_icon_info);
-    if (!(icon = ICON_PRIVATE(object))) {
-	xv_error(object,
-		 ERROR_LAYER, ERROR_SYSTEM,
-		 ERROR_STRING, 
-		    XV_MSG("Can't allocate icon structure"),
-		 ERROR_PKG, ICON,
-		 NULL);
-	return XV_ERROR;
-    }
-    icon->public_self = object;
-    icon->ic_gfxrect.r_width = 64;
-    icon->ic_gfxrect.r_height = 64;
-    rect_construct(&recticon, 0, 0, 64, 64);
-    icon->workspace_color = (char *)xv_calloc((unsigned)sizeof(char), 30);
-    xv_set(object,
-	   XV_SHOW, FALSE,
-	   WIN_CONSUME_EVENT, WIN_REPAINT,
-	   WIN_NOTIFY_SAFE_EVENT_PROC, icon_input,
-	   WIN_NOTIFY_IMMEDIATE_EVENT_PROC, icon_input,
-	   WIN_RECT, &recticon,
-	   NULL);
-    return XV_OK;
+	((Xv_icon *) (object))->private_data = (Xv_opaque) xv_alloc(Xv_icon_info);
+	if (!(icon = ICON_PRIVATE(object))) {
+		xv_error(object,
+				ERROR_LAYER, ERROR_SYSTEM,
+				ERROR_STRING, XV_MSG("Can't allocate icon structure"),
+				ERROR_PKG, ICON,
+				NULL);
+		return XV_ERROR;
+	}
+	icon->public_self = object;
+	icon->ic_gfxrect.r_width = 64;
+	icon->ic_gfxrect.r_height = 64;
+	rect_construct(&recticon, 0, 0, 64, 64);
+	icon->workspace_color = (char *)xv_calloc((unsigned)sizeof(char), 30);
+	xv_set(object,
+			XV_SHOW, FALSE,
+			WIN_CONSUME_EVENT, WIN_REPAINT,
+			WIN_NOTIFY_SAFE_EVENT_PROC, icon_input,
+			WIN_NOTIFY_IMMEDIATE_EVENT_PROC, icon_input,
+			WIN_RECT, &recticon,
+			NULL);
+	return XV_OK;
 }
 
 /*****************************************************************************/
 /* icon_destroy	                                                             */
 /*****************************************************************************/
-int icon_destroy(icon_public)
-    Icon            icon_public;
+int icon_destroy(Icon icon_public)
 {
     return xv_destroy(icon_public);
 }
@@ -359,77 +358,80 @@ static Xv_opaque icon_set_internal(Icon icon_public, Attr_avlist avlist)
 /* icon_get                                                                  */
 /*****************************************************************************/
 
-Xv_opaque
-icon_get(icon_public, attr)
-    register Icon   icon_public;
-    Icon_attribute  attr;
+Xv_opaque icon_get(Icon icon_public, Icon_attribute attr)
 {
     return xv_get(icon_public, attr);
 }
 
 
-/*ARGSUSED*/
-static Xv_opaque icon_get_internal(Icon icon_public, int *status, Attr_attribute attr, va_list args)
+static Xv_opaque icon_get_internal(Icon icon_public, int *status,
+								Attr_attribute attr, va_list args)
 {
-    Xv_icon_info   *icon = ICON_PRIVATE(icon_public);
+	Xv_icon_info *icon = ICON_PRIVATE(icon_public);
 
-    switch (attr) {
+	switch (attr) {
 
-      case ICON_WIDTH:
-	return (Xv_opaque) icon->ic_gfxrect.r_width;
+		case ICON_WIDTH:
+			return (Xv_opaque) icon->ic_gfxrect.r_width;
 
-      case ICON_HEIGHT:
-	return (Xv_opaque) icon->ic_gfxrect.r_height;
+		case ICON_HEIGHT:
+			return (Xv_opaque) icon->ic_gfxrect.r_height;
 
-      case ICON_IMAGE:
-	return (Xv_opaque) icon->ic_mpr;
+		case ICON_IMAGE:
+			return (Xv_opaque) icon->ic_mpr;
 
-      case ICON_IMAGE_RECT:
-	return (Xv_opaque) & (icon->ic_gfxrect);
+		case ICON_IMAGE_RECT:
+			return (Xv_opaque) & (icon->ic_gfxrect);
 
-      case ICON_LABEL_RECT:
-	return (Xv_opaque) & (icon->ic_textrect);
+		case ICON_LABEL_RECT:
+			return (Xv_opaque) & (icon->ic_textrect);
 
-      case XV_LABEL:
-#ifdef OW_I18N
-        if (icon->ic_text == NULL && icon->ic_text_wcs != NULL)
-            icon->ic_text = (char *)_xv_wcstombsdup((wchar_t *)icon->ic_text_wcs);
-#endif
-	return (Xv_opaque) icon->ic_text;
+		case XV_LABEL:
 
 #ifdef OW_I18N
-      case XV_LABEL_WCS:
-        return (Xv_opaque) icon->ic_text_wcs;
+			if (icon->ic_text == NULL && icon->ic_text_wcs != NULL)
+				icon->ic_text =
+						(char *)_xv_wcstombsdup((wchar_t *)icon->ic_text_wcs);
 #endif
 
-      case XV_OWNER:
-	return (Xv_opaque) icon->frame;
-
-      case ICON_TRANSPARENT_LABEL:
-#ifdef OW_I18N
-        if (icon->ic_text == NULL && icon->ic_text_wcs != NULL)
-            icon->ic_text = (char *)_xv_wcstombsdup((wchar_t *)icon->ic_text_wcs);
-#endif
-	return (Xv_opaque) icon->ic_text;
+			return (Xv_opaque) icon->ic_text;
 
 #ifdef OW_I18N
-      case ICON_TRANSPARENT_LABEL_WCS:
-        return (Xv_opaque) icon->ic_text_wcs;
+		case XV_LABEL_WCS:
+			return (Xv_opaque) icon->ic_text_wcs;
 #endif
 
-      case ICON_TRANSPARENT:
-	return (Xv_opaque) (icon->ic_flags & ICON_BKGDTRANS);
+		case XV_OWNER:
+			return (Xv_opaque) icon->frame;
 
-      case ICON_MASK_IMAGE:
-	return (Xv_opaque) icon->ic_mask;
+		case ICON_TRANSPARENT_LABEL:
 
-      default:
-	if (xv_check_bad_attr(ICON, attr) == XV_ERROR) {
-	    *status = XV_ERROR;
+#ifdef OW_I18N
+			if (icon->ic_text == NULL && icon->ic_text_wcs != NULL)
+				icon->ic_text =
+						(char *)_xv_wcstombsdup((wchar_t *)icon->ic_text_wcs);
+#endif
+
+			return (Xv_opaque) icon->ic_text;
+
+#ifdef OW_I18N
+		case ICON_TRANSPARENT_LABEL_WCS:
+			return (Xv_opaque) icon->ic_text_wcs;
+#endif
+
+		case ICON_TRANSPARENT:
+			return (Xv_opaque) (icon->ic_flags & ICON_BKGDTRANS);
+
+		case ICON_MASK_IMAGE:
+			return (Xv_opaque) icon->ic_mask;
+
+		default:
+			if (xv_check_bad_attr(ICON, attr) == XV_ERROR) {
+				*status = XV_ERROR;
+			}
+			return (Xv_opaque) NULL;
 	}
-	return (Xv_opaque) NULL;
-    }
-    /* NOTREACHED */
+	/* NOTREACHED */
 }
 
 static void icon_set_wrk_space_color(Icon icon_public)
