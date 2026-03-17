@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.50 2026/02/23 19:28:32 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.51 2026/03/16 19:50:47 dra Exp $";
 #endif
 #endif
 
@@ -300,15 +300,17 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 		for (i = numTypes; i < sel_req->nbr_types; i++) {
 			Sel_type_tbl *tbl = sel_req->typeTbl + i;
 			pi = tbl->propInfo;
-			if (pi->data) xv_free(pi->data);
-			pi->data = XV_NULL;
+			if (pi) {
+				if (pi->data) xv_free(pi->data);
+				pi->data = XV_NULL;
 
-			if (propdata[i]) {
-				size_t bytelen = BYTE_SIZE(pi->length, pi->format);
-				pi->data = (Xv_opaque)xv_malloc(bytelen + 1);
+				if (propdata[i]) {
+					size_t bytelen = BYTE_SIZE(pi->length, pi->format);
+					pi->data = (Xv_opaque)xv_malloc(bytelen + 1);
 
-				memcpy((void *)pi->data, (void *)propdata[i], bytelen);
-				propdata[i] = XV_NULL;
+					memcpy((void *)pi->data, (void *)propdata[i], bytelen);
+					propdata[i] = XV_NULL;
+				}
 			}
 		}
 	}
