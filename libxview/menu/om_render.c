@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.11 2025/07/05 12:43:14 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.12 2026/03/16 16:58:57 dra Exp $";
 #endif
 #endif
 
@@ -47,6 +47,15 @@ static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.
 #include <xview_private/om_impl.h>
 
 #define DRA_CHANGED_TITLE_ADD TEXT_LEDGE_HEIGHT
+
+#define INHERIT_VALUE(f) im->f ? im->f : std_image ? std_image->f : 0
+#define IMAX(a, b) ((int)(b) > (int)(a) ? (int)(b) : (int)(a))
+
+#ifdef  OW_I18N
+extern struct pr_size xv_pf_textwidth_wc();
+#endif
+extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
+
 
 typedef enum {
     CLEANUP_EXIT,
@@ -1870,6 +1879,77 @@ static void cleanup(register Xv_menu_info *m, Cleanup_mode cleanup_mode)
 	}
 }
 
+static int image_compute_size(Xv_menu_info *m, struct image *im,
+						struct image *std_image)
+{
+	Font font;
+	register int margin2;
+	int margin;
+/* 	int left_margin; */
+/* 	int right_margin; */
+	Pixrect *pr;
+
+
+	margin = INHERIT_VALUE(margin);
+/* 	left_margin = INHERIT_VALUE(left_margin); */
+/* 	right_margin = INHERIT_VALUE(right_margin); */
+	margin2 = margin << 1;
+
+	if (im->svr_im) {
+		pr = (Pixrect *) im->svr_im;	/* Well, it's faster than xv_get! */
+		im->button_size.x = pr->pr_width;
+		im->button_size.y = pr->pr_height;
+
+	}
+#ifdef OW_I18N
+	else if (_xv_is_string_attr_exist_nodup(&im->string))
+#else
+	else if (im->string)
+#endif
+	{
+		if (im->title)
+			font = std_image->bold_font;
+		else
+			font = INHERIT_VALUE(font);
+
+#ifdef OW_I18N
+		_xv_use_pswcs_value_nodup(&im->string);
+		im->button_size = xv_pf_textwidth_wc(wslen(im->string.pswcs.value),
+							font, im->string.pswcs.value);
+#else
+		im->button_size = xv_pf_textwidth((int)strlen(im->string), font, im->string);
+#endif /* OW_I18N */
+
+		/* make every string menu item with the same font the same height */
+		im->button_size.y = Button_Height(m->ginfo);
+	}
+	else if (!(m->pin && im->title)) {
+		xv_error(XV_NULL,
+							ERROR_STRING,
+							XV_MSG("Menu item does not have a string or image"),
+							ERROR_PKG, MENU, NULL);
+		return XV_ERROR;
+	}
+
+#ifdef OW_I18N
+	if (im->svr_im || _xv_is_string_attr_exist_nodup(&im->string))
+#else
+	if (im->svr_im || im->string)
+#endif
+	{
+		im->width = im->button_size.x;
+		im->height = im->button_size.y;
+
+		im->button_pos.y = margin;
+		im->height += margin2;
+	}
+	else {
+		im->height = im->width = 0;
+	}
+	im->width = IMAX(im->width, std_image->width);
+	im->height = IMAX(im->height, std_image->height);
+	return XV_OK;
+}
 
 /*
  * Compute max item size.  Only zero sized items have to be recomputed
@@ -2016,7 +2096,7 @@ Pkg_private int menu_compute_max_item_size(Xv_menu_info *menu,
 
 		if (im->width == 0) {
 			/* Compute standard image sizes */
-			*status = menu_image_compute_size(menu, im, std_image);
+			*status = image_compute_size(menu, im, std_image);
 			if (*status != XV_OK)
 				return gen_items;
 
