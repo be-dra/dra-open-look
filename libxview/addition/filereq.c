@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.14 2026/02/15 09:53:28 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.15 2026/03/16 19:55:09 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -62,6 +62,12 @@ typedef struct _loadfile {
 
 typedef void (*reply_proc_t)(File_requestor, Atom, Atom, Xv_opaque,
 												unsigned long, int);
+
+typedef struct {
+	Filereq_remote_stat rs;
+	char *fn;
+	int failed;
+} mr_t;
 
 typedef struct {
 	Xv_opaque                   public_self;
@@ -84,6 +90,9 @@ typedef struct {
 	FileDrag                    selowner;
 	Atom                        save_rank;
 	struct timeval              last_time;
+
+	/* during multiple request: */
+	mr_t mr;
 } Filereq_private;
 
 #define A0 *attrs
@@ -98,6 +107,7 @@ typedef struct {
 
 static int fr_key = 0;
 static int fr_load_key;
+static int fr_mult_key;
 
 static loadlist_t find_loadlist(loadlist_t list, char *localname)
 {
@@ -229,11 +239,59 @@ static void decode_error(Filereq_private *priv, int err)
 	}
 }
 
+static int fetch_reply(Selection_requestor sr, Atom target, Atom type,
+					Xv_opaque value, unsigned long length, int format,
+					Filereq_private *priv)
+{
+	if (target == (Atom)xv_get(priv->srv,SERVER_ATOM,"_SUN_ENUMERATION_ITEM")) {
+		if (length == SEL_ERROR) {
+			priv->mr.failed = TRUE;
+			return TRUE;
+		}
+		if (value) xv_free(value);
+		return TRUE;
+	}
+	if (target == (Atom)xv_get(priv->srv,SERVER_ATOM,"FILE_NAME")) {
+		if (length == SEL_ERROR) {
+			priv->mr.failed = TRUE;
+			return TRUE;
+		}
+		priv->mr.fn = (char *)value;
+		return TRUE;
+	}
+	if (target == (Atom)xv_get(priv->srv,SERVER_ATOM,"_DRA_FILE_STAT")) {
+		Filereq_remote_stat *rs;
+
+		if (length == SEL_ERROR) {
+			priv->mr.failed = TRUE;
+			return TRUE;
+		}
+		rs = (Filereq_remote_stat *)value;
+		priv->mr.rs.size = rs->size;
+		priv->mr.rs.inode = rs->inode;
+		priv->mr.rs.mtime = rs->mtime;
+
+		xv_free(value);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static void filereq_fetch_reply(Selection_requestor sr, Atom target,Atom type,
+					Xv_opaque value, unsigned long length, int format)
+{
+	Filereq_private *priv = (Filereq_private *)xv_get(sr, XV_KEY_DATA, fr_key);
+
+	fetch_reply(sr, target, type, value, length, format, priv);
+}
+
 static void filereq_reply(File_requestor self, Atom target, Atom type,
 					Xv_opaque value, unsigned long length, int format)
 {
 	Filereq_private *priv = FRPRIV(self);
 	int is_inssel = FALSE;
+
+	if (fetch_reply(self, target, type, value, length, format, priv)) return;
 
 	if (target == (Atom)xv_get(priv->srv, SERVER_ATOM, "INSERT_SELECTION")) {
 		is_inssel = TRUE;
@@ -566,6 +624,7 @@ static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
 	struct timeval tim;
 	int have_tim = FALSE;
 	int ev_flags = 0;
+	mr_t *mr = (mr_t *)xv_get(sr, XV_KEY_DATA, fr_mult_key);
 
 	priv->status = FR_OK;
 	tim.tv_sec = 0;
@@ -797,30 +856,29 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 	}
 
 	for (j = i = 0; i < priv->count; i++) {
-		cdata = NULL;
+		memset(mr, 0, sizeof(mr_t));
 
 		xv_set(sr,
 				SEL_TIME, &tim,
-				SEL_TYPE_NAME, "_SUN_ENUMERATION_ITEM",
+				SEL_TYPE_NAMES,
+					"_SUN_ENUMERATION_ITEM",
+					"FILE_NAME",
+					"_DRA_FILE_STAT",
+					NULL,
 				SEL_TYPE_INDEX, 0,
 				SEL_PROP_FORMAT, 32,
 				SEL_PROP_TYPE, XA_INTEGER,
 				SEL_PROP_LENGTH, 1L,
 				SEL_PROP_DATA, &i,
 				NULL);
-		idata = (int *)xv_get(sr, SEL_DATA, &length, &format);
-		if (length == SEL_ERROR) {
-			request_failed(priv);
-			return;
-		}
-		xv_free((char *)idata);
-
-		xv_set(sr, SEL_TYPE_NAME, "FILE_NAME", NULL);
 		cdata = (char *)xv_get(sr, SEL_DATA, &length, &format);
-		if (length == SEL_ERROR) {
+
+		if (mr->failed) {
+			if (mr->fn) xv_free(mr->fn);
 			request_failed(priv);
 			return;
 		}
+		cdata = mr->fn;
 
 		if (priv->check_access && owner_is_remote) {
 			struct stat sb;
@@ -835,36 +893,21 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 				}
 			}
 			else {
-				Filereq_remote_stat *rs;
-
 				/* stat succeeded */
 
-				xv_set(sr, SEL_TYPE_NAME, "_DRA_FILE_STAT", NULL);
-				rs = (Filereq_remote_stat *)xv_get(sr, SEL_DATA, &length,
-														&format);
-				if (length == sizeof(Filereq_remote_stat)/sizeof(long) &&
-					format == 32)
+				if ((long)sb.st_size == mr->rs.size &&
+					(long)sb.st_ino == mr->rs.inode &&
+					(long)sb.st_mtime == mr->rs.mtime)
 				{
-					if ((long)sb.st_size == rs->size &&
-						(long)sb.st_ino == rs->inode &&
-						(long)sb.st_mtime == rs->mtime)
-					{
-						/* we seem to talk about the same file */
-						priv->files[j++] = cdata;
-						/* don't free */
-						cdata = NULL;
-					}
-					else {
-						locnam = perform_dra_load(priv, cdata, rem_name);
-						if (locnam) priv->files[j++] = locnam;
-					}
+					/* we seem to talk about the same file */
+					priv->files[j++] = cdata;
+					/* don't free */
+					cdata = NULL;
 				}
 				else {
 					locnam = perform_dra_load(priv, cdata, rem_name);
 					if (locnam) priv->files[j++] = locnam;
 				}
-
-				if (rs) xv_free((char *)rs);
 			}
 		}
 		else {	
@@ -935,6 +978,7 @@ static int filereq_init(Xv_window owner, Xv_opaque xself, Attr_avlist avlist,
 	if (! fr_key) {
 		fr_key = xv_unique_key();
 		fr_load_key = xv_unique_key();
+		fr_mult_key = xv_unique_key();
 	}
 
 	priv->srv = XV_SERVER_FROM_WINDOW(owner);
@@ -971,14 +1015,27 @@ static Xv_opaque filereq_set(File_requestor self, Attr_avlist avlist)
 
 		case FILE_REQ_FETCH:
 			priv->own_request = TRUE;
+			xv_set(self, XV_KEY_DATA, fr_mult_key, &priv->mr, NULL);
 			fetch_files(priv, self, (Event *)A1);
 			priv->own_request = FALSE;
 			ADONE;
 
 		case FILE_REQ_FETCH_VIA:
-			priv->already_decoded = TRUE;
-			priv->check_access = FALSE;
-			fetch_files(priv, (Selection_requestor)A1, (Event *)0);
+			{
+				Selection_requestor sr = (Selection_requestor)A1;
+				Xv_opaque save_reply;
+
+				priv->already_decoded = TRUE;
+				priv->check_access = FALSE;
+				save_reply = xv_get(sr, SEL_REPLY_PROC);
+				xv_set(sr,
+						SEL_REPLY_PROC, filereq_fetch_reply,
+						XV_KEY_DATA, fr_mult_key, &priv->mr,
+						XV_KEY_DATA, fr_key, priv,
+						NULL);
+				fetch_files(priv, sr, (Event *)0);
+				xv_set(sr, SEL_REPLY_PROC, save_reply, NULL);
+			}
 			ADONE;
 
 		case FILE_REQ_SINGLE:
