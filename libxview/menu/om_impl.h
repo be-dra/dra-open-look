@@ -1,4 +1,4 @@
-/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.5 2025/07/27 19:41:29 dra Exp $	*/
+/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.6 2026/03/16 16:58:38 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -306,8 +306,6 @@ typedef struct menu_item {
 
 Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
     Xv_menu_item_info *parent);
-Pkg_private int menu_image_compute_size(Xv_menu_info *m, struct image *im,
-						struct image *std_image);
 Xv_private void menu_set_acc_on_frame(Frame frame, Menu menu, Menu_item	item, int set);
 Pkg_private Notify_value menu_client_window_event_proc(
     Xv_Window       win,	/* menu client window */
