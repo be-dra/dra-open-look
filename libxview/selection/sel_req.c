@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.51 2026/03/16 19:50:47 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.52 2026/03/18 21:52:32 dra Exp $";
 #endif
 #endif
 
@@ -118,6 +118,22 @@ static void cleanup_replyinfo(Xv_object obj, int key, char *data)
 	}
 }
 
+static void free_typeTbl(Sel_req_info *selReq)
+{
+	int i;
+
+	for (i = 0; i < selReq->nbr_types; i++) {
+		Sel_type_tbl *tbl = selReq->typeTbl + i;
+    	Sel_prop_info  *pi = tbl->propInfo;
+
+	    if (pi) {
+			if (pi->data) xv_free(pi->data);
+	    	xv_free(pi);
+		}
+	}
+    XFree( (char *) selReq->typeTbl );
+}
+
 static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 									Attr_avlist avlist)
 {
@@ -154,7 +170,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 			type_set = TRUE;
 			break;
 		case SEL_TYPES:
-			free(sel_req->typeTbl);
+			free_typeTbl(sel_req);
 			for (i = 1; attrs[i]; i++);
 			sel_req->nbr_types = i - 1;	/* don't count NULL terminator */
 
@@ -210,7 +226,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 			type_name_set = TRUE;
 			break;
 		case SEL_TYPE_NAMES:
-			free(sel_req->typeTbl);
+			free_typeTbl(sel_req);
 			for (i = 1; attrs[i]; i++);
 			sel_req->nbr_types = i - 1;	/* don't count NULL terminator */
 
@@ -1298,6 +1314,7 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 			*format = reply->sri_format;
 			xv_set(requestor, SEL_TIME, time, NULL);
 			xv_free(reply->sri_target);
+			xv_sel_end_request(reply);
 			xv_free(reply);
 			return XV_NULL;
 		}
@@ -1313,6 +1330,7 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 			data = reply->sri_propdata;
 		}
 		xv_free(reply->sri_target);
+		xv_sel_end_request(reply);
 		xv_free(reply);
 		return data;
 	}
@@ -1320,7 +1338,10 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 	*length = SEL_ERROR;
 	*format = 0;
 	if (reply->sri_target) xv_free(reply->sri_target);
-	if (reply) xv_free(reply);
+	if (reply) {
+		xv_sel_end_request(reply);
+		xv_free(reply);
+	}
 	return XV_NULL;
 }
 
@@ -1377,27 +1398,16 @@ static Xv_opaque sel_req_get_attr(Selection_requestor self,
 	}
 }
 
-
 static int sel_req_destroy(Selection_requestor sel_req_public, Destroy_status status)
 {
     Sel_req_info   *selReq = SEL_REQUESTOR_PRIVATE(sel_req_public);
-	int i;
 
     if (status == DESTROY_CHECKING
 		|| status == DESTROY_SAVE_YOURSELF
         || status == DESTROY_PROCESS_DEATH) return XV_OK;
 
     /* Free up malloc'ed storage */
-	for (i = 0; i < selReq->nbr_types; i++) {
-		Sel_type_tbl *tbl = selReq->typeTbl + i;
-    	Sel_prop_info  *pi = tbl->propInfo;
-
-	    if (pi) {
-			if (pi->data) xv_free(pi->data);
-	    	xv_free(pi);
-		}
-	}
-    XFree( (char *) selReq->typeTbl );
+	free_typeTbl(selReq);
     XFree( (char *) selReq );
 
     return XV_OK;
@@ -1542,8 +1552,7 @@ Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev)
 				&winAttr);
 
 		if (ProcessMultiple(selReq, reply, ev, 0)) {
-			if (!reply->sri_during_incr)
-				xv_sel_end_request(reply);
+			if (!reply->sri_during_incr) xv_sel_end_request(reply);
 			return;
 		}
 	}
