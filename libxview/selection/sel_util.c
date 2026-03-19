@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.33 2026/02/23 19:28:32 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.34 2026/03/18 21:52:28 dra Exp $";
 #endif
 #endif
 
@@ -28,7 +28,6 @@ typedef struct sel_req_list {
 
 
 static void tvdiff(struct timeval *t1, struct timeval *t2, struct timeval *diff);
-static void FreeMultiProp(Sel_reply_info  *reply);
 static int SelFindReply(Sel_reply_info *r1, Sel_reply_info *r2);
 static Sel_req_list *SelMatchReqTbl( Sel_reply_info  *reply);
 
@@ -651,7 +650,7 @@ static Sel_req_list *SelMatchReqTbl(Sel_reply_info  *reply)
 	}
 
     if (XFindContext(reply->sri_dpy, DefaultRootWindow(reply->sri_dpy), replyCtx, (caddr_t *)&reqTbl))
-		return FALSE;
+    	return (Sel_req_list *) NULL;
 
     rPtr = reqTbl;
 
@@ -668,6 +667,26 @@ static Sel_req_list *SelMatchReqTbl(Sel_reply_info  *reply)
     } while ( 1 );
 
     return (Sel_req_list *) NULL;
+}
+
+/*
+ * Free all the properties that were created for the multiple
+ * request.
+ */
+static void FreeMultiProp(Sel_reply_info  *reply)
+{
+    if (reply->sri_multiple_count) {
+    	int i;
+
+        for ( i=0; i < reply->sri_multiple_count; i++ ) {
+	    	xv_sel_free_property(reply->sri_srv,  reply->sri_dpy,
+								reply->sri_atomPairData[i].property );
+		}
+
+		xv_free(reply->sri_atomPairData);
+		reply->sri_multiple_count = 0;
+		reply->sri_atomPairData = NULL;
+    }
 }
 
 
@@ -718,6 +737,10 @@ int xv_sel_end_request(Sel_reply_info *reply)
 		reqTbl->reply = NULL;
 		return TRUE;
 	}
+	else {
+		/* for blocking requests, reqTbl is NULL */
+		FreeMultiProp(reply);
+	}
 	return FALSE;
 }
 
@@ -737,21 +760,6 @@ static int SelFindReply(Sel_reply_info *r1, Sel_reply_info *r2)
     return FALSE;
 }
 
-
-/*
- * Free all the properties that were created for the multiple
- * request.
- */
-static void FreeMultiProp(Sel_reply_info  *reply)
-{
-    int            i;
-
-    if ( reply->sri_multiple_count ) {
-        for ( i=0; i < reply->sri_multiple_count; i++ )
-	    xv_sel_free_property(reply->sri_srv,  reply->sri_dpy,
-								reply->sri_atomPairData[i].property );
-    }
-}
 
 static XContext cmpatCtx;
 
