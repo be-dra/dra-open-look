@@ -29,7 +29,7 @@
 #include <string.h>
 #include <xview/permlist.h>
 
-char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.13 2025/07/14 13:30:56 dra Exp $";
+char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.14 2026/03/19 00:45:09 dra Exp $";
 
 /* this attribute is so private that I don't even want to have it in
  * permlist.h
@@ -258,8 +258,10 @@ static int reset_factory(Permlist_private *priv, Perm_prop_frame fram, int is_tr
 	xv_set(PLPUB(priv), PERMLIST_BEFORE_RESET_FACTORY, dlcont, NULL);
 	priv->factory_reset_performed = TRUE;
 
+	if (clcont->item_data) xv_free(clcont->item_data);
 	clcont->item_data = (Xv_opaque)xv_calloc((unsigned)priv->itemsize,
 								1 + (unsigned)dlcont->num_items);
+	if (dlcont->item_data) xv_free(dlcont->item_data);
 	dlcont->item_data = (Xv_opaque)xv_calloc((unsigned)priv->itemsize,
 								1 + (unsigned)dlcont->num_items);
 	cdescr = (char *)clcont->item_data;
