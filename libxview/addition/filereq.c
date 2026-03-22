@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.15 2026/03/16 19:55:09 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.16 2026/03/21 18:46:01 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -413,6 +413,9 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 	loadlist_t ll;
 	Atom inssel[2];
 	struct timeval srvtim;
+	Xv_window win = xv_get(self, XV_OWNER);
+	Xv_server srv = XV_SERVER_FROM_WINDOW(win);
+
 
 	for (ll = priv->loadlist; ll; ll = ll->next) {
 		if (! strcmp(ll->localfile, locfile)) break;
@@ -425,7 +428,6 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 
 	if (! priv->selowner) {
 		char buf[200];
-		Xv_window win = xv_get(self, XV_OWNER);
 
 		/* this is the selection "S" - see the description below */
 		sprintf(buf, "_DRA_FILEREQ_%lx_%lx", (unsigned long)xv_get(win, XV_XID),
@@ -441,9 +443,6 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 	}
 
 	if (! tim) {
-		Xv_window win = xv_get(self, XV_OWNER);
-		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
-
 		server_set_timestamp(srv, &srvtim, server_get_timestamp(srv));
 		tim = &srvtim;
 	}
@@ -456,7 +455,7 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 			NULL);
 
 	inssel[0] = (Atom)xv_get(priv->selowner, SEL_RANK);
-	inssel[1] = XA_STRING;
+	inssel[1] = (Atom)xv_get(srv, SERVER_ATOM, "TEXT");
 	SERVERTRACE((311, "%s: assign '%s' to sel owner %ld\n", __FUNCTION__,
 						ll->localfile, inssel[0]));
 	priv->save_rank = (Atom)xv_get(self, SEL_RANK);
