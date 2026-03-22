@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.19 2025/05/29 14:52:44 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.20 2026/03/22 08:31:30 dra Exp $";
 #endif
 
 /*
@@ -1604,10 +1604,10 @@ Pkg_private void xv_tty_new_size(Ttysw_private ttysw, int cols,int lines)
 Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on)
 {
 	register Ttysw_private ttysw = ttysw_view->folio;
-	register Tty_view ttysw_view_public = TTY_PUBLIC(ttysw_view);
+	Tty_view ttyvp = TTY_PUBLIC(ttysw_view);
 
 	if (!ttysw_view->ttysw_cursor)
-		ttysw_view->ttysw_cursor = xv_get(ttysw_view_public, WIN_CURSOR);
+		ttysw_view->ttysw_cursor = xv_get(ttyvp, WIN_CURSOR);
 	if (!(ttysw->ttysw_flags & TTYSW_FL_FROZEN) && on) {
 		/*
 		 * Inspect the current tty modes without disturbing other state.  The
@@ -1618,7 +1618,19 @@ Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on)
 
 		(void)tty_getmode(ttysw->ttysw_tty, (tty_mode_t *) & tmp.tty_mode);
 		if (tty_iscanon(&tmp)) {
-			xv_set(ttysw_view_public,
+			if (! ttysw_view->ttysw_stop_cursor) {
+				/* in former versions, this was cached on the server via
+				 * xv_set(srv, XV_KEY_DATA, CURSOR_STOP_PTR, stopcursor, NULL).
+				 * If there were programs with SEVERAL tty subwindows, they
+				 * could certainly tolerate the existence of several 
+				 * stop cursor instances....
+				 */
+				ttysw_view->ttysw_stop_cursor = xv_create(ttyvp, CURSOR,
+											CURSOR_SRC_CHAR, OLC_STOP_PTR,
+											CURSOR_MASK_CHAR, 0,
+											NULL);
+			}
+			xv_set(ttyvp,
 					WIN_CURSOR, ttysw_view->ttysw_stop_cursor, NULL);
 			ttysw->ttysw_flags |= TTYSW_FL_FROZEN;
 		}
@@ -1626,7 +1638,7 @@ Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on)
 			ttysw->ttysw_lpp = 0;
 	}
 	else if ((ttysw->ttysw_flags & TTYSW_FL_FROZEN) && !on) {
-		xv_set(ttysw_view_public, WIN_CURSOR, ttysw_view->ttysw_cursor, NULL);
+		xv_set(ttyvp, WIN_CURSOR, ttysw_view->ttysw_cursor, NULL);
 		ttysw->ttysw_flags &= ~TTYSW_FL_FROZEN;
 		ttysw->ttysw_lpp = 0;
 	}
