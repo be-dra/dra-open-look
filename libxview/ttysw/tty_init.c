@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.14 2025/05/29 08:12:48 dra Exp $";
+char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.15 2026/03/22 08:31:30 dra Exp $";
 #endif
 
 /*
@@ -182,16 +182,6 @@ Pkg_private Xv_opaque ttysw_init_view_internal(Tty parent, Tty_view tty_view_pub
 	}
 	/* create stop cursor but don't show it */
 	DRAWABLE_INFO_MACRO(tty_view_public, info);	/* define info */
-	ttysw_view->ttysw_stop_cursor = xv_get(xv_server(info), XV_KEY_DATA, CURSOR_STOP_PTR);
-	if (!ttysw_view->ttysw_stop_cursor) {
-		ttysw_view->ttysw_stop_cursor = xv_create(tty_view_public, CURSOR,
-				CURSOR_SRC_CHAR, OLC_STOP_PTR,
-				CURSOR_MASK_CHAR, 0,
-				NULL);
-		xv_set(xv_server(info),
-				XV_KEY_DATA, CURSOR_STOP_PTR, ttysw_view->ttysw_stop_cursor,
-				NULL);
-	}
 	xv_set(tty_view_public,
 			WIN_ROW_HEIGHT, xv_get(parent, WIN_ROW_HEIGHT),
 			WIN_RETAINED, xv_get(xv_screen(info), SCREEN_RETAIN_WINDOWS),
