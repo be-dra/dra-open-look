@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.16 2025/11/01 14:56:47 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.17 2026/03/22 08:31:30 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -563,6 +563,9 @@ static int ttysw_view_destroy(Tty_view ttysw_view_public, Destroy_status status)
 				break;
 			}
 		OPENWIN_END_EACH
+		if (ttysw_view_private->ttysw_stop_cursor) {
+			xv_destroy(ttysw_view_private->ttysw_stop_cursor);
+		}
 		free((char *) ttysw_view_private);
     }
     return (XV_OK);
