@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.21 2026/02/26 17:58:05 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.22 2026/03/22 09:25:24 dra Exp $";
 #endif
 
 /*
@@ -894,7 +894,7 @@ Pkg_private void textsw_cleanup_termsw_menuitems(Xv_opaque opriv)
 
 /* Diese Funktion wird aus textsw_destroy aufgerufen.
    Problem: da XView die destroy-Methode erst für Subklassen aufruft,
-   kommt textsw_destroy FRUEHER dra als openwin_destroy - und DORT werden
+   kommt textsw_destroy FRUEHER dran als openwin_destroy - und DORT werden
    die Views vernichtet, d.h. dann kommt man in textsw_view_destroy an.
    Ich habe ja hier die Instanzenvariablen ViewPriv::next und Textsw::first_view
    eliminiert.
