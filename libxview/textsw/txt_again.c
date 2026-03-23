@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_again_c_sccsid[] = "@(#)txt_again.c 20.43 93/06/28 DRA: $Id: txt_again.c,v 4.7 2025/04/04 18:15:49 dra Exp $";
+char     txt_again_c_sccsid[] = "@(#)txt_again.c 20.43 93/06/28 DRA: $Id: txt_again.c,v 4.8 2026/03/22 09:25:44 dra Exp $";
 #endif
 
 /*
@@ -470,53 +470,61 @@ my_wstoi (num_string)
 }
 #endif /* OW_I18N */
 
-Pkg_private void textsw_record_input(Textsw_private textsw, CHAR *buffer, long int buffer_length)
+Pkg_private void textsw_record_input(Textsw_private textsw, CHAR *buffer,
+							long int buffer_length)
 {
-    register string_t *again = &textsw->again[0];
+	register string_t *again = &textsw->again[0];
 
-    if ((textsw->func_state & TXTSW_FUNC_AGAIN) ||
-                (textsw->state & TXTSW_NO_AGAIN_RECORDING))
-	return;
-    if (textsw_string_min_free(again, (int)buffer_length + 25) != TRUE)
-	return;			/* Cannot guarantee enough space */
-    /* Above guarantees enough space */
-    if (textsw->again_insert_length == 0) {
-	(void) textsw_printf(again, "%s ", cmd_tokens[ord(INSERT_TOKEN)]);
-	textsw->again_insert_length =
+	if ((textsw->func_state & TXTSW_FUNC_AGAIN) ||
+			(textsw->state & TXTSW_NO_AGAIN_RECORDING))
+		return;
+	if (textsw_string_min_free(again, (int)buffer_length + 25) != TRUE)
+		return;	/* Cannot guarantee enough space */
+	/* Above guarantees enough space */
+	if (textsw->again_insert_length == 0) {
+		(void)textsw_printf(again, "%s ", cmd_tokens[ord(INSERT_TOKEN)]);
+		textsw->again_insert_length =
+
 #ifdef OW_I18N
-	    TXTSW_STRING_LENGTH(again) + STRLEN(text_delimiter_wc) + 1;
+				TXTSW_STRING_LENGTH(again) + STRLEN(text_delimiter_wc) + 1;
 #else
-	    TXTSW_STRING_LENGTH(again) + strlen(text_delimiter) + 1;
+				TXTSW_STRING_LENGTH(again) + strlen(text_delimiter) + 1;
 #endif
-	textsw_record_buf(again, buffer, (int)buffer_length);
-    } else {
-	/*
-	 * Following is a disgusting efficiency hack to compress a sequence
-	 * of INSERTs.
-	 */
-	CHAR           *insert_length, new_length_buf[7];
-	int             i, old_length;
-	insert_length = TXTSW_STRING_BASE(again) +
-	    textsw->again_insert_length;
-#ifdef OW_I18N	    
-	/*  Should use wstoi() when its performance problem is fixed */
-	old_length = my_wstoi(insert_length);
-#else /* OW_I18N */
-	old_length = atoi(insert_length);
-#endif /* OW_I18N */	
-	ASSUME(old_length > 0);
-	(void) SPRINTF(new_length_buf, "%6ld", old_length + buffer_length);
-	for (i = 0; i < 6; i++) {
-	    insert_length[i] = new_length_buf[i];
+
+		textsw_record_buf(again, buffer, (int)buffer_length);
 	}
+	else {
+		/*
+		 * Following is a disgusting efficiency hack to compress a sequence
+		 * of INSERTs.
+		 */
+		CHAR *insert_length, new_length_buf[7];
+		int i, old_length;
+
+		insert_length = TXTSW_STRING_BASE(again) + textsw->again_insert_length;
+
 #ifdef OW_I18N
-	TXTSW_STRING_FREE(again) -= STRLEN(text_delimiter_wc) + 2;
+		/*  Should use wstoi() when its performance problem is fixed */
+		old_length = my_wstoi(insert_length);
+#else /* OW_I18N */
+		old_length = atoi(insert_length);
+#endif /* OW_I18N */
+
+		ASSUME(old_length > 0);
+		(void)SPRINTF(new_length_buf, "%6ld", old_length + buffer_length);
+		for (i = 0; i < 6; i++) {
+			insert_length[i] = new_length_buf[i];
+		}
+
+#ifdef OW_I18N
+		TXTSW_STRING_FREE(again) -= STRLEN(text_delimiter_wc) + 2;
 #else
-	TXTSW_STRING_FREE(again) -= strlen(text_delimiter) + 2;
+		TXTSW_STRING_FREE(again) -= strlen(text_delimiter) + 2;
 #endif
-	textsw_string_append(again, buffer, (int)buffer_length);
-	(void) textsw_printf(again, "\n%s\n", text_delimiter);
-    }
+
+		textsw_string_append(again, buffer, (int)buffer_length);
+		(void)textsw_printf(again, "\n%s\n", text_delimiter);
+	}
 }
 
 Pkg_private void textsw_record_match(Textsw_private priv, unsigned flag, CHAR *start_marker)
@@ -814,36 +822,40 @@ NoMatch:
 /* ARGSUSED */
 Pkg_private void textsw_free_again(Textsw_private textsw,	string_t *again)
 {
-    CHAR           *saved_base = TXTSW_STRING_BASE(again);
-    Es_handle       pieces;
+	CHAR *saved_base = TXTSW_STRING_BASE(again);
+	Es_handle pieces;
+
 #ifdef OW_I18N
-    CHAR           text_tokens_wc[20];
+	CHAR text_tokens_wc[20];
 #endif
 
-    if (TXTSW_STRING_IS_NULL(again))
-	return;
-    ASSERT(allock());
+	if (TXTSW_STRING_IS_NULL(again))
+		return;
+	ASSERT(allock());
+
 #ifdef OW_I18N
-    (void) mbstowcs(text_tokens_wc, text_tokens[PIECES_TOKEN], 20);
-    while ((TXTSW_STRING_BASE(again) = token_index(
-		       TXTSW_STRING_BASE(again), text_tokens_wc))
-	   != NULL) {
-	TXTSW_STRING_BASE(again) += STRLEN(text_tokens_wc);
-	if (pieces = textsw_pieces_for_replay(again))
-	    es_destroy(pieces);
-    }
+	(void)mbstowcs(text_tokens_wc, text_tokens[PIECES_TOKEN], 20);
+	while ((TXTSW_STRING_BASE(again) =
+					token_index(TXTSW_STRING_BASE(again), text_tokens_wc))
+			!= NULL) {
+		TXTSW_STRING_BASE(again) += STRLEN(text_tokens_wc);
+		if (pieces = textsw_pieces_for_replay(again))
+			es_destroy(pieces);
+	}
 #else
-    while ((TXTSW_STRING_BASE(again) = token_index(
-		       TXTSW_STRING_BASE(again), text_tokens[PIECES_TOKEN]))
-	   != NULL) {
-	TXTSW_STRING_BASE(again) += strlen(text_tokens[PIECES_TOKEN]);
-	if ((pieces = textsw_pieces_for_replay(again)))
-	    es_destroy(pieces);  /* 31.7.2024: SIGSEGV (quick duplicate) */
-    }
+	while ((TXTSW_STRING_BASE(again) =
+					token_index(TXTSW_STRING_BASE(again),
+							text_tokens[PIECES_TOKEN]))
+			!= NULL) {
+		TXTSW_STRING_BASE(again) += strlen(text_tokens[PIECES_TOKEN]);
+		if ((pieces = textsw_pieces_for_replay(again)))
+			es_destroy(pieces);	/* 31.7.2024: SIGSEGV (quick duplicate) */
+	}
 #endif /* OW_I18N */
-    free(saved_base);
-    ASSERT(allock());
-    *again = null_string;
+
+	free(saved_base);
+	ASSERT(allock());
+	*again = null_string;
 }
 
 Pkg_private int textsw_get_recorded_x(Textsw_view_private view)
