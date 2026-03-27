@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon_load.c 20.11 89/04/09 DRA: RCS $Id: icon_load.c,v 4.3 2025/01/01 10:17:38 dra Exp $ ";
+static char     sccsid[] = "@(#)icon_load.c 20.11 89/04/09 DRA: RCS $Id: icon_load.c,v 4.4 2026/03/27 08:56:38 dra Exp $ ";
 #endif
 #endif
 
@@ -37,128 +37,130 @@ FILE *icon_open_header(char *from_file, char *error_msg, Xv_icon_header_info *in
 /* See comments in icon_load.h */
 {
 #define INVALID	-1
-    register int    c;
-    char            c_temp;
-    register FILE  *result;
+	register int c;
+	char c_temp;
+	register FILE *result = 0;
 
-    if (*from_file == '\0' || (result = fopen(from_file, "r")) == NULL) {
+	if (*from_file == '\0' || (result = fopen(from_file, "r")) == NULL) {
 		sprintf(error_msg, XV_MSG("Cannot open file %s.\n"), from_file);
-		goto ErrorReturn;
-    }
-    info->depth = INVALID;
-    info->height = INVALID;
-    info->format_version = INVALID;
-    info->valid_bits_per_item = INVALID;
-    info->width = INVALID;
-    info->last_param_pos = INVALID;
-    /*
-     * Parse the file header
-     */
-    do {
-	if ((c = fscanf(result, "%*[^DFHVW*]")) == EOF)
-	    break;
-	switch (c = getc(result)) {
-	  case 'D':
-	    if (info->depth == INVALID) {
-		c = fscanf(result, "epth=%d", &info->depth);
-		if (c == 0)
-		    c = 1;
-		else
-		    info->last_param_pos = ftell(result);
-	    }
-	    break;
-	  case 'H':
-	    if (info->height == INVALID) {
-		c = fscanf(result, "eight=%d", &info->height);
-		if (c == 0)
-		    c = 1;
-		else
-		    info->last_param_pos = ftell(result);
-	    }
-	    break;
-	  case 'F':
-	    if (info->format_version == INVALID) {
-		c = fscanf(result, "ormat_version=%d",
-			   &info->format_version);
-		if (c == 0)
-		    c = 1;
-		else
-		    info->last_param_pos = ftell(result);
-	    }
-	    break;
-	  case 'V':
-	    if (info->valid_bits_per_item == INVALID) {
-		c = fscanf(result, "alid_bits_per_item=%d",
-			   &info->valid_bits_per_item);
-		if (c == 0)
-		    c = 1;
-		else
-		    info->last_param_pos = ftell(result);
-	    }
-	    break;
-	  case 'W':
-	    if (info->width == INVALID) {
-		c = fscanf(result, "idth=%d", &info->width);
-		if (c == 0)
-		    c = 1;
-		else
-		    info->last_param_pos = ftell(result);
-	    }
-	    break;
-	  case '*':
-	    if (info->format_version == 1) {
-		c = 1;
-		c_temp = getc(result);
-		if (c_temp == '/') c = 0;	/* Force exit */
-		else {
-			fprintf(stderr, "in '*' case: c_temp='%c'\n", c_temp);
-		    (void) ungetc(c_temp, result);
-		}
-	    }
-	    break;
-	  default:{
-		(void) sprintf(error_msg, 
-		    XV_MSG("icon file %s parse failure\n"), from_file);
-		goto ErrorReturn;
-	    }
+		if (result) fclose(result);
+		return NULL;
 	}
-    } while (c != 0 && c != EOF);
-    if (c == EOF || info->format_version != 1) {
-	(void) sprintf(error_msg, 
-	    XV_MSG("%s has invalid header format.\n"), from_file);
-	goto ErrorReturn;
-    }
-    if (info->depth == INVALID)
-	info->depth = 1;
-    if (info->height == INVALID)
-	info->height = 64;
-    if (info->valid_bits_per_item == INVALID)
-	info->valid_bits_per_item = 16;
-    if (info->width == INVALID)
-	info->width = 64;
-    if (info->depth != 1) {
-	(void) sprintf(error_msg, 
-	    XV_MSG("Cannot handle Depth of %d.\n"), info->depth);
-	goto ErrorReturn;
-    }
-    if (info->valid_bits_per_item != 16 &&
-	info->valid_bits_per_item != 32) {
-	(void) sprintf(error_msg, 
-	    XV_MSG("Cannot handle Valid_bits_per_item of %d.\n"),
-		       info->valid_bits_per_item);
-	goto ErrorReturn;
-    }
-    if ((info->width % 16) != 0) {
-	(void) sprintf(error_msg, 
-	    XV_MSG("Cannot handle Width of %d.\n"), info->width);
-	goto ErrorReturn;
-    }
-    return (result);
+	info->depth = INVALID;
+	info->height = INVALID;
+	info->format_version = INVALID;
+	info->valid_bits_per_item = INVALID;
+	info->width = INVALID;
+	info->last_param_pos = INVALID;
+	/*
+	 * Parse the file header
+	 */
+	do {
+		if ((c = fscanf(result, "%*[^DFHVW*]")) == EOF)
+			break;
+		switch (c = getc(result)) {
+			case 'D':
+				if (info->depth == INVALID) {
+					c = fscanf(result, "epth=%d", &info->depth);
+					if (c == 0)
+						c = 1;
+					else
+						info->last_param_pos = ftell(result);
+				}
+				break;
+			case 'H':
+				if (info->height == INVALID) {
+					c = fscanf(result, "eight=%d", &info->height);
+					if (c == 0)
+						c = 1;
+					else
+						info->last_param_pos = ftell(result);
+				}
+				break;
+			case 'F':
+				if (info->format_version == INVALID) {
+					c = fscanf(result, "ormat_version=%d",
+							&info->format_version);
+					if (c == 0)
+						c = 1;
+					else
+						info->last_param_pos = ftell(result);
+				}
+				break;
+			case 'V':
+				if (info->valid_bits_per_item == INVALID) {
+					c = fscanf(result, "alid_bits_per_item=%d",
+							&info->valid_bits_per_item);
+					if (c == 0)
+						c = 1;
+					else
+						info->last_param_pos = ftell(result);
+				}
+				break;
+			case 'W':
+				if (info->width == INVALID) {
+					c = fscanf(result, "idth=%d", &info->width);
+					if (c == 0)
+						c = 1;
+					else
+						info->last_param_pos = ftell(result);
+				}
+				break;
+			case '*':
+				if (info->format_version == 1) {
+					c = 1;
+					c_temp = getc(result);
+					if (c_temp == '/')
+						c = 0;	/* Force exit */
+					else {
+						fprintf(stderr, "in '*' case: c_temp='%c'\n", c_temp);
+						(void)ungetc(c_temp, result);
+					}
+				}
+				break;
+			default:{
+					(void)sprintf(error_msg,
+							XV_MSG("icon file %s parse failure\n"), from_file);
+					if (result) fclose(result);
+					return NULL;
+				}
+		}
+	} while (c != 0 && c != EOF);
+	if (c == EOF || info->format_version != 1) {
+		(void)sprintf(error_msg,
+				XV_MSG("%s has invalid header format.\n"), from_file);
+		if (result) fclose(result);
+		return NULL;
+	}
+	if (info->depth == INVALID)
+		info->depth = 1;
+	if (info->height == INVALID)
+		info->height = 64;
+	if (info->valid_bits_per_item == INVALID)
+		info->valid_bits_per_item = 16;
+	if (info->width == INVALID)
+		info->width = 64;
+	if (info->depth != 1) {
+		(void)sprintf(error_msg,
+				XV_MSG("Cannot handle Depth of %d.\n"), info->depth);
+		if (result) fclose(result);
+		return NULL;
+	}
+	if (info->valid_bits_per_item != 16 && info->valid_bits_per_item != 32) {
+		(void)sprintf(error_msg,
+				XV_MSG("Cannot handle Valid_bits_per_item of %d.\n"),
+				info->valid_bits_per_item);
+		if (result) fclose(result);
+		return NULL;
+	}
+	if ((info->width % 16) != 0) {
+		(void)sprintf(error_msg,
+				XV_MSG("Cannot handle Width of %d.\n"), info->width);
+		if (result) fclose(result);
+		return NULL;
+	}
+	return (result);
 
-ErrorReturn:
-    if (result)
-	(void) fclose(result);
-    return (NULL);
 #undef INVALID
 }
 
