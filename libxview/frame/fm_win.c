@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_win.c 20.31 90/11/08 DRA: $Id: fm_win.c,v 4.2 2026/01/24 05:51:00 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_win.c 20.31 90/11/08 DRA: $Id: fm_win.c,v 4.3 2026/03/27 08:51:55 dra Exp $ ";
 #endif
 #endif
 
@@ -88,7 +88,9 @@ Pkg_private int frame_is_exposed(Frame frame)
 				ERROR_STRING, XV_MSG("frame_is_exposed(): XQueryTree failed!"),
 				ERROR_PKG, FRAME,
 				NULL);
-		goto deallocate;
+		if (children)
+			xv_free(children);
+		return (FALSE);
 	}
 	if (nchildren) {
 		register XID *c;
@@ -103,7 +105,9 @@ Pkg_private int frame_is_exposed(Frame frame)
 					ERROR_STRING,
 					XV_MSG("frame_is_exposed(): window not in tree"),
 					ERROR_PKG, FRAME, NULL);
-			goto deallocate;
+			if (children)
+				xv_free(children);
+			return (FALSE);
 		}
 		/*
 		 * Scan through all the children of the root window that are above
@@ -119,7 +123,6 @@ Pkg_private int frame_is_exposed(Frame frame)
 		}
 		return (nchildren ? FALSE : TRUE);
 	}
-  deallocate:
 	if (children)
 		xv_free(children);
 	return (FALSE);
