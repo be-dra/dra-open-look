@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_parse.c 20.59 93/06/28  DRA: $Id: xv_parse.c,v 4.1 2024/03/28 19:35:11 dra Exp $";
+static char     sccsid[] = "@(#)xv_parse.c 20.59 93/06/28  DRA: $Id: xv_parse.c,v 4.2 2026/03/27 08:45:39 dra Exp $";
 #endif
 #endif
 
@@ -236,336 +236,308 @@ Xv_private void xv_cmdline_scrunch(int *argc_ptr, char **argv, char **remove, in
              sizeof(*remove) * (*argc_ptr - (remove - argv) + 1));
 }
 
+static int parse_neg_arg(char *app_name, char *badarg, char *prog)
+{
+	char dummy[128];
+
+	sprintf(dummy, XV_MSG("%s: can't have negative argument %s after %s"),
+			app_name, badarg, prog);
+	xv_error(XV_NULL, ERROR_STRING, dummy, NULL);
+	return (-1);
+}
+
 static int xv_parse_one(char *app_name, int argc, char **argv)
 {
-    int             plus;
-    int             bad_arg = 0;
-    register Cmd_line_flag *slot;
-    Flag_name       flag_name;
-    char	int_val1[12];
-    char	int_val2[12];
+	int plus;
+	register Cmd_line_flag *slot;
+	Flag_name flag_name;
+	char int_val1[12];
+	char int_val2[12];
 
-    if (argc < 1 || ((**argv != '-') && (**argv != '+')))
-	return (0);
+	if (argc < 1 || ((**argv != '-') && (**argv != '+')))
+		return (0);
 
-    slot = find_cmd_flag(argv[0]);
+	slot = find_cmd_flag(argv[0]);
 
-    if (!slot)
-	return 0;
+	if (!slot)
+		return 0;
 
-    if (argc <= slot->num_args) {
-	char            dummy[128];
+	if (argc <= slot->num_args) {
+		char dummy[128];
 
-	(void) sprintf(dummy,
-			XV_MSG("%s: missing argument after %s"),
-			app_name,
-		       argv[0]);
-	xv_error(XV_NULL,
-		 ERROR_STRING, dummy,
-		 NULL);
+		(void)sprintf(dummy,
+				XV_MSG("%s: missing argument after %s"), app_name, argv[0]);
+		xv_error(XV_NULL, ERROR_STRING, dummy, NULL);
 
-	return (-1);
-    }
-    flag_name = (Flag_name) (slot - cmd_line_flags);
-    switch (flag_name) {
-      case FLAG_WIDTH:
-      case FLAG_HEIGHT:
-	if ((plus = atoi(argv[1])) < 0) {
-	    bad_arg = 1;
-	    goto NegArg;
+		return (-1);
 	}
-	sprintf(int_val1, "%d", plus);
-        xv_add_cmdline_entry(slot, NULL, int_val1, NULL, argv);
-	break;
+	flag_name = (Flag_name) (slot - cmd_line_flags);
+	switch (flag_name) {
+		case FLAG_WIDTH:
+		case FLAG_HEIGHT:
+			if ((plus = atoi(argv[1])) < 0) {
+				return parse_neg_arg(app_name, argv[1], argv[0]);
+			}
+			sprintf(int_val1, "%d", plus);
+			xv_add_cmdline_entry(slot, NULL, int_val1, NULL, argv);
+			break;
 
-      case FLAG_SIZE:
-	if ((plus = atoi(argv[1])) < 0) {
-	    bad_arg = 1;
-	    goto NegArg;
-	}
-	sprintf(int_val1, "%d", plus);
+		case FLAG_SIZE:
+			if ((plus = atoi(argv[1])) < 0) {
+				return parse_neg_arg(app_name, argv[1], argv[0]);
+			}
+			sprintf(int_val1, "%d", plus);
 
-	if ((plus = atoi(argv[2])) < 0) {
-	    bad_arg = 2;
-	    goto NegArg;
-	}
-	sprintf(int_val2, "%d", plus);
+			if ((plus = atoi(argv[2])) < 0) {
+				return parse_neg_arg(app_name, argv[2], argv[0]);
+			}
+			sprintf(int_val2, "%d", plus);
 
-        xv_add_cmdline_entry(slot, NULL, int_val1, int_val2, argv);
-	break;
+			xv_add_cmdline_entry(slot, NULL, int_val1, int_val2, argv);
+			break;
 
-      case FLAG_POSITION:
-      case FLAG_ICON_POSITION:
-	sprintf(int_val1, "%d", atoi(argv[1]));
-	sprintf(int_val2, "%d", atoi(argv[2]));
+		case FLAG_POSITION:
+		case FLAG_ICON_POSITION:
+			sprintf(int_val1, "%d", atoi(argv[1]));
+			sprintf(int_val2, "%d", atoi(argv[2]));
 
-        xv_add_cmdline_entry(slot, NULL, int_val1, int_val2, argv);
-	break;
+			xv_add_cmdline_entry(slot, NULL, int_val1, int_val2, argv);
+			break;
 
-      case FLAG_GEOMETRY:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_GEOMETRY:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_LABEL:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_LABEL:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_TITLE:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_TITLE:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_ICON_LABEL:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_ICON_LABEL:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_ICON_IMAGE:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_ICON_IMAGE:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_ICON_FONT:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_ICON_FONT:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_FONT:
-	/* this is a hack to allow for Xt -fn default */
-      case FLAG_X_FONT:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_FONT:
+			/* this is a hack to allow for Xt -fn default */
+		case FLAG_X_FONT:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_SCALE:
-	if (defaults_lookup(argv[1], known_scales) == -1) {
-		char dummy[1024];
+		case FLAG_SCALE:
+			if (defaults_lookup(argv[1], known_scales) == -1) {
+				char dummy[1024];
 
-		(void) sprintf(dummy,
-			XV_MSG("%s: unknown scale \"%s\" used with %s option"),
-			       app_name, argv[1], argv[0]);
-		xv_error(XV_NULL,
-		     ERROR_STRING, dummy,
-			 NULL);
-		return(-1);
-	}
-	else  {
-            xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	}
-	break;
+				(void)sprintf(dummy,
+						XV_MSG("%s: unknown scale \"%s\" used with %s option"),
+						app_name, argv[1], argv[0]);
+				xv_error(XV_NULL, ERROR_STRING, dummy, NULL);
+				return (-1);
+			}
+			else {
+				xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			}
+			break;
 
-      case FLAG_ENABLE_ICONIC:
-        xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
-	break;
+		case FLAG_ENABLE_ICONIC:
+			xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
+			break;
 
-      case FLAG_DISABLE_ICONIC:
-        xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
-	break;
+		case FLAG_DISABLE_ICONIC:
+			xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
+			break;
 
-      case FLAG_SET_DEFAULT_COLOR:
-	/* this is really just a no op, but we need to consume it
-	 * so that old applications won't see it.
-	 */
-	/* boolean value -- if specified then TRUE */
-        xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
-	break;
+		case FLAG_SET_DEFAULT_COLOR:
+			/* this is really just a no op, but we need to consume it
+			 * so that old applications won't see it.
+			 */
+			/* boolean value -- if specified then TRUE */
+			xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
+			break;
 
-      case FLAG_ENABLE_REVERSE:
-        xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
-	break;
+		case FLAG_ENABLE_REVERSE:
+			xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
+			break;
 
-      case FLAG_DISABLE_REVERSE:
-        xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
-	break;
+		case FLAG_DISABLE_REVERSE:
+			xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
+			break;
 
-      case FLAG_DISABLE_RETAINED:
-	/* boolean value -- if specified then TRUE */
-	sprintf(int_val1, "%d", TRUE);
-        xv_add_cmdline_entry(slot, NULL, int_val1, NULL, argv);
-	break;
+		case FLAG_DISABLE_RETAINED:
+			/* boolean value -- if specified then TRUE */
+			sprintf(int_val1, "%d", TRUE);
+			xv_add_cmdline_entry(slot, NULL, int_val1, NULL, argv);
+			break;
 
-      case FLAG_DISABLE_XIO_ERROR_HANDLER:
-	/* boolean value -- if specified then  */
-	(void) XSetIOErrorHandler((int (*) ()) NULL);
-	break;
+		case FLAG_DISABLE_XIO_ERROR_HANDLER:
+			/* boolean value -- if specified then  */
+			(void)XSetIOErrorHandler((int (*)())NULL);
+			break;
 
-      case FLAG_FULLSCREEN_DEBUG:
-	fullscreendebug = 1;
-        xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
-	break;
+		case FLAG_FULLSCREEN_DEBUG:
+			fullscreendebug = 1;
+			xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
+			break;
 
-      case FLAG_FULLSCREEN_DEBUG_SERVER:
-	fullscreendebugserver = 1;
-        xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
-	break;
+		case FLAG_FULLSCREEN_DEBUG_SERVER:
+			fullscreendebugserver = 1;
+			xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
+			break;
 
-      case FLAG_FULLSCREEN_DEBUG_PTR:
-	fullscreendebugptr = 1;
-        xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
-	break;
+		case FLAG_FULLSCREEN_DEBUG_PTR:
+			fullscreendebugptr = 1;
+			xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
+			break;
 
-      case FLAG_FULLSCREEN_DEBUG_KBD:
-	fullscreendebugkbd = 1;
-        xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
-	break;
+		case FLAG_FULLSCREEN_DEBUG_KBD:
+			fullscreendebugkbd = 1;
+			xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
+			break;
 
-      case FLAG_DISABLE_PASSIVE_GRAB_SELECT:
-        xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
-	break;
+		case FLAG_DISABLE_PASSIVE_GRAB_SELECT:
+			xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
+			break;
 
-      case FLAG_FOREGROUND_COLOR:
-      case FLAG_BACKGROUND_COLOR:{
-	  int             i, rgb[3];
-	  char            chars[100];
+		case FLAG_FOREGROUND_COLOR:
+		case FLAG_BACKGROUND_COLOR:{
+				int i, rgb[3];
+				char chars[100];
 
-	  /* convert three ints into one string with three RGB values */
-	  for (i = 0; i <= 2; i++) {
-	      /* if bad number or neg. then use 0 */
-	      if ((sscanf(argv[i + 1], "%d", &(rgb[i])) != 1) ||
-		  (rgb[i] < 0))
-		rgb[i] = 0;
-	  }
-	  (void) sprintf(chars, "%d %d %d", rgb[0], rgb[1], rgb[2]);
-          xv_add_cmdline_entry(slot, NULL, chars, NULL, argv);
-	  break;
-      }
+				/* convert three ints into one string with three RGB values */
+				for (i = 0; i <= 2; i++) {
+					/* if bad number or neg. then use 0 */
+					if ((sscanf(argv[i + 1], "%d", &(rgb[i])) != 1) ||
+							(rgb[i] < 0))
+						rgb[i] = 0;
+				}
+				(void)sprintf(chars, "%d %d %d", rgb[0], rgb[1], rgb[2]);
+				xv_add_cmdline_entry(slot, NULL, chars, NULL, argv);
+				break;
+			}
 
-      case FLAG_X_FOREGROUND_COLOR:
-      case FLAG_X_BACKGROUND_COLOR:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_X_FOREGROUND_COLOR:
+		case FLAG_X_BACKGROUND_COLOR:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_DEFAULTS_ENTRY:
-        xv_add_cmdline_entry(slot, argv[1], argv[2], NULL, argv);
-	break;
+		case FLAG_DEFAULTS_ENTRY:
+			xv_add_cmdline_entry(slot, argv[1], argv[2], NULL, argv);
+			break;
 
-      case FLAG_XRM_ENTRY: {
-	      char resource[1000], value[1000];
-	      int i = 0, j = 0;
+		case FLAG_XRM_ENTRY:{
+				char resource[1000], value[1000];
+				int i = 0, j = 0;
 
-	      /* split the argv in the form of "resource:value"
-	       * into two different strings to pass into defaults_set_string
-	       */
-	      while (argv[1][i] != ':' && argv[1][i] != '\0') {
-		      resource[i] = argv[1][i];
-		      i++;
-	      }
-	      resource[i] = '\0';
-	      if (argv[1][i] == ':') {
-		      while (argv[1][i] != '\0') {
-			      i++;
-			      value[j++] = argv[1][i];
-		      }
-		      value[j] = '\0';
-                      xv_add_cmdline_entry(slot, resource, value, NULL, argv);
-	      }
-      }
-	break;
+				/* split the argv in the form of "resource:value"
+				 * into two different strings to pass into defaults_set_string
+				 */
+				while (argv[1][i] != ':' && argv[1][i] != '\0') {
+					resource[i] = argv[1][i];
+					i++;
+				}
+				resource[i] = '\0';
+				if (argv[1][i] == ':') {
+					while (argv[1][i] != '\0') {
+						i++;
+						value[j++] = argv[1][i];
+					}
+					value[j] = '\0';
+					xv_add_cmdline_entry(slot, resource, value, NULL, argv);
+				}
+			}
+			break;
 
-      case FLAG_HELP:
-	return (-1);
+		case FLAG_HELP:
+			return (-1);
 
-      case FLAG_ENABLE_SYNC:
-        xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
-	break;
+		case FLAG_ENABLE_SYNC:
+			xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
+			break;
 
-      case FLAG_DISABLE_SYNC:
-        xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
-	break;
+		case FLAG_DISABLE_SYNC:
+			xv_add_cmdline_entry(slot, NULL, "False", NULL, argv);
+			break;
 
-      case FLAG_SERVER:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_SERVER:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_VISUAL:
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+		case FLAG_VISUAL:
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
-      case FLAG_DEPTH:
-	sprintf(int_val1, "%d", atoi(argv[1]));
-        xv_add_cmdline_entry(slot, NULL, int_val1, NULL, argv);
-	break;
+		case FLAG_DEPTH:
+			sprintf(int_val1, "%d", atoi(argv[1]));
+			xv_add_cmdline_entry(slot, NULL, int_val1, NULL, argv);
+			break;
 
-      case FLAG_NO_SECURITY:
-	defeat_event_security = 1;
-        xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
-	break;
+		case FLAG_NO_SECURITY:
+			defeat_event_security = 1;
+			xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
+			break;
 
-      case FLAG_NAME:
-        xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
-	break;
+		case FLAG_NAME:
+			xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
+			break;
 
-      case FLAG_LC_BASICLOCALE:
-      case FLAG_LC_DISPLAYLANG:
-      case FLAG_LC_INPUTLANG:
-      case FLAG_LC_NUMERIC:
-      case FLAG_LC_TIMEFORMAT:
+		case FLAG_LC_BASICLOCALE:
+		case FLAG_LC_DISPLAYLANG:
+		case FLAG_LC_INPUTLANG:
+		case FLAG_LC_NUMERIC:
+		case FLAG_LC_TIMEFORMAT:
+
 #ifdef OW_I18N
+
 #ifdef FULL_R5
-      case FLAG_IM_INPUT_STYLE:
-      case FLAG_IM_STATUS_STYLE:
+		case FLAG_IM_INPUT_STYLE:
+		case FLAG_IM_STATUS_STYLE:
 #endif /* FULL_R5 */
 #endif /* OW_I18N */
-        xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
-	break;
+
+			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
+			break;
 
 #ifdef _XV_DEBUG
-      case FLAG_LIST_FONTS:
-	list_fonts = TRUE;
-	break;
+		case FLAG_LIST_FONTS:
+			list_fonts = TRUE;
+			break;
 
-      case FLAG_DEBUG:
-	plus = atoi(argv[1]);
-SetDebug:
-	if (xv_set_debug_flag(plus, TRUE)) {
-	    char            dummy[128];
+		case FLAG_DEBUG:
+			plus = atoi(argv[1]);
+		  SetDebug:
+			if (xv_set_debug_flag(plus, TRUE)) {
+				char dummy[128];
 
-	    (void) sprintf(dummy,
-			   XV_MSG("xv_set_debug_flag; '%d' is out of bounds"),
-			   plus);
-	    xv_error(XV_NULL,
-		     ERROR_STRING, dummy,
-		     0);
-	}
-	break;
-      case FLAG_STATS:
-	server_gather_stats = TRUE;
-	break;
-      case FLAG_GPROF_START:
-	sview_gprof_start = TRUE;
-	break;
+				(void)sprintf(dummy,
+						XV_MSG("xv_set_debug_flag; '%d' is out of bounds"),
+						plus);
+				xv_error(XV_NULL, ERROR_STRING, dummy, 0);
+			}
+			break;
+		case FLAG_STATS:
+			server_gather_stats = TRUE;
+			break;
+		case FLAG_GPROF_START:
+			sview_gprof_start = TRUE;
+			break;
 #endif
 
-      default:
-	return (0);
+		default:
+			return (0);
 
-    }
+	}
 
-    return (slot->num_args + 1);
-
-/* BadFont:
-    {
-	char            dummy[128];
-
-	(void) sprintf(dummy,
-		XV_MSG("%s: bad font file (%s)"),
-		app_name, argv[1]);
-	xv_error(XV_NULL,
-		 ERROR_STRING, dummy,
-		 0);
-	return (-1);
-    } */
-
-NegArg:
-    {
-	char            dummy[128];
-
-	(void) sprintf(dummy,
-		XV_MSG("%s: can't have negative argument %s after %s"),
-		       app_name, argv[bad_arg], argv[0]);
-	xv_error(XV_NULL,
-		 ERROR_STRING, dummy,
-		 NULL);
-	return (-1);
-    }
-
-/* NoMsgError:
-    return (-1); */
+	return (slot->num_args + 1);
 }
 
 Xv_public int
