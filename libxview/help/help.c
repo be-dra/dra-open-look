@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.31 2026/02/23 18:07:33 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.32 2026/03/29 18:03:00 dra Exp $";
 #endif
 
 /*
@@ -35,10 +35,18 @@ char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.31 2026/02
 extern char *xv_app_name;
 extern wchar_t *xv_app_name_wcs;
 
+static FILE    *help_file;
+static char     help_buffer[1280];
+
+Xv_private char	*xv_strtok(char *, char *);
+
 Xv_private void xv_help_save_image(Xv_Window pw,
 		int client_width, int unused_client_height, int mouse_x, int mouse_y);
 Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 									Event *client_event);
+
+#define DEFAULT_HELP_PATH "/usr/openwin/lib/locale:/usr/openwin/lib/help"
+#define MAX_MORE_HELP_CMD 128
 
 /*
  * There is a maximum of 10 lines of text of 50 chars each visible in the
@@ -82,8 +90,6 @@ static const unsigned short mglass_mask_data[] = {
 Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index);
 
 Xv_private FILE * xv_help_find_file(Xv_server srv, char *filename);
-Pkg_private int xv_help_get_arg(Xv_server srv, char *data, char **more_help);
-Pkg_private char *xv_help_get_text(int use_textsw);
 
 typedef struct {
      Frame	      help_frame;
@@ -372,6 +378,132 @@ static Menu gen_edit_menu(Menu menu, Menu_generate op)
 	return menu;
 }
 
+/* returns XV_OK or XV_ERROR */
+    /* key;	Spot Help key */
+    /* more_help; OUTPUT parameter: More Help system cmd */
+static int help_search_file(char *key, char **more_help)
+{
+	char *entry;
+	char *more_help_cmd;
+	static char more_help_cmd_buffer[MAX_MORE_HELP_CMD];
+
+	fseek(help_file, 0L, 0);
+
+	while ((entry = fgets(help_buffer, (unsigned)sizeof(help_buffer),
+							help_file)))
+	{
+		if (*entry++ == ':') {
+			entry = xv_strtok(entry, ":\n");	/* parse Spot Help key */
+			if (entry && !strcmp(entry, key)) {
+				/* Found requested Spot Help key */
+				more_help_cmd = xv_strtok(NULL, "\n"); /* parse More Help system
+														* command */
+				if (more_help_cmd) {
+					strncpy(more_help_cmd_buffer, more_help_cmd,
+							(size_t)MAX_MORE_HELP_CMD - 1);
+					*more_help = &more_help_cmd_buffer[0];
+				}
+				else
+					*more_help = NULL;
+				return XV_OK;
+			}
+		}
+	}
+
+	if (0 == strncmp(key, "wsm_", 4L)) {
+		SERVERTRACE((800,
+				"help key '%s' missing, trying unknownWorkspaceMenu\n", key));
+		return help_search_file("unknownWorkspaceMenu", more_help);
+	}
+	return XV_ERROR;
+}
+
+/* returns XV_OK or XV_ERROR */
+/*    data;	"file:key" */
+static int help_get_arg(Xv_server srv, char *data, char **more_help)
+{
+	char *client;
+	char data_copy[64];
+	char filename[64];
+	char *key;
+	static char last_client[64];
+
+	if (data == NULL)
+		return XV_ERROR;	/* No key supplied */
+	strncpy(data_copy, data, sizeof(data_copy));
+	data_copy[sizeof(data_copy) - 1] = '\0';
+	if (!(client = xv_strtok(data_copy, ":")) || !(key = xv_strtok(NULL, "")))
+		return XV_ERROR;	/* No file specified in key */
+	if (strcmp(last_client, client)) {
+		/* Last .info filename != new .info filename */
+		if (help_file) {
+			fclose(help_file);
+			last_client[0] = '\0';
+		}
+		sprintf(filename, "%s.info", client);
+		help_file = xv_help_find_file(srv, filename);
+		if (help_file) {
+			strcpy(last_client, client);
+			return help_search_file(key, more_help);
+		}
+		else
+			return XV_ERROR;	/* Specified .info file not found */
+	}
+	return help_search_file(key, more_help);
+}
+
+static char *help_get_text(int use_textsw)
+{
+#ifdef OW_I18N
+    char           *ptr;
+
+    while ((ptr = fgets(help_buffer, sizeof(help_buffer), help_file)) &&
+		(*ptr == '#'))
+			;
+
+    return (ptr && *ptr != ':' ? ptr : NULL);
+#else
+	char *s, *t;
+    char *ptr = fgets(help_buffer, (unsigned)sizeof(help_buffer), help_file);
+
+	if (!ptr) return NULL;
+	if (*ptr == ':' || *ptr == '#' || *ptr == ';') return NULL;
+
+	if (ptr[strlen(ptr)-1] != '\n') {
+		fprintf(stderr, "\n\n%s-%d: line not NEWLINE terminated: '%s'\n\n",
+					__FILE__, __LINE__, ptr);
+	}
+
+	if (use_textsw) {
+		for (s = help_buffer, t = help_buffer; *s; ) {
+			if (*s == '\\') { /* we eliminate \bo, \it, \bi, \no */
+				if (s[1] == 'b' && s[2] == 'o') {
+					s += 3;
+				}
+				else if (s[1] == 'i' && s[2] == 't') {
+					s += 3;
+				}
+				else if (s[1] == 'b' && s[2] == 'i') {
+					s += 3;
+				}
+				else if (s[1] == 'n' && s[2] == 'o') {
+					s += 3;
+				}
+				else {
+					*t++ = *s++;
+				}
+			}
+			else {
+				*t++ = *s++;
+			}
+		}
+		*t = '\0';
+	}
+
+    return ptr;
+#endif
+}
+
 Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 									Event *client_event)
 {
@@ -413,8 +545,8 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 		xv_set(screen, XV_KEY_DATA, help_info_key, help_info, NULL);
 	}
 
-	if (xv_help_get_arg(server, client_data, &more_help_cmd) == XV_OK)
-		text = xv_help_get_text(help_info->use_textsw);
+	if (help_get_arg(server, client_data, &more_help_cmd) == XV_OK)
+		text = help_get_text(help_info->use_textsw);
 	else
 		text = NULL;
 	if (!text) {
@@ -782,12 +914,12 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 		   NULL);
 
 	strcpy(header, text);
-	text = xv_help_get_text(help_info->use_textsw);
+	text = help_get_text(help_info->use_textsw);
 	sprintf(framehead, "%s Help: %s", client_name, strtok(header, "\n"));
 	xv_set(help_info->help_frame, XV_LABEL, framehead, NULL);
 	if (text) {
 		if (strlen(text) <= 2) {
-			text = xv_help_get_text(help_info->use_textsw);
+			text = help_get_text(help_info->use_textsw);
 		}
 	}
 	if (help_info->use_textsw) {
@@ -795,7 +927,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 
 		for (i = 0; text; i++) {
 			textsw_insert(help_info->textwin, text, (int)strlen(text));
-			text = xv_help_get_text(help_info->use_textsw);
+			text = help_get_text(help_info->use_textsw);
 		}
 		xv_set(help_info->textwin, TEXTSW_FIRST, 0, NULL);
 
@@ -809,12 +941,12 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 		if (text) {
 			if ((p = strchr(text, '\n'))) *p = '\0';
 			xv_set(help_info->textwin, RICHTEXT_START, text, NULL);
-			text = xv_help_get_text(help_info->use_textsw);
+			text = help_get_text(help_info->use_textsw);
 		}
 		for (i = 1; text; i++) {
 			if ((p = strchr(text, '\n'))) *p = '\0';
 			xv_set(help_info->textwin, RICHTEXT_APPEND, text, NULL);
-			text = xv_help_get_text(help_info->use_textsw);
+			text = help_get_text(help_info->use_textsw);
 		}
 		xv_set(help_info->textwin, RICHTEXT_FILLED, NULL);
 
@@ -845,6 +977,59 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 	return XV_OK;
 }
 
+/*
+ * FIX ME help_find_file is called frlom attr.c (attr_names) so we
+ * can't add an extra parameter to help_find_file for the XV_LC_DISPLAY_LANG
+ * so we'll use LC_MESSAGES for now
+ */
+
+Xv_private FILE * xv_help_find_file(Xv_server srv, char *filename);
+
+Xv_private FILE * xv_help_find_file(Xv_server srv, char *filename)
+{
+	FILE *file_ptr;
+	char *helpdir = NULL;
+	char *helppath;
+	char *helppath_copy;
+	char *xv_lc_display_lang = "";
+	extern int _xv_use_locale;
+
+	helppath = (char *)getenv("HELPPATH");
+	if (!helppath)
+		helppath = DEFAULT_HELP_PATH;
+	helppath_copy = (char *)xv_malloc(strlen(helppath) + 1);
+	strcpy(helppath_copy, helppath);
+
+	if (_xv_use_locale) {
+		xv_lc_display_lang = (char *)xv_get(srv, XV_LC_DISPLAY_LANG);
+		if (! xv_lc_display_lang)
+			xv_lc_display_lang = setlocale(LC_MESSAGES, NULL);
+	}
+
+	helpdir = xv_strtok(helppath_copy, ":");
+	do {
+		/*  
+		 * If XV_USE_LOCALE set to TRUE, look for locale specific
+		 * help file first.
+		 */
+		if (_xv_use_locale) {
+			sprintf(help_buffer, "%s/%s/help/%s", helpdir, xv_lc_display_lang,
+												filename);
+			if ((file_ptr = fopen(help_buffer, "r")) != NULL)
+				break;
+		}
+		/*
+		 * If locale specific help file not found or required, fallback
+		 * on helpdir/filename.
+		 */
+		sprintf(help_buffer, "%s/%s", helpdir, filename);
+		if ((file_ptr = fopen(help_buffer, "r")) != NULL) {
+			break;
+		}
+	} while ((helpdir = xv_strtok(NULL, ":")));
+	free(helppath_copy);
+	return file_ptr;
+}
 
 /*
  * Public "show help" routine
