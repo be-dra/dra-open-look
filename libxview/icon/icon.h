@@ -1,4 +1,4 @@
-/*	@(#)icon.h 20.13 90/03/13 SMI	DRA: RCS $Id: icon.h,v 4.2 2025/03/08 13:46:13 dra Exp $ 	*/
+/*	@(#)icon.h 20.13 90/03/13 SMI	DRA: RCS $Id: icon.h,v 4.3 2026/03/29 14:32:24 dra Exp $ 	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -102,7 +102,6 @@ EXTERN_FUNCTION (Icon icon_create, (Attr_attribute attr1, DOTDOTDOT)) _X_SENTINE
 EXTERN_FUNCTION (Xv_opaque icon_get, (Icon icon_public, Icon_attribute attr));
 EXTERN_FUNCTION (int icon_set, (Icon icon, DOTDOTDOT)) _X_SENTINEL(0);
 EXTERN_FUNCTION (int icon_destroy, (Icon icon));
-EXTERN_FUNCTION (void icon_display, (Icon icon, int x, int y));
 _XVFUNCPROTOEND
 
 #endif /* ~xview_icon_DEFINED */
