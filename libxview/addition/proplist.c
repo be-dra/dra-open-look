@@ -29,7 +29,7 @@
 #include <xview_private/i18n_impl.h>
 
 #ifndef lint
-char proplist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: proplist.c,v 4.7 2025/06/06 18:47:49 dra Exp $";
+char proplist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: proplist.c,v 4.9 2026/03/30 19:40:52 dra Exp $";
 #endif
 
 #define A0 *attrs
@@ -50,7 +50,7 @@ typedef struct {
 	Menu_item          up_item, down_item;
 	int                entry_string_offset, item_data_size;
 	int                glyph_offset;
-	Frame_props         frame;
+	Frame_props        frame;
 	Xv_opaque          slave_master;
 	int                level_height;
 } Proplist_private;
@@ -229,7 +229,8 @@ static void data_to_list(Proplist_private *priv, Proplist_contents *datptr)
 	sort_me(priv);
 }
 
-static int note_list(Property_list self, char *string, Xv_opaque cldt, Panel_list_op op, Event *ev, int rownum)
+static int note_list(Property_list self, char *string, Xv_opaque cldt,
+						Panel_list_op op, Event *ev, int rownum)
 {
 	Proplist_private *priv = PROPLISTPRIV(self);
 
@@ -679,6 +680,15 @@ static int proplist_init(Panel owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	if (! pl_key) pl_key = xv_unique_key();
 
 	priv->frame = xv_get(owner, WIN_FRAME);
+	if (! xv_get(priv->frame, XV_IS_SUBTYPE_OF, FRAME_PROPS)) {
+		xv_error(slf,
+				ERROR_PKG, PROP_LIST,
+				ERROR_LAYER, ERROR_PROGRAM,
+				ERROR_STRING, "owner must be in a FRAME_PROPS",
+				ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
+				NULL);
+		return XV_ERROR;
+	}
 	priv->level_height = 0;
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
@@ -691,12 +701,13 @@ static int proplist_init(Panel owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	}
 
 	if (! priv->item_data_size) {
-		xv_error((Xv_opaque)self,
+		xv_error(slf,
 				ERROR_PKG, PROP_LIST,
 				ERROR_LAYER, ERROR_PROGRAM,
 				ERROR_STRING, "Have no PROPLIST_ITEM_DATA_SIZE",
 				ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
 				NULL);
+		return XV_ERROR;
 	}
 
 	priv->glyph_offset = -1;
@@ -704,7 +715,7 @@ static int proplist_init(Panel owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	priv->copy_proc = proplist_copy_item;
 	priv->free_proc = proplist_free_item;
 
-	xv_set((Xv_opaque)self,
+	xv_set(slf,
 				PANEL_READ_ONLY, TRUE,
 				PANEL_CHOOSE_ONE, TRUE,
 				PANEL_NOTIFY_PROC, note_list,
@@ -837,7 +848,7 @@ static int proplist_destroy(Property_list self, Destroy_status status)
 	return XV_OK;
 }
 
-void xv_proplist_converter(int unused1, int panel_to_data,
+Xv_public void xv_proplist_converter(Xv_opaque unused1, int panel_to_data,
 			Proplist_contents *data, Property_list self, Xv_opaque unused2)
 {
 	if (panel_to_data) list_to_data(PROPLISTPRIV(self), data);
