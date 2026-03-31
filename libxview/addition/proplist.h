@@ -2,7 +2,7 @@
 #define proplist_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: proplist.h,v 4.4 2025/06/06 18:47:52 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: proplist.h,v 4.5 2026/03/30 19:39:09 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -87,8 +87,8 @@ typedef int (*proplist_verify_proc_t) (Property_list, Xv_opaque,
 typedef void (*proplist_free_proc_t) (Property_list, Xv_opaque);
 
 _XVFUNCPROTOBEGIN
-EXTERN_FUNCTION(void xv_proplist_converter, (int, int, Proplist_contents *,
-										Property_list, Xv_opaque));
+EXTERN_FUNCTION(void xv_proplist_converter, (Xv_opaque, int,
+							Proplist_contents *, Property_list, Xv_opaque));
 _XVFUNCPROTOEND
 
 #endif
