@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.7 2025/08/29 17:05:42 dra Exp $";
+static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.8 2026/03/30 18:44:04 dra Exp $";
 #endif
 #endif
 
@@ -41,16 +41,72 @@ int  defeat_event_security;
 /*
  * Escape hatch to cope with SunView and/or client bugs in ref. counting.
  */
-static void generic_set_instance_name(Xv_object parent, Xv_object object, char *instance_name);
 Xv_private XrmQuarkList db_qlist_from_name(char *, XrmQuarkList);
 Xv_private Xv_opaque db_name_from_qlist(XrmQuarkList qlist);
-Xv_private_data int xv_free_unreferenced;
-static Attr_attribute xv_next_key;	/* = 0 for -A-R */
+Xv_private XrmQuarkList generic_create_instance_qlist(Xv_object, char *);
 
-static Generic_node *add_node(Xv_object object, generic_key_type_t key);
+Xv_private_data int xv_free_unreferenced;
+
+static void delete_node(Xv_object obj, Generic_node *node, Generic_node *prev)
+{
+	if (prev) {
+		prev->next = node->next;
+	}
+	else {
+		Generic_info *gen_private = GEN_PRIVATE(obj);
+		gen_private->key_data = node->next;
+	}
+	if (node->remove_proc)
+		(node->remove_proc) (obj, node->key, node->data);
+	xv_free(node);
+}
+
+static Generic_node *add_node(Xv_object object, generic_key_type_t key)
+{
+	register Generic_node *node;
+	Generic_info *gen_private = GEN_PRIVATE(object);;
+
+	node = xv_alloc(Generic_node);
+	node->next = HEAD(object);
+	gen_private->key_data = node;
+	node->key = key;
+
+	return node;
+}
+
 static Generic_node *find_node(Xv_object object, generic_key_type_t key,
-								Generic_node **prev);
-static void delete_node(Xv_object object, Generic_node *node, Generic_node *prev);
+								Generic_node **prev)
+{
+	register Generic_node *node;
+
+	if (HEAD(object)) {
+		if ((HEAD(object)->key == key)) {
+			node = HEAD(object);
+			*prev = (Generic_node *) NULL;
+		}
+		else {
+			for (*prev = HEAD(object), node = (*prev)->next; node;
+					*prev = node, node = (*prev)->next) {
+				if (node->key == key)
+					break;
+			}
+		}
+	}
+	else {
+		*prev = node = (Generic_node *) NULL;
+	}
+	return node;
+}
+
+static void generic_set_instance_name(Xv_object parent, Xv_object object, char *instance_name)
+{
+    Xv_opaque       	quarks;
+
+    quarks = (Xv_opaque)generic_create_instance_qlist(parent, instance_name);
+
+    if (quarks != XV_NULL)
+        xv_set(object, XV_INSTANCE_QLIST, quarks, NULL);
+}
 
 
 /* ------------------------------------------------------------------------ */
@@ -66,17 +122,18 @@ static void delete_node(Xv_object object, Generic_node *node, Generic_node *prev
  */
 Xv_public Attr_attribute xv_unique_key()
 {
+	static Attr_attribute xv_next_key = 0;
+
     return (++xv_next_key);
 }
 
-/*ARGSUSED*/
-static void generic_data_free(Xv_object object, Attr_attribute key, Xv_opaque data)
+static void generic_data_free(Xv_object ob, Attr_attribute key, Xv_opaque data)
 {
     if (data) free((char *) data);
 }
 
-static int generic_init(Xv_object parent, Xv_object object,
-							Attr_avlist avlist, int *unused)
+static int generic_init(Xv_object parent, Xv_object object, Attr_avlist avlist,
+									int *unused)
 {
 	Xv_generic_struct *gen_public = (Xv_generic_struct *) object;
 	Generic_info *generic;
@@ -124,18 +181,14 @@ static int generic_init(Xv_object parent, Xv_object object,
 				break;
 		}
 		avlist = attr_next(avlist);
-
 	}
-	(void)notify_set_destroy_func(object,
-			(Notify_destroy_func) xv_destroy_status);
+	notify_set_destroy_func(object, (Notify_destroy_func) xv_destroy_status);
 	return XV_OK;
 }
 
-Xv_private XrmQuarkList generic_create_instance_qlist(Xv_object, char *);
-
-Xv_private XrmQuarkList generic_create_instance_qlist(Xv_object parent, char *instance_name)
+Xv_private XrmQuarkList generic_create_instance_qlist(Xv_object parent,
+													char *instance_name)
 {
-/* 	Xv_opaque parent_quarks = XV_NULL, quarks; */
 	XrmQuarkList parent_quarks = NULL, quarks;
 	short null_parent = FALSE;
 
@@ -156,16 +209,6 @@ Xv_private XrmQuarkList generic_create_instance_qlist(Xv_object parent, char *in
 		free((void *)parent_quarks);
 
 	return quarks;
-}
-
-static void generic_set_instance_name(Xv_object parent, Xv_object object, char *instance_name)
-{
-    Xv_opaque       	quarks;
-
-    quarks = (Xv_opaque)generic_create_instance_qlist(parent, instance_name);
-
-    if (quarks != XV_NULL)
-        xv_set(object, XV_INSTANCE_QLIST, quarks, NULL);
 }
 
 static Xv_opaque generic_set_avlist(Xv_object object, Attr_avlist avlist)
@@ -501,57 +544,6 @@ static int generic_destroy(Xv_object object, Destroy_status status)
 			break;
 	}
 	return XV_OK;
-}
-
-static Generic_node *add_node(Xv_object object, generic_key_type_t key)
-{
-	register Generic_node *node;
-	Generic_info *gen_private = GEN_PRIVATE(object);;
-
-	node = xv_alloc(Generic_node);
-	node->next = HEAD(object);
-	gen_private->key_data = node;
-	node->key = key;
-
-	return node;
-}
-
-static Generic_node *find_node(Xv_object object, generic_key_type_t key,
-								Generic_node **prev)
-{
-	register Generic_node *node;
-
-	if (HEAD(object)) {
-		if ((HEAD(object)->key == key)) {
-			node = HEAD(object);
-			*prev = (Generic_node *) NULL;
-		}
-		else {
-			for (*prev = HEAD(object), node = (*prev)->next; node;
-					*prev = node, node = (*prev)->next) {
-				if (node->key == key)
-					break;
-			}
-		}
-	}
-	else {
-		*prev = node = (Generic_node *) NULL;
-	}
-	return node;
-}
-
-static void delete_node(Xv_object object, Generic_node *node, Generic_node *prev)
-{
-	if (prev) {
-		prev->next = node->next;
-	}
-	else {
-		Generic_info *gen_private = GEN_PRIVATE(object);;
-		gen_private->key_data = node->next;
-	}
-	if (node->remove_proc)
-		(node->remove_proc) (object, node->key, node->data);
-	xv_free(node);
 }
 
 const Xv_pkg xv_generic_pkg = {
