@@ -27,6 +27,7 @@
 #include <xview/defaults.h>
 #include <xview/openmenu.h>
 #include <xview/scrollbar.h>
+#include <xview/proplist.h>
 #include <xview/win_notify.h>
 #include <xview_private/i18n_impl.h>
 #include <xview_private/wmgr_decor.h>
@@ -34,7 +35,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.17 2025/07/23 16:48:22 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.18 2026/03/30 19:36:32 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -285,18 +286,26 @@ static void convert_nil(Xv_opaque first, int panel_to_data, char **datptr, Panel
 {
 }
 
-static struct { const Xv_pkg *pkg; convert_t proc; } converters[] = {
-	{ PANEL_MESSAGE,            convert_nil },
+static void proplist_conv(Xv_opaque f, int panel_to_data, char **datptr,
+								Panel_item it, Xv_opaque cldt)
+{
+	xv_proplist_converter(f, panel_to_data, (Proplist_contents *)datptr,
+								it, cldt);
+}
+
+static struct { const Xv_pkg *pkg; convert_t proc; } default_converters[] = {
+	{ PANEL_MESSAGE,           convert_nil },
 	{ PANEL_ABBREV_MENU_BUTTON, convert_nil },
-	{ PANEL_BUTTON,             convert_nil },
-	{ PANEL_CHOICE,             convert_int },
-	{ PANEL_DROP_TARGET,        convert_nil },
-	{ PANEL_GAUGE,              convert_nil },
-	{ PANEL_LIST,               list_string_converter },
-	{ PANEL_MULTILINE_TEXT,     convert_string_multiline },
-	{ PANEL_NUMERIC_TEXT,       convert_int },
-	{ PANEL_SLIDER,             convert_int },
-	{ PANEL_TEXT,               convert_string }
+	{ PANEL_BUTTON,            convert_nil },
+	{ PANEL_CHOICE,            convert_int },
+	{ PANEL_DROP_TARGET,       convert_nil },
+	{ PANEL_GAUGE,             convert_nil },
+	{ PROP_LIST,               proplist_conv }, /* must be before PANEL_LIST */
+	{ PANEL_LIST,              list_string_converter },
+	{ PANEL_MULTILINE_TEXT,    convert_string_multiline },
+	{ PANEL_NUMERIC_TEXT,      convert_int },
+	{ PANEL_SLIDER,            convert_int },
+	{ PANEL_TEXT,              convert_string }
 };
 
 /*******************************************************************/
@@ -1591,9 +1600,10 @@ static Panel_item create_panel_item(Propframe_private *priv, int layout, const X
 		if (!converter) {
 			int i;
 
-			for (i = 0; i < NUMBER(converters); i++) {
-				if (xv_get(newitem, XV_IS_SUBTYPE_OF, converters[i].pkg)) {
-					converter = converters[i].proc;
+			for (i = 0; i < NUMBER(default_converters); i++) {
+				if (xv_get(newitem,XV_IS_SUBTYPE_OF,default_converters[i].pkg))
+				{
+					converter = default_converters[i].proc;
 					break;
 				}
 			}
