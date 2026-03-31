@@ -29,7 +29,7 @@
 #include <string.h>
 #include <xview/permlist.h>
 
-char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.14 2026/03/19 00:45:09 dra Exp $";
+char permlist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: permlist.c,v 4.15 2026/03/30 19:40:46 dra Exp $";
 
 /* this attribute is so private that I don't even want to have it in
  * permlist.h
@@ -303,7 +303,7 @@ static int note_reset_factory(Perm_prop_frame fram, int is_triggered)
 	return XV_OK;
 }
 
-static void my_converter(int u1, int panel_to_data, Proplist_contents *data,
+static void my_converter(Xv_opaque u1, int panel_to_data, Proplist_contents *data,
 					Property_list plist, Permanent_list self)
 {
 	if (! panel_to_data) {
@@ -483,7 +483,7 @@ static void prepare_destroy(Permlist_private *priv)
 		contents.item_data = XV_NULL;
 
 		/* this is a sort of hack to get the list emptied */
-		xv_proplist_converter(0, FALSE, &contents, priv->list, XV_NULL);
+		xv_proplist_converter(XV_NULL, FALSE, &contents, priv->list, XV_NULL);
 
 		/* we don't want any connection with property list callbacks */
 		xv_set(priv->list,
