@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.10 2026/03/08 09:03:49 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.11 2026/03/31 17:52:33 dra Exp $";
 #endif
 #endif
 
@@ -599,12 +599,6 @@ static long unsigned cursor_make_x(Xv_Drawable_info *root_info, int w,
 	return ((long unsigned)result);
 }
 
-
-static void cursor_free_x(Xv_Drawable_info *info, Cursor old_cursor)
-{
-    XFreeCursor(xv_display(info), old_cursor);
-}
-
 /* cursor_set_attr sets the attributes mentioned in avlist. */
 static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 								Attr_avlist avlist)
@@ -758,7 +752,7 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 
 	/* make the cursor now */
 	if (cursor->cursor_id) {
-		cursor_free_x(root_info, cursor->cursor_id);
+    	XFreeCursor(xv_display(root_info), cursor->cursor_id);
 	}
 	if (cursor->cur_src_char != NOFONTCURSOR) {
 		cursor->cursor_id = cursor_make_x_font(root_info,
@@ -784,11 +778,6 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 	return (Xv_opaque) XV_OK;
 }
 
-static void cursor_set_cursor_internal(Xv_Drawable_info *info, Cursor cursor)
-{
-    XDefineCursor(xv_display(info), xv_xid(info), cursor);
-}
-
 Xv_private void cursor_set_cursor(Xv_object window, Xv_Cursor cursor_public)
 {
 	Cursor_info *cursor = CURSOR_PRIVATE(cursor_public);
@@ -803,19 +792,13 @@ Xv_private void cursor_set_cursor(Xv_object window, Xv_Cursor cursor_public)
 	}
 	else {
 		DRAWABLE_INFO_MACRO(window, window_info);
-		cursor_set_cursor_internal(window_info, cursor->cursor_id);
+    	XDefineCursor(xv_display(window_info), xv_xid(window_info),
+									cursor->cursor_id);
 	}
 }
 
 
-Xv_Cursor
-#ifdef ANSI_FUNC_PROTO
-cursor_create(Attr_attribute attr1, ...)
-#else
-cursor_create(attr1, va_alist)
-    Attr_attribute attr1;
-va_dcl
-#endif
+Xv_Cursor cursor_create(Attr_attribute attr1, ...)
 {
     Xv_opaque       avlist[ATTR_STANDARD_SIZE];
     va_list         valist;
@@ -832,29 +815,18 @@ va_dcl
     return (xv_create_avlist(XV_NULL, CURSOR, avlist));
 }
 
-void
-cursor_destroy(cursor_public)
-    Xv_Cursor       cursor_public;
+void cursor_destroy(Xv_Cursor cursor_public)
 {
     (void) xv_destroy(cursor_public);
 }
 
 /* cursor_get returns the current value of which_attr. */
-Xv_opaque cursor_get(cursor_public, which_attr)
-    Xv_Cursor       cursor_public;
-    Cursor_attribute which_attr;
+Xv_opaque cursor_get(Xv_Cursor cursor_public, Cursor_attribute which_attr)
 {
     return xv_get(cursor_public, which_attr);
 }
 
-int
-#ifdef ANSI_FUNC_PROTO
-cursor_set(Xv_Cursor cursor_public, ...)
-#else
-cursor_set(cursor_public, va_alist)
-    Xv_Cursor       cursor_public;
-va_dcl
-#endif
+int cursor_set(Xv_Cursor cursor_public, ...)
 {
     AVLIST_DECL;
     va_list         valist;
@@ -867,9 +839,7 @@ va_dcl
 }
 
 
-Xv_Cursor
-cursor_copy(cursor_public)
-    register Xv_Cursor cursor_public;
+Xv_Cursor cursor_copy(Xv_Cursor cursor_public)
 {
     return xv_create(xv_get(cursor_public,XV_OWNER),CURSOR,
 		     XV_COPY_OF,cursor_public,NULL);
