@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.34 2026/03/18 21:52:28 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.35 2026/04/01 19:07:33 dra Exp $";
 #endif
 #endif
 
@@ -88,14 +88,9 @@ Pkg_private Sel_owner_info * xv_sel_set_selection_data(Display *dpy, Atom select
  * Predicate function for XCheckIfEvent
  *
  */
-static int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
+static int sel_prop_time(Display *display, XEvent *xevent, char *args)
 {
-	int eventType;
-
-	XV_BCOPY((char *)args, (char *)&eventType, sizeof(int));
-
-	if ((xevent->type & 0177) == eventType)
-		return (TRUE);
+	if ((xevent->type & 0177) == PropertyNotify) return TRUE;
 
 	/*
 	 * If we receive a SelectionRequest while waiting, handle selection request
@@ -107,7 +102,7 @@ static int xv_sel_predicate(Display *display, XEvent *xevent, char *args)
 		xv_sel_handle_selection_request(reqEvent);
 	}
 
-	return (FALSE);
+	return FALSE;
 }
 
 /*
@@ -118,20 +113,14 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
 										Window   win)
 {
     XEvent         event;
-    XPropertyEvent *ev;
     Atom  prop = xv_sel_get_property(srv, dpy );
     XWindowAttributes  winAttr;
-    int    arg;
     int  status = xv_sel_add_prop_notify_mask( dpy, win, &winAttr );
 
-    XChangeProperty( dpy, win, prop, XA_STRING, 8, PropModeReplace,
-		    (unsigned char *) NULL, 0 );
+    XChangeProperty(dpy, win, prop, XA_STRING, 8, PropModeReplace, NULL, 0);
 
     /* Wait for the PropertyNotify */
-    arg = PropertyNotify;
-    if (!xv_sel_block_for_event(dpy, &event, 3, xv_sel_predicate, (char *)&arg,
-								NULL))
-	{
+    if (!xv_sel_block_for_event(dpy, &event, 3, sel_prop_time, NULL, NULL)) {
 		xv_error(XV_NULL,
                 ERROR_STRING,XV_MSG("xv_sel_get_last_event_time: Unable to get the last event time"),
 	         	ERROR_PKG,SELECTION,
@@ -148,8 +137,7 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
     if ( status )
         XSelectInput( dpy, win, winAttr.your_event_mask  );
 
-    ev = (XPropertyEvent *) &event;
-    return( ev->time );
+    return event.xproperty.time;
 }
 
 
@@ -300,50 +288,6 @@ Pkg_private void xv_sel_free_property(Xv_server srv, Display *dpy, Atom prop)
  * Predicate function for XCheckIfEvent
  *
  */
-Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent,
-										XPointer args)
-{
-	Sel_reply_info reply;
-
-	XV_BCOPY((char *)args, (char *)&reply, sizeof(Sel_reply_info));
-
-	if ((xevent->type & 0177) == SelectionNotify) {
-		XSelectionEvent *ev = (XSelectionEvent *) xevent;
-
-		if ((ev->target == *reply.sri_target))
-			return (TRUE);
-		/*
-		 * else
-		 * fprintf(stderr, "Possible BUG case - xv_sel_check_selnotify \n");
-		 */
-	}
-
-	/*
-	 * If we receive a SelectionRequest while waiting, handle selection request
-	 * to avoid a dead lock.
-	 */
-	if ((xevent->type & 0177) == SelectionRequest) {
-		XSelectionRequestEvent *reqEvent = (XSelectionRequestEvent *) xevent;
-
-		/* I want to know exactly what is happening here: */
-		fprintf(stderr, "Received a sel req %s:%s ...\n",
-				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
-											reqEvent->selection),
-				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
-											reqEvent->target));
-		fprintf(stderr, "... while waiting for %s:%s\n",
-				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME, 
-						xv_get(SEL_REQUESTOR_PUBLIC(reply.sri_req_info),SEL_RANK)),
-				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
-												*reply.sri_target));
-
-		xv_sel_handle_selection_request(reqEvent);
-	}
-
-	return (FALSE);
-}
-
-
 
 
 Pkg_private char * xv_sel_atom_to_str(Display *dpy, Atom atom, XID xid)
@@ -398,7 +342,9 @@ Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel,
  * certain timeout period has elapsed.  Return value indicates whether the
  * specified event  was seen.
  */
-Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int seconds, int (*predicate)(Display *, XEvent *, char *), char *arg, int *evtypeptr)
+Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
+				int seconds, int (*predicate)(Display *, XEvent *, char *),
+				void *arg, int *evtypeptr)
 {
 	fd_set rfds;
 	int result;
@@ -414,7 +360,7 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent, int sec
 		/*
 		 * Check for data on the connection.  Read it and scan it.
 		 */
-		while (XCheckIfEvent(display, xevent, predicate, (char *)arg)) {
+		while (XCheckIfEvent(display, xevent, predicate, arg)) {
 			if (! evtypeptr) return TRUE;
 			if (*evtypeptr == PropertyNotify) return TRUE;
 
