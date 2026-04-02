@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.16 2026/03/21 18:46:01 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.17 2026/04/01 17:29:03 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -938,7 +938,7 @@ static void request_delete(Filereq_private *priv, int ind)
 			NULL);
 	cdata = (char *)xv_get(FRPUB(priv), SEL_DATA, &length, &format);
 	if (length == SEL_ERROR)  return;
-	xv_free(cdata);
+	/* already done in fetch_reply ! : xv_free(cdata); */
 
 	xv_set(FRPUB(priv),
 			SEL_TIME, &priv->last_time,
