@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.29 2026/02/23 19:28:32 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.30 2026/04/01 19:05:43 dra Exp $";
 #endif
 #endif
 
@@ -98,6 +98,7 @@ typedef struct requestor {
     Atom       *rq_incrPropList;
     struct sel_owner_info  *rq_owner;
 	int rq_checkedEventType;
+	Atom rq_wmprot, rq_wmtf;
 } Requestor;
 
 
@@ -210,7 +211,7 @@ typedef struct sel_client_info {
 Pkg_private int xv_sel_add_prop_notify_mask(Display *dpy, Window win,XWindowAttributes *winAttr);
 Pkg_private Atom xv_sel_get_property(Xv_server, Display *);
 Pkg_private void xv_sel_free_property(Xv_server, Display *, Atom);
-Xv_private int xv_sel_handle_incr(Sel_owner_info *selection);
+Xv_private int xv_sel_handle_incr(Sel_owner_info *selection, Xv_server);
 Pkg_private void xv_sel_cvt_xtime_to_timeval(Time, struct timeval *);
 Pkg_private Time xv_sel_cvt_timeval_to_xtime(struct timeval *);
 Pkg_private Sel_atom_list *xv_sel_find_atom_list(Display *dpy, Window xid);
@@ -232,11 +233,9 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server , Display  *, Window);
 
 typedef int (*x_predicate_func_t)(Display *, XEvent *, XPointer);
 Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
-				int seconds, x_predicate_func_t predicate, XPointer arg,
+				int seconds, x_predicate_func_t predicate, void *arg,
 				int *evtypeptr);
 Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *req);
-Pkg_private int xv_sel_check_selnotify(Display *display, XEvent *xevent, 
-										XPointer args);
 Pkg_private char * xv_sel_atom_to_str(Display *dpy, Atom atom, XID xid);
 Pkg_private Atom xv_sel_str_to_atom(Display *dpy, char *str, XID xid);
 Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel, Sel_reply_info *replyInfo, Atom target, int sendEv);
