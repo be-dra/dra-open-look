@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.46 2026/02/17 17:24:35 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.47 2026/04/01 19:05:31 dra Exp $";
 #endif
 #endif
 
@@ -618,7 +618,7 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 	unsigned char *prop;
 	unsigned long length;
 	int format;
-	Atom target;
+	Atom acttype;
 	int byteLen, set = 0;
 	int ret, multipleIndex = SEL_MULTIPLE, firstTarget = 1;
 
@@ -632,7 +632,7 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 
 	if (XGetWindowProperty(seln->dpy, seln->req->rq_requestor,
 					seln->req->rq_property, 0L, 1000000L,
-					False, (Atom) AnyPropertyType, &target, &format,
+					False, (Atom) AnyPropertyType, &acttype, &format,
 					&length, &bytesafter, &prop) != Success)
 	{
 		xv_error(seln->public_self,
@@ -650,7 +650,7 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 		return FALSE;
 	}
 
-	if (target != seln->atomList->atom_pair) {
+	if (acttype != seln->atomList->atom_pair) {
 		xv_error(seln->public_self,
 				ERROR_STRING, XV_MSG("MULTIPLE prop must have type ATOM_PAIR"),
 				ERROR_PKG, SELECTION,
@@ -689,7 +689,7 @@ static int HandleMultipleReply(Sel_owner_info *seln)
 	 */
 	if (set)
 		XChangeProperty(seln->dpy, seln->req->rq_requestor, seln->property,
-				target, format, PropModeReplace, prop, (int)length);
+				acttype, format, PropModeReplace, prop, (int)length);
 
 	XFree((char *)prop);
 	return TRUE;
@@ -739,6 +739,7 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 {
 	Requestor *req = (Requestor *)args;
 
+	/* a little reainting during incr transfer */
 	if ((xevent->type & 0177) == Expose) {
 		if (0 == xevent->xexpose.count) req->rq_checkedEventType = Expose;
 		else req->rq_checkedEventType = 0;
@@ -775,6 +776,7 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 			 */
 			return TRUE;
 		}
+		return FALSE;
 	}
 
 	/* during lengthy incremental transfers I saw the following event types
@@ -783,6 +785,23 @@ static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
 	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
 		req->rq_checkedEventType = 0;
 		return TRUE;
+	}
+
+	/* we saw a WM_PROTOCOLS, WM_TAKE_FOCUS client message here (on the
+	 * dragger's side - and when the (incremental) transfer was over, the
+	 * focus was "left" on the dragger side instead of being moved to the
+	 * drop target....
+	 * Now, the client message will be removed, but the focus is still
+	 * on the dragger (file manager)
+	 */
+	if (xevent->type == ClientMessage) {
+		if (xevent->xclient.message_type == req->rq_wmprot
+			&& xevent->xclient.data.l[0] == req->rq_wmtf)
+		{
+			/* remove it from the queue */
+			req->rq_checkedEventType = 0;
+			return TRUE;
+		}
 	}
 	return FALSE;
 }
@@ -865,7 +884,7 @@ static int SendIncr(Sel_owner_info *seln)
 /*
  * Handle incremental data transfer.
  */
-Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
+Xv_private int xv_sel_handle_incr(Sel_owner_info *selection, Xv_server srv)
 {
 	XEvent event;
 	int endTransfer = FALSE;
@@ -892,6 +911,8 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
 		req->rq_offset = 0;
 	}
 
+	req->rq_wmprot = xv_get(srv, SERVER_WM_PROTOCOLS);
+	req->rq_wmtf = xv_get(srv, SERVER_WM_TAKE_FOCUS);
 	/*
 	 * The requestor should start the transfer process by deleting the
 	 * (type==INCR) property forming the reply to the selection.
@@ -899,7 +920,7 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection)
 	 */
 	while (1) {
 		if (xv_sel_block_for_event(selection->dpy, &event, req->rq_timeout,
-				check_incr_prop_delete, (char *)req, &req->rq_checkedEventType))
+				check_incr_prop_delete, req, &req->rq_checkedEventType))
 		{
 			if (endTransfer) break;
 			endTransfer = SendIncr(selection);
@@ -957,7 +978,7 @@ static void OwnerProcessIncr(Sel_owner_info *sel)
 				Xv_server srv = XV_SERVER_FROM_WINDOW(win);
 
 				xv_set(srv, SERVER_APPL_BUSY, TRUE, XV_NULL, NULL);
-				xv_sel_handle_incr(req->rq_owner);
+				xv_sel_handle_incr(req->rq_owner, srv);
 				xv_set(srv, SERVER_APPL_BUSY, FALSE, XV_NULL, NULL);
 			}
 		}
