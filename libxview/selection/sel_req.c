@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.52 2026/03/18 21:52:32 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.53 2026/04/01 19:06:31 dra Exp $";
 #endif
 #endif
 
@@ -838,11 +838,11 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
  * This is used during an incremental transfer
  * See also xv_sel_block_for_event in sel_util.c
  */
-static int check_incr_prop_newval(Display *display, XEvent *xevent,
-								XPointer args)
+static int check_incr_prop_newval(Display *display, XEvent *xevent, char *args)
 {
 	Sel_reply_info *reply = (Sel_reply_info *)args;
 
+	/* a little reainting during incr transfer */
 	if ((xevent->type & 0177) == Expose) {
 		if (0 == xevent->xexpose.count) reply->checkedEventType = Expose;
 		else reply->checkedEventType = 0;
@@ -855,6 +855,11 @@ static int check_incr_prop_newval(Display *display, XEvent *xevent,
 	 */
 	if ((xevent->type & 0177) == SelectionClear) {
 		reply->checkedEventType = SelectionClear;
+		return TRUE;
+	}
+
+	if (xevent->type == FocusOut) {
+		reply->checkedEventType = FocusOut;
 		return TRUE;
 	}
 
@@ -874,11 +879,7 @@ static int check_incr_prop_newval(Display *display, XEvent *xevent,
 			 */
 			return TRUE;
 		}
-	}
-
-	if (xevent->type == FocusOut) {
-		reply->checkedEventType = FocusOut;
-		return TRUE;
+		return FALSE;
 	}
 
 	/* during lengthy incremental transfers I saw the following event types
@@ -936,7 +937,7 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	do {
 		/* Wait for PropertyNotify with stat==NewValue */
 		if (!xv_sel_block_for_event(ev->display, &event, reply->sri_timeout,
-				check_incr_prop_newval, (char *)reply, &reply->checkedEventType))
+				check_incr_prop_newval, reply, &reply->checkedEventType))
 		{
 			if (status)
 				XSelectInput(ev->display, reply->sri_requestor,
@@ -1157,6 +1158,49 @@ static int ProcessMultiple(Sel_req_info *selReq, Sel_reply_info *reply,
 	return TRUE;
 }
 
+static int xv_sel_check_selnotify(Display *display, XEvent *xevent,
+										XPointer args)
+{
+	Sel_reply_info reply;
+
+	XV_BCOPY((char *)args, (char *)&reply, sizeof(Sel_reply_info));
+
+	if ((xevent->type & 0177) == SelectionNotify) {
+		XSelectionEvent *ev = (XSelectionEvent *) xevent;
+
+		if ((ev->target == *reply.sri_target))
+			return (TRUE);
+		/*
+		 * else
+		 * fprintf(stderr, "Possible BUG case - xv_sel_check_selnotify \n");
+		 */
+	}
+
+	/*
+	 * If we receive a SelectionRequest while waiting, handle selection request
+	 * to avoid a dead lock.
+	 */
+	if ((xevent->type & 0177) == SelectionRequest) {
+		XSelectionRequestEvent *reqEvent = (XSelectionRequestEvent *) xevent;
+
+		/* I want to know exactly what is happening here: */
+		fprintf(stderr, "Received a sel req %s:%s ...\n",
+				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
+											reqEvent->selection),
+				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
+											reqEvent->target));
+		fprintf(stderr, "... while waiting for %s:%s\n",
+				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME, 
+						xv_get(SEL_REQUESTOR_PUBLIC(reply.sri_req_info),SEL_RANK)),
+				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
+												*reply.sri_target));
+
+		xv_sel_handle_selection_request(reqEvent);
+	}
+
+	return (FALSE);
+}
+
 
 /*
 * This function initiates and processes request. It sends a SelectionRequest
@@ -1212,7 +1256,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	 * Wait for the SelectionNotify event.
 	 */
 	if (!xv_sel_block_for_event(dpy, &event, replyInfo->sri_timeout,
-					xv_sel_check_selnotify, (char *)replyInfo, NULL)) {
+					xv_sel_check_selnotify, replyInfo, NULL)) {
 		xv_sel_handle_error(SEL_TIMEDOUT, selReq, replyInfo,
 				*replyInfo->sri_target, FALSE);
 		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
@@ -1611,7 +1655,7 @@ static int ProcessReq(Requestor  *req, XPropertyEvent  *ev)
 	srv = XV_SERVER_FROM_WINDOW(win);
 
 	xv_set(srv, SERVER_APPL_BUSY, TRUE, XV_NULL, NULL);
-	xv_sel_handle_incr(req->rq_owner);
+	xv_sel_handle_incr(req->rq_owner, srv);
 	xv_set(srv, SERVER_APPL_BUSY, FALSE, XV_NULL, NULL);
 	return TRUE;
 }
