@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.50 2026/03/15 08:13:17 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.51 2026/04/02 16:31:52 dra Exp $";
 #endif
 #endif
 
@@ -3609,4 +3609,13 @@ Xv_private void win_dispatch_focus_out(Display *dpy, XEvent *xev)
 
 		xv_set_has_focus(info, FALSE);
 	}
+}
+
+Xv_private int win_check_for_stop(Display *dpy, XEvent *xev)
+{
+	Event event;
+	Xv_object window;
+
+	xevent_to_event(dpy, xev, &event, &window);
+	return (event_action(&event) == ACTION_STOP);
 }
