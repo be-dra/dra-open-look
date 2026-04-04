@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.53 2026/04/01 19:06:31 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.54 2026/04/03 08:32:38 dra Exp $";
 #endif
 #endif
 
@@ -832,66 +832,6 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 	return (TRUE);
 }
 
-/*
- * Predicate function for XCheckIfEvent
- *
- * This is used during an incremental transfer
- * See also xv_sel_block_for_event in sel_util.c
- */
-static int check_incr_prop_newval(Display *display, XEvent *xevent, char *args)
-{
-	Sel_reply_info *reply = (Sel_reply_info *)args;
-
-	/* a little reainting during incr transfer */
-	if ((xevent->type & 0177) == Expose) {
-		if (0 == xevent->xexpose.count) reply->checkedEventType = Expose;
-		else reply->checkedEventType = 0;
-		return TRUE;
-	}
-
-	/*
-	 * If some other process wants to become the selection owner, let
-	 * it do so but continue handling the current transaction.
-	 */
-	if ((xevent->type & 0177) == SelectionClear) {
-		reply->checkedEventType = SelectionClear;
-		return TRUE;
-	}
-
-	if (xevent->type == FocusOut) {
-		reply->checkedEventType = FocusOut;
-		return TRUE;
-	}
-
-	if ((xevent->type & 0177) == PropertyNotify) {
-		XPropertyEvent *ev = (XPropertyEvent *) xevent;
-
-		if (ev->atom == reply->sri_property) { /* the interesting property ! */
-			if (ev->state == PropertyNewValue && ev->time > reply->sri_time) {
-				reply->checkedEventType = PropertyNotify;
-				return TRUE;
-			}
-
-			reply->checkedEventType = 0;
-			/* we want to get rid of the PropertyDelete events -
-			 * they are interesting only for the selection owner.
-			 * Let's remove them from the input queue:
-			 */
-			return TRUE;
-		}
-		return FALSE;
-	}
-
-	/* during lengthy incremental transfers I saw the following event types
-	 * (filling the input queue), that we might remove from the queue:
-	 */
-	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
-		reply->checkedEventType = 0;
-		return TRUE;
-	}
-	return FALSE;
-}
-
 
 static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 								XSelectionEvent *ev)
@@ -904,6 +844,7 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	XEvent event;
 	XPropertyEvent *propEv;
 	XWindowAttributes winAttr;
+	Sel_incr_context ic;
 	int status = xv_sel_add_prop_notify_mask(ev->display, reply->sri_requestor,
 											&winAttr);
 
@@ -934,11 +875,15 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, type,
 			(Xv_opaque) propValue, length, format);
 
+	ic.wmprot = xv_get(reply->sri_srv, SERVER_WM_PROTOCOLS);
+	ic.wmtf = xv_get(reply->sri_srv, SERVER_WM_TAKE_FOCUS);
+	ic.property = reply->sri_property;
+	ic.time = reply->sri_time;
+	ic.checkedEventType = 0;
+	/* Wait for PropertyNotify with stat==NewValue */
+	ic.prop_state = PropertyNewValue;
 	do {
-		/* Wait for PropertyNotify with stat==NewValue */
-		if (!xv_sel_block_for_event(ev->display, &event, reply->sri_timeout,
-				check_incr_prop_newval, reply, &reply->checkedEventType))
-		{
+		if (! xv_sel_block_incr(ev->display, &event, reply->sri_timeout, &ic)) {
 			if (status)
 				XSelectInput(ev->display, reply->sri_requestor,
 						winAttr.your_event_mask);
