@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.35 2026/04/01 19:07:33 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.36 2026/04/03 08:32:38 dra Exp $";
 #endif
 #endif
 
@@ -373,6 +373,11 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 			else if (*evtypeptr == SelectionClear) {
 				xv_sel_handle_selection_clear((XSelectionClearEvent *) xevent);
 			}
+			else if (*evtypeptr == KeyPress) {
+				if (win_check_for_stop(display, xevent)) {
+					fprintf(stderr, "%s-%d: ACTION_STOP\n", __FILE__,__LINE__);
+				}
+			}
 
 			/* others (with *evtypeptr == 0) should just be discarded */
 		}
@@ -417,6 +422,144 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 			return False;
 		}
 	}
+}
+
+/*
+ * Predicate function for XCheckIfEvent
+ *
+ * This is used during an incremental transfer
+ * See also xv_sel_block_incr below
+ */
+static int check_incr_prop(Display *display, XEvent *xevent, char *args)
+{
+	Sel_incr_context *ic = (Sel_incr_context *)args;
+
+	/* a little reainting during incr transfer */
+	if ((xevent->type & 0177) == Expose) {
+		if (0 == xevent->xexpose.count) ic->checkedEventType = Expose;
+		else ic->checkedEventType = 0;
+		return TRUE;
+	}
+
+	/*
+	 * If some other process wants to become the selection owner, let
+	 * it do so but continue handling the current transaction.
+	 */
+	if ((xevent->type & 0177) == SelectionClear) {
+		ic->checkedEventType = SelectionClear;
+		return TRUE;
+	}
+
+	if (xevent->type == FocusOut) {
+		ic->checkedEventType = FocusOut;
+		return TRUE;
+	}
+
+	if ((xevent->type & 0177) == PropertyNotify) {
+		XPropertyEvent *ev = (XPropertyEvent *) xevent;
+
+		if (ev->atom == ic->property) { /* the interesting property ! */
+			if (ev->state == ic->prop_state && ev->time > ic->time) {
+				ic->checkedEventType = PropertyNotify;
+				return TRUE;
+			}
+
+			ic->checkedEventType = 0;
+			/* we want to get rid of the non-prop_state events -
+			 * they are interesting only for the 'other side'.
+			 * Let's remove them from the input queue:
+			 */
+			return TRUE;
+		}
+		return FALSE;
+	}
+
+	/* during lengthy incremental transfers I saw the following event types
+	 * (filling the input queue), that we might remove from the queue:
+	 */
+	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
+		ic->checkedEventType = 0;
+		return TRUE;
+	}
+
+	/* we saw a WM_PROTOCOLS, WM_TAKE_FOCUS client message here...  */
+	if (xevent->type == ClientMessage) {
+		if (xevent->xclient.message_type == ic->wmprot
+			&& xevent->xclient.data.l[0] == ic->wmtf)
+		{
+			/* remove it from the queue */
+			ic->checkedEventType = 0;
+			return TRUE;
+		}
+	}
+
+	/* From here on, this is an attempt to allow a cancellation of
+	 * an incremental transfer: we observe KeyPress and KeyRelease
+	 * events: every KeyRelease is dropped, but KeyPress is reported so
+	 * that the caller can convert it to an Event and check for
+	 * ACTION_STOP - every other key event will be dropped (= removed
+	 * from the queue and forgotten)
+	 */
+	if (xevent->type == KeyRelease || xevent->type == MappingNotify) {
+		ic->checkedEventType = 0;
+		return TRUE;
+	}
+	if (xevent->type == KeyPress) {
+		ic->checkedEventType = KeyPress;
+		return TRUE;
+	}
+	{
+		static char *evnam[] = {
+			"0",
+			"1",
+			"KeyPress",
+			"KeyRelease",
+			"ButtonPress",
+			"ButtonRelease",
+			"MotionNotify",
+			"EnterNotify",
+			"LeaveNotify",
+			"FocusIn",
+			"FocusOut",
+			"KeymapNotify",
+			"Expose",
+			"GraphicsExpose",
+			"NoExpose",
+			"VisibilityNotify",
+			"CreateNotify",
+			"DestroyNotify",
+			"UnmapNotify",
+			"MapNotify",
+			"MapRequest",
+			"ReparentNotify",
+			"ConfigureNotify",
+			"ConfigureRequest",
+			"GravityNotify",
+			"ResizeRequest",
+			"CirculateNotify",
+			"CirculateRequest",
+			"PropertyNotify",
+			"SelectionClear",
+			"SelectionRequest",
+			"SelectionNotify",
+			"ColormapNotify",
+			"ClientMessage",
+			"MappingNotify",
+			"GenericEvent",
+			NULL
+		};
+
+		fprintf(stderr, "%s-%d: ev %d, %s\n", __FILE__,__LINE__,xevent->type,
+							evnam[xevent->type]);
+	}
+	return FALSE;
+}
+
+Pkg_private int xv_sel_block_incr(Display *display, XEvent *xevent,
+				int seconds, Sel_incr_context *ctxt)
+{
+	return xv_sel_block_for_event(display, xevent, seconds, check_incr_prop,
+						ctxt, &ctxt->checkedEventType);
 }
 
 /* compute t2 - t1 and return the time value in diff */
