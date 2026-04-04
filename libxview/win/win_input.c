@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.51 2026/04/02 16:31:52 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.52 2026/04/03 08:29:35 dra Exp $";
 #endif
 #endif
 
@@ -3614,8 +3614,23 @@ Xv_private void win_dispatch_focus_out(Display *dpy, XEvent *xev)
 Xv_private int win_check_for_stop(Display *dpy, XEvent *xev)
 {
 	Event event;
-	Xv_object window;
+	Xv_object window = win_data(dpy, xev->xany.window);
 
-	xevent_to_event(dpy, xev, &event, &window);
-	return (event_action(&event) == ACTION_STOP);
+	if (window) {
+		int win_was_deaf = FALSE;
+		Window_info *win = WIN_PRIVATE(window);
+
+		if (WIN_IS_DEAF(win)) {
+			WIN_SET_DEAF(win, False);
+			win_was_deaf = True;
+		}
+		xevent_to_event(dpy, xev, &event, &window);
+
+		if (win_was_deaf) {
+			WIN_SET_DEAF(win, TRUE);
+		}
+		return (event_action(&event) == ACTION_STOP);
+	}
+
+	return FALSE;
 }
