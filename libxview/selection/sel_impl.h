@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.31 2026/04/02 17:11:54 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.32 2026/04/03 08:31:28 dra Exp $";
 #endif
 #endif
 
@@ -76,6 +76,13 @@ typedef struct sel_req_info {
 } Sel_req_info;
 
 
+typedef struct {
+	int checkedEventType;
+	Atom wmprot, wmtf;
+	Atom property;
+	Time time;
+	int prop_state;
+} Sel_incr_context;
 
 /*
  * Selection_owner object private data
@@ -97,8 +104,6 @@ typedef struct requestor {
     selection_reply_proc_t rq_reply_proc;
     Atom       *rq_incrPropList;
     struct sel_owner_info  *rq_owner;
-	int rq_checkedEventType;
-	Atom rq_wmprot, rq_wmtf;
 } Requestor;
 
 
@@ -197,8 +202,6 @@ typedef struct {
 	Atom           sri_atom_pair;
 	Sel_owner_info *sri_local_owner;
 	Sel_req_info   *sri_req_info;
-	int checkedEventType;
-	Atom sri_wmprot, sri_wmtf;
 } Sel_reply_info;
 
 
@@ -236,6 +239,8 @@ typedef int (*x_predicate_func_t)(Display *, XEvent *, XPointer);
 Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 				int seconds, x_predicate_func_t predicate, void *arg,
 				int *evtypeptr);
+Pkg_private int xv_sel_block_incr(Display *display, XEvent *xevent,
+				int seconds, Sel_incr_context *ctxt);
 Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *req);
 Pkg_private char * xv_sel_atom_to_str(Display *dpy, Atom atom, XID xid);
 Pkg_private Atom xv_sel_str_to_atom(Display *dpy, char *str, XID xid);
