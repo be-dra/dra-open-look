@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.47 2026/04/01 19:05:31 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.48 2026/04/03 08:32:38 dra Exp $";
 #endif
 #endif
 
@@ -727,85 +727,6 @@ static int OwnerHandleReply(Sel_owner_info *owner, XSelectionEvent *replyEvent,
 	return TRUE;
 }
 
-/*
- * Predicate function for XCheckIfEvent
- * This is used in the owner's side of an incremental transfer.
- * We want to be able to handle and dispatch (and remove from the
- * input queue for a few event types: Expose, SelectionClear
- * and PropertyNotify
- * See also xv_sel_block_for_event in sel_util.c
- */
-static int check_incr_prop_delete(Display *display, XEvent *xevent, char *args)
-{
-	Requestor *req = (Requestor *)args;
-
-	/* a little reainting during incr transfer */
-	if ((xevent->type & 0177) == Expose) {
-		if (0 == xevent->xexpose.count) req->rq_checkedEventType = Expose;
-		else req->rq_checkedEventType = 0;
-		return TRUE;
-	}
-
-	/*
-	 * If some other process wants to become the selection owner, let
-	 * it do so but continue handling the current transaction.
-	 */
-	if ((xevent->type & 0177) == SelectionClear) {
-		req->rq_checkedEventType = SelectionClear;
-		return TRUE;
-	}
-
-	if (xevent->type == FocusOut) {
-		req->rq_checkedEventType = FocusOut;
-		return TRUE;
-	}
-
-	if ((xevent->type & 0177) == PropertyNotify) {
-		XPropertyEvent *ev = (XPropertyEvent *) xevent;
-
-		if (ev->atom == req->rq_property) { /* the interesting property ! */
-			if (ev->state == PropertyDelete && ev->time > req->rq_time) {
-				req->rq_checkedEventType = PropertyNotify;
-				return TRUE;
-			}
-
-			req->rq_checkedEventType = 0;
-			/* we want to get rid of the PropertyNewValue events -
-			 * they are interesting only for the requestor.
-			 * Let's remove them from the input queue:
-			 */
-			return TRUE;
-		}
-		return FALSE;
-	}
-
-	/* during lengthy incremental transfers I saw the following event types
-	 * (filling the input queue), that we might remove from the queue:
-	 */
-	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
-		req->rq_checkedEventType = 0;
-		return TRUE;
-	}
-
-	/* we saw a WM_PROTOCOLS, WM_TAKE_FOCUS client message here (on the
-	 * dragger's side - and when the (incremental) transfer was over, the
-	 * focus was "left" on the dragger side instead of being moved to the
-	 * drop target....
-	 * Now, the client message will be removed, but the focus is still
-	 * on the dragger (file manager)
-	 */
-	if (xevent->type == ClientMessage) {
-		if (xevent->xclient.message_type == req->rq_wmprot
-			&& xevent->xclient.data.l[0] == req->rq_wmtf)
-		{
-			/* remove it from the queue */
-			req->rq_checkedEventType = 0;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 static int SendIncr(Sel_owner_info *seln)
 {
 	Requestor *req;
@@ -891,6 +812,7 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection, Xv_server srv)
 	unsigned long length;
 	unsigned long svr_max_req_size;
 	Requestor *req;
+	Sel_incr_context ic;
 
 	req = selection->req;
 	req->rq_type = req->rq_target;
@@ -911,17 +833,19 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection, Xv_server srv)
 		req->rq_offset = 0;
 	}
 
-	req->rq_wmprot = xv_get(srv, SERVER_WM_PROTOCOLS);
-	req->rq_wmtf = xv_get(srv, SERVER_WM_TAKE_FOCUS);
+	ic.wmprot = xv_get(srv, SERVER_WM_PROTOCOLS);
+	ic.wmtf = xv_get(srv, SERVER_WM_TAKE_FOCUS);
+	ic.property = req->rq_property;
+	ic.time = req->rq_time;
+	ic.checkedEventType = 0;
+	ic.prop_state = PropertyDelete;
 	/*
 	 * The requestor should start the transfer process by deleting the
 	 * (type==INCR) property forming the reply to the selection.
 	 * Here, we block for PropertyNotify event and process the data transfer.
 	 */
 	while (1) {
-		if (xv_sel_block_for_event(selection->dpy, &event, req->rq_timeout,
-				check_incr_prop_delete, req, &req->rq_checkedEventType))
-		{
+		if (xv_sel_block_incr(selection->dpy, &event, req->rq_timeout, &ic)) {
 			if (endTransfer) break;
 			endTransfer = SendIncr(selection);
 		}
