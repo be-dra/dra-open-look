@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.54 2026/04/03 08:32:38 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.55 2026/04/04 11:38:25 dra Exp $";
 #endif
 #endif
 
@@ -877,11 +877,15 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 
 	ic.wmprot = xv_get(reply->sri_srv, SERVER_WM_PROTOCOLS);
 	ic.wmtf = xv_get(reply->sri_srv, SERVER_WM_TAKE_FOCUS);
+	ic.cancel = xv_get(reply->sri_srv, SERVER_ATOM, "INCR");
 	ic.property = reply->sri_property;
 	ic.time = reply->sri_time;
 	ic.checkedEventType = 0;
 	/* Wait for PropertyNotify with stat==NewValue */
 	ic.prop_state = PropertyNewValue;
+	ic.requestor = reply->sri_requestor;
+	ic.is_cancelled = FALSE;
+	ic.stop_seen = FALSE;
 	do {
 		if (! xv_sel_block_incr(ev->display, &event, reply->sri_timeout, &ic)) {
 			if (status)
@@ -891,6 +895,17 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 			SERVERTRACE((355, "%s: incr timeout\n", __FUNCTION__));
 			xv_sel_handle_error(SEL_TIMEDOUT, selReq, reply, target,
 										ev->send_event);
+			return FALSE;
+		}
+
+		if (ic.is_cancelled) {
+			/* SEL_PROPERTY_DELETED seems to be never used */
+			xv_sel_handle_error(SEL_PROPERTY_DELETED, selReq, reply, target,
+									ev->send_event);
+			if (status)
+				XSelectInput(ev->display, reply->sri_requestor,
+						winAttr.your_event_mask);
+
 			return FALSE;
 		}
 
@@ -1201,7 +1216,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	 * Wait for the SelectionNotify event.
 	 */
 	if (!xv_sel_block_for_event(dpy, &event, replyInfo->sri_timeout,
-					xv_sel_check_selnotify, replyInfo, NULL)) {
+					xv_sel_check_selnotify, replyInfo, NULL, NULL)) {
 		xv_sel_handle_error(SEL_TIMEDOUT, selReq, replyInfo,
 				*replyInfo->sri_target, FALSE);
 		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
