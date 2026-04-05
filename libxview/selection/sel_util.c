@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.36 2026/04/03 08:32:38 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.37 2026/04/04 11:38:25 dra Exp $";
 #endif
 #endif
 
@@ -120,7 +120,7 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
     XChangeProperty(dpy, win, prop, XA_STRING, 8, PropModeReplace, NULL, 0);
 
     /* Wait for the PropertyNotify */
-    if (!xv_sel_block_for_event(dpy, &event, 3, sel_prop_time, NULL, NULL)) {
+    if (!xv_sel_block_for_event(dpy,&event,3,sel_prop_time,NULL,NULL,NULL)) {
 		xv_error(XV_NULL,
                 ERROR_STRING,XV_MSG("xv_sel_get_last_event_time: Unable to get the last event time"),
 	         	ERROR_PKG,SELECTION,
@@ -344,7 +344,7 @@ Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel,
  */
 Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 				int seconds, int (*predicate)(Display *, XEvent *, char *),
-				void *arg, int *evtypeptr)
+				void *arg, int *evtypeptr, int *stopseenptr)
 {
 	fd_set rfds;
 	int result;
@@ -375,7 +375,13 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 			}
 			else if (*evtypeptr == KeyPress) {
 				if (win_check_for_stop(display, xevent)) {
-					fprintf(stderr, "%s-%d: ACTION_STOP\n", __FILE__,__LINE__);
+					/* the idea: if we see an ACTION_STOP here (no matter
+					 * who sees it), we report it to the 'outside'
+					 */
+					if (stopseenptr) {
+						*stopseenptr = TRUE;
+						return TRUE;
+					}
 				}
 			}
 
@@ -471,13 +477,26 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 			 */
 			return TRUE;
 		}
+		if (ev->atom == ic->cancel) {
+			/* an ACTION_STOP has been seen */
+			ic->checkedEventType = PropertyNotify;
+			ic->is_cancelled = TRUE;
+			return TRUE;
+		}
 		return FALSE;
 	}
 
 	/* during lengthy incremental transfers I saw the following event types
-	 * (filling the input queue), that we might remove from the queue:
+	 * (filling the input queue), that we might remove from the queue -
+	 * we are not really interested during INCR transfer...
 	 */
-	if (xevent->type == EnterNotify || xevent->type == LeaveNotify) {
+	if (xevent->type == EnterNotify
+		|| xevent->type == LeaveNotify
+		|| xevent->type == NoExpose
+		|| xevent->type == KeyRelease
+		|| xevent->type == MappingNotify
+		)
+	{
 		ic->checkedEventType = 0;
 		return TRUE;
 	}
@@ -500,10 +519,6 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 	 * ACTION_STOP - every other key event will be dropped (= removed
 	 * from the queue and forgotten)
 	 */
-	if (xevent->type == KeyRelease || xevent->type == MappingNotify) {
-		ic->checkedEventType = 0;
-		return TRUE;
-	}
 	if (xevent->type == KeyPress) {
 		ic->checkedEventType = KeyPress;
 		return TRUE;
@@ -558,8 +573,18 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 Pkg_private int xv_sel_block_incr(Display *display, XEvent *xevent,
 				int seconds, Sel_incr_context *ctxt)
 {
-	return xv_sel_block_for_event(display, xevent, seconds, check_incr_prop,
-						ctxt, &ctxt->checkedEventType);
+	int ret = xv_sel_block_for_event(display, xevent, seconds, check_incr_prop,
+						ctxt, &ctxt->checkedEventType, &ctxt->stop_seen);
+
+	if (ret && ctxt->stop_seen) {
+		/* No matter who has seen the ACTION_STOP will write the
+		 * following property on the requestor, so that BOTH will see
+		 * a PropertyChange NewValue event
+		 */
+		XChangeProperty(display, ctxt->requestor, ctxt->cancel, ctxt->cancel,
+									32, PropModeReplace, NULL, 0);
+	}
+	return ret;
 }
 
 /* compute t2 - t1 and return the time value in diff */
