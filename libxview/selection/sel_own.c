@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.48 2026/04/03 08:32:38 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.49 2026/04/04 11:38:25 dra Exp $";
 #endif
 #endif
 
@@ -835,10 +835,15 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection, Xv_server srv)
 
 	ic.wmprot = xv_get(srv, SERVER_WM_PROTOCOLS);
 	ic.wmtf = xv_get(srv, SERVER_WM_TAKE_FOCUS);
+	ic.cancel = xv_get(srv, SERVER_ATOM, "INCR");
 	ic.property = req->rq_property;
 	ic.time = req->rq_time;
 	ic.checkedEventType = 0;
+	/* Wait for PropertyNotify with stat==Delete */
 	ic.prop_state = PropertyDelete;
+	ic.requestor = selection->req->rq_requestor;
+	ic.is_cancelled = FALSE;
+	ic.stop_seen = FALSE;
 	/*
 	 * The requestor should start the transfer process by deleting the
 	 * (type==INCR) property forming the reply to the selection.
@@ -846,6 +851,13 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection, Xv_server srv)
 	 */
 	while (1) {
 		if (xv_sel_block_incr(selection->dpy, &event, req->rq_timeout, &ic)) {
+			if (ic.is_cancelled) {
+				if (selection->done_proc)
+					(*selection->done_proc) (selection->public_self,
+						(Xv_opaque) selection->req->rq_data, req->rq_target);
+				return FALSE;
+			}
+
 			if (endTransfer) break;
 			endTransfer = SendIncr(selection);
 		}
