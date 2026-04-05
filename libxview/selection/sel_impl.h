@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.32 2026/04/03 08:31:28 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.33 2026/04/04 11:38:25 dra Exp $";
 #endif
 #endif
 
@@ -82,6 +82,10 @@ typedef struct {
 	Atom property;
 	Time time;
 	int prop_state;
+	Window requestor;
+	Atom cancel;     /* in fact, the INCR atom */
+	int stop_seen;
+	int is_cancelled;
 } Sel_incr_context;
 
 /*
@@ -238,7 +242,7 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server , Display  *, Window);
 typedef int (*x_predicate_func_t)(Display *, XEvent *, XPointer);
 Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 				int seconds, x_predicate_func_t predicate, void *arg,
-				int *evtypeptr);
+				int *evtypeptr, int *cancelledptr);
 Pkg_private int xv_sel_block_incr(Display *display, XEvent *xevent,
 				int seconds, Sel_incr_context *ctxt);
 Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *req);
