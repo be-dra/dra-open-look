@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.17 2026/04/01 17:29:03 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.18 2026/04/05 20:13:45 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -1015,8 +1015,10 @@ static Xv_opaque filereq_set(File_requestor self, Attr_avlist avlist)
 		case FILE_REQ_FETCH:
 			priv->own_request = TRUE;
 			xv_set(self, XV_KEY_DATA, fr_mult_key, &priv->mr, NULL);
+			SERVERTRACE((311, "%s: FILE_REQ_FETCH\n", __FUNCTION__));
 			fetch_files(priv, self, (Event *)A1);
 			priv->own_request = FALSE;
+			SERVERTRACE((311, "%s: files fetched\n", __FUNCTION__));
 			ADONE;
 
 		case FILE_REQ_FETCH_VIA:
@@ -1032,8 +1034,10 @@ static Xv_opaque filereq_set(File_requestor self, Attr_avlist avlist)
 						XV_KEY_DATA, fr_mult_key, &priv->mr,
 						XV_KEY_DATA, fr_key, priv,
 						NULL);
+				SERVERTRACE((311, "%s: FILE_REQ_FETCH_VIA\n", __FUNCTION__));
 				fetch_files(priv, sr, (Event *)0);
 				xv_set(sr, SEL_REPLY_PROC, save_reply, NULL);
+				SERVERTRACE((311, "%s: files fetched\n", __FUNCTION__));
 			}
 			ADONE;
 
