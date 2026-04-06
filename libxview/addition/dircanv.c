@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.54 2026/02/14 11:38:00 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.55 2026/04/06 08:01:50 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -3278,9 +3278,7 @@ static Xv_opaque dir_get(Xv_opaque self, int *status, Attr_attribute attr, va_li
 				return (Xv_opaque)SCROLLWIN_NONE;
 			else return (Xv_opaque)SCROLLWIN_DROP;
 		case SCROLLWIN_CREATE_SEL_REQ:
-			return xv_create(self, FILE_REQUESTOR,
-						FILE_REQ_CHECK_ACCESS, TRUE,
-						NULL);
+			return xv_create(self, FILE_REQUESTOR, NULL);
 		default:
 			*status = xv_check_bad_attr(DIRCANVAS, attr);
 			return (Xv_opaque)XV_OK;
