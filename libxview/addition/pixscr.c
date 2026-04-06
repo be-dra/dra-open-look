@@ -29,7 +29,7 @@
 #include <xview/filereq.h>
 #include <xview/dragdrop.h>
 
-char pixscr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pixscr.c,v 4.3 2025/06/06 18:42:14 dra Exp $";
+char pixscr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: pixscr.c,v 4.4 2026/04/06 08:01:44 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -364,7 +364,6 @@ static Xv_opaque pixscr_get(Pixmap_scroller self, int *status, Attr_attribute at
 		case PIXSCR_DROP_PROC: return (Xv_opaque)priv->drop_proc;
 		case SCROLLWIN_CREATE_SEL_REQ:
 			return xv_create(self, FILE_REQUESTOR,
-						FILE_REQ_CHECK_ACCESS, TRUE,
 						FILE_REQ_USE_LOAD, TRUE,
 						NULL);
 		default:
