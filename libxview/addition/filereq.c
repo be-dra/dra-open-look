@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.18 2026/04/05 20:13:45 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.19 2026/04/06 08:57:33 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -531,7 +531,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 	loadlist_t newl;
 	int format;
 	long length;
-	char *base, buf[550], dirbuf[500];
+	char *base, buf[550], dirbuf[500], *txt;
 
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
@@ -582,6 +582,12 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
+			SEL_TYPE_NAME, "_DRA_STRING_IS_CONTENTS",
+			NULL);
+	txt = (char *)xv_get(self, SEL_DATA, &length, &format);
+	if (txt) xv_free(txt);
+
+	xv_set(self,
 			SEL_TYPE, XA_STRING,   /* or SEL_TYPE_NAME, "TEXT" ??? */
 			NULL);
 	priv->write_to_file = TRUE;
@@ -982,6 +988,7 @@ static int filereq_init(Xv_window owner, Xv_opaque xself, Attr_avlist avlist,
 
 	priv->srv = XV_SERVER_FROM_WINDOW(owner);
 	priv->allocate = TRUE;
+	priv->check_access = TRUE;
 	priv->fildesc = -1;
 
 	attrs[0] = (Attr_attribute)SEL_REPLY_PROC;
@@ -1027,7 +1034,7 @@ static Xv_opaque filereq_set(File_requestor self, Attr_avlist avlist)
 				Xv_opaque save_reply;
 
 				priv->already_decoded = TRUE;
-				priv->check_access = FALSE;
+				priv->check_access = FALSE;     /* why ??? */
 				save_reply = xv_get(sr, SEL_REPLY_PROC);
 				xv_set(sr,
 						SEL_REPLY_PROC, filereq_fetch_reply,
