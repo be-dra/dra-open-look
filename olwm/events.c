@@ -1,5 +1,5 @@
 /* #ident	"@(#)events.c	26.50	93/06/28 SMI" */
-char events_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: events.c,v 2.2 2025/03/07 16:28:02 dra Exp $";
+char events_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: events.c,v 2.3 2026/04/06 13:45:58 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -605,11 +605,7 @@ EventLoop( dpy )
  * Propagate an event to this window's parent.  REMIND: doesn't update the 
  * event fields or the event coordinates.
  */
-int
-PropagateEventToParent(dpy,event,win)
-Display *dpy;
-XEvent *event;
-WinGeneric *win;
+int PropagateEventToParent(Display *dpy, XEvent *event, WinGeneric *win)
 {
 	dispatchEvent(dpy,event,win->core.parent);
 }
