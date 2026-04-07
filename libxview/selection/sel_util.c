@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.37 2026/04/04 11:38:25 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.38 2026/04/06 20:29:57 dra Exp $";
 #endif
 #endif
 
@@ -394,7 +394,7 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 		FD_ZERO(&rfds);
 		FD_SET(ConnectionNumber(display), &rfds);
 
-		SERVERTRACE((355, "%s: before select\n", __FUNCTION__));
+		SERVERTRACE((385, "%s: before select\n", __FUNCTION__));
 		result = select(ConnectionNumber(display) + 1, &rfds, NULL,
 				NULL, &timeout);
 
@@ -495,6 +495,8 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 		|| xevent->type == NoExpose
 		|| xevent->type == KeyRelease
 		|| xevent->type == MappingNotify
+		|| xevent->type == ConfigureNotify
+		|| xevent->type == FocusIn
 		)
 	{
 		ic->checkedEventType = 0;
