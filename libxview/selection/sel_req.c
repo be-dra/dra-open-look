@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.55 2026/04/04 11:38:25 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.56 2026/04/06 20:30:14 dra Exp $";
 #endif
 #endif
 
@@ -948,7 +948,7 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 		 * the zero length data  to indicate to the client the end of
 		 * incremental data transfer.
 		 */
-		SERVERTRACE((355, "%s: in incr, length=%ld\n", __FUNCTION__, length));
+		SERVERTRACE((385, "%s: in incr, length=%ld\n", __FUNCTION__, length));
 		(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, type,
 				(Xv_opaque) propValue, length, format);
 	} while (length);
