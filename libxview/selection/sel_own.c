@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.49 2026/04/04 11:38:25 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.50 2026/04/06 20:29:15 dra Exp $";
 #endif
 #endif
 
@@ -318,25 +318,22 @@ Xv_public Bool sel_convert_proc( Selection_owner sel_owner_public,
 	 * will succeed.
 	 */
 	if (*type == sel_owner->atomList->targets) {
-		Atom *atomList = xv_alloc(Atom);
+		Atom *atomList;
 
-		int i;
+		unsigned long i, count;
 
-		for (i = 0, ip = sel_owner->first_item; ip; ip = ip->next, i++) {
-			atomList[i] = ip->type;
-			atomList = (Atom *) xv_realloc((char *)atomList,
-					(size_t)((i + 2) * sizeof(Atom)));
+		for (count = 0, ip = sel_owner->first_item; ip; ip = ip->next, count++);
+
+		atomList = xv_alloc_n(Atom, count+3);
+
+		for (i = 0, ip = sel_owner->first_item; ip; ip = ip->next) {
+			atomList[i++] = ip->type;
 		}
 		/* Now, add in the TARGETS and TIMESTAMP */
-		atomList[i] = sel_owner->atomList->targets;
-		atomList = (Atom *) xv_realloc((char *)atomList,
-				(size_t)((i + 2) * sizeof(Atom)));
-		i++;
-		atomList[i] = sel_owner->atomList->timestamp;
-		atomList = (Atom *) xv_realloc((char *)atomList,
-				(size_t)((i + 2) * sizeof(Atom)));
+		atomList[i++] = sel_owner->atomList->targets;
+		atomList[i++] = sel_owner->atomList->timestamp;
+		atomList[i++] = sel_owner->atomList->multiple;
 
-		i++;
 		*format = 32;
 		*data = (Xv_opaque) atomList;
 		sel_owner->to_be_freed = atomList;
