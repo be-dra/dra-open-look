@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.24 2026/01/19 16:03:03 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.25 2026/04/09 08:10:26 dra Exp $ ";
 #endif
 #endif
 
@@ -513,7 +513,6 @@ static int delegate_convert_selection(Selection_owner selown, Atom *type,
 	return (*cf)(dnd_public, type, value, length, format);
 }
 
-#ifdef XQueryTree_LEIDER_UEBERS_NETZ_SEHR_LANGSAM
 static void init_toplevels(Display *dpy, Window parent, Atom wmstate,
 						Window *tls, int *cntp)
 {
@@ -542,24 +541,22 @@ static void init_toplevels(Display *dpy, Window parent, Atom wmstate,
 	if (ch) XFree(ch);
 }
 
-static void fill_dnd_toplevel_cache(Dnd_info *dnd, Xv_window dragsource, Atom wmstate)
+static void fill_dnd_toplevel_cache_slow(Dnd_info *dnd, Xv_window dragsource, Atom wmstate)
 {
 	Xv_screen screen = XV_SCREEN_FROM_WINDOW(dragsource);
-	Window *toplevels = (Window *)xv_get(screen, XV_KEY_DATA, dnd_key);
+	Window *toplevels;
 	Xv_window xvroot = xv_get(screen, XV_ROOT);
 	Window root = xv_get(xvroot, XV_XID);
 	Display *dpy = (Display *)xv_get(dragsource, XV_DISPLAY);
 	int idx = 0;
 
-	if (! toplevels) {
-		toplevels = xv_alloc_n(Window, 100L); /* 100 should be enough */
-		xv_set(screen, XV_KEY_DATA, dnd_key, toplevels, NULL);
-	}
+	toplevels = xv_alloc_n(Window, 100L); /* 100 should be enough */
 	init_toplevels(dpy, root, wmstate, toplevels, &idx);
 	toplevels[idx] = None;
+	dnd->tl_cache = toplevels;
 }
-#else /* XQueryTree_LEIDER_UEBERS_NETZ_SEHR_LANGSAM */
-static void fill_dnd_toplevel_cache(Dnd_info *dnd, Xv_window dragsource, Atom unused_wmstate)
+
+static void fill_dnd_toplevel_cache(Dnd_info *dnd, Xv_window dragsource, Atom wmstate)
 {
 	Selection_requestor sr;
 	Window *result;
@@ -576,13 +573,13 @@ static void fill_dnd_toplevel_cache(Dnd_info *dnd, Xv_window dragsource, Atom un
 	result = (Window *)xv_get(sr, SEL_DATA, &length, &format);
 	if (length == SEL_ERROR) {
 		dnd->tl_cache = NULL;
+		fill_dnd_toplevel_cache_slow(dnd, dragsource, wmstate);
 	}
 	else {
 		dnd->tl_cache = result;
 	}
 	xv_destroy(sr);
 }
-#endif /* XQueryTree_LEIDER_UEBERS_NETZ_SEHR_LANGSAM */
 
 /* we return a window only if 
  * +++ it is NOT the root window
