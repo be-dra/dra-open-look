@@ -2,7 +2,7 @@
 #define xv_quick_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: xv_quick.h,v 1.6 2025/03/08 14:06:27 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: xv_quick.h,v 1.7 2026/04/09 12:51:30 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -46,7 +46,8 @@ typedef enum {
 	QUICK_LOC_DRAG				= QUICK_ATTR(ATTR_OPAQUE,         7),
 	QUICK_ADJUST_UP				= QUICK_ATTR(ATTR_OPAQUE,         8),
 	QUICK_FONTINFO				= QUICK_ATTR(ATTR_OPAQUE,         9),
-	QUICK_CLIENT_DATA			= QUICK_ATTR(ATTR_OPAQUE,			  99)
+	QUICK_CLIENT_DATA_SIZE		= QUICK_ATTR(ATTR_LONG,          10), /* CS- */
+	QUICK_CLIENT_DATA			= QUICK_ATTR(ATTR_OPAQUE,		99)  /* --G */
 } Quick_attr;
 
 typedef struct {
