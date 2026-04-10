@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.31 2026/03/03 21:34:11 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.33 2026/04/09 12:59:25 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -520,26 +520,23 @@ static XFontStruct *get_fontstruct(Item_info *ip)
 static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 {
 	Quick_owner qo;
-	quick_data_t *qd;
 	Panel pan = xv_get(item, XV_OWNER);
 
 	qo = xv_get(pan, XV_KEY_DATA,quick_dupl_key);
 	if (! qo) {
-		qd = xv_alloc(quick_data_t);
 		qo = xv_create(pan, QUICK_OWNER,
 					QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
-					QUICK_CLIENT_DATA, qd,
+					QUICK_CLIENT_DATA_SIZE, sizeof(quick_data_t),
 					NULL);
 		xv_set(pan, XV_KEY_DATA,quick_dupl_key, qo, NULL);
 	}
-	else {
-		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
-	}
 
 	if (xv_get(qo, QUICK_NEED_START)) {
+		quick_data_t *qd;
 		char *s;
 		int sx, ex;
 
+		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
 		qd->priv = ip;
 		s = image_string(&ip->label);
 		sx = ip->label_rect.r_left;
@@ -586,6 +583,11 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 			if (! event_is_quick_duplicate(ev)) return FALSE;
 			if (! quick_dupl_key) return TRUE;
 
+			ip = ITEM_PRIVATE(item);
+			if (ip->label.im_type != PIT_STRING) return FALSE;
+			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
+				return FALSE;
+			}
 			qo = xv_get(xv_get(item, XV_OWNER), XV_KEY_DATA,quick_dupl_key);
 			if (! qo) return TRUE;
 			if (! xv_get(qo, SEL_OWN)) return TRUE;
