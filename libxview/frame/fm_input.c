@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.25 2026/03/03 21:33:55 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.26 2026/04/09 12:59:39 dra Exp $ ";
 #endif
 #endif
 
@@ -365,27 +365,24 @@ static void q_remove_underline(Quick_owner qo)
 static void start_quick_dup(Xv_window footer, Event *ev)
 {
 	Quick_owner qo;
-	quick_data_t *qd;
 
 	qo = xv_get(footer, XV_KEY_DATA,quick_dupl_key);
 	if (! qo) {
-		qd = xv_alloc(quick_data_t);
 		qo = xv_create(footer, QUICK_OWNER,
 					QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
-					QUICK_CLIENT_DATA, qd,
+					QUICK_CLIENT_DATA_SIZE, sizeof(quick_data_t),
 					NULL);
 		xv_set(footer, XV_KEY_DATA,quick_dupl_key, qo, NULL);
 	}
-	else {
-		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
-	}
-
 	if (xv_get(qo, QUICK_NEED_START)) {
+		quick_data_t *qd;
 		char *s;
 		int sx, ex;
 		Frame fram;
 		Frame_class_info *priv;
 		int left_start, left_w, right_start, right_w;
+
+		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
 
 		fram = xv_get(footer, XV_OWNER);
 		priv = FRAME_CLASS_PRIVATE(fram);
