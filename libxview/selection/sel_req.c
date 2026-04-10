@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.56 2026/04/06 20:30:14 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.57 2026/04/09 16:27:58 dra Exp $";
 #endif
 #endif
 
@@ -1317,8 +1317,8 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 			*length = XV_OK;
 			*format = reply->sri_format;
 			xv_set(requestor, SEL_TIME, time, NULL);
-			xv_free(reply->sri_target);
 			xv_sel_end_request(reply);
+			xv_free(reply->sri_target);
 			xv_free(reply);
 			return XV_NULL;
 		}
@@ -1333,17 +1333,17 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 		else {
 			data = reply->sri_propdata;
 		}
-		xv_free(reply->sri_target);
 		xv_sel_end_request(reply);
+		xv_free(reply->sri_target);
 		xv_free(reply);
 		return data;
 	}
 	xv_set(requestor, SEL_TIME, time, NULL);
 	*length = SEL_ERROR;
 	*format = 0;
-	if (reply->sri_target) xv_free(reply->sri_target);
 	if (reply) {
 		xv_sel_end_request(reply);
+		if (reply->sri_target) xv_free(reply->sri_target);
 		xv_free(reply);
 	}
 	return XV_NULL;
