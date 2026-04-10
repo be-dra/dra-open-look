@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.9 2026/01/11 12:52:45 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.11 2026/04/09 13:02:49 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -52,7 +52,6 @@ typedef struct {
 	int xpos[MAX_SELECTED];
 	int startindex, endindex;
 	unsigned long reply_data;
-	char seltext[MAX_SELECTED];
     struct timeval last_click_time;
 	int select_click_cnt;
 
@@ -65,9 +64,10 @@ typedef struct {
 	char delimtab[256];   /* TRUE= character is a word delimiter */
 	XFontStruct *fs;
 	Xv_opaque client_data;
-	char full_text[MAX_SELECTED];
 	int full_startx;
 	int full_endx;
+	char seltext[MAX_SELECTED];
+	char full_text[MAX_SELECTED];
 } Quick_private_t;
 
 #define QUICKPRIV(_x_) XV_PRIVATE(Quick_private_t, Xv_quick_owner, _x_)
@@ -553,8 +553,10 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 				ADONE;
 
 			case QUICK_BASELINE: priv->baseline = (int)A1; ADONE;
-			case QUICK_CLIENT_DATA: priv->client_data = (Xv_opaque)A1; ADONE;
 			case QUICK_FONTINFO: priv->fs = (XFontStruct *)A1; ADONE;
+			case QUICK_CLIENT_DATA_SIZE:
+				priv->client_data = (Xv_opaque)xv_alloc_func((size_t)A1);
+				ADONE;
 
 			case XV_FONT: {
 					Xv_font f = (Xv_font)A1;
@@ -618,6 +620,8 @@ static int quick_destroy(Quick_owner self, Destroy_status status)
 			|| status == DESTROY_PROCESS_DEATH)
 		return XV_OK;
 
+	XFreeGC(priv->dpy, priv->gc);
+	if (priv->client_data) xv_free(priv->client_data);
 	xv_free((char *)priv);
 
 	return XV_OK;
