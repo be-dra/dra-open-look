@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.33 2026/04/09 12:59:25 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.35 2026/04/12 08:11:52 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -331,6 +331,13 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 
 	/* cancel the old item if needed */
 	if (newip != panel->current) {
+		if (panel->current &&panel->current->item_type==PANEL_DROP_TARGET_ITEM){
+			if (event_action(event) == ACTION_DRAG_PREVIEW && 
+				event_id(event) == LOC_WINEXIT)
+			{
+				panel_cancel_preview(ITEM_PUBLIC(panel->current), event);
+			}
+		}
 		if (panel->current &&
 				((panel->current != (Item_info *) panel
 						&& panel->current->item_type == PANEL_DROP_TARGET_ITEM)
@@ -517,6 +524,11 @@ static XFontStruct *get_fontstruct(Item_info *ip)
 	return fs;
 }
 
+static void destroy_quick_owner(Xv_opaque obj, int key, char *data)
+{
+	xv_destroy((Xv_object)data);
+}
+
 static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 {
 	Quick_owner qo;
@@ -525,10 +537,13 @@ static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 	qo = xv_get(pan, XV_KEY_DATA,quick_dupl_key);
 	if (! qo) {
 		qo = xv_create(pan, QUICK_OWNER,
-					QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
-					QUICK_CLIENT_DATA_SIZE, sizeof(quick_data_t),
-					NULL);
-		xv_set(pan, XV_KEY_DATA,quick_dupl_key, qo, NULL);
+				QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
+				QUICK_CLIENT_DATA_SIZE, sizeof(quick_data_t),
+				NULL);
+		xv_set(pan,
+				XV_KEY_DATA, quick_dupl_key, qo,
+				XV_KEY_DATA_REMOVE_PROC, quick_dupl_key, destroy_quick_owner,
+				NULL);
 	}
 
 	if (xv_get(qo, QUICK_NEED_START)) {
