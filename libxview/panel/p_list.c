@@ -1,4 +1,4 @@
-char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.20 2026/03/03 21:34:15 dra Exp $";
+char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.21 2026/04/09 12:59:25 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -192,45 +192,1657 @@ Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index);
 typedef int (*list_notify_proc_t)(Panel_list_item, char *, Xv_opaque,
 									Panel_list_op, Event *, int);
 
-/* Panel Item Operations */
-static void panel_list_handle_event(Panel_item item_public, Event *event);
-static void panel_list_paint(Panel_item item_public, Panel_setting u);
-static void panel_list_resize(Panel_item item_public);
-static void panel_list_remove(Panel_item item_public);
-static void panel_list_layout(Panel_item item_public, Rect *deltas);
-static void show_focus_win(Panel_item item_public);
-static void hide_focus_win(Panel_item item_public);
+static Defaults_pairs sb_placement_pairs[] = {
+	{ "Right", FALSE },
+	{ "right", FALSE },
+	{ "Left", TRUE },
+	{ "left", TRUE },
+	{ NULL, FALSE }
+};
 
-/* Local functions */
-static Xv_opaque change_proc(Menu menu, Menu_item menu_item);
-static Xv_opaque clear_all_choices(Menu menu, Menu_item menu_item);
-static void compute_dimensions(Item_info *ip, Panel_list_info *dp);
-static Xv_opaque delete_proc(Menu menu, Menu_item menu_item);
-static Xv_opaque enter_edit_mode(Menu menu, Menu_item menu_item);
-static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item);
-static int fit_list_box_to_rows(Panel_list_info *dp);
-static int get_row_rect(Panel_list_info *dp, Row_info *row, Rect *rect);
-static void handle_menu_event(Panel_list_info	*dp, Event *event);
-static Xv_opaque insert_proc(Menu menu, Menu_item menu_item);
-static Xv_opaque locate_next_choice(Menu menu, Menu_item menu_item);
-static void make_row_visible(Panel_list_info *dp, int desired_row_nbr);
-static Row_info * next_row(Panel_list_info *dp, Row_info *row, int n);
-static void paint_list_box(Panel_list_info *dp);
-static void paint_list_box_border(Panel_list_info *dp);
-static void paint_row(Panel_list_info *dp, Row_info *row);
-static void paint_title_box(Panel_list_info *dp);
-static void panel_list_create_displayarea(Panel_list_info *dp);
-static void panel_list_delete_row(Panel_list_info *, Row_info *, int repaint);
-static Row_info *panel_list_insert_row(Panel_list_info *dp, int , int , int );
-static int row_visible(Panel_list_info *dp, int desired_row_nbr);
-static void set_current_row(Panel_list_info *dp, Row_info *, Event *event);
-static void set_edit_row(Panel_list_info *dp, Row_info *, int , Event *);
-static void set_row_display_str_length(Panel_list_info *dp, Row_info *row);
-static void set_row_font(Panel_list_info *dp, Row_info *row, Xv_Font font);
-static void set_row_glyph(Panel_list_info *dp, Row_info *row, Pixrect *);
-static void set_row_mask_glyph(Panel_list_info *dp, Row_info *row, Pixrect *);
-static void show_feedback(Panel_list_info *dp, Row_info *row, Event *event);
-static void list_menu_done_proc(Menu menu, Xv_opaque result);
+
+typedef enum {
+    INSERT_BEFORE,
+    INSERT_AFTER
+} Insert_pos_t;
+
+/* --------------------  Panel Item Operations  -------------------- */
+
+static int row_visible(Panel_list_info *dp, int desired_row_nbr)
+{
+	int first_row_nbr_in_view;
+
+	first_row_nbr_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+	return (desired_row_nbr >= first_row_nbr_in_view &&
+			(unsigned)desired_row_nbr <
+			(unsigned)first_row_nbr_in_view + dp->rows_displayed);
+}
+
+
+static void make_row_visible(Panel_list_info *dp, int desired_row_nbr)
+{
+	/* If desired row is out of the view window, then scroll desired row
+	 * to the top of the view window.
+	 */
+	if (!row_visible(dp, desired_row_nbr)) {
+		desired_row_nbr =
+				MIN((unsigned)desired_row_nbr, dp->nrows - dp->rows_displayed);
+		xv_set(dp->list_sb, SCROLLBAR_VIEW_START, desired_row_nbr, NULL);
+	}
+}
+
+/* get_row_rect:  Get the rect for the specified row
+ * 	returns: TRUE= row in view; FALSE= row not in view
+ */
+static int get_row_rect(Panel_list_info *dp, Row_info *row, Rect *rect)	/* Output parameter */
+{
+	int first_row_in_view;	/* row number */
+	int view_start;	/* in pixels */
+
+	/* Insure that the row is completely visible within the list box.  */
+	first_row_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+	if (row->row < first_row_in_view ||
+			row->row >= (unsigned)first_row_in_view + dp->rows_displayed)
+		return FALSE;	/* row not within list box view */
+
+	/* Get row rect. */
+	view_start = dp->row_height * first_row_in_view;
+	rect->r_top = row->string_y - view_start;
+	rect->r_top += dp->list_box.r_top;
+	rect->r_left = dp->list_box.r_left + LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
+	rect->r_width = dp->list_box.r_width - 2 * LIST_BOX_BORDER_WIDTH -
+			2 * ROW_MARGIN;
+	rect->r_height = dp->row_height;
+	if (rect_bottom(rect) > rect_bottom(&dp->list_box))
+		rect->r_height = dp->list_box.r_height - rect->r_top;
+	return TRUE;	/* row within list box view */
+}
+
+
+static void show_focus_win(Panel_item item_public)
+{
+	Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
+	Frame frame;
+	Item_info *ip = ITEM_PRIVATE(item_public);
+	Rect rect;
+	int x;
+	int y;
+
+	frame = xv_get(PANEL_PUBLIC(ip->panel), WIN_FRAME);
+	xv_set(frame, FRAME_FOCUS_DIRECTION, FRAME_FOCUS_RIGHT, NULL);
+	x = dp->list_box.r_left;
+	if (dp->focus_row) {
+		make_row_visible(dp, dp->focus_row->row);
+		(void)get_row_rect(dp, dp->focus_row, &rect);
+		y = rect.r_top + (rect.r_height - FRAME_FOCUS_RIGHT_HEIGHT) / 2;
+	}
+	else
+		y = dp->list_box.r_top;
+	if (!dp->focus_win_shown || x != dp->focus_win_x || y != dp->focus_win_y) {
+		dp->focus_win_x = x;
+		dp->focus_win_y = y;
+		panel_show_focus_win(item_public, frame,
+				dp->focus_win_x, dp->focus_win_y);
+		dp->focus_win_shown = TRUE;
+	}
+}
+
+/*
+ * Create the row
+ */
+static Row_info * create_next_row(Panel_list_info	*dp, Row_info *prev)
+{
+	Row_info *node;
+
+	node = xv_alloc(Row_info);
+	if (prev) {
+		node->row = prev->row + 1;
+		prev->next = node;
+	}
+	else {
+		dp->rows = node;
+		node->row = 0;
+		if (!dp->focus_row)
+			dp->focus_row = node;
+	}
+	node->next = NULL;
+	node->prev = prev;
+	/*
+	 * It's possible that prev->row + 1 is not equal to which_row ie. the
+	 * row is created at the end of the list
+	 */
+
+#ifdef OW_I18N
+	/*
+	 * xv_alloc calls calloc, therefor all fields are zeroed already.
+	 */
+#else
+	node->string = NULL;
+	node->f.free_string = FALSE;
+#endif /* OW_I18N */
+
+	node->glyph = 0;
+	node->f.show = TRUE;
+	node->f.row_inactive = FALSE;
+	dp->nrows++;
+	return (node);
+}
+
+/*
+ * Find/Create the row
+ */
+static Row_info * find_or_create_nth_row(Panel_list_info *dp, int which_row, int create)
+{
+	Row_info *prev = NULL;
+	Row_info *node = dp->rows;
+
+
+	while (node && (node->row != which_row)) {
+		prev = node;
+		node = node->next;
+	}
+
+	if (!node && create)
+		node = create_next_row(dp, prev);
+
+	return (node);
+}
+
+static void paint_list_box_border(Panel_list_info *dp)
+{
+    Display	   *display;
+    GC		    gc;
+    unsigned long gc_mask;
+    XGCValues	    gc_values;
+    Xv_Drawable_info *info;
+    Item_info	   *ip = ITEM_FROM_PANEL_LIST(dp);
+    GC             *gc_list;
+    Xv_window	    pw;
+    Rect	    rect;
+    Xv_Screen       screen;
+    Drawable	    xid;
+
+    /* Paint list box border */
+    rect = dp->list_box;
+    if (dp->TITLE) {
+	rect.r_top = dp->title_rect.r_top;
+	rect.r_height += dp->title_rect.r_height;
+    }
+    PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+	DRAWABLE_INFO_MACRO(pw, info);
+        screen = xv_screen(info);
+        gc_list = (GC *)xv_get(screen, SCREEN_OLGC_LIST, pw);
+	display = xv_display(info);
+	xid = xv_xid(info);
+	if (ip->panel->status.three_d) {
+
+	    /*
+	     * Note:  chiseled separator line requires 2
+	     * OLGX calls -- one invoked and one normal.
+	     */
+	    olgx_draw_box(ip->panel->ginfo, xid,
+			  rect.r_left, rect.r_top,
+			  rect.r_width, rect.r_height,
+			  OLGX_INVOKED, FALSE);
+	    olgx_draw_box(ip->panel->ginfo, xid,
+			  rect.r_left+1, rect.r_top+1,
+			  rect.r_width-2, rect.r_height-2,
+			  OLGX_NORMAL, FALSE);
+	} else {
+	    if (ip->color_index >= 0) {
+		gc = gc_list[SCREEN_NONSTD_GC];
+		XSetForeground(display, gc_list[SCREEN_NONSTD_GC],
+		    xv_get(xv_cms(info), CMS_PIXEL, ip->color_index));
+		gc_values.line_style = LineSolid;
+		gc_mask = GCLineStyle;
+		XChangeGC(display, gc, gc_mask, &gc_values);
+	    } else {
+		gc = gc_list[SCREEN_SET_GC];
+	    }
+	    XDrawRectangle(display, xid, gc,
+			   rect.r_left, rect.r_top,
+			   (unsigned)rect.r_width - 1, (unsigned)rect.r_height - 1);
+	}
+    PANEL_END_EACH_PAINT_WINDOW
+}
+
+static void paint_row(Panel_list_info *dp, Row_info *row)
+{
+	Display *display;
+	unsigned long fg_pixval = 0;	/* foreground pixel value */
+	Xv_Font font;
+	unsigned long gc_mask;
+	XGCValues gc_values;
+	Xv_Drawable_info *info;
+	Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
+	GC  gc;
+	Xv_window pw;
+	Rect row_rect;
+	unsigned long save_black = 0;
+	Rect string_rect;
+	Item_info *text_item_private;
+	Drawable xid;
+	Xv_Screen screen;
+	GC *gc_list;
+
+#ifdef OW_I18N
+	XFontSet font_set;
+#endif /* OW_I18N */
+
+	if (!get_row_rect(dp, row, &row_rect))
+		return;
+	if (row->STRING) {
+		string_rect.r_left = dp->list_box.r_left + dp->string_x;
+		string_rect.r_top = row_rect.r_top;
+		string_rect.r_width = row_rect.r_width - dp->string_x +
+				LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
+		string_rect.r_height = row_rect.r_height;
+	}
+	else
+		string_rect = row_rect;
+
+	/* Clear row */
+	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+		DRAWABLE_INFO_MACRO(pw, info);
+		display = xv_display(info);
+		xid = xv_xid(info);
+		XClearArea(display, xid, row_rect.r_left, row_rect.r_top,
+				(unsigned)row_rect.r_width, (unsigned)row_rect.r_height, False);
+		if (!row->f.show && row == dp->text_item_row) {
+			text_item_private = ITEM_PRIVATE(dp->text_item);
+			(*text_item_private->ops.panel_op_paint) (dp->text_item,
+														PANEL_NO_CLEAR);
+		}
+	PANEL_END_EACH_PAINT_WINDOW
+
+	if (!row->f.show) return;
+
+	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+		DRAWABLE_INFO_MACRO(pw, info);
+		screen = xv_screen(info);
+		gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
+		display = xv_display(info);
+		xid = xv_xid(info);
+		if (ip->color_index >= 0)
+			fg_pixval = xv_get(xv_cms(info), CMS_PIXEL, ip->color_index);
+
+		/* If 3D, read mode, and row is selected, then draw a recessed box */
+		if (ip->panel->status.three_d && !dp->edit_mode && row->f.selected) {
+			if (ip->color_index >= 0) {
+				save_black =
+						olgx_get_single_color(ip->panel->ginfo, OLGX_BLACK);
+				olgx_set_single_color(ip->panel->ginfo, OLGX_BLACK, fg_pixval,
+						OLGX_SPECIAL);
+			}
+			olgx_draw_box(ip->panel->ginfo, xid,
+					row_rect.r_left, row_rect.r_top,
+					row_rect.r_width, row_rect.r_height, OLGX_INVOKED, TRUE);
+			if (ip->color_index >= 0)
+				olgx_set_single_color(ip->panel->ginfo, OLGX_BLACK, save_black,
+						OLGX_SPECIAL);
+		}
+
+		/* Paint text */
+		if (row->STRING) {
+			if (ip->color_index >= 0) {
+				XSetForeground(display, gc_list[SCREEN_TEXT_GC], fg_pixval);
+			}
+
+			if (row->font) {
+				font = row->font;
+#ifndef OW_I18N
+				XSetFont(display, gc_list[SCREEN_TEXT_GC], xv_get(font,
+								XV_XID));
+#endif /* OW_I18N */
+			}
+			else {
+				font = dp->font;
+			}
+
+#ifdef OW_I18N
+			font_set = (XFontSet) xv_get(font, FONT_SET_ID);
+			XwcDrawString(display, xid, font_set, gc_list[SCREEN_TEXT_GC],
+					string_rect.r_left,
+					string_rect.r_top
+					+ ((string_rect.r_height + panel_fonthome(font)) / 2)
+					- 1, row->STRING, row->display_str_len);
+#else
+			XDrawString(display, xid, gc_list[SCREEN_TEXT_GC],
+					string_rect.r_left,
+					string_rect.r_top
+					+ ((string_rect.r_height + panel_fonthome(font)) / 2)
+					- 1, row->string, row->display_str_len);
+			if (row->font) {
+				/* Set the text gc back to the standard font */
+				XSetFont(display, gc_list[SCREEN_TEXT_GC],
+						ip->panel->std_font_xid);
+			}
+#endif /* OW_I18N */
+
+			if (ip->color_index >= 0) {
+				XSetForeground(display, gc_list[SCREEN_TEXT_GC], xv_fg(info));
+			}
+		}
+
+		if (dp->edit_mode && row->f.edit_selected) {
+			/* Invert text */
+			panel_pw_invert(pw, &row_rect, ip->color_index);
+		}
+
+		/* Paint glyph */
+		if (row->glyph)
+			/*
+			 * center glyph both vertically and horizontally.  since we can't
+			 * break compatibility by increasing the size of the row, move the
+			 * glyph over by 1/2 the COL_GAP so there is at least enough room
+			 * to show hilighting around it.  the OL File Choosing Spec wants
+			 * 10 pixels at the default font...
+			 */
+			panel_paint_svrim(pw, row->glyph,
+					row_rect.r_left + (PANEL_LIST_COL_GAP / 2),
+					row_rect.r_top + ((row_rect.r_height -
+									row->glyph->pr_height) / 2),
+					ip->color_index, (dp->edit_mode
+							&& row->f.
+							edit_selected) ? (Pixrect *) NULL :
+					row->mask_glyph);
+
+		if (row->f.selected && (!ip->panel->status.three_d || dp->edit_mode)) {
+			/* Box text */
+			if (ip->color_index < 0) {
+				if (!dp->edit_mode)
+					gc = gc_list[SCREEN_SET_GC];
+				else
+					gc = gc_list[SCREEN_DIM_GC];
+			}
+			else {
+				gc = gc_list[SCREEN_NONSTD_GC];
+				XSetForeground(display, gc, fg_pixval);
+				if (!dp->edit_mode) {
+					gc_values.line_style = LineSolid;
+					gc_mask = GCLineStyle;
+				}
+				else {
+					gc_values.line_style = LineDoubleDash;
+					gc_values.dashes = 1;
+					gc_mask = GCLineStyle | GCDashList;
+				}
+				XChangeGC(display, gc, gc_mask, &gc_values);
+			}
+			XDrawRectangle(display, xid, gc,
+					row_rect.r_left, row_rect.r_top,
+					(unsigned)row_rect.r_width - 1,
+					(unsigned)row_rect.r_height - 1);
+		}
+
+		if (row->f.row_inactive) {
+			screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
+			XFillRectangle(xv_display(info), xv_xid(info),
+					gc_list[SCREEN_INACTIVE_GC],
+					row_rect.r_left, row_rect.r_top,
+					(unsigned)row_rect.r_width, (unsigned)row_rect.r_height);
+		}
+	PANEL_END_EACH_PAINT_WINDOW
+}
+
+
+static void hide_focus_win(Panel_item item_public)
+{
+	Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
+	Xv_Window focus_win;
+	Frame frame;
+	Item_info *ip = ITEM_PRIVATE(item_public);
+
+	if (!dp->focus_win_shown)
+		return;
+	frame = xv_get(PANEL_PUBLIC(ip->panel), WIN_FRAME);
+	focus_win = xv_get(frame, FRAME_FOCUS_WIN);
+	xv_set(focus_win, XV_SHOW, FALSE, NULL);
+	dp->focus_win_shown = FALSE;
+}
+
+
+
+static void paint_list_box(Panel_list_info *dp)
+{
+    Xv_Drawable_info *info;
+    Item_info	   *ip = ITEM_FROM_PANEL_LIST(dp);
+    Row_info	   *row;
+    Xv_Window	    pw;
+    Xv_Screen      screen;
+    GC             *gc_list;
+
+    /* Paint list box border.
+     *   Dashed = Scrolling List does not have keyboard focus
+     *   Solid = Scrolling List has keyboard focus
+     */
+    paint_list_box_border(dp);
+
+    /* Paint (visible) rows */
+    for (row=dp->rows; row; row=row->next) paint_row(dp, row);
+
+    if (ip->panel->status.has_input_focus && ip->panel->kbd_focus_item == ip) {
+		if (!dp->focus_row || row_visible(dp, dp->focus_row->row))
+	    	/* update position of Location Cursor */
+	    	show_focus_win(ITEM_PUBLIC(ip));
+		else
+	    	hide_focus_win(ITEM_PUBLIC(ip));
+    }
+    
+    if (inactive(ip)) {
+		PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+	    	DRAWABLE_INFO_MACRO(pw, info);
+	    	screen = xv_screen(info);
+  	    	gc_list = (GC *)xv_get(screen,  SCREEN_OLGC_LIST, pw);
+	    	screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
+	    	XFillRectangle(xv_display(info), xv_xid(info),
+			   	gc_list[SCREEN_INACTIVE_GC],
+			   	dp->list_box.r_left, dp->list_box.r_top,
+			   	(unsigned)dp->list_box.r_width,(unsigned)dp->list_box.r_height);
+		PANEL_END_EACH_PAINT_WINDOW
+    }
+}
+
+static Attr_attribute quick_dupl_key = 0;
+
+typedef struct {
+	Panel_list_info *priv;
+	Row_info *row;
+	Rect string_rect;
+} quick_data_t;
+
+static void q_remove_underline(Quick_owner qo)
+{
+	quick_data_t *qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
+	Panel_list_info *dp = qd->priv;
+	Panel_list_item lpub = PANEL_LIST_PUBLIC(dp);
+
+	panel_paint(lpub, PANEL_CLEAR);
+	qd->priv = NULL;
+	qd->row = NULL;
+}
+
+static void destroy_quick_owner(Xv_opaque obj, int key, char *data)
+{
+	xv_destroy((Xv_object)data);
+}
+
+static void start_quick_dup(Panel_list_info *dp, Event *ev, Row_info *row)
+{
+	Quick_owner qo;
+
+	if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
+
+	qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
+	if (! qo) {
+		qo = xv_create(dp->parent_panel, QUICK_OWNER,
+				QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
+				QUICK_CLIENT_DATA_SIZE, sizeof(quick_data_t),
+				NULL);
+		xv_set(dp->parent_panel,
+				XV_KEY_DATA, quick_dupl_key, qo,
+				XV_KEY_DATA_REMOVE_PROC, quick_dupl_key, destroy_quick_owner,
+				NULL);
+	}
+
+	if (xv_get(qo, QUICK_NEED_START)) {
+		XFontStruct *fs;
+		char *s;
+		int ex, sx;
+		Rect row_rect;
+		quick_data_t *qd;
+
+		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
+		qd->priv = dp;
+		qd->row = row;
+
+		s = qd->row->string;
+
+		if (!get_row_rect(dp, row, &row_rect)) return;
+		if (row->STRING) {
+			qd->string_rect.r_left = dp->list_box.r_left + dp->string_x;
+			qd->string_rect.r_top = row_rect.r_top;
+			qd->string_rect.r_width = row_rect.r_width - dp->string_x +
+					LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
+			qd->string_rect.r_height = row_rect.r_height;
+		}
+		else
+			qd->string_rect = row_rect;
+
+		sx = qd->string_rect.r_left;
+		ex = rect_right(&qd->string_rect);
+
+		if (row->font) fs = (XFontStruct *)xv_get(row->font, FONT_INFO);
+		else {
+			Xv_font font = xv_get(dp->parent_panel, XV_FONT);
+			fs = (XFontStruct *)xv_get(font, FONT_INFO);
+		}
+
+		xv_set(qo,
+			QUICK_BASELINE, rect_bottom(&qd->string_rect) - 2,
+			QUICK_FONTINFO, fs,
+			QUICK_START, s, sx, ex, 
+			NULL);
+	}
+
+	xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+}
+
+
+static int is_quick_duplicate_on_row(Panel_item list, Event *ev, Row_info *row)
+{
+	Panel_list_info *dp = PANEL_LIST_PRIVATE(list);
+	Quick_owner qo;
+	quick_data_t *qd;
+
+	switch (event_action(ev)) {
+		case ACTION_SELECT:
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! event_is_down(ev)) return TRUE;
+
+			start_quick_dup(dp, ev, row);
+			return TRUE;
+
+		case LOC_DRAG:
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! quick_dupl_key) return TRUE;
+
+			qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
+			if (! qo) return TRUE;
+			if (! xv_get(qo, SEL_OWN)) return TRUE;
+			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
+			return TRUE;
+
+		case ACTION_ADJUST:
+			if (! event_is_quick_duplicate(ev)) return FALSE;
+			if (! quick_dupl_key) {
+				xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
+			if (! qo) {
+				xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			if (event_is_down(ev)) {
+				if (! xv_get(qo, SEL_OWN))
+					xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
+			if (! qd) {
+				xv_set(event_window(ev), WIN_ALARM, NULL);
+				return TRUE;
+			}
+			if (qd->priv) {
+				if (dp != qd->priv || row != qd->row) {
+					xv_set(qo, SEL_OWN, FALSE, NULL);
+					return TRUE;
+				}
+			}
+			qd->priv = dp;
+
+			xv_set(qo, QUICK_ADJUST_UP, ev, NULL);
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static int is_dbl_click(Panel_list_info *dp, Row_info *row, Event *event)
+{
+	Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
+	int is_multiclick;
+	static struct timeval empty_time = { 0, 0 };
+
+	/* make sure they don't try to pull one over on us */
+	if ((event_action(event) != ACTION_SELECT) || !event_is_down(event))
+		return FALSE;
+
+	/* make sure both click's occured on the same row */
+	if (!dp->last_click_row || (dp->last_click_row != row)) {
+		dp->last_click_row = row;
+		dp->last_click_time = event_time(event);
+		return FALSE;
+	}
+
+	/* weigh timeval's against multiclick-timeout resource */
+	is_multiclick = panel_is_multiclick(ip->panel,
+			&dp->last_click_time, &event_time(event));
+
+	if (is_multiclick)
+		dp->last_click_time = empty_time;	/* reset timeval */
+	else
+		dp->last_click_time = event_time(event);
+
+	SERVERTRACE((500, "is %smulticlick\n", is_multiclick ? "" : "no "));
+	return is_multiclick;
+}
+
+static void show_feedback(Panel_list_info *dp, Row_info *row, Event *event)
+{
+	Item_info *panel_list_ip = ITEM_PRIVATE(dp->public_self);
+	list_notify_proc_t notify_proc = (list_notify_proc_t)panel_list_ip->notify;
+	int have_double_click = FALSE, dbl_click = FALSE;
+
+	if (!panel_list_ip->panel->status.painted) return;
+
+#ifdef OW_I18N
+	if (wchar_notify(panel_list_ip))
+		notify_proc = panel_list_ip->notify_wc;
+#endif
+
+	/*
+	 * if double-click, we must convert a de-select into a select/dbl-click op.
+	 */
+
+	/* But to detect a double click, we must "always" call is_dbl_click
+	 * because only *there* dp->last_click_row will be set
+	 */
+	if (event) have_double_click = is_dbl_click(dp, row, event);
+
+	if (notify_proc && event && row->f.selected && dp->do_dbl_click
+		&& have_double_click)
+	{
+		dbl_click = TRUE;
+	}
+
+	if (!hidden(panel_list_ip))
+		paint_row(dp, row);
+
+
+	if (!dp->edit_mode) {
+		if (notify_proc && event) {
+			Panel_list_op op;
+
+			if (dbl_click)
+				op = PANEL_LIST_OP_DBL_CLICK;
+			else
+				op = row->f.selected ? PANEL_LIST_OP_SELECT :
+										PANEL_LIST_OP_DESELECT;
+
+#ifdef OW_I18N
+			if (wchar_notify(panel_list_ip)) {
+				(*notify_proc) (dp->public_self, row->STRING, row->client_data,
+						op, event, row->row);
+			}
+			else {
+				(*notify_proc) (dp->public_self,
+						_xv_get_mbs_attr_dup(&row->string),
+						row->client_data, op, event, row->row);
+			}
+#else
+			(*notify_proc) (dp->public_self, row->string, row->client_data,
+					op, event, row->row);
+#endif /* OW_I18N */
+		}
+	}
+}
+
+
+static void set_edit_row(Panel_list_info *dp, Row_info *event_row, int toggle, Event *event)
+{
+    Row_info	*row;
+    int		new_state = TRUE;
+    
+    /* NOTE: This routine depends on no rows being inserted or deleted while in
+     * show_feedback.  Since show_feedback doesn't call the notify proc, this
+     * is not an issue.
+     */
+    if (!toggle) {
+	event_row->f.edit_selected = TRUE;
+	show_feedback(dp, event_row, event);
+    	for (row=dp->rows; row; row=row->next) {
+    	    if (row != event_row && row->f.edit_selected) {
+    	    	row->f.edit_selected = FALSE;
+    	        show_feedback(dp, row, event);
+    	    }
+    	}
+    } else {
+    	new_state = event_row->f.edit_selected ? FALSE : TRUE;
+    	event_row->f.edit_selected = new_state;
+    	show_feedback(dp, event_row, event);
+    }
+    dp->last_edit_row = event_row;
+}
+
+
+
+static void set_current_row(Panel_list_info *dp, Row_info *event_row, Event *event)
+{
+	int new_state = TRUE;
+	int toggle = FALSE;
+
+	if (event_row->f.row_inactive)
+		return;
+
+	if (dp->choose_one) {
+		if (dp->current_row == event_row) {
+			if (dp->choose_none)
+				toggle = TRUE;
+		}
+		else if (dp->current_row) {
+			dp->setting_current_row = TRUE;
+			dp->current_row->f.selected = FALSE;
+		}
+		if (toggle)
+			new_state = event_row->f.selected ? FALSE : TRUE;
+		event_row->f.selected = new_state;
+		if (dp->setting_current_row) {
+			/* Note: The notify proc is called with the DESELECT operation
+			 * after the new row has been selected.  This lets the notify
+			 * proc differentiate between toggling off a row or choosing a
+			 * new row in a Choggle (choose_one && choose_none).
+			 */
+			dp->insert_delete_enabled = FALSE;
+			show_feedback(dp, dp->current_row, event);
+			dp->insert_delete_enabled = TRUE;
+		}
+		dp->current_row = event_row;
+		show_feedback(dp, dp->current_row, event);
+		dp->setting_current_row = FALSE;
+	}
+	else {
+		new_state = event_row->f.selected ? FALSE : TRUE;
+		event_row->f.selected = new_state;
+		dp->current_row = event_row;
+		show_feedback(dp, dp->current_row, event);
+	}
+}
+
+static int check_for_duplicate(Panel_list_info *dp, CHAR *string)
+{
+	Row_info *row;
+
+	for (row = dp->rows; row; row = row->next)
+		if (row->STRING && STRCMP(row->STRING, string) == 0)
+			return TRUE;	/* found duplicate string */
+	return FALSE;	/* no duplicate string */
+}
+
+
+static void set_row_display_str_length(Panel_list_info *dp, Row_info *row)
+{
+#ifdef OW_I18N
+    XFontSet	    font_set;
+#else
+    XFontStruct	   *font_struct;
+#endif /* OW_I18N */
+    int		    max_string_width;
+
+#ifdef OW_I18N
+    if (row->font)
+	font_set = (XFontSet) xv_get(row->font, FONT_SET_ID);
+    else
+	font_set = dp->font_set;
+    row->display_str_len = row->STRING ? wslen(row->STRING) : 0;
+    max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
+	ROW_MARGIN - dp->string_x;
+    while (XwcTextEscapement(font_set, row->STRING, row->display_str_len) >
+	   max_string_width)
+#else
+    if (row->font)
+	font_struct = (XFontStruct *) xv_get(row->font, FONT_INFO);
+    else
+	font_struct = dp->font_struct;
+    row->display_str_len = row->string ? strlen(row->string) : 0;
+    max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
+	ROW_MARGIN - dp->string_x;
+    while (XTextWidth(font_struct, row->string, row->display_str_len) >
+	   max_string_width)
+#endif /* OW_I18N */
+	{
+		row->display_str_len--;
+    }
+}
+
+
+static void accept_change(Panel_item text_item, Row_info *edit_row)
+{
+	Panel_list_info *dp;
+
+	dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA,
+			PANEL_LIST_EXTENSION_DATA);
+	panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+			ITEM_FROM_PANEL_LIST(dp));
+	xv_set(text_item, XV_SHOW, FALSE, NULL);
+	xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
+	dp->text_item_row = NULL;	/* no row being edited */
+
+#ifdef OW_I18N
+	_xv_set_wcs_attr_dup(&edit_row->string,
+			(wchar_t *)xv_get(text_item, PANEL_VALUE_WCS));
+#else
+	if (edit_row->f.free_string)
+		free(edit_row->string);
+	edit_row->string = panel_strsave((char *)xv_get(text_item, PANEL_VALUE));
+	edit_row->f.free_string = TRUE;
+#endif /* OW_I18N */
+
+	edit_row->f.show = TRUE;
+	set_row_display_str_length(dp, edit_row);
+	paint_row(dp, edit_row);
+}
+
+
+static Panel_setting change_done(Panel_item	text_item, Event	*event)
+{
+	list_notify_proc_t notify_proc;
+	Panel_list_info *dp;
+	int result;
+
+#ifdef OW_I18N
+	void *string;
+	Item_info *panel_list_ip;
+#else
+	char *string;
+#endif /* OW_I18N */
+
+	/* Validate entry */
+	dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA,
+			PANEL_LIST_EXTENSION_DATA);
+	string = (CHAR *) xv_get(text_item, PANEL_VALUE_I18N);
+	if (!dp->insert_duplicate	/* no duplicates allowed */
+			&& STRCMP(dp->text_item_row->STRING, string)	/* row has been changed */
+			&&check_for_duplicate(dp, string)) {	/* it matches another row */
+		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+				PANEL_NOTIFY_PROC);
+		if (notify_proc) {
+			/* so that the application can tell the user.... */
+			(*notify_proc) (dp->public_self, string,
+					dp->text_item_row->client_data,
+					PANEL_LIST_OP_DUPLICATE, event, dp->text_item_row->row);
+		}
+		return (PANEL_NONE);	/* change not accepted */
+	}
+
+#ifdef OW_I18N
+	panel_list_ip = ITEM_PRIVATE(dp->public_self);
+	if (wchar_notify(panel_list_ip))
+		notify_proc =
+				(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+				PANEL_NOTIFY_PROC_WCS);
+	else {
+		string = (char *)xv_get(text_item, PANEL_VALUE);
+		notify_proc =
+				(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+				PANEL_NOTIFY_PROC);
+	}
+#else
+	notify_proc =
+			(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+			PANEL_NOTIFY_PROC);
+#endif
+
+	if (notify_proc) {
+		dp->insert_delete_enabled = FALSE;
+		result = (*notify_proc) (dp->public_self, string,
+				dp->text_item_row->client_data,
+				PANEL_LIST_OP_VALIDATE, event, dp->text_item_row->row);
+		dp->insert_delete_enabled = TRUE;
+		if (result == XV_ERROR)
+			return (PANEL_NONE);
+	}
+
+	/* Entry validated.  Update edit row. */
+	accept_change(text_item, dp->text_item_row);
+
+	dp->edit_op = OP_NONE;
+	return (PANEL_NONE);
+}
+
+
+
+static Xv_opaque change_proc(Menu menu, Menu_item menu_item)
+{
+	Panel_list_info *dp;
+	Row_info *edit_row = NULL;
+	int first_row_in_view;
+	int item_y;
+	Xv_font font;
+
+	dp = (Panel_list_info *)xv_get(menu,XV_KEY_DATA,PANEL_LIST_EXTENSION_DATA);
+
+	if (dp->show_props) {
+		Item_info *panel_list_ip = ITEM_PRIVATE(dp->public_self);
+		list_notify_proc_t notify_proc
+						= (list_notify_proc_t) panel_list_ip->notify;
+    	Event *event = (Event *)xv_get(menu, MENU_LAST_EVENT);
+    	Row_info *row;
+
+		for (row = dp->rows; row; row = row->next) {
+			if (row->f.edit_selected) {
+				if (notify_proc) {
+					dp->insert_delete_enabled = FALSE;
+					(*notify_proc) (dp->public_self,
+							row->string, row->client_data,
+							PANEL_LIST_OP_PROPS, event, row->row);
+					dp->insert_delete_enabled = TRUE;
+				}
+				break;
+			}
+		}
+	}
+	else {
+		for (edit_row=dp->rows; edit_row; edit_row=edit_row->next) {
+	    	if (edit_row->f.edit_selected) break;          
+		}               
+		if (!edit_row) return(XV_OK);  /* shouldn't occur, but let's be safe */
+
+		edit_row->f.show = FALSE;
+		paint_row(dp, edit_row);	/* clear glyph and string */
+
+		/* Overlay text item over blank row */
+		first_row_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, TRUE, NULL);
+		item_y = dp->list_box.r_top + edit_row->string_y -
+				first_row_in_view * dp->row_height;
+		font = (edit_row->font) ? edit_row->font : dp->font;
+		xv_set(dp->text_item,
+				PANEL_ITEM_Y, item_y
+						+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
+						- 1,
+				PANEL_NOTIFY_PROC, change_done,
+				PANEL_VALUE_I18N, edit_row->STRING,
+				PANEL_TEXT_SELECT_LINE,
+				XV_SHOW, TRUE,
+				NULL);
+		dp->text_item_row = edit_row;
+
+		/* Warp the pointer to the bottom right corner of the text item */
+		xv_set(dp->parent_panel,
+				WIN_MOUSE_XY,
+					rect_right(&dp->list_box) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
+					item_y + dp->row_height - 1,
+				NULL);
+
+		/* Transfer keyboard focus to the text item */
+		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+				ITEM_PRIVATE(dp->text_item));
+
+		dp->edit_op = OP_CHANGE;
+	}
+	return XV_OK;
+}
+
+static Xv_opaque clear_all_choices(Menu menu, Menu_item menu_item)
+{
+    Panel_list_info *dp;
+    Event	*event = (Event *) xv_get(menu, MENU_LAST_EVENT);
+    Row_info	*row;
+    
+    dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
+    dp->insert_delete_enabled = FALSE;
+    for (row=dp->rows; row; row=row->next) {
+	if (row->f.selected) {
+	    row->f.selected = FALSE;
+	    show_feedback(dp, row, event);
+	}
+    }
+    dp->insert_delete_enabled = TRUE;
+    return(XV_OK);
+}
+
+
+static void list_menu_done_proc(Menu menu, Xv_opaque result)
+{
+	typedef void (*menu_done_t)(Menu, Xv_opaque);
+    Item_info	*ip;
+    menu_done_t orig_done_proc;	/* original menu-done procedure */
+    
+    ip = (Item_info *) xv_get(menu, XV_KEY_DATA, PANEL_FIRST_ITEM);
+
+    /* Restore original menu done proc. */
+    orig_done_proc = (menu_done_t)xv_get(menu, XV_KEY_DATA, MENU_DONE_PROC);
+    xv_set(menu, MENU_DONE_PROC, orig_done_proc, NULL );
+
+    /* Invoke original menu done proc (if any) */
+    if (orig_done_proc)
+		(orig_done_proc)(menu, result);
+
+    ip->panel->status.current_item_active = FALSE;
+}
+
+static void handle_menu_event(Panel_list_info	*dp, Event *event)
+{
+	int edit_cnt;
+	Menu menu;
+	Panel_item change_item;
+	Panel_item delete_item;
+	Panel_item insert_item;
+	Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
+	Row_info *edit_row;
+	Row_info *row;
+
+	if (dp->edit_mode) {
+		menu = dp->edit_menu;
+		if (menu) {
+			/* Note: The client can change the edit menu */
+			change_item = xv_find(menu, MENUITEM,
+					XV_AUTO_CREATE, FALSE,
+					/* could be "Change" or "Properties..." */
+					MENU_ACTION, change_proc,
+					NULL);
+			delete_item = xv_find(menu, MENUITEM,
+					XV_AUTO_CREATE, FALSE,
+					MENU_STRING, XV_MSG("Delete"),
+					NULL);
+			insert_item = xv_find(menu, MENUITEM,
+					XV_AUTO_CREATE, FALSE,
+					MENU_STRING, XV_MSG("Insert"),
+					NULL);
+			edit_row = dp->text_item_row;
+			if (change_item || delete_item) {
+				edit_cnt = 0;
+				for (row = dp->rows; row; row = row->next)
+					if (row->f.edit_selected && row != edit_row)
+						edit_cnt++;
+				if (change_item)
+					xv_set(change_item,
+							MENU_INACTIVE, edit_row || edit_cnt != 1,
+							NULL);
+				if (delete_item)
+					xv_set(delete_item,
+							MENU_INACTIVE, edit_cnt == 0,
+							NULL);
+			}
+			if (insert_item)
+				xv_set(insert_item,
+						MENU_INACTIVE, edit_row ? TRUE : FALSE,
+						NULL);
+		}
+	}
+	else
+		menu = dp->read_menu;
+	if (menu) {
+		xv_set(menu,
+				MENU_COLOR, ip->color_index,
+				XV_KEY_DATA, PANEL_FIRST_ITEM, ip,
+				XV_KEY_DATA, MENU_DONE_PROC, xv_get(menu, MENU_DONE_PROC),
+				MENU_DONE_PROC, list_menu_done_proc, NULL);
+		ip->panel->status.current_item_active = TRUE;
+		menu_show(menu, event_window(event), event, NULL);
+	}
+}
+
+
+static void panel_list_handle_event(Panel_item item_public, Event *event)
+{
+	Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
+	int i;
+	Item_info *ip = ITEM_PRIVATE(item_public);
+	int navigation_cmd;
+	Panel_info *panel = PANEL_PRIVATE(dp->parent_panel);
+	Rect rect;
+	Row_info *row;
+	int row_nbr;
+	struct timeval wait;
+	int y_offset;
+
+#ifdef OW_I18N
+	wchar_t wc;
+	char mb;
+#endif /* OW_I18N */
+
+	if (event_action(event) != SCROLLBAR_REQUEST &&
+			(dp->sb_active ||
+					(event_is_button(event) && event_is_down(event) &&
+							rect_includespoint(&dp->sb_rect, event_x(event),
+									event_y(event))))) {
+		event_window(event) = dp->list_sb;
+		event_x(event) -= dp->sb_rect.r_left;
+		event_y(event) -= dp->sb_rect.r_top;
+		if (event_is_button(event)) {
+			dp->sb_active = event_is_down(event);
+			panel->status.current_item_active = event_is_down(event);
+		}
+		win_post_event(dp->list_sb, event, NOTIFY_IMMEDIATE);
+		return;
+	}
+
+	if (inactive(ip) || event_action(event) == PANEL_EVENT_CANCEL)
+		return;
+
+	if (event_action(event) == SCROLLBAR_REQUEST) {
+		/* Scroll request received from scrollbar */
+		panel_clear_rect(panel, dp->list_box);
+		paint_list_box(dp);
+		return;
+	}
+
+	if (event_action(event) == ACTION_WHEEL_FORWARD) {
+		if (event_is_down(event)) {
+			int newpos = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+
+			if (newpos > 0) {
+				xv_set(dp->list_sb, SCROLLBAR_VIEW_START, newpos - 1, NULL);
+			}
+		}
+		return;
+	}
+
+	if (event_action(event) == ACTION_WHEEL_BACKWARD) {
+		if (event_is_down(event)) {
+			int newpos = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+
+			xv_set(dp->list_sb, SCROLLBAR_VIEW_START, newpos + 1, NULL);
+		}
+		return;
+	}
+
+	if (event_is_iso(event)) {
+		if (event_is_up(event))
+			return;
+		/* Move the Location Cursor to the row starting with the character
+		 * typed that is after the current focus row, if any.
+		 * Match is case-insensitive.
+		 */
+		if (dp->focus_row && dp->focus_row->next) {
+
+#ifdef OW_I18N
+			if (event_is_string(event)) {
+				if (mbtowc(&wc, event_string(event), MB_CUR_MAX) <= 0)
+					goto beep;
+			}
+			else {
+				mb = event_action(event);
+				if (mbtowc(&wc, &mb, 1) <= 0)
+					goto beep;
+			}
+#endif
+
+			for (row = dp->focus_row->next;
+					row != dp->focus_row && row->STRING;) {
+
+#ifdef OW_I18N
+				if (row->STRING[0] == wc ||
+						(iswlower(wc) && row->STRING[0] == towupper(wc)) ||
+						(iswupper(wc) && row->STRING[0] == towlower(wc)))
+#else
+				if (row->string[0] == event_action(event) ||
+						(event_action(event) >= 'a'
+								&& event_action(event) <= 'z'
+								&& row->string[0] == event_action(event) - 0x20)
+						|| (event_action(event) >= 'A'
+								&& event_action(event) <= 'Z'
+								&& row->string[0] == event_action(event) + 0x20)
+						)
+#endif
+
+				{
+					/* Character match: move Location Cursor to row */
+					dp->focus_row = row;
+					show_focus_win(item_public);
+					return;
+				}
+				row = row->next;
+				if (!row)
+					/* Wrap to first row */
+					row = dp->rows;
+			}
+		}
+
+#ifdef OW_I18N
+	  beep:
+#endif
+
+		/* No character match: beep user */
+		wait.tv_sec = 0;
+		wait.tv_usec = 0;
+		win_bell(event_window(event), wait, XV_NULL);
+		return;
+	}
+	else if (!event_is_button(event) && event_action(event) != LOC_DRAG) {
+		if (event_action(event) != ACTION_MENU &&
+				(!dp->focus_row ||
+						(event_action(event) != ACTION_ADJUST
+								&& event_is_up(event))))
+			/* Note: we need to pass ADJUST-up through in case a
+			 * panel_user_error is in effect.
+			 */
+			return;
+		navigation_cmd = TRUE;
+		row = NULL;
+		switch (event_action(event)) {
+			case ACTION_UP:
+				row = dp->focus_row->prev;
+				break;
+			case ACTION_DOWN:
+				row = dp->focus_row->next;
+				break;
+			case ACTION_JUMP_UP:
+				for (i = 1, row = dp->focus_row;
+						(unsigned)i <= dp->rows_displayed && row->prev; i++)
+					row = row->prev;
+				break;
+			case ACTION_JUMP_DOWN:
+				for (i = 1, row = dp->focus_row;
+						(unsigned)i <= dp->rows_displayed && row->next; i++)
+					row = row->next;
+				break;
+			case ACTION_PANE_UP:
+				row_nbr = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+				row = find_or_create_nth_row(dp, row_nbr, FALSE);
+				break;
+			case ACTION_PANE_DOWN:
+				row_nbr =
+						MIN((unsigned)xv_get(dp->list_sb,
+								SCROLLBAR_VIEW_START) + dp->rows_displayed - 1,
+						dp->nrows - 1);
+				row = find_or_create_nth_row(dp, row_nbr, FALSE);
+				break;
+			case ACTION_DATA_START:
+				row = dp->rows;
+				break;
+			case ACTION_DATA_END:
+				for (row = dp->focus_row; row->next;)
+					row = row->next;
+				break;
+			case ACTION_SELECT:
+			case ACTION_ADJUST:
+			case ACTION_MENU:
+				navigation_cmd = FALSE;
+				row = dp->focus_row;
+				event_set_x(event, dp->list_box.r_left);
+				if (row && get_row_rect(dp, row, &rect)) {
+					event_set_y(event, rect.r_top +
+							(rect.r_height - FRAME_FOCUS_RIGHT_HEIGHT) / 2);
+				}
+				else
+					event_set_y(event, dp->list_box.r_top);
+				break;
+		}
+		if (navigation_cmd) {
+			if (row) {
+				/* Move Location Cursor to requested row */
+				dp->focus_row = row;
+				show_focus_win(item_public);
+			}
+			return;
+		}
+	}
+	else {
+		/* -- Mouse button event -- */
+		/* Find row */
+		y_offset = event_y(event) - dp->list_box.r_top -
+				LIST_BOX_BORDER_WIDTH - ROW_MARGIN;
+		if (y_offset < 0)
+			/* event above first row => first row */
+			y_offset = 0;
+		if ((unsigned)y_offset >= dp->rows_displayed * dp->row_height)
+			/* event below last row => last row */
+			y_offset = dp->rows_displayed * dp->row_height - 1;
+		row_nbr = (unsigned)xv_get(dp->list_sb, SCROLLBAR_VIEW_START) +
+				(unsigned)y_offset / dp->row_height;
+		for (row = dp->rows; row; row = row->next)
+			if (row->row == row_nbr)
+				break;
+		if (event_action(event) != ACTION_MENU) {
+			if (!row) {
+				/* Non-menu event not over a row: ignore all but SELECT-down */
+				if (event_is_up(event) || event_action(event) != ACTION_SELECT)
+					return;
+			}
+			else if (!row->f.show) {
+				/* Non-menu event is over text item in edit mode */
+				panel_handle_event(dp->text_item, event);
+				return;
+			}
+		}
+	}
+
+	if (is_quick_duplicate_on_row(item_public, event, row)) return;
+
+	switch (event_action(event)) {
+
+			/* WARNING: set_current_row calls show_feedback, which calls the
+			 * notify proc.  The notify proc may delete the event row.  This
+			 * means that 'row' is invalid after the call to set_current_row.
+			 */
+		case ACTION_SELECT:
+			if (event_is_down(event)) {
+				if (row) {
+					dp->focus_row = row;
+					if (dp->edit_mode)
+						set_edit_row(dp, row, FALSE, event);
+					else
+						set_current_row(dp, row, event);
+				}
+				if (event_is_button(event) &&
+						wants_key(ip) && !hidden(ip) && !inactive(ip)) {
+					if (panel->kbd_focus_item != ip) {
+						/* Move the keyboard focus to the Scrolling List */
+						if (panel->status.has_input_focus)
+							panel_set_kbd_focus(panel, ip);
+						else {
+							panel->kbd_focus_item = ip;
+							panel->status.focus_item_set = TRUE;
+						}
+					}
+					else {
+						/* Move the Location Cursor to the new focus row */
+						show_focus_win(item_public);
+					}
+				}
+			}
+			else if (dp->edit_mode)
+				/* Possible end of SELECT-drag */
+				dp->last_edit_row = NULL;
+			break;
+
+		case ACTION_ADJUST:
+			if (dp->edit_mode) {
+				if (event_is_down(event))
+					set_edit_row(dp, row, TRUE, event);
+				else
+					/* Possible end of ADJUST-drag */
+					dp->last_edit_row = NULL;
+			}
+			else {
+				/* Display the question mark while ADJUST is down */
+				panel_user_error(ip, event);
+			}
+			break;
+
+		case ACTION_MENU:
+			if (event_is_down(event))
+				handle_menu_event(dp, event);
+			break;
+
+		case LOC_DRAG:
+			if (action_select_is_down(event)) {
+				if (dp->edit_mode) {
+					if (dp->last_edit_row != row) {
+						set_edit_row(dp, row, TRUE, event);
+					}
+				}
+				else if (dp->current_row != row)
+					set_current_row(dp, row, event);
+			}
+			else if (action_adjust_is_down(event) && dp->edit_mode) {
+				if (dp->last_edit_row != row) {
+					set_edit_row(dp, row, TRUE, event);
+				}
+			}
+			dp->focus_row = row;
+			show_focus_win(item_public);
+			break;
+	}
+}
+
+
+static void paint_title_box(Panel_list_info *dp)
+{
+	Xv_Drawable_info *info;
+	Item_info *ip;
+	GC *gc_list;
+	Panel_info *panel;
+	Xv_Window pw;
+	Xv_Screen screen;
+	CHAR *title_str;
+	int x;
+	int y;
+
+	ip = ITEM_FROM_PANEL_LIST(dp);
+	panel = ip->panel;
+	x = dp->title_rect.r_left + LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
+	y = dp->title_rect.r_top + LIST_BOX_BORDER_WIDTH +
+			(int)xv_get(dp->public_self, PANEL_LEVEL_DOT_HEIGHT);
+
+#ifdef OW_I18N
+	title_str = (wchar_t *)panel_strsave_wc((wchar_t *)dp->TITLE);
+#else
+	title_str = (char *)malloc((size_t)dp->title_display_str_len + 1);
+	strncpy(title_str, (char *)dp->title, (size_t)dp->title_display_str_len);
+#endif /* OW_I18N */
+
+	title_str[dp->title_display_str_len] = 0;
+	PANEL_EACH_PAINT_WINDOW(panel, pw)
+			DRAWABLE_INFO_MACRO(pw, info);
+
+#ifdef OW_I18N
+	panel_paint_text(pw, panel->bold_fontset_id,
+			ip->color_index, x, y +
+			panel_fonthome(panel->bold_font), title_str);
+#else
+	panel_paint_text(pw, panel->bold_font_xid, ip->color_index,
+			x, y + panel_fonthome(panel->bold_font), title_str);
+#endif /* OW_I18N */
+
+	screen = xv_screen(info);
+	gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
+	screen_adjust_gc_color(pw, SCREEN_SET_GC);
+	XDrawLine(xv_display(info), xv_xid(info),
+			gc_list[SCREEN_SET_GC],
+			x,
+			rect_bottom(&dp->title_rect),
+			rect_right(&dp->title_rect) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
+			rect_bottom(&dp->title_rect));
+	if (inactive(ip)) {
+		screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
+		XFillRectangle(xv_display(info), xv_xid(info),
+				gc_list[SCREEN_INACTIVE_GC],
+				dp->title_rect.r_left, dp->title_rect.r_top,
+				(unsigned)dp->title_rect.r_width,
+				(unsigned)dp->title_rect.r_height);
+	}
+	PANEL_END_EACH_PAINT_WINDOW xv_free(title_str);
+}
+
+
+static void panel_list_paint(Panel_item item_public, Panel_setting u)
+{
+    Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
+
+    /* Paint the label */
+    panel_paint_label(item_public);
+
+    /* Paint the value (i.e., the Scrolling List) */
+    if (dp->initialized) {
+	/* Note: paint_list_box is called first because it calls
+	 * paint_list_box_border.  paint_list_box_border paints the
+	 * border for both the list box and the title box.  If the
+	 * PANEL_LIST is inactive, paint_list_box will gray out the
+	 * rows and the border around the rows.  Next, paint_title_box
+	 * paints its title and then, if inactive, grays out the title
+	 * and its portion of the border.
+	 *   Reversing the order of these calls would leave the border
+	 * around the title not grayed out.
+	 *   Sorry if this is a bit confusing, but titles were added
+	 * after the original design.
+	 */
+	paint_list_box(dp);  /* including border for title */
+	if (dp->TITLE)
+	    paint_title_box(dp);
+    }
+}
+
+
+/*
+ * fit the scrolling list
+ */
+static int fit_list_box_to_rows(Panel_list_info *dp)
+{
+	int max_str_size;
+	int new_width;
+	Row_info *row;
+	struct pr_size str_size;	/* width & height of row string */
+	int width_changed;
+
+	if (dp->width <= 0) {
+		max_str_size = 0;
+		for (row = dp->rows; row; row = row->next) {
+			if (row->STRING) {
+				str_size = XV_PF_TEXTWIDTH((int)strlen(row->STRING), dp->font,
+						row->STRING);
+				max_str_size = MAX(max_str_size, str_size.x);
+			}
+		}
+		new_width = dp->string_x + max_str_size + ROW_MARGIN +
+				LIST_BOX_BORDER_WIDTH;
+	}
+	else
+		new_width = dp->width;
+	width_changed = new_width != dp->list_box.r_width;
+	dp->list_box.r_width = new_width;
+	return (width_changed);
+}
+
+static void compute_dimensions(Item_info *ip, Panel_list_info *dp)
+{
+	int ext_width;	/* extended width */
+
+#ifdef OW_I18N
+	XFontSet font_set;
+#else
+	XFontStruct *font_struct;
+#endif /* OW_I18N */
+
+	int list_box_width_changed;
+	int max_string_width;
+	Row_info *node;	/* current node in list */
+	Rect *view_rect;
+
+	if (dp->width < 0) {
+		/* Extend list box width to edge of panel */
+		view_rect = panel_viewable_rect(ip->panel, ip->panel->paint_window->pw);
+		ext_width = view_rect->r_left + view_rect->r_width -
+				dp->list_box.r_left - (dp->left_hand_sb ? 0 :
+				dp->sb_rect.r_width);
+	}
+	else if (dp->width == 0) {
+		/* Fit to rows: Make sure list box is at least as wide as title */
+		ext_width = dp->title_rect.r_width;
+	}
+	else
+		/* An explicit width was specified */
+		ext_width = 0;
+	list_box_width_changed = fit_list_box_to_rows(dp);
+	if (ext_width > dp->list_box.r_width) {
+		dp->list_box.r_width = ext_width;
+		list_box_width_changed = TRUE;
+	}
+	dp->title_rect.r_width = dp->list_box.r_width;
+
+	/*
+	 * Calculate the string y-coordinate and displayed string length
+	 * of each row.
+	 */
+	for (node = dp->rows; node; node = node->next) {
+		node->string_y = LIST_BOX_BORDER_WIDTH + ROW_MARGIN +
+				node->row * dp->row_height;
+		if (!node->display_str_len || list_box_width_changed)
+			set_row_display_str_length(dp, node);
+	}
+	/* Calculate the displayed string length of the title */
+	if (dp->TITLE) {
+
+#ifdef OW_I18N
+		font_set = ip->panel->bold_fontset_id;
+#else
+		font_struct = (XFontStruct *) xv_get(ip->panel->bold_font, FONT_INFO);
+#endif /* OW_I18N */
+
+		dp->title_display_str_len = STRLEN(dp->TITLE);
+		max_string_width = dp->title_rect.r_width -
+				2 * LIST_BOX_BORDER_WIDTH - 2 * ROW_MARGIN;
+
+#ifdef OW_I18N
+		while (XwcTextEscapement(font_set, dp->TITLE, dp->title_display_str_len)
+				> max_string_width)
+#else
+		while (XTextWidth(font_struct, dp->title, dp->title_display_str_len)
+				> max_string_width)
+#endif /* OW_I18N */
+
+		{
+			dp->title_display_str_len--;
+		}
+	}
+
+	ip->value_rect.r_width = dp->list_box.r_width + dp->sb_rect.r_width;
+	ip->value_rect.r_height = dp->title_rect.r_height + dp->list_box.r_height;
+	if (dp->left_hand_sb)
+		dp->sb_rect.r_left = dp->list_box.r_left - dp->sb_rect.r_width;
+	else
+		dp->sb_rect.r_left = rect_right(&dp->list_box) + 1;
+	dp->sb_rect.r_top = dp->list_box.r_top;
+	xv_set(dp->list_sb,
+			XV_X, dp->sb_rect.r_left, XV_Y, dp->sb_rect.r_top, NULL);
+}
+
+
+static void panel_list_resize(Panel_item item_public)
+{
+	Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
+	Item_info *ip = ITEM_PRIVATE(item_public);
+	int old_width;
+
+	if (dp->width < 0) {
+		/* Clear current panel list */
+		panel_default_clear_item(item_public);
+		/* Extend-to-edge: recompute list box dimensions */
+		old_width = ip->rect.r_width;
+		compute_dimensions(ip, dp);
+		ip->rect = panel_enclosing_rect(&ip->label_rect, &ip->value_rect);
+		if (ip->rect.r_width <= old_width) {
+			/* Width has not grown, so a resize may not occur.  (It depends
+			 * on whether the height has increased and what's obscured.)
+			 * We need to manually repaint the Scrolling List.
+			 */
+			panel_redisplay_item(ip, PANEL_NO_CLEAR);
+		}
+	}
+}
+
+
+static void panel_list_remove(Panel_item item_public)
+{
+    Item_info      *ip = ITEM_PRIVATE(item_public);
+    Panel_info	   *panel = ip->panel;
+
+    /*
+     * Only reassign the keyboard focus to another item if the panel isn't
+     * being destroyed.
+     */
+    if (!panel->status.destroying && panel->kbd_focus_item == ip) {
+	hide_focus_win(item_public);
+	if (panel->primary_focus_item == ip)
+	    panel->primary_focus_item = NULL;
+	panel->kbd_focus_item = panel_next_kbd_focus(panel, TRUE);
+	panel_accept_kbd_focus(panel);
+    }
+
+    return;
+}
+
+
+static void panel_list_layout(Panel_item item_public, Rect *deltas)
+{
+    Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
+    Item_info      *ip = ITEM_PRIVATE(item_public);
+
+    if (!created(ip))
+	return;
+    dp->title_rect.r_left += deltas->r_left;
+    dp->title_rect.r_top += deltas->r_top;
+    dp->list_box.r_left += deltas->r_left;
+    dp->list_box.r_top += deltas->r_top;
+    if (dp->list_sb) {
+	dp->sb_rect.r_left += deltas->r_left;
+	dp->sb_rect.r_top += deltas->r_top;
+	xv_set(dp->list_sb,
+	       XV_X, dp->sb_rect.r_left,
+	       XV_Y, dp->sb_rect.r_top,
+	       NULL);
+    }
+    xv_set(dp->text_item,
+	   XV_X, xv_get(dp->text_item, XV_X) + deltas->r_left,
+	   XV_Y, xv_get(dp->text_item, XV_Y) + deltas->r_top,
+	   NULL);
+}
+
+
 
 static Panel_ops ops = {
     panel_list_handle_event,		/* handle_event() */
@@ -251,20 +1863,6 @@ static Panel_ops ops = {
     NULL				/* extension: reserved for future use */
 };
 
-
-static Defaults_pairs sb_placement_pairs[] = {
-	{ "Right", FALSE },
-	{ "right", FALSE },
-	{ "Left", TRUE },
-	{ "left", TRUE },
-	{ NULL, FALSE }
-};
-
-
-typedef enum {
-    INSERT_BEFORE,
-    INSERT_AFTER
-} Insert_pos_t;
 
 
 
@@ -365,47 +1963,6 @@ static int panel_list_init(Xv_Window parent, Panel_item panel_list_public,
     return XV_OK;
 }
 
-/*
- * Create the row
- */
-static Row_info * create_next_row(Panel_list_info	*dp, Row_info *prev)
-{
-	Row_info *node;
-
-	node = xv_alloc(Row_info);
-	if (prev) {
-		node->row = prev->row + 1;
-		prev->next = node;
-	}
-	else {
-		dp->rows = node;
-		node->row = 0;
-		if (!dp->focus_row)
-			dp->focus_row = node;
-	}
-	node->next = NULL;
-	node->prev = prev;
-	/*
-	 * It's possible that prev->row + 1 is not equal to which_row ie. the
-	 * row is created at the end of the list
-	 */
-
-#ifdef OW_I18N
-	/*
-	 * xv_alloc calls calloc, therefor all fields are zeroed already.
-	 */
-#else
-	node->string = NULL;
-	node->f.free_string = FALSE;
-#endif /* OW_I18N */
-
-	node->glyph = 0;
-	node->f.show = TRUE;
-	node->f.row_inactive = FALSE;
-	dp->nrows++;
-	return (node);
-}
-
 
 /*
  * Like find_or_create_nth_row(), for cases where the current
@@ -418,36 +1975,789 @@ static Row_info * gimme_the_next_row(Panel_list_info *dp, Row_info *prev)
     return create_next_row(dp, prev);
 }
 
-/*
- * Find/Create the row
- */
-static Row_info * find_or_create_nth_row(Panel_list_info *dp, int which_row, int create)
+static void set_row_glyph(Panel_list_info *dp, Row_info *row, Pixrect *glyph_pr)
 {
-	Row_info *prev = NULL;
-	Row_info *node = dp->rows;
+	if ((unsigned)(glyph_pr->pr_height) <= dp->row_height) {
+		row->glyph = glyph_pr;
+	}
+	else {
+		xv_error((Xv_opaque) glyph_pr,
+				ERROR_STRING,
+				XV_MSG("Panel List glyph height exceeds row height; glyph ignored"),
+				ERROR_PKG, PANEL,
+				NULL);
+		row->glyph = NULL;
+	}
+}
 
+static void set_row_mask_glyph(Panel_list_info *dp, Row_info *row, Pixrect *glyph_pr)
+{
+	if (!glyph_pr) {
+		row->mask_glyph = (Pixrect *) NULL;
+		return;
+	}
+
+	if ((int)(glyph_pr->pr_depth) != 1) {
+		xv_error((Xv_opaque) glyph_pr,
+				ERROR_STRING,
+				XV_MSG("Panel List mask glyph depth not equal 1; mask glyph ignored"),
+				ERROR_PKG, PANEL,
+				NULL);
+		row->mask_glyph = NULL;
+		return;
+	}
+
+	if ((unsigned)(glyph_pr->pr_height) <= dp->row_height) {
+		row->mask_glyph = glyph_pr;
+	}
+	else {
+		xv_error((Xv_opaque) glyph_pr,
+				ERROR_STRING,
+				XV_MSG("Panel List mask glyph height exceeds row height; glyph ignored"),
+				ERROR_PKG, PANEL,
+				NULL);
+		row->mask_glyph = NULL;
+	}
+}
+
+static void set_row_font(Panel_list_info *dp, Row_info *row, Xv_Font font)
+{
+	Xv_Font old_font = row->font;
+
+	if (!font) {
+		row->font = font;
+	}
+	else if ((unsigned)xv_get(font,FONT_DEFAULT_CHAR_HEIGHT) <=dp->row_height) {
+		row->font = font;
+	}
+	else {
+		xv_error(font,
+				ERROR_STRING,
+					XV_MSG("Font height exceeds row height; font ignored"),
+				ERROR_PKG, PANEL,
+				NULL);
+		row->font = XV_NULL;
+	}
+	if (row->font != old_font)
+		row->display_str_len = 0;	/* force recomputation */
+}
+
+static void panel_list_delete_row(Panel_list_info *dp, Row_info *node, int repaint)
+{
+	Row_info *prev = node->prev;
+
+	if (prev) {
+		prev->next = node->next;
+	}
+	else {
+		dp->rows = node->next;
+	}
+
+	if (node->next) {
+		node->next->prev = prev;
+	}
+
+	if (dp->focus_row == node) {
+		dp->focus_row = node->next;
+		if (!dp->focus_row)
+			dp->focus_row = prev;
+	}
+
+	if (node == dp->current_row)
+		dp->current_row = NULL;
+
+	/* Adjust the row numbers */
+	prev = node;
+	node = node->next;
+
+#ifdef OW_I18N
+	_xv_free_ps_string_attr_dup(&prev->string);
+#else
+	if (prev->f.free_string)
+		xv_free(prev->string);
+#endif /* OW_I18N */
+
+	xv_free(prev);
+	while (node) {
+		node->row--;
+		node->string_y -= dp->row_height;
+		node = node->next;
+	}
+	dp->nrows--;
+	if (dp->list_sb)
+		xv_set(dp->list_sb, SCROLLBAR_OBJECT_LENGTH, dp->nrows,	/* in rows */
+				NULL);
+
+	if (repaint) {
+		/* Erase old rows */
+		panel_clear_rect(PANEL_PRIVATE(dp->parent_panel), dp->list_box);
+		/* Repaint list box and currently visible rows */
+		paint_list_box(dp);
+	}
+}
+
+static void accept_insert(Panel_list_info *dp, Row_info *row)
+{
+    PANEL_PRIVATE(dp->parent_panel)->kbd_focus_item = NULL;
+    xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
+    xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
+    dp->text_item_row = NULL;   /* no row being edited */
+#ifdef OW_I18N
+    _xv_set_wcs_attr_dup(&row->string,
+			 (wchar_t *) xv_get(dp->text_item, PANEL_VALUE_WCS));
+#else
+    if (row->f.free_string)
+	free(row->string);
+    row->string = panel_strsave((char *) xv_get(dp->text_item, PANEL_VALUE));
+    row->f.free_string = TRUE;
+#endif /* OW_I18N */
+    row->f.show = TRUE;
+    set_row_display_str_length(dp, row);
+    paint_row(dp, row);
+}
+
+static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item)
+{
+    Panel_list_info *dp;
+    Item_info	*panel_list_ip;
+    list_notify_proc_t	notify_proc;
+    Event	*event = (Event *) xv_get(menu, MENU_LAST_EVENT);
+    Event	 null_event;
+    int		 repaint_visible_rows = FALSE;
+    Row_info	*row;
+#ifdef OW_I18N
+    void	*string;
+#else
+    CHAR	*string;
+#endif
+    int		 validated;
+
+    dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
+
+    row = dp->text_item_row;
+    if (row) {
+	panel_list_ip = ITEM_FROM_PANEL_LIST(dp);
+	if (STRLEN((CHAR *)xv_get(dp->text_item, PANEL_VALUE_I18N)) == 0)
+	{
+	    panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+		panel_list_ip);
+	    xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
+	    xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
+	    panel_list_delete_row(dp, row, REPAINT_LIST);
+	} else {
+#ifdef OW_I18N
+	    if (wchar_notify(panel_list_ip))
+		notify_proc = panel_list_ip->notify_wc;
+	    else
+#else
+	    notify_proc = (list_notify_proc_t)panel_list_ip->notify;
+#endif
+	    string = (CHAR *) xv_get(dp->text_item, PANEL_VALUE_I18N);
+	    if (!dp->insert_duplicate && check_for_duplicate(dp, string))
+		validated = FALSE;
+	    else {
+		if (!event) {
+		    event_init(&null_event);
+		    event = &null_event;
+		}
+		dp->insert_delete_enabled = FALSE;
+#ifdef OW_I18N
+		if (! wchar_notify(panel_list_ip))
+		    string = (char *) xv_get(dp->text_item, PANEL_VALUE);
+#endif
+	    	validated = (!notify_proc ||
+			     (*notify_proc) (dp->public_self, string,
+				 		(Xv_opaque)row->row,    /* weiss das einer ? */
+					     PANEL_LIST_OP_VALIDATE,
+					     event, row->row)
+			     == XV_OK);
+		dp->insert_delete_enabled = TRUE;
+	    }
+	    if (validated) {
+		/* Text was validated */
+		if (dp->edit_op == OP_CHANGE)
+		    accept_change(dp->text_item, row);
+		else {
+		    accept_insert(dp, row);
+		    panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+			panel_list_ip);
+		}
+	    } else {
+		/* Text was not validated */
+		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+		    panel_list_ip);
+		xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
+		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
+		if (!row->STRING || STRLEN(row->STRING) == 0)
+		{
+		    panel_list_delete_row(dp, row, DO_NOT_REPAINT_LIST);
+		    repaint_visible_rows = TRUE;
+		} else {
+		    row->f.show = TRUE;
+		    paint_row(dp, row);
+		}
+	    }
+	}
+    }
+    dp->edit_op = OP_NONE;
+    dp->text_item_row = NULL;   /* no row being edited */
+    dp->edit_mode = FALSE;
+
+    if (!dp->current_row && !dp->choose_none && dp->rows) {
+        /* Last selected row was deleted: If no row is selected,
+	 * then select the first row.
+	 */
+        for (row = dp->rows; row; row = row->next)
+            if (row->f.selected && !row->f.row_inactive)
+            	break;
+        if (!row) {
+	    for (row = dp->rows; row; row = row->next)
+		if ( !row->f.row_inactive ) {
+		    dp->current_row = row;
+		    row->f.selected = TRUE;
+		    break;
+		}
+        }
+    }
+
+
+    /* Remove highlighting and repaint boxes around selected rows */
+    for (row=dp->rows; row; row=row->next) {
+    	if (repaint_visible_rows || row->f.edit_selected || row->f.selected) {
+    	    row->f.edit_selected = FALSE;
+	    paint_row(dp, row);
+    	}
+    }
+
+    return(XV_OK);
+}
+
+static Xv_opaque enter_edit_mode(Menu menu, Menu_item menu_item)	/* not used */
+{
+	Panel_list_info *dp;
+	int display_length;
+	Item_info *panel_list_ip;
+	Row_info *row;
+	int stored_length;
+	int text_width, chrwth;
+
+	dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA,
+			PANEL_LIST_EXTENSION_DATA);
+	dp->edit_mode = TRUE;
+
+	/*
+	 *** Set the attributes of the text field for editing ***
+	 */
+	/* Determine the panel text field's display length, in characters. */
+	text_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
+			ROW_MARGIN - dp->string_x;
+
+#ifdef OW_I18N
+	/*  Characters have different widths.  
+	 *  Display_length is actually described
+	 *  in how many columns, and not how many characters.
+	 *  Text_width is in pixels. So in order to compare
+	 *  display_length and stored_length they both have
+	 *  to be converted to pixels.  I am assuming one
+	 *  byte still occupies one column, so if the user
+	 *  specified PANEL_VALUE_STORED_LENGTH, the maximum
+	 *  storage in pixels would be (n bytes * default column width).
+	 *  This is a reasonable assumption in EUC world,
+	 *  but would be completely broken for Unicode.
+	 */
+	{
+		int col_width;	/* column width */
+		int stored_width;	/* maximum pixels for stored_length */
+
+		col_width = xv_get(dp->font, FONT_COLUMN_WIDTH);
+		chrwth = xv_get(dp->font, FONT_DEFAULT_CHAR_WIDTH);
+		display_length = text_width / col_width;
+		if (dp->stored_length_wc == FALSE) {
+			stored_length =
+					(int)xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH);
+			stored_width = stored_length * col_width;
+		}
+		else {
+			stored_length =
+					(int)xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH_WCS);
+			stored_width = stored_length * chrwth;
+		}
+		/*  Need to limit the display length to be
+		 *  less than or equal to the stored length.
+		 *  So calculate everything in pixels.
+		 */
+		if (text_width > stored_width)
+			display_length = stored_width / col_width;
+	}
+
+#else
+	chrwth = xv_get(dp->font, FONT_DEFAULT_CHAR_WIDTH);
+	display_length = text_width / chrwth;
+	stored_length = (int)xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH);
+	if (display_length > stored_length)
+		display_length = stored_length;
+#endif /* OW_I18N */
+
+	/* Modify the text field */
+	panel_list_ip = ITEM_PRIVATE(dp->public_self);
+	xv_set(dp->text_item,
+			PANEL_ITEM_COLOR, panel_list_ip->color_index,
+			PANEL_ITEM_X, dp->list_box.r_left + dp->string_x,
+			PANEL_VALUE_DISPLAY_LENGTH, display_length,
+			XV_KEY_DATA, PANEL_NOTIFY_PROC, panel_list_ip->notify, NULL);
+	dp->text_item_row = NULL;	/* no row being edited */
+
+	/* Repaint boxes around selected rows */
+	for (row = dp->rows; row; row = row->next)
+		if (row->f.selected)
+			paint_row(dp, row);
+
+	return (XV_OK);
+}
+
+static Row_info * next_row(Panel_list_info *dp, Row_info *row, int n)
+{
+	Row_info *node = NULL;
+
+	if (!row) {
+		dp->rows = row = xv_alloc(Row_info);
+		dp->nrows = 1;
+		row->prev = NULL;
+		if (!dp->focus_row)
+			dp->focus_row = row;
+	}
+	else {
+		if (n == 0) {	/* If it is the first row, return the row
+						 * itself */
+			return (row);
+		}
+		else if (row->next)	/* Already created */
+			return (row->next);
+		else {
+			node = xv_alloc(Row_info);
+			node->prev = row;
+			row->next = node;
+			row = node;
+			dp->nrows++;
+		}
+	}
+	row->next = NULL;
+	row->f.selected = FALSE;
+	row->f.show = TRUE;
+	row->row = n;
+
+#ifdef OW_I18N
+	/*
+	 * xv_alloc uses calloc therefor all fields are zeroed alreday.
+	 */
+#else
+	row->string = NULL;
+	row->f.free_string = FALSE;
+#endif /* OW_I18N */
+
+	row->glyph = NULL;
+	return (row);
+}
+
+static Row_info *panel_list_insert_row(Panel_list_info *dp, int which_row, int show, int repaint)
+{
+	Row_info *node = dp->rows;
+	Row_info *prev = NULL;
+	Row_info *row = xv_alloc(Row_info);
 
 	while (node && (node->row != which_row)) {
 		prev = node;
 		node = node->next;
 	}
+	row->f.selected = FALSE;
+	row->f.show = show;
+	row->next = node;
+	row->prev = prev;
+	row->glyph = NULL;
 
-	if (!node && create)
-		node = create_next_row(dp, prev);
+#ifdef OW_I18N
+	/*
+	 * xv_alloc uses callc, therefor you do not need to zeroing again.
+	 */
+#else
+	row->string = NULL;
+	row->f.free_string = FALSE;
+#endif /* OW_I18N */
 
-	return (node);
+	/*
+	 * It's possible that prev->row + 1 is not equal to which_row ie. the row
+	 * is created at the end of the list
+	 */
+	if (prev) {
+		prev->next = row;
+		row->row = prev->row + 1;
+	}
+	else {	/* Insert at the begining of the list */
+		dp->rows = row;
+		row->row = 0;
+		if (!dp->focus_row)
+			dp->focus_row = row;
+	}
+	row->string_y = LIST_BOX_BORDER_WIDTH + ROW_MARGIN +
+			row->row * dp->row_height;
+	if (node) {
+		node->prev = row;
+	}
+	while (node) {
+		node->row++;
+		node->string_y += dp->row_height;
+		node = node->next;
+	}
+	dp->nrows++;
+	if (dp->list_sb)
+		xv_set(dp->list_sb, SCROLLBAR_OBJECT_LENGTH, dp->nrows,	/* in rows */
+				NULL);
+
+	if (repaint)
+		paint_list_box(dp);
+
+	return (row);
 }
 
-static int check_for_duplicate(Panel_list_info *dp, CHAR *string)
+static void panel_list_create_displayarea(Panel_list_info *dp)
 {
-    Row_info	   *row;
+	Item_info *ip = ITEM_PRIVATE(dp->public_self);
+	int number_rows;
+	Panel_list_item lpub = PANEL_LIST_PUBLIC(dp);
+	char instname[200], *liinst;
 
-    for (row=dp->rows; row; row=row->next)
-	if (row->STRING && STRCMP(row->STRING, string) == 0)
-	    return TRUE;  /* found duplicate string */
-    return FALSE;   /* no duplicate string */
+	if (dp->rows_displayed == 0) {
+		if (dp->nrows < PANEL_LIST_DEFAULT_ROW)
+			dp->rows_displayed = dp->nrows;
+		else
+			dp->rows_displayed = PANEL_LIST_DEFAULT_ROW;
+	}
+	number_rows = dp->rows_displayed;
+
+	/*
+	 * By this time all the rows have been created. Calculate the size of the
+	 * list box (depends on the number of rows to be displayed and the size of
+	 * the fonts).
+	 */
+	dp->list_box.r_height = 2 * LIST_BOX_BORDER_WIDTH +
+			2 * ROW_MARGIN + number_rows * dp->row_height;
+
+	lpub = PANEL_LIST_PUBLIC(dp);
+	liinst = (char *)xv_get(lpub, XV_INSTANCE_NAME);
+	sprintf(instname, "%sSB", liinst ? liinst : "ScrollList");
+
+	/* Create the Scrolling List Scrollbar
+	 */
+	dp->list_sb = xv_create(ip->panel->paint_window->pw, SCROLLBAR, XV_INSTANCE_NAME, instname, WIN_INHERIT_COLORS, TRUE,	/* inherit both the visual and CMS */
+			XV_HEIGHT, dp->list_box.r_height, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA, ip, SCROLLBAR_NOTIFY_CLIENT, ip->panel->paint_window->pw, SCROLLBAR_VIEW_LENGTH, dp->rows_displayed,	/* in rows */
+			SCROLLBAR_OBJECT_LENGTH, dp->nrows,	/* in rows */
+			SCROLLBAR_PIXELS_PER_UNIT, dp->row_height,
+			SCROLLBAR_INACTIVE, inactive(ip),
+			XV_SHOW, !hidden(ip), XV_KEY_DATA, FRAME_ORPHAN_WINDOW, TRUE, NULL);
+	if (ip->color_index >= 0)
+		xv_set(dp->list_sb, WIN_FOREGROUND_COLOR, ip->color_index, NULL);
+	dp->sb_rect = *(Rect *) xv_get(dp->list_sb, XV_RECT);
+	if (dp->left_hand_sb)
+		dp->list_box.r_left += dp->sb_rect.r_width;
+
+	/*
+	 * Don't allow the Scrolling List Scrollbar to accept keyboard input focus.
+	 */
+	win_set_no_focus(dp->list_sb, TRUE);
 }
 
+static Xv_opaque locate_next_choice(Menu menu, Menu_item menu_item)
+{
+	Panel_list_info *dp;
+	Row_info *first_row;
+	Row_info *row;
+	int view_end;
+	int view_start;	/* in pixels */
+
+	dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA,
+			PANEL_LIST_EXTENSION_DATA);
+
+	if (!dp->rows)
+		return (XV_OK);	/* no rows */
+
+	/* Determine the range of the view */
+	view_start = dp->row_height *
+			(int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+	view_end = view_start + dp->rows_displayed * dp->row_height - 1;
+
+	/* Find the first row beyond the view (if any) */
+	for (first_row = dp->rows; first_row; first_row = first_row->next) {
+		if (first_row->string_y >= view_end)
+			break;
+	}
+	if (!first_row)
+		first_row = dp->rows;
+
+	/* Find the next selected row (if any) */
+	row = first_row;
+	do {
+		if (row->f.selected)
+			break;
+		row = row->next;
+		if (!row)
+			row = dp->rows;
+	} while (row != first_row);
+
+	/* Scroll the display to this row */
+	dp->focus_row = row;
+	make_row_visible(dp, row->row);
+	return (XV_OK);
+}
+
+static Panel_setting insert_done(Panel_item text_item, Event *event)
+{
+	Panel_list_info *dp;
+	Row_info *insert_row;
+	int item_y;
+	int first_row_in_view;
+	list_notify_proc_t notify_proc;
+	int result;
+	Xv_font font;
+
+#ifdef OW_I18N
+	void *string;
+	Item_info *panel_list_ip;
+#else
+	CHAR *string;
+#endif /* OW_I18N */
+
+	dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA,
+			PANEL_LIST_EXTENSION_DATA);
+	insert_row = dp->text_item_row;
+
+	/* If value is empty, then exit insert mode. */
+	if (STRLEN((CHAR *) xv_get(text_item, PANEL_VALUE_I18N)) == 0) {
+		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+				ITEM_FROM_PANEL_LIST(dp));
+		xv_set(text_item, XV_SHOW, FALSE, NULL);
+		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
+		dp->text_item_row = NULL;	/* no row being edited */
+		panel_list_delete_row(dp, insert_row, REPAINT_LIST);
+		dp->edit_op = OP_NONE;
+		return (PANEL_NONE);
+	}
+
+	/* Validate entry */
+	string = (CHAR *) xv_get(text_item, PANEL_VALUE_I18N);
+	if (!dp->insert_duplicate && check_for_duplicate(dp, string)) {
+		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+				PANEL_NOTIFY_PROC);
+		if (notify_proc) {
+			/* so that the application can tell the user.... */
+			(*notify_proc) (dp->public_self, string,
+					dp->text_item_row->client_data,
+					PANEL_LIST_OP_DUPLICATE, event, dp->text_item_row->row);
+		}
+		return PANEL_NONE;
+	}
+
+#ifdef OW_I18N
+	panel_list_ip = ITEM_PRIVATE(dp->public_self);
+	if (wchar_notify(panel_list_ip))
+		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+				PANEL_NOTIFY_PROC_WCS);
+	else
+#endif
+
+		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+				PANEL_NOTIFY_PROC);
+	if (notify_proc) {
+		dp->insert_delete_enabled = FALSE;
+
+#ifdef OW_I18N
+		if (!wchar_notify(panel_list_ip))
+			string = (char *)xv_get(text_item, PANEL_VALUE);
+#endif
+
+		result = (*notify_proc) (dp->public_self, string, (Xv_opaque) insert_row->row,	/* pass row # as client data */
+				PANEL_LIST_OP_VALIDATE, event, insert_row->row);
+		dp->insert_delete_enabled = TRUE;
+		if (result == XV_ERROR)
+			return (PANEL_NONE);
+	}
+
+	/* Entry validated.  Insert into Scrolling List */
+	accept_insert(dp, insert_row);
+
+	/* Create a new row before the next row.  If no next row, then append. */
+	insert_row = panel_list_insert_row(dp,
+			insert_row->next ? insert_row->next->row : -1, HIDE_ROW,
+			REPAINT_LIST);
+
+	/* Continue insert mode. insert_row now points to empty
+	 * row just inserted.
+	 *
+	 * If new row is out of the view window, then scroll new row
+	 * to top of view window.
+	 */
+	dp->focus_row = insert_row;
+	make_row_visible(dp, insert_row->row);
+
+	/* Overlay text item over blank new row */
+	first_row_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+	xv_set(dp->list_sb, SCROLLBAR_INACTIVE, TRUE, NULL);
+	item_y = dp->list_box.r_top + insert_row->string_y -
+			first_row_in_view * dp->row_height;
+	font = (insert_row->font) ? insert_row->font : dp->font;
+	xv_set(dp->text_item,
+			PANEL_ITEM_Y, item_y
+			+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
+			- 1,
+			PANEL_NOTIFY_PROC, insert_done,
+			PANEL_VALUE_I18N, NULL_STRING, XV_SHOW, TRUE, NULL);
+	dp->text_item_row = insert_row;
+
+	/* Warp the pointer to the bottom right corner of the text item */
+	xv_set(dp->parent_panel,
+			WIN_MOUSE_XY,
+			rect_right(&dp->list_box) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
+			item_y + dp->row_height - 1, NULL);
+
+	/* Transfer keyboard focus to the text item */
+	panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+			ITEM_PRIVATE(dp->text_item));
+
+	return (PANEL_NONE);
+}
+
+static Xv_opaque insert_proc(Menu menu, Menu_item menu_item)
+{
+	Panel_list_info *dp;
+	int first_row_in_view;
+	int item_y;
+	int which_row;
+	Insert_pos_t insert_position;
+	Row_info *insert_row = NULL;
+	Xv_font font;
+
+	dp = (Panel_list_info *)xv_get(menu, XV_KEY_DATA,PANEL_LIST_EXTENSION_DATA);
+	insert_position = (Insert_pos_t)xv_get(menu_item,XV_KEY_DATA,PANEL_INSERT);
+
+	/* Find the first row selected for editing */
+	for (insert_row = dp->rows; insert_row; insert_row = insert_row->next) {
+		if (insert_row->f.edit_selected)
+			break;
+	}
+	if (!insert_row)
+		insert_row = dp->rows;
+
+	/* Determine where to insert new row */
+	if (insert_position == INSERT_AFTER) {
+		if (insert_row)
+			insert_row = insert_row->next;
+		if (insert_row)
+			which_row = insert_row->row;
+		else
+			which_row = -1;	/* append to end of list */
+	}
+	else {
+		if (insert_row)
+			which_row = insert_row->row;
+		else
+			which_row = 0;	/* insert at beginning of list */
+	}
+
+	/* Create insert row */
+	insert_row = panel_list_insert_row(dp, which_row, HIDE_ROW, REPAINT_LIST);
+
+	/* If new row is out of the view window, then scroll new row
+	 * to the top of view window.
+	 */
+	dp->focus_row = insert_row;
+	make_row_visible(dp, insert_row->row);
+
+	/* Overlay text item over blank new row */
+	first_row_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
+	xv_set(dp->list_sb, SCROLLBAR_INACTIVE, TRUE, NULL);
+	item_y = dp->list_box.r_top + insert_row->string_y -
+			first_row_in_view * dp->row_height;
+	font = (insert_row->font) ? insert_row->font : dp->font;
+	xv_set(dp->text_item,
+			PANEL_ITEM_Y, item_y
+					+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
+					- 1,
+			PANEL_NOTIFY_PROC, insert_done,
+			PANEL_VALUE_I18N, NULL_STRING,
+			XV_SHOW, TRUE,
+			NULL);
+	dp->text_item_row = insert_row;
+
+	/* Warp the pointer to the bottom right corner of the text item */
+	xv_set(dp->parent_panel,
+			WIN_MOUSE_XY, rect_right(&dp->list_box)
+							- LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
+							item_y + dp->row_height - 1,
+			NULL);
+
+	/* Transfer keyboard focus to the text item */
+	panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
+						ITEM_PRIVATE(dp->text_item));
+
+	dp->edit_op = OP_INSERT;
+	return (XV_OK);
+}
+
+static Xv_opaque delete_proc(Menu menu, Menu_item menu_item)
+{
+	Panel_list_info *dp;
+	list_notify_proc_t notify_proc;
+	int row_deleted;
+	Item_info *panel_list_ip;
+	Row_info *edit_row;	/* Row being edited with a text field */
+	Row_info *row;
+	Event *event;
+
+#ifdef OW_I18N
+	void *string;
+#endif
+
+	dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA,
+			PANEL_LIST_EXTENSION_DATA);
+	panel_list_ip = ITEM_PRIVATE(dp->public_self);
+
+#ifdef OW_I18N
+	if (wchar_notify(panel_list_ip))
+		notify_proc = panel_list_ip->notify_wc;
+	else
+#endif
+
+		notify_proc = (list_notify_proc_t) panel_list_ip->notify;
+	if (notify_proc)
+		event = (Event *) xv_get(menu, MENU_LAST_EVENT);
+	edit_row = dp->text_item_row;
+	do {
+		row_deleted = FALSE;
+		for (row = dp->rows; row; row = row->next)
+			if (row->f.edit_selected && row != edit_row) {
+				if (notify_proc) {
+					dp->insert_delete_enabled = FALSE;
+
+#ifdef OW_I18N
+					if (wchar_notify(panel_list_ip))
+						string = row->STRING;
+					else
+						string = _xv_get_mbs_attr_dup(&row->string);
+					(*notify_proc) (dp->public_self, string, row->client_data,
+#else
+					(*notify_proc) (dp->public_self,
+							row->string, row->client_data,
+#endif
+
+							PANEL_LIST_OP_DELETE, event, row->row);
+					dp->insert_delete_enabled = TRUE;
+				}
+				panel_list_delete_row(dp, row, REPAINT_LIST);
+				row_deleted = TRUE;
+				break;
+			}
+	} while (row_deleted);
+	return (XV_OK);
+}
 
 static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist     avlist)
 {
@@ -1738,2365 +4048,9 @@ static int panel_list_destroy(Panel_item item_public, Destroy_status  status)
     return XV_OK;
 }
 
-static Attr_attribute quick_dupl_key = 0;
-
-typedef struct {
-	Panel_list_info *priv;
-	Row_info *row;
-	Rect string_rect;
-} quick_data_t;
-
-static void q_remove_underline(Quick_owner qo)
-{
-	quick_data_t *qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
-	Panel_list_info *dp = qd->priv;
-	Panel_list_item lpub = PANEL_LIST_PUBLIC(dp);
-
-	panel_paint(lpub, PANEL_CLEAR);
-	qd->priv = NULL;
-	qd->row = NULL;
-}
-
-static void start_quick_dup(Panel_list_info *dp, Event *ev, Row_info *row)
-{
-	Quick_owner qo;
-	quick_data_t *qd;
-
-	qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
-	if (! qo) {
-		qd = xv_alloc(quick_data_t);
-		qo = xv_create(dp->parent_panel, QUICK_OWNER,
-					QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
-					QUICK_CLIENT_DATA, qd,
-					NULL);
-		xv_set(dp->parent_panel, XV_KEY_DATA,quick_dupl_key, qo, NULL);
-	}
-	else {
-		qd = (quick_data_t *)xv_get(qo,	QUICK_CLIENT_DATA);
-	}
-
-	if (xv_get(qo, QUICK_NEED_START)) {
-		XFontStruct *fs;
-		char *s;
-		int ex, sx;
-		Rect row_rect;
-
-		qd->priv = dp;
-		qd->row = row;
-
-		s = qd->row->string;
-
-		if (!get_row_rect(dp, row, &row_rect)) return;
-		if (row->STRING) {
-			qd->string_rect.r_left = dp->list_box.r_left + dp->string_x;
-			qd->string_rect.r_top = row_rect.r_top;
-			qd->string_rect.r_width = row_rect.r_width - dp->string_x +
-					LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
-			qd->string_rect.r_height = row_rect.r_height;
-		}
-		else
-			qd->string_rect = row_rect;
-
-		sx = qd->string_rect.r_left;
-		ex = rect_right(&qd->string_rect);
-
-		if (row->font) fs = (XFontStruct *)xv_get(row->font, FONT_INFO);
-		else {
-			Xv_font font = xv_get(dp->parent_panel, XV_FONT);
-			fs = (XFontStruct *)xv_get(font, FONT_INFO);
-		}
-
-		xv_set(qo,
-			QUICK_BASELINE, rect_bottom(&qd->string_rect) - 2,
-			QUICK_FONTINFO, fs,
-			QUICK_START, s, sx, ex, 
-			NULL);
-	}
-
-	xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
-}
-
-static int is_quick_duplicate_on_row(Panel_item list, Event *ev, Row_info *row)
-{
-	Panel_list_info *dp = PANEL_LIST_PRIVATE(list);
-	Quick_owner qo;
-	quick_data_t *qd;
-
-	switch (event_action(ev)) {
-		case ACTION_SELECT:
-			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (! event_is_down(ev)) return TRUE;
-
-			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
-
-			start_quick_dup(dp, ev, row);
-			return TRUE;
-
-		case LOC_DRAG:
-			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (! quick_dupl_key) return TRUE;
-
-			qo = xv_get(dp->parent_panel, XV_KEY_DATA,quick_dupl_key);
-			if (! qo) return TRUE;
-			if (! xv_get(qo, SEL_OWN)) return TRUE;
-			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
-			return TRUE;
-
-		case ACTION_ADJUST:
-			if (! event_is_quick_duplicate(ev)) return FALSE;
-			if (! quick_dupl_key) {
-				xv_set(event_window(ev), WIN_ALARM, NULL);
-				return TRUE;
-			}
-			qo = xv_get(dp->parent_panel, XV_KEY_DATA, quick_dupl_key);
-			if (! qo) {
-				xv_set(event_window(ev), WIN_ALARM, NULL);
-				return TRUE;
-			}
-			if (event_is_down(ev)) {
-				if (! xv_get(qo, SEL_OWN))
-					xv_set(event_window(ev), WIN_ALARM, NULL);
-				return TRUE;
-			}
-			qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
-			if (! qd) {
-				xv_set(event_window(ev), WIN_ALARM, NULL);
-				return TRUE;
-			}
-			if (qd->priv) {
-				if (dp != qd->priv || row != qd->row) {
-					xv_set(qo, SEL_OWN, FALSE, NULL);
-					return TRUE;
-				}
-			}
-			qd->priv = dp;
-
-			xv_set(qo, QUICK_ADJUST_UP, ev, NULL);
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-/* --------------------  Panel Item Operations  -------------------- */
-static void panel_list_handle_event(Panel_item item_public, Event *event)
-{
-	Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
-	int i;
-	Item_info *ip = ITEM_PRIVATE(item_public);
-	int navigation_cmd;
-	Panel_info *panel = PANEL_PRIVATE(dp->parent_panel);
-	Rect rect;
-	Row_info *row;
-	int row_nbr;
-	struct timeval wait;
-	int y_offset;
-
-#ifdef OW_I18N
-	wchar_t wc;
-	char mb;
-#endif /* OW_I18N */
-
-	if (event_action(event) != SCROLLBAR_REQUEST &&
-			(dp->sb_active ||
-					(event_is_button(event) && event_is_down(event) &&
-							rect_includespoint(&dp->sb_rect, event_x(event),
-									event_y(event))))) {
-		event_window(event) = dp->list_sb;
-		event_x(event) -= dp->sb_rect.r_left;
-		event_y(event) -= dp->sb_rect.r_top;
-		if (event_is_button(event)) {
-			dp->sb_active = event_is_down(event);
-			panel->status.current_item_active = event_is_down(event);
-		}
-		win_post_event(dp->list_sb, event, NOTIFY_IMMEDIATE);
-		return;
-	}
-
-	if (inactive(ip) || event_action(event) == PANEL_EVENT_CANCEL)
-		return;
-
-	if (event_action(event) == SCROLLBAR_REQUEST) {
-		/* Scroll request received from scrollbar */
-		panel_clear_rect(panel, dp->list_box);
-		paint_list_box(dp);
-		return;
-	}
-
-	if (event_action(event) == ACTION_WHEEL_FORWARD) {
-		if (event_is_down(event)) {
-			int newpos = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-
-			if (newpos > 0) {
-				xv_set(dp->list_sb, SCROLLBAR_VIEW_START, newpos - 1, NULL);
-			}
-		}
-		return;
-	}
-
-	if (event_action(event) == ACTION_WHEEL_BACKWARD) {
-		if (event_is_down(event)) {
-			int newpos = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-
-			xv_set(dp->list_sb, SCROLLBAR_VIEW_START, newpos + 1, NULL);
-		}
-		return;
-	}
-
-	if (event_is_iso(event)) {
-		if (event_is_up(event))
-			return;
-		/* Move the Location Cursor to the row starting with the character
-		 * typed that is after the current focus row, if any.
-		 * Match is case-insensitive.
-		 */
-		if (dp->focus_row && dp->focus_row->next) {
-
-#ifdef OW_I18N
-			if (event_is_string(event)) {
-				if (mbtowc(&wc, event_string(event), MB_CUR_MAX) <= 0)
-					goto beep;
-			}
-			else {
-				mb = event_action(event);
-				if (mbtowc(&wc, &mb, 1) <= 0)
-					goto beep;
-			}
-#endif
-
-			for (row = dp->focus_row->next;
-					row != dp->focus_row && row->STRING;) {
-
-#ifdef OW_I18N
-				if (row->STRING[0] == wc ||
-						(iswlower(wc) && row->STRING[0] == towupper(wc)) ||
-						(iswupper(wc) && row->STRING[0] == towlower(wc)))
-#else
-				if (row->string[0] == event_action(event) ||
-						(event_action(event) >= 'a'
-								&& event_action(event) <= 'z'
-								&& row->string[0] == event_action(event) - 0x20)
-						|| (event_action(event) >= 'A'
-								&& event_action(event) <= 'Z'
-								&& row->string[0] == event_action(event) + 0x20)
-						)
-#endif
-
-				{
-					/* Character match: move Location Cursor to row */
-					dp->focus_row = row;
-					show_focus_win(item_public);
-					return;
-				}
-				row = row->next;
-				if (!row)
-					/* Wrap to first row */
-					row = dp->rows;
-			}
-		}
-
-#ifdef OW_I18N
-	  beep:
-#endif
-
-		/* No character match: beep user */
-		wait.tv_sec = 0;
-		wait.tv_usec = 0;
-		win_bell(event_window(event), wait, XV_NULL);
-		return;
-	}
-	else if (!event_is_button(event) && event_action(event) != LOC_DRAG) {
-		if (event_action(event) != ACTION_MENU &&
-				(!dp->focus_row ||
-						(event_action(event) != ACTION_ADJUST
-								&& event_is_up(event))))
-			/* Note: we need to pass ADJUST-up through in case a
-			 * panel_user_error is in effect.
-			 */
-			return;
-		navigation_cmd = TRUE;
-		row = NULL;
-		switch (event_action(event)) {
-			case ACTION_UP:
-				row = dp->focus_row->prev;
-				break;
-			case ACTION_DOWN:
-				row = dp->focus_row->next;
-				break;
-			case ACTION_JUMP_UP:
-				for (i = 1, row = dp->focus_row;
-						(unsigned)i <= dp->rows_displayed && row->prev; i++)
-					row = row->prev;
-				break;
-			case ACTION_JUMP_DOWN:
-				for (i = 1, row = dp->focus_row;
-						(unsigned)i <= dp->rows_displayed && row->next; i++)
-					row = row->next;
-				break;
-			case ACTION_PANE_UP:
-				row_nbr = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-				row = find_or_create_nth_row(dp, row_nbr, FALSE);
-				break;
-			case ACTION_PANE_DOWN:
-				row_nbr =
-						MIN((unsigned)xv_get(dp->list_sb,
-								SCROLLBAR_VIEW_START) + dp->rows_displayed - 1,
-						dp->nrows - 1);
-				row = find_or_create_nth_row(dp, row_nbr, FALSE);
-				break;
-			case ACTION_DATA_START:
-				row = dp->rows;
-				break;
-			case ACTION_DATA_END:
-				for (row = dp->focus_row; row->next;)
-					row = row->next;
-				break;
-			case ACTION_SELECT:
-			case ACTION_ADJUST:
-			case ACTION_MENU:
-				navigation_cmd = FALSE;
-				row = dp->focus_row;
-				event_set_x(event, dp->list_box.r_left);
-				if (row && get_row_rect(dp, row, &rect)) {
-					event_set_y(event, rect.r_top +
-							(rect.r_height - FRAME_FOCUS_RIGHT_HEIGHT) / 2);
-				}
-				else
-					event_set_y(event, dp->list_box.r_top);
-				break;
-		}
-		if (navigation_cmd) {
-			if (row) {
-				/* Move Location Cursor to requested row */
-				dp->focus_row = row;
-				show_focus_win(item_public);
-			}
-			return;
-		}
-	}
-	else {
-		/* -- Mouse button event -- */
-		/* Find row */
-		y_offset = event_y(event) - dp->list_box.r_top -
-				LIST_BOX_BORDER_WIDTH - ROW_MARGIN;
-		if (y_offset < 0)
-			/* event above first row => first row */
-			y_offset = 0;
-		if ((unsigned)y_offset >= dp->rows_displayed * dp->row_height)
-			/* event below last row => last row */
-			y_offset = dp->rows_displayed * dp->row_height - 1;
-		row_nbr = (unsigned)xv_get(dp->list_sb, SCROLLBAR_VIEW_START) +
-				(unsigned)y_offset / dp->row_height;
-		for (row = dp->rows; row; row = row->next)
-			if (row->row == row_nbr)
-				break;
-		if (event_action(event) != ACTION_MENU) {
-			if (!row) {
-				/* Non-menu event not over a row: ignore all but SELECT-down */
-				if (event_is_up(event) || event_action(event) != ACTION_SELECT)
-					return;
-			}
-			else if (!row->f.show) {
-				/* Non-menu event is over text item in edit mode */
-				panel_handle_event(dp->text_item, event);
-				return;
-			}
-		}
-	}
-
-	if (is_quick_duplicate_on_row(item_public, event, row)) return;
-
-	switch (event_action(event)) {
-
-			/* WARNING: set_current_row calls show_feedback, which calls the
-			 * notify proc.  The notify proc may delete the event row.  This
-			 * means that 'row' is invalid after the call to set_current_row.
-			 */
-		case ACTION_SELECT:
-			if (event_is_down(event)) {
-				if (row) {
-					dp->focus_row = row;
-					if (dp->edit_mode)
-						set_edit_row(dp, row, FALSE, event);
-					else
-						set_current_row(dp, row, event);
-				}
-				if (event_is_button(event) &&
-						wants_key(ip) && !hidden(ip) && !inactive(ip)) {
-					if (panel->kbd_focus_item != ip) {
-						/* Move the keyboard focus to the Scrolling List */
-						if (panel->status.has_input_focus)
-							panel_set_kbd_focus(panel, ip);
-						else {
-							panel->kbd_focus_item = ip;
-							panel->status.focus_item_set = TRUE;
-						}
-					}
-					else {
-						/* Move the Location Cursor to the new focus row */
-						show_focus_win(item_public);
-					}
-				}
-			}
-			else if (dp->edit_mode)
-				/* Possible end of SELECT-drag */
-				dp->last_edit_row = NULL;
-			break;
-
-		case ACTION_ADJUST:
-			if (dp->edit_mode) {
-				if (event_is_down(event))
-					set_edit_row(dp, row, TRUE, event);
-				else
-					/* Possible end of ADJUST-drag */
-					dp->last_edit_row = NULL;
-			}
-			else {
-				/* Display the question mark while ADJUST is down */
-				panel_user_error(ip, event);
-			}
-			break;
-
-		case ACTION_MENU:
-			if (event_is_down(event))
-				handle_menu_event(dp, event);
-			break;
-
-		case LOC_DRAG:
-			if (action_select_is_down(event)) {
-				if (dp->edit_mode) {
-					if (dp->last_edit_row != row) {
-						set_edit_row(dp, row, TRUE, event);
-					}
-				}
-				else if (dp->current_row != row)
-					set_current_row(dp, row, event);
-			}
-			else if (action_adjust_is_down(event) && dp->edit_mode) {
-				if (dp->last_edit_row != row) {
-					set_edit_row(dp, row, TRUE, event);
-				}
-			}
-			dp->focus_row = row;
-			show_focus_win(item_public);
-			break;
-	}
-}
-
-
-static void panel_list_paint(Panel_item item_public, Panel_setting u)
-{
-    Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
-
-    /* Paint the label */
-    panel_paint_label(item_public);
-
-    /* Paint the value (i.e., the Scrolling List) */
-    if (dp->initialized) {
-	/* Note: paint_list_box is called first because it calls
-	 * paint_list_box_border.  paint_list_box_border paints the
-	 * border for both the list box and the title box.  If the
-	 * PANEL_LIST is inactive, paint_list_box will gray out the
-	 * rows and the border around the rows.  Next, paint_title_box
-	 * paints its title and then, if inactive, grays out the title
-	 * and its portion of the border.
-	 *   Reversing the order of these calls would leave the border
-	 * around the title not grayed out.
-	 *   Sorry if this is a bit confusing, but titles were added
-	 * after the original design.
-	 */
-	paint_list_box(dp);  /* including border for title */
-	if (dp->TITLE)
-	    paint_title_box(dp);
-    }
-}
-
-
-static void panel_list_resize(Panel_item item_public)
-{
-    Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
-    Item_info	   *ip = ITEM_PRIVATE(item_public);
-    int		    old_width;
-
-    if (dp->width < 0) {
-	/* Clear current panel list */
-	panel_default_clear_item(item_public);
-	/* Extend-to-edge: recompute list box dimensions */
-	old_width = ip->rect.r_width;
-	compute_dimensions(ip, dp);
-	ip->rect = panel_enclosing_rect(&ip->label_rect, &ip->value_rect);
-	if (ip->rect.r_width <= old_width) {
-	    /* Width has not grown, so a resize may not occur.  (It depends
-	     * on whether the height has increased and what's obscured.)
-	     * We need to manually repaint the Scrolling List.
-	     */
-	    panel_redisplay_item(ip, PANEL_NO_CLEAR);
-	}
-    }
-}
-
-
-static void panel_list_remove(Panel_item item_public)
-{
-    Item_info      *ip = ITEM_PRIVATE(item_public);
-    Panel_info	   *panel = ip->panel;
-
-    /*
-     * Only reassign the keyboard focus to another item if the panel isn't
-     * being destroyed.
-     */
-    if (!panel->status.destroying && panel->kbd_focus_item == ip) {
-	hide_focus_win(item_public);
-	if (panel->primary_focus_item == ip)
-	    panel->primary_focus_item = NULL;
-	panel->kbd_focus_item = panel_next_kbd_focus(panel, TRUE);
-	panel_accept_kbd_focus(panel);
-    }
-
-    return;
-}
-
-
-static void panel_list_layout(Panel_item item_public, Rect *deltas)
-{
-    Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
-    Item_info      *ip = ITEM_PRIVATE(item_public);
-
-    if (!created(ip))
-	return;
-    dp->title_rect.r_left += deltas->r_left;
-    dp->title_rect.r_top += deltas->r_top;
-    dp->list_box.r_left += deltas->r_left;
-    dp->list_box.r_top += deltas->r_top;
-    if (dp->list_sb) {
-	dp->sb_rect.r_left += deltas->r_left;
-	dp->sb_rect.r_top += deltas->r_top;
-	xv_set(dp->list_sb,
-	       XV_X, dp->sb_rect.r_left,
-	       XV_Y, dp->sb_rect.r_top,
-	       NULL);
-    }
-    xv_set(dp->text_item,
-	   XV_X, xv_get(dp->text_item, XV_X) + deltas->r_left,
-	   XV_Y, xv_get(dp->text_item, XV_Y) + deltas->r_top,
-	   NULL);
-}
-
-
-static void show_focus_win(Panel_item item_public)
-{
-	Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
-	Frame	    frame;
-    Item_info      *ip = ITEM_PRIVATE(item_public);
-    Rect	    rect;
-    int		    x;
-    int		    y;
-
-    frame = xv_get(PANEL_PUBLIC(ip->panel), WIN_FRAME);
-    xv_set(frame, FRAME_FOCUS_DIRECTION, FRAME_FOCUS_RIGHT, NULL);
-    x = dp->list_box.r_left;
-    if (dp->focus_row) {
-	make_row_visible(dp, dp->focus_row->row);
-	(void) get_row_rect(dp, dp->focus_row, &rect);
-	y = rect.r_top +
-	    (rect.r_height - FRAME_FOCUS_RIGHT_HEIGHT)/2;
-    } else
-	y = dp->list_box.r_top;
-    if (!dp->focus_win_shown ||
-	x != dp->focus_win_x ||
-	y != dp->focus_win_y) {
-	dp->focus_win_x = x;
-	dp->focus_win_y = y;
-	panel_show_focus_win(item_public, frame,
-			     dp->focus_win_x, dp->focus_win_y);
-	dp->focus_win_shown = TRUE;
-    }
-}
-
-
-static void hide_focus_win(Panel_item item_public)
-{
-    Panel_list_info *dp = PANEL_LIST_PRIVATE(item_public);
-    Xv_Window	    focus_win;
-    Frame	    frame;
-    Item_info      *ip = ITEM_PRIVATE(item_public);
-
-    if (!dp->focus_win_shown)
-	return;
-    frame = xv_get(PANEL_PUBLIC(ip->panel), WIN_FRAME);
-    focus_win = xv_get(frame, FRAME_FOCUS_WIN);
-    xv_set(focus_win, XV_SHOW, FALSE, NULL);
-    dp->focus_win_shown = FALSE;
-}
-
-
-
-/* --------------------  Local Routines  -------------------- */
-
-static void accept_change(Panel_item text_item, Row_info *edit_row)
-{
-    Panel_list_info *dp;
-
-    dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
-    panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-	ITEM_FROM_PANEL_LIST(dp));
-    xv_set(text_item, XV_SHOW, FALSE, NULL);
-    xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
-    dp->text_item_row = NULL;   /* no row being edited */
-#ifdef OW_I18N
-    _xv_set_wcs_attr_dup(&edit_row->string,
-			 (wchar_t *) xv_get(text_item, PANEL_VALUE_WCS));
-#else
-    if (edit_row->f.free_string)
-	free(edit_row->string);
-    edit_row->string = panel_strsave((char *) xv_get(text_item, PANEL_VALUE));
-    edit_row->f.free_string = TRUE;
-#endif /* OW_I18N */
-    edit_row->f.show = TRUE;
-    set_row_display_str_length(dp, edit_row);
-    paint_row(dp, edit_row);
-}
-
-
-static void accept_insert(Panel_list_info *dp, Row_info *row)
-{
-    PANEL_PRIVATE(dp->parent_panel)->kbd_focus_item = NULL;
-    xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
-    xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
-    dp->text_item_row = NULL;   /* no row being edited */
-#ifdef OW_I18N
-    _xv_set_wcs_attr_dup(&row->string,
-			 (wchar_t *) xv_get(dp->text_item, PANEL_VALUE_WCS));
-#else
-    if (row->f.free_string)
-	free(row->string);
-    row->string = panel_strsave((char *) xv_get(dp->text_item, PANEL_VALUE));
-    row->f.free_string = TRUE;
-#endif /* OW_I18N */
-    row->f.show = TRUE;
-    set_row_display_str_length(dp, row);
-    paint_row(dp, row);
-}
-
-
-static Panel_setting change_done(Panel_item	text_item, Event	*event)
-{
-	list_notify_proc_t notify_proc;
-	Panel_list_info *dp;
-	int result;
-
-#ifdef OW_I18N
-	void *string;
-	Item_info *panel_list_ip;
-#else
-	char *string;
-#endif /* OW_I18N */
-
-	/* Validate entry */
-	dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA,
-			PANEL_LIST_EXTENSION_DATA);
-	string = (CHAR *) xv_get(text_item, PANEL_VALUE_I18N);
-	if (!dp->insert_duplicate	/* no duplicates allowed */
-			&& STRCMP(dp->text_item_row->STRING, string)	/* row has been changed */
-			&&check_for_duplicate(dp, string))	/* it matches another row */
-	{
-		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-													PANEL_NOTIFY_PROC);
-		if (notify_proc) {
-			/* so that the application can tell the user.... */
-			(*notify_proc)(dp->public_self, string,
-					dp->text_item_row->client_data,
-					PANEL_LIST_OP_DUPLICATE, event, dp->text_item_row->row);
-		}
-		return (PANEL_NONE);	/* change not accepted */
-	}
-
-#ifdef OW_I18N
-	panel_list_ip = ITEM_PRIVATE(dp->public_self);
-	if (wchar_notify(panel_list_ip))
-		notify_proc =
-				(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-				PANEL_NOTIFY_PROC_WCS);
-	else {
-		string = (char *)xv_get(text_item, PANEL_VALUE);
-		notify_proc =
-				(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-				PANEL_NOTIFY_PROC);
-	}
-#else
-	notify_proc =
-			(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-			PANEL_NOTIFY_PROC);
-#endif
-
-	if (notify_proc) {
-		dp->insert_delete_enabled = FALSE;
-		result = (*notify_proc) (dp->public_self, string,
-				dp->text_item_row->client_data,
-				PANEL_LIST_OP_VALIDATE, event, dp->text_item_row->row);
-		dp->insert_delete_enabled = TRUE;
-		if (result == XV_ERROR)
-			return (PANEL_NONE);
-	}
-
-	/* Entry validated.  Update edit row. */
-	accept_change(text_item, dp->text_item_row);
-
-	dp->edit_op = OP_NONE;
-	return (PANEL_NONE);
-}
-
-
-static Xv_opaque change_proc(Menu menu, Menu_item menu_item)
-{
-	Panel_list_info *dp;
-	Row_info *edit_row = NULL;
-	int first_row_in_view;
-	int item_y;
-	Xv_font font;
-
-	dp = (Panel_list_info *)xv_get(menu,XV_KEY_DATA,PANEL_LIST_EXTENSION_DATA);
-
-	if (dp->show_props) {
-		Item_info *panel_list_ip = ITEM_PRIVATE(dp->public_self);
-		list_notify_proc_t notify_proc
-						= (list_notify_proc_t) panel_list_ip->notify;
-    	Event *event = (Event *)xv_get(menu, MENU_LAST_EVENT);
-    	Row_info *row;
-
-		for (row = dp->rows; row; row = row->next) {
-			if (row->f.edit_selected) {
-				if (notify_proc) {
-					dp->insert_delete_enabled = FALSE;
-					(*notify_proc) (dp->public_self,
-							row->string, row->client_data,
-							PANEL_LIST_OP_PROPS, event, row->row);
-					dp->insert_delete_enabled = TRUE;
-				}
-				break;
-			}
-		}
-	}
-	else {
-		for (edit_row=dp->rows; edit_row; edit_row=edit_row->next) {
-	    	if (edit_row->f.edit_selected) break;          
-		}               
-		if (!edit_row) return(XV_OK);  /* shouldn't occur, but let's be safe */
-
-		edit_row->f.show = FALSE;
-		paint_row(dp, edit_row);	/* clear glyph and string */
-
-		/* Overlay text item over blank row */
-		first_row_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, TRUE, NULL);
-		item_y = dp->list_box.r_top + edit_row->string_y -
-				first_row_in_view * dp->row_height;
-		font = (edit_row->font) ? edit_row->font : dp->font;
-		xv_set(dp->text_item,
-				PANEL_ITEM_Y, item_y
-						+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
-						- 1,
-				PANEL_NOTIFY_PROC, change_done,
-				PANEL_VALUE_I18N, edit_row->STRING,
-				PANEL_TEXT_SELECT_LINE,
-				XV_SHOW, TRUE,
-				NULL);
-		dp->text_item_row = edit_row;
-
-		/* Warp the pointer to the bottom right corner of the text item */
-		xv_set(dp->parent_panel,
-				WIN_MOUSE_XY,
-					rect_right(&dp->list_box) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
-					item_y + dp->row_height - 1,
-				NULL);
-
-		/* Transfer keyboard focus to the text item */
-		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-				ITEM_PRIVATE(dp->text_item));
-
-		dp->edit_op = OP_CHANGE;
-	}
-	return XV_OK;
-}
-
-static Xv_opaque clear_all_choices(Menu menu, Menu_item menu_item)
-{
-    Panel_list_info *dp;
-    Event	*event = (Event *) xv_get(menu, MENU_LAST_EVENT);
-    Row_info	*row;
-    
-    dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
-    dp->insert_delete_enabled = FALSE;
-    for (row=dp->rows; row; row=row->next) {
-	if (row->f.selected) {
-	    row->f.selected = FALSE;
-	    show_feedback(dp, row, event);
-	}
-    }
-    dp->insert_delete_enabled = TRUE;
-    return(XV_OK);
-}
-
-
-static void compute_dimensions(Item_info *ip, Panel_list_info *dp)
-{
-	int ext_width;	/* extended width */
-
-#ifdef OW_I18N
-	XFontSet font_set;
-#else
-	XFontStruct *font_struct;
-#endif /* OW_I18N */
-
-	int list_box_width_changed;
-	int max_string_width;
-	Row_info *node;	/* current node in list */
-	Rect *view_rect;
-
-	if (dp->width < 0) {
-		/* Extend list box width to edge of panel */
-		view_rect = panel_viewable_rect(ip->panel, ip->panel->paint_window->pw);
-		ext_width = view_rect->r_left + view_rect->r_width -
-				dp->list_box.r_left - (dp->left_hand_sb ? 0 :
-				dp->sb_rect.r_width);
-	}
-	else if (dp->width == 0) {
-		/* Fit to rows: Make sure list box is at least as wide as title */
-		ext_width = dp->title_rect.r_width;
-	}
-	else
-		/* An explicit width was specified */
-		ext_width = 0;
-	list_box_width_changed = fit_list_box_to_rows(dp);
-	if (ext_width > dp->list_box.r_width) {
-		dp->list_box.r_width = ext_width;
-		list_box_width_changed = TRUE;
-	}
-	dp->title_rect.r_width = dp->list_box.r_width;
-
-	/*
-	 * Calculate the string y-coordinate and displayed string length
-	 * of each row.
-	 */
-	for (node = dp->rows; node; node = node->next) {
-		node->string_y = LIST_BOX_BORDER_WIDTH + ROW_MARGIN +
-				node->row * dp->row_height;
-		if (!node->display_str_len || list_box_width_changed)
-			set_row_display_str_length(dp, node);
-	}
-	/* Calculate the displayed string length of the title */
-	if (dp->TITLE) {
-
-#ifdef OW_I18N
-		font_set = ip->panel->bold_fontset_id;
-#else
-		font_struct = (XFontStruct *) xv_get(ip->panel->bold_font, FONT_INFO);
-#endif /* OW_I18N */
-
-		dp->title_display_str_len = STRLEN(dp->TITLE);
-		max_string_width = dp->title_rect.r_width -
-				2 * LIST_BOX_BORDER_WIDTH - 2 * ROW_MARGIN;
-
-#ifdef OW_I18N
-		while (XwcTextEscapement(font_set, dp->TITLE, dp->title_display_str_len)
-				> max_string_width)
-#else
-		while (XTextWidth(font_struct, dp->title, dp->title_display_str_len)
-				> max_string_width)
-#endif /* OW_I18N */
-
-		{
-			dp->title_display_str_len--;
-		}
-	}
-
-	ip->value_rect.r_width = dp->list_box.r_width + dp->sb_rect.r_width;
-	ip->value_rect.r_height = dp->title_rect.r_height + dp->list_box.r_height;
-	if (dp->left_hand_sb)
-		dp->sb_rect.r_left = dp->list_box.r_left - dp->sb_rect.r_width;
-	else
-		dp->sb_rect.r_left = rect_right(&dp->list_box) + 1;
-	dp->sb_rect.r_top = dp->list_box.r_top;
-	xv_set(dp->list_sb,
-			XV_X, dp->sb_rect.r_left, XV_Y, dp->sb_rect.r_top, NULL);
-}
-
-
-static Xv_opaque delete_proc(Menu menu, Menu_item menu_item)
-{
-	Panel_list_info *dp;
-	list_notify_proc_t notify_proc;
-	int row_deleted;
-	Item_info *panel_list_ip;
-	Row_info *edit_row;	/* Row being edited with a text field */
-	Row_info *row;
-	Event *event;
-
-#ifdef OW_I18N
-	void *string;
-#endif
-
-	dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA,
-			PANEL_LIST_EXTENSION_DATA);
-	panel_list_ip = ITEM_PRIVATE(dp->public_self);
-
-#ifdef OW_I18N
-	if (wchar_notify(panel_list_ip))
-		notify_proc = panel_list_ip->notify_wc;
-	else
-#endif
-
-		notify_proc = (list_notify_proc_t) panel_list_ip->notify;
-	if (notify_proc)
-		event = (Event *) xv_get(menu, MENU_LAST_EVENT);
-	edit_row = dp->text_item_row;
-	do {
-		row_deleted = FALSE;
-		for (row = dp->rows; row; row = row->next)
-			if (row->f.edit_selected && row != edit_row) {
-				if (notify_proc) {
-					dp->insert_delete_enabled = FALSE;
-
-#ifdef OW_I18N
-					if (wchar_notify(panel_list_ip))
-						string = row->STRING;
-					else
-						string = _xv_get_mbs_attr_dup(&row->string);
-					(*notify_proc) (dp->public_self, string, row->client_data,
-#else
-					(*notify_proc) (dp->public_self,
-							row->string, row->client_data,
-#endif
-
-							PANEL_LIST_OP_DELETE, event, row->row);
-					dp->insert_delete_enabled = TRUE;
-				}
-				panel_list_delete_row(dp, row, REPAINT_LIST);
-				row_deleted = TRUE;
-				break;
-			}
-	} while (row_deleted);
-	return (XV_OK);
-}
-
-
-static Xv_opaque enter_edit_mode(Menu menu, Menu_item menu_item)	/* not used */
-{
-    Panel_list_info *dp;
-    int		    display_length;
-    Item_info	   *panel_list_ip;
-    Row_info	   *row;
-    int		    stored_length;
-    int		    text_width, chrwth;
-    
-    dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
-    dp->edit_mode = TRUE;
-
-    /*
-     *** Set the attributes of the text field for editing ***
-     */
-    /* Determine the panel text field's display length, in characters. */
-    text_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
-	ROW_MARGIN - dp->string_x;
-#ifdef OW_I18N
-    /*  Characters have different widths.  
-     *  Display_length is actually described
-     *  in how many columns, and not how many characters.
-     *  Text_width is in pixels. So in order to compare
-     *  display_length and stored_length they both have
-     *  to be converted to pixels.  I am assuming one
-     *  byte still occupies one column, so if the user
-     *  specified PANEL_VALUE_STORED_LENGTH, the maximum
-     *  storage in pixels would be (n bytes * default column width).
-     *  This is a reasonable assumption in EUC world,
-     *  but would be completely broken for Unicode.
-     */
-    {
-	int	col_width;     /* column width */
-	int	stored_width;  /* maximum pixels for stored_length */
-	col_width = xv_get(dp->font, FONT_COLUMN_WIDTH);
-	chrwth = xv_get(dp->font, FONT_DEFAULT_CHAR_WIDTH);
-	display_length = text_width / col_width;
-	if (dp->stored_length_wc == FALSE) {
-	    stored_length = (int) xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH);
-	    stored_width = stored_length * col_width;
-	}
-	else {
-	    stored_length = (int) xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH_WCS);
-	    stored_width = stored_length * chrwth;
-	}
-	/*  Need to limit the display length to be
-	 *  less than or equal to the stored length.
-	 *  So calculate everything in pixels.
-	 */
-	if (text_width > stored_width)
-	    display_length = stored_width / col_width;
-    } 
-
-#else
-    chrwth = xv_get(dp->font, FONT_DEFAULT_CHAR_WIDTH);
-    display_length = text_width / chrwth;
-    stored_length = (int) xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH);
-    if (display_length > stored_length)
-	display_length = stored_length;
-#endif /* OW_I18N */
-    
-    /* Modify the text field */
-    panel_list_ip = ITEM_PRIVATE(dp->public_self);
-    xv_set(dp->text_item,
-	PANEL_ITEM_COLOR, panel_list_ip->color_index,
-    	PANEL_ITEM_X,	dp->list_box.r_left + dp->string_x,
-    	PANEL_VALUE_DISPLAY_LENGTH,	display_length,
-    	XV_KEY_DATA, PANEL_NOTIFY_PROC, panel_list_ip->notify,
-    	NULL);
-    dp->text_item_row = NULL;   /* no row being edited */
-
-    /* Repaint boxes around selected rows */
-    for (row=dp->rows; row; row=row->next)
-	if (row->f.selected)
-	    paint_row(dp, row);
-
-    return(XV_OK);
-}
-
-
-static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item)
-{
-    Panel_list_info *dp;
-    Item_info	*panel_list_ip;
-    list_notify_proc_t	notify_proc;
-    Event	*event = (Event *) xv_get(menu, MENU_LAST_EVENT);
-    Event	 null_event;
-    int		 repaint_visible_rows = FALSE;
-    Row_info	*row;
-#ifdef OW_I18N
-    void	*string;
-#else
-    CHAR	*string;
-#endif
-    int		 validated;
-
-    dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
-
-    row = dp->text_item_row;
-    if (row) {
-	panel_list_ip = ITEM_FROM_PANEL_LIST(dp);
-	if (STRLEN((CHAR *)xv_get(dp->text_item, PANEL_VALUE_I18N)) == 0)
-	{
-	    panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-		panel_list_ip);
-	    xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
-	    xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
-	    panel_list_delete_row(dp, row, REPAINT_LIST);
-	} else {
-#ifdef OW_I18N
-	    if (wchar_notify(panel_list_ip))
-		notify_proc = panel_list_ip->notify_wc;
-	    else
-#else
-	    notify_proc = (list_notify_proc_t)panel_list_ip->notify;
-#endif
-	    string = (CHAR *) xv_get(dp->text_item, PANEL_VALUE_I18N);
-	    if (!dp->insert_duplicate && check_for_duplicate(dp, string))
-		validated = FALSE;
-	    else {
-		if (!event) {
-		    event_init(&null_event);
-		    event = &null_event;
-		}
-		dp->insert_delete_enabled = FALSE;
-#ifdef OW_I18N
-		if (! wchar_notify(panel_list_ip))
-		    string = (char *) xv_get(dp->text_item, PANEL_VALUE);
-#endif
-	    	validated = (!notify_proc ||
-			     (*notify_proc) (dp->public_self, string,
-				 		(Xv_opaque)row->row,    /* weiss das einer ? */
-					     PANEL_LIST_OP_VALIDATE,
-					     event, row->row)
-			     == XV_OK);
-		dp->insert_delete_enabled = TRUE;
-	    }
-	    if (validated) {
-		/* Text was validated */
-		if (dp->edit_op == OP_CHANGE)
-		    accept_change(dp->text_item, row);
-		else {
-		    accept_insert(dp, row);
-		    panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-			panel_list_ip);
-		}
-	    } else {
-		/* Text was not validated */
-		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-		    panel_list_ip);
-		xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
-		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
-		if (!row->STRING || STRLEN(row->STRING) == 0)
-		{
-		    panel_list_delete_row(dp, row, DO_NOT_REPAINT_LIST);
-		    repaint_visible_rows = TRUE;
-		} else {
-		    row->f.show = TRUE;
-		    paint_row(dp, row);
-		}
-	    }
-	}
-    }
-    dp->edit_op = OP_NONE;
-    dp->text_item_row = NULL;   /* no row being edited */
-    dp->edit_mode = FALSE;
-
-    if (!dp->current_row && !dp->choose_none && dp->rows) {
-        /* Last selected row was deleted: If no row is selected,
-	 * then select the first row.
-	 */
-        for (row = dp->rows; row; row = row->next)
-            if (row->f.selected && !row->f.row_inactive)
-            	break;
-        if (!row) {
-	    for (row = dp->rows; row; row = row->next)
-		if ( !row->f.row_inactive ) {
-		    dp->current_row = row;
-		    row->f.selected = TRUE;
-		    break;
-		}
-        }
-    }
-
-
-    /* Remove highlighting and repaint boxes around selected rows */
-    for (row=dp->rows; row; row=row->next) {
-    	if (repaint_visible_rows || row->f.edit_selected || row->f.selected) {
-    	    row->f.edit_selected = FALSE;
-	    paint_row(dp, row);
-    	}
-    }
-
-    return(XV_OK);
-}
-
-
-
-
-
-
-/*
- * fit the scrolling list
- */
-static int fit_list_box_to_rows(Panel_list_info *dp)
-{
-    int		    max_str_size;
-    int		    new_width;
-    Row_info       *row;
-    struct pr_size  str_size;	/* width & height of row string */
-    int		    width_changed;
-
-    if (dp->width <= 0) {
-	max_str_size = 0;
-	for (row=dp->rows; row; row=row->next) {
-	    if (row->STRING) {
-		str_size = XV_PF_TEXTWIDTH((int)strlen(row->STRING), dp->font,
-		    row->STRING);
-		max_str_size = MAX(max_str_size, str_size.x);
-	    }
-	}
-	new_width = dp->string_x + max_str_size + ROW_MARGIN +
-	    LIST_BOX_BORDER_WIDTH;
-    } else
-	new_width = dp->width;
-    width_changed = new_width != dp->list_box.r_width;
-    dp->list_box.r_width = new_width;
-    return (width_changed);
-}
-
-
-/* get_row_rect:  Get the rect for the specified row
- * 	returns: TRUE= row in view; FALSE= row not in view
- */
-static int get_row_rect(Panel_list_info *dp, Row_info *row, Rect *rect)	/* Output parameter */
-{
-    int		    first_row_in_view;   /* row number */
-    int		    view_start;  /* in pixels */
-
-    /* Insure that the row is completely visible within the list box.  */
-    first_row_in_view = (int) xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-    if (row->row < first_row_in_view ||
-	row->row >= (unsigned)first_row_in_view + dp->rows_displayed)
-	return FALSE;   /* row not within list box view */
-
-    /* Get row rect. */
-    view_start = dp->row_height * first_row_in_view;
-    rect->r_top = row->string_y - view_start;
-    rect->r_top += dp->list_box.r_top;
-    rect->r_left = dp->list_box.r_left + LIST_BOX_BORDER_WIDTH +
-	ROW_MARGIN;
-    rect->r_width = dp->list_box.r_width - 2*LIST_BOX_BORDER_WIDTH -
-	2*ROW_MARGIN;
-    rect->r_height = dp->row_height;
-    if (rect_bottom(rect) > rect_bottom(&dp->list_box))
-	rect->r_height = dp->list_box.r_height - rect->r_top;
-    return TRUE;   /* row within list box view */
-}
-
-
-static void handle_menu_event(Panel_list_info	*dp, Event *event)
-{
-	int edit_cnt;
-	Menu menu;
-	Panel_item change_item;
-	Panel_item delete_item;
-	Panel_item insert_item;
-	Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
-	Row_info *edit_row;
-	Row_info *row;
-
-	if (dp->edit_mode) {
-		menu = dp->edit_menu;
-		if (menu) {
-			/* Note: The client can change the edit menu */
-			change_item = xv_find(menu, MENUITEM,
-					XV_AUTO_CREATE, FALSE,
-					/* could be "Change" or "Properties..." */
-					MENU_ACTION, change_proc,
-					NULL);
-			delete_item = xv_find(menu, MENUITEM,
-					XV_AUTO_CREATE, FALSE,
-					MENU_STRING, XV_MSG("Delete"),
-					NULL);
-			insert_item = xv_find(menu, MENUITEM,
-					XV_AUTO_CREATE, FALSE,
-					MENU_STRING, XV_MSG("Insert"),
-					NULL);
-			edit_row = dp->text_item_row;
-			if (change_item || delete_item) {
-				edit_cnt = 0;
-				for (row = dp->rows; row; row = row->next)
-					if (row->f.edit_selected && row != edit_row)
-						edit_cnt++;
-				if (change_item)
-					xv_set(change_item,
-							MENU_INACTIVE, edit_row || edit_cnt != 1,
-							NULL);
-				if (delete_item)
-					xv_set(delete_item,
-							MENU_INACTIVE, edit_cnt == 0,
-							NULL);
-			}
-			if (insert_item)
-				xv_set(insert_item,
-						MENU_INACTIVE, edit_row ? TRUE : FALSE,
-						NULL);
-		}
-	}
-	else
-		menu = dp->read_menu;
-	if (menu) {
-		xv_set(menu,
-				MENU_COLOR, ip->color_index,
-				XV_KEY_DATA, PANEL_FIRST_ITEM, ip,
-				XV_KEY_DATA, MENU_DONE_PROC, xv_get(menu, MENU_DONE_PROC),
-				MENU_DONE_PROC, list_menu_done_proc, NULL);
-		ip->panel->status.current_item_active = TRUE;
-		menu_show(menu, event_window(event), event, NULL);
-	}
-}
-
-
-static Panel_setting insert_done(Panel_item text_item, Event *event)
-{
-	Panel_list_info *dp;
-	Row_info *insert_row;
-	int item_y;
-	int first_row_in_view;
-	list_notify_proc_t notify_proc;
-	int result;
-	Xv_font font;
-
-#ifdef OW_I18N
-	void *string;
-	Item_info *panel_list_ip;
-#else
-	CHAR *string;
-#endif /* OW_I18N */
-
-	dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA,
-			PANEL_LIST_EXTENSION_DATA);
-	insert_row = dp->text_item_row;
-
-	/* If value is empty, then exit insert mode. */
-	if (STRLEN((CHAR *) xv_get(text_item, PANEL_VALUE_I18N)) == 0) {
-		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-				ITEM_FROM_PANEL_LIST(dp));
-		xv_set(text_item, XV_SHOW, FALSE, NULL);
-		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
-		dp->text_item_row = NULL;	/* no row being edited */
-		panel_list_delete_row(dp, insert_row, REPAINT_LIST);
-		dp->edit_op = OP_NONE;
-		return (PANEL_NONE);
-	}
-
-	/* Validate entry */
-	string = (CHAR *) xv_get(text_item, PANEL_VALUE_I18N);
-	if (!dp->insert_duplicate && check_for_duplicate(dp, string)) {
-		notify_proc = (list_notify_proc_t)xv_get(text_item, XV_KEY_DATA,
-													PANEL_NOTIFY_PROC);
-		if (notify_proc) {
-			/* so that the application can tell the user.... */
-			(*notify_proc)(dp->public_self, string,
-					dp->text_item_row->client_data,
-					PANEL_LIST_OP_DUPLICATE, event, dp->text_item_row->row);
-		}
-		return PANEL_NONE;
-	}
-
-#ifdef OW_I18N
-	panel_list_ip = ITEM_PRIVATE(dp->public_self);
-	if (wchar_notify(panel_list_ip))
-		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-												PANEL_NOTIFY_PROC_WCS);
-	else
-#endif
-		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-												PANEL_NOTIFY_PROC);
-	if (notify_proc) {
-		dp->insert_delete_enabled = FALSE;
-
-#ifdef OW_I18N
-		if (!wchar_notify(panel_list_ip))
-			string = (char *)xv_get(text_item, PANEL_VALUE);
-#endif
-
-		result = (*notify_proc) (dp->public_self, string,
-				(Xv_opaque) insert_row->row,	/* pass row # as client data */
-				PANEL_LIST_OP_VALIDATE, event, insert_row->row);
-		dp->insert_delete_enabled = TRUE;
-		if (result == XV_ERROR)
-			return (PANEL_NONE);
-	}
-
-	/* Entry validated.  Insert into Scrolling List */
-	accept_insert(dp, insert_row);
-
-	/* Create a new row before the next row.  If no next row, then append. */
-	insert_row = panel_list_insert_row(dp,
-			insert_row->next ? insert_row->next->row : -1, HIDE_ROW,
-			REPAINT_LIST);
-
-	/* Continue insert mode. insert_row now points to empty
-	 * row just inserted.
-	 *
-	 * If new row is out of the view window, then scroll new row
-	 * to top of view window.
-	 */
-	dp->focus_row = insert_row;
-	make_row_visible(dp, insert_row->row);
-
-	/* Overlay text item over blank new row */
-	first_row_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-	xv_set(dp->list_sb, SCROLLBAR_INACTIVE, TRUE, NULL);
-	item_y = dp->list_box.r_top + insert_row->string_y -
-			first_row_in_view * dp->row_height;
-	font = (insert_row->font) ? insert_row->font : dp->font;
-	xv_set(dp->text_item,
-			PANEL_ITEM_Y, item_y
-					+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
-					- 1,
-			PANEL_NOTIFY_PROC, insert_done,
-			PANEL_VALUE_I18N, NULL_STRING,
-			XV_SHOW, TRUE,
-			NULL);
-	dp->text_item_row = insert_row;
-
-	/* Warp the pointer to the bottom right corner of the text item */
-	xv_set(dp->parent_panel,
-			WIN_MOUSE_XY,
-				rect_right(&dp->list_box) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
-				item_y + dp->row_height - 1,
-			NULL);
-
-	/* Transfer keyboard focus to the text item */
-	panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-						ITEM_PRIVATE(dp->text_item));
-
-	return (PANEL_NONE);
-}
-
-
-static Xv_opaque insert_proc(Menu menu, Menu_item menu_item)
-{
-	Panel_list_info *dp;
-	int first_row_in_view;
-	int item_y;
-	int which_row;
-	Insert_pos_t insert_position;
-	Row_info *insert_row = NULL;
-	Xv_font font;
-
-	dp = (Panel_list_info *)xv_get(menu, XV_KEY_DATA,PANEL_LIST_EXTENSION_DATA);
-	insert_position = (Insert_pos_t)xv_get(menu_item,XV_KEY_DATA,PANEL_INSERT);
-
-	/* Find the first row selected for editing */
-	for (insert_row = dp->rows; insert_row; insert_row = insert_row->next) {
-		if (insert_row->f.edit_selected)
-			break;
-	}
-	if (!insert_row)
-		insert_row = dp->rows;
-
-	/* Determine where to insert new row */
-	if (insert_position == INSERT_AFTER) {
-		if (insert_row)
-			insert_row = insert_row->next;
-		if (insert_row)
-			which_row = insert_row->row;
-		else
-			which_row = -1;	/* append to end of list */
-	}
-	else {
-		if (insert_row)
-			which_row = insert_row->row;
-		else
-			which_row = 0;	/* insert at beginning of list */
-	}
-
-	/* Create insert row */
-	insert_row = panel_list_insert_row(dp, which_row, HIDE_ROW, REPAINT_LIST);
-
-	/* If new row is out of the view window, then scroll new row
-	 * to the top of view window.
-	 */
-	dp->focus_row = insert_row;
-	make_row_visible(dp, insert_row->row);
-
-	/* Overlay text item over blank new row */
-	first_row_in_view = (int)xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-	xv_set(dp->list_sb, SCROLLBAR_INACTIVE, TRUE, NULL);
-	item_y = dp->list_box.r_top + insert_row->string_y -
-			first_row_in_view * dp->row_height;
-	font = (insert_row->font) ? insert_row->font : dp->font;
-	xv_set(dp->text_item,
-			PANEL_ITEM_Y, item_y
-					+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
-					- 1,
-			PANEL_NOTIFY_PROC, insert_done,
-			PANEL_VALUE_I18N, NULL_STRING,
-			XV_SHOW, TRUE,
-			NULL);
-	dp->text_item_row = insert_row;
-
-	/* Warp the pointer to the bottom right corner of the text item */
-	xv_set(dp->parent_panel,
-			WIN_MOUSE_XY, rect_right(&dp->list_box)
-							- LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
-							item_y + dp->row_height - 1,
-			NULL);
-
-	/* Transfer keyboard focus to the text item */
-	panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
-						ITEM_PRIVATE(dp->text_item));
-
-	dp->edit_op = OP_INSERT;
-	return (XV_OK);
-}
-
-
-static Xv_opaque locate_next_choice(Menu menu, Menu_item menu_item)
-{
-    Panel_list_info *dp;
-    Row_info *first_row;
-    Row_info *row;
-    int view_end;
-    int view_start;  /* in pixels */
-    
-    dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
-
-    if (!dp->rows)
-	return(XV_OK);  /* no rows */
-
-    /* Determine the range of the view */
-    view_start = dp->row_height *
-	(int) xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-    view_end = view_start +
-	dp->rows_displayed * dp->row_height - 1;
-
-    /* Find the first row beyond the view (if any) */
-    for (first_row=dp->rows; first_row; first_row=first_row->next) {
-	if (first_row->string_y >= view_end)
-	    break;
-    }
-    if (!first_row)
-	first_row = dp->rows;
-
-    /* Find the next selected row (if any) */
-    row = first_row;
-    do {
-	if (row->f.selected)
-	    break;
-	row = row->next;
-	if (!row)
-	    row = dp->rows;
-    } while (row!=first_row);
-
-    /* Scroll the display to this row */
-    dp->focus_row = row;
-    make_row_visible(dp, row->row);
-    return(XV_OK);
-}
-
-
-static void make_row_visible(Panel_list_info *dp, int desired_row_nbr)
-{
-    /* If desired row is out of the view window, then scroll desired row
-     * to the top of the view window.
-     */
-    if (!row_visible(dp, desired_row_nbr))  {
-	desired_row_nbr = MIN((unsigned)desired_row_nbr, dp->nrows - dp->rows_displayed);
-	xv_set(dp->list_sb, SCROLLBAR_VIEW_START, desired_row_nbr, NULL);
-    }
-}
-
-
-static Row_info * next_row(Panel_list_info *dp, Row_info *row, int n)
-{
-    Row_info       *node = NULL;
-
-    if (!row) {
-	dp->rows = row = xv_alloc(Row_info);
-	dp->nrows = 1;
-	row->prev = NULL;
-	if (!dp->focus_row)
-	    dp->focus_row = row;
-    } else {
-	if (n == 0) {		/* If it is the first row, return the row
-				 * itself */
-	    return (row);
-	} else if (row->next)	/* Already created */
-	    return (row->next);
-	else {
-	    node = xv_alloc(Row_info);
-	    node->prev = row;
-	    row->next = node;
-	    row = node;
-	    dp->nrows++;
-	}
-    }
-    row->next = NULL;
-    row->f.selected = FALSE;
-    row->f.show = TRUE;
-    row->row = n;
-#ifdef OW_I18N
-    /*
-     * xv_alloc uses calloc therefor all fields are zeroed alreday.
-     */
-#else
-    row->string = NULL;
-    row->f.free_string = FALSE;
-#endif /* OW_I18N */
-    row->glyph = NULL;
-    return (row);
-}
-
-
-static void paint_list_box(Panel_list_info *dp)
-{
-    Xv_Drawable_info *info;
-    Item_info	   *ip = ITEM_FROM_PANEL_LIST(dp);
-    Row_info	   *row;
-    Xv_Window	    pw;
-    Xv_Screen      screen;
-    GC             *gc_list;
-
-    /* Paint list box border.
-     *   Dashed = Scrolling List does not have keyboard focus
-     *   Solid = Scrolling List has keyboard focus
-     */
-    paint_list_box_border(dp);
-
-    /* Paint (visible) rows */
-    for (row=dp->rows; row; row=row->next) paint_row(dp, row);
-
-    if (ip->panel->status.has_input_focus && ip->panel->kbd_focus_item == ip) {
-		if (!dp->focus_row || row_visible(dp, dp->focus_row->row))
-	    	/* update position of Location Cursor */
-	    	show_focus_win(ITEM_PUBLIC(ip));
-		else
-	    	hide_focus_win(ITEM_PUBLIC(ip));
-    }
-    
-    if (inactive(ip)) {
-		PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-	    	DRAWABLE_INFO_MACRO(pw, info);
-	    	screen = xv_screen(info);
-  	    	gc_list = (GC *)xv_get(screen,  SCREEN_OLGC_LIST, pw);
-	    	screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
-	    	XFillRectangle(xv_display(info), xv_xid(info),
-			   	gc_list[SCREEN_INACTIVE_GC],
-			   	dp->list_box.r_left, dp->list_box.r_top,
-			   	(unsigned)dp->list_box.r_width,(unsigned)dp->list_box.r_height);
-		PANEL_END_EACH_PAINT_WINDOW
-    }
-}
-
-
-static void paint_list_box_border(Panel_list_info *dp)
-{
-    Display	   *display;
-    GC		    gc;
-    unsigned long gc_mask;
-    XGCValues	    gc_values;
-    Xv_Drawable_info *info;
-    Item_info	   *ip = ITEM_FROM_PANEL_LIST(dp);
-    GC             *gc_list;
-    Xv_window	    pw;
-    Rect	    rect;
-    Xv_Screen       screen;
-    Drawable	    xid;
-
-    /* Paint list box border */
-    rect = dp->list_box;
-    if (dp->TITLE) {
-	rect.r_top = dp->title_rect.r_top;
-	rect.r_height += dp->title_rect.r_height;
-    }
-    PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-	DRAWABLE_INFO_MACRO(pw, info);
-        screen = xv_screen(info);
-        gc_list = (GC *)xv_get(screen, SCREEN_OLGC_LIST, pw);
-	display = xv_display(info);
-	xid = xv_xid(info);
-	if (ip->panel->status.three_d) {
-
-	    /*
-	     * Note:  chiseled separator line requires 2
-	     * OLGX calls -- one invoked and one normal.
-	     */
-	    olgx_draw_box(ip->panel->ginfo, xid,
-			  rect.r_left, rect.r_top,
-			  rect.r_width, rect.r_height,
-			  OLGX_INVOKED, FALSE);
-	    olgx_draw_box(ip->panel->ginfo, xid,
-			  rect.r_left+1, rect.r_top+1,
-			  rect.r_width-2, rect.r_height-2,
-			  OLGX_NORMAL, FALSE);
-	} else {
-	    if (ip->color_index >= 0) {
-		gc = gc_list[SCREEN_NONSTD_GC];
-		XSetForeground(display, gc_list[SCREEN_NONSTD_GC],
-		    xv_get(xv_cms(info), CMS_PIXEL, ip->color_index));
-		gc_values.line_style = LineSolid;
-		gc_mask = GCLineStyle;
-		XChangeGC(display, gc, gc_mask, &gc_values);
-	    } else {
-		gc = gc_list[SCREEN_SET_GC];
-	    }
-	    XDrawRectangle(display, xid, gc,
-			   rect.r_left, rect.r_top,
-			   (unsigned)rect.r_width - 1, (unsigned)rect.r_height - 1);
-	}
-    PANEL_END_EACH_PAINT_WINDOW
-}
-
-
-static void paint_row(Panel_list_info *dp, Row_info *row)
-{
-	Display *display;
-	unsigned long fg_pixval = 0;	/* foreground pixel value */
-	Xv_Font font;
-	unsigned long gc_mask;
-	XGCValues gc_values;
-	Xv_Drawable_info *info;
-	Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
-	GC  gc;
-	Xv_window pw;
-	Rect row_rect;
-	unsigned long save_black = 0;
-	Rect string_rect;
-	Item_info *text_item_private;
-	Drawable xid;
-	Xv_Screen screen;
-	GC *gc_list;
-
-#ifdef OW_I18N
-	XFontSet font_set;
-#endif /* OW_I18N */
-
-	if (!get_row_rect(dp, row, &row_rect))
-		return;
-	if (row->STRING) {
-		string_rect.r_left = dp->list_box.r_left + dp->string_x;
-		string_rect.r_top = row_rect.r_top;
-		string_rect.r_width = row_rect.r_width - dp->string_x +
-				LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
-		string_rect.r_height = row_rect.r_height;
-	}
-	else
-		string_rect = row_rect;
-
-	/* Clear row */
-	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-		DRAWABLE_INFO_MACRO(pw, info);
-		display = xv_display(info);
-		xid = xv_xid(info);
-		XClearArea(display, xid, row_rect.r_left, row_rect.r_top,
-				(unsigned)row_rect.r_width, (unsigned)row_rect.r_height, False);
-		if (!row->f.show && row == dp->text_item_row) {
-			text_item_private = ITEM_PRIVATE(dp->text_item);
-			(*text_item_private->ops.panel_op_paint) (dp->text_item,
-														PANEL_NO_CLEAR);
-		}
-	PANEL_END_EACH_PAINT_WINDOW
-
-	if (!row->f.show) return;
-
-	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-		DRAWABLE_INFO_MACRO(pw, info);
-		screen = xv_screen(info);
-		gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
-		display = xv_display(info);
-		xid = xv_xid(info);
-		if (ip->color_index >= 0)
-			fg_pixval = xv_get(xv_cms(info), CMS_PIXEL, ip->color_index);
-
-		/* If 3D, read mode, and row is selected, then draw a recessed box */
-		if (ip->panel->status.three_d && !dp->edit_mode && row->f.selected) {
-			if (ip->color_index >= 0) {
-				save_black =
-						olgx_get_single_color(ip->panel->ginfo, OLGX_BLACK);
-				olgx_set_single_color(ip->panel->ginfo, OLGX_BLACK, fg_pixval,
-						OLGX_SPECIAL);
-			}
-			olgx_draw_box(ip->panel->ginfo, xid,
-					row_rect.r_left, row_rect.r_top,
-					row_rect.r_width, row_rect.r_height, OLGX_INVOKED, TRUE);
-			if (ip->color_index >= 0)
-				olgx_set_single_color(ip->panel->ginfo, OLGX_BLACK, save_black,
-						OLGX_SPECIAL);
-		}
-
-		/* Paint text */
-		if (row->STRING) {
-			if (ip->color_index >= 0) {
-				XSetForeground(display, gc_list[SCREEN_TEXT_GC], fg_pixval);
-			}
-
-			if (row->font) {
-				font = row->font;
-#ifndef OW_I18N
-				XSetFont(display, gc_list[SCREEN_TEXT_GC], xv_get(font,
-								XV_XID));
-#endif /* OW_I18N */
-			}
-			else {
-				font = dp->font;
-			}
-
-#ifdef OW_I18N
-			font_set = (XFontSet) xv_get(font, FONT_SET_ID);
-			XwcDrawString(display, xid, font_set, gc_list[SCREEN_TEXT_GC],
-					string_rect.r_left,
-					string_rect.r_top
-					+ ((string_rect.r_height + panel_fonthome(font)) / 2)
-					- 1, row->STRING, row->display_str_len);
-#else
-			XDrawString(display, xid, gc_list[SCREEN_TEXT_GC],
-					string_rect.r_left,
-					string_rect.r_top
-					+ ((string_rect.r_height + panel_fonthome(font)) / 2)
-					- 1, row->string, row->display_str_len);
-			if (row->font) {
-				/* Set the text gc back to the standard font */
-				XSetFont(display, gc_list[SCREEN_TEXT_GC],
-						ip->panel->std_font_xid);
-			}
-#endif /* OW_I18N */
-
-			if (ip->color_index >= 0) {
-				XSetForeground(display, gc_list[SCREEN_TEXT_GC], xv_fg(info));
-			}
-		}
-
-		if (dp->edit_mode && row->f.edit_selected) {
-			/* Invert text */
-			panel_pw_invert(pw, &row_rect, ip->color_index);
-		}
-
-		/* Paint glyph */
-		if (row->glyph)
-			/*
-			 * center glyph both vertically and horizontally.  since we can't
-			 * break compatibility by increasing the size of the row, move the
-			 * glyph over by 1/2 the COL_GAP so there is at least enough room
-			 * to show hilighting around it.  the OL File Choosing Spec wants
-			 * 10 pixels at the default font...
-			 */
-			panel_paint_svrim(pw, row->glyph,
-					row_rect.r_left + (PANEL_LIST_COL_GAP / 2),
-					row_rect.r_top + ((row_rect.r_height -
-									row->glyph->pr_height) / 2),
-					ip->color_index, (dp->edit_mode
-							&& row->f.
-							edit_selected) ? (Pixrect *) NULL :
-					row->mask_glyph);
-
-		if (row->f.selected && (!ip->panel->status.three_d || dp->edit_mode)) {
-			/* Box text */
-			if (ip->color_index < 0) {
-				if (!dp->edit_mode)
-					gc = gc_list[SCREEN_SET_GC];
-				else
-					gc = gc_list[SCREEN_DIM_GC];
-			}
-			else {
-				gc = gc_list[SCREEN_NONSTD_GC];
-				XSetForeground(display, gc, fg_pixval);
-				if (!dp->edit_mode) {
-					gc_values.line_style = LineSolid;
-					gc_mask = GCLineStyle;
-				}
-				else {
-					gc_values.line_style = LineDoubleDash;
-					gc_values.dashes = 1;
-					gc_mask = GCLineStyle | GCDashList;
-				}
-				XChangeGC(display, gc, gc_mask, &gc_values);
-			}
-			XDrawRectangle(display, xid, gc,
-					row_rect.r_left, row_rect.r_top,
-					(unsigned)row_rect.r_width - 1,
-					(unsigned)row_rect.r_height - 1);
-		}
-
-		if (row->f.row_inactive) {
-			screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
-			XFillRectangle(xv_display(info), xv_xid(info),
-					gc_list[SCREEN_INACTIVE_GC],
-					row_rect.r_left, row_rect.r_top,
-					(unsigned)row_rect.r_width, (unsigned)row_rect.r_height);
-		}
-	PANEL_END_EACH_PAINT_WINDOW
-}
-
-
-static void paint_title_box(Panel_list_info *dp)
-{
-    Xv_Drawable_info *info;
-    Item_info	   *ip;
-    GC		   *gc_list;
-    Panel_info	   *panel;
-    Xv_Window	    pw;
-    Xv_Screen	    screen;
-    CHAR	   *title_str;
-    int		    x;
-    int		    y;
-
-    ip = ITEM_FROM_PANEL_LIST(dp);
-    panel = ip->panel;
-    x = dp->title_rect.r_left + LIST_BOX_BORDER_WIDTH + ROW_MARGIN;
-    y = dp->title_rect.r_top + LIST_BOX_BORDER_WIDTH +
-				(int)xv_get(dp->public_self, PANEL_LEVEL_DOT_HEIGHT);
-#ifdef OW_I18N
-    title_str = (wchar_t *) panel_strsave_wc((wchar_t *)dp->TITLE);
-#else
-    title_str = (char *)malloc((size_t)dp->title_display_str_len + 1);
-    strncpy(title_str, (char *) dp->title, (size_t)dp->title_display_str_len);
-#endif /* OW_I18N */
-    title_str[dp->title_display_str_len] = 0;
-    PANEL_EACH_PAINT_WINDOW(panel, pw)
-	DRAWABLE_INFO_MACRO(pw, info);
-#ifdef OW_I18N
-	panel_paint_text(pw, panel->bold_fontset_id, 
-		ip->color_index, x, y + 
-		panel_fonthome(panel->bold_font), title_str);
-#else
-	panel_paint_text(pw, panel->bold_font_xid, ip->color_index,
-	    x, y + panel_fonthome(panel->bold_font), title_str);
-#endif /* OW_I18N */
-	screen = xv_screen(info);
-        gc_list = (GC *)xv_get(screen, SCREEN_OLGC_LIST, pw);
-        screen_adjust_gc_color(pw, SCREEN_SET_GC); 
-	XDrawLine(xv_display(info), xv_xid(info),
-	    gc_list[SCREEN_SET_GC],
-	    x,
-	    rect_bottom(&dp->title_rect),
-	    rect_right(&dp->title_rect) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
-	    rect_bottom(&dp->title_rect));
-	if (inactive(ip)) {
-	    screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
-	    XFillRectangle(xv_display(info), xv_xid(info),
-			   gc_list[SCREEN_INACTIVE_GC],
-			   dp->title_rect.r_left, dp->title_rect.r_top,
-			   (unsigned)dp->title_rect.r_width,
-			   (unsigned)dp->title_rect.r_height);
-	}
-    PANEL_END_EACH_PAINT_WINDOW
-    xv_free(title_str);
-}
-
-
-static void panel_list_create_displayarea(Panel_list_info *dp)
-{
-    Item_info      *ip = ITEM_PRIVATE(dp->public_self);
-    int             number_rows;
-	Panel_list_item lpub = PANEL_LIST_PUBLIC(dp);
-	char instname[200], *liinst;
-
-    if (dp->rows_displayed == 0) {
-	if (dp->nrows < PANEL_LIST_DEFAULT_ROW)
-	    dp->rows_displayed = dp->nrows;
-	else
-	    dp->rows_displayed = PANEL_LIST_DEFAULT_ROW;
-    }
-    number_rows = dp->rows_displayed;
-
-    /*
-     * By this time all the rows have been created. Calculate the size of the
-     * list box (depends on the number of rows to be displayed and the size of
-     * the fonts).
-     */
-    dp->list_box.r_height = 2*LIST_BOX_BORDER_WIDTH +
-	2*ROW_MARGIN + number_rows*dp->row_height;
-
-	lpub = PANEL_LIST_PUBLIC(dp);
-	liinst = (char *)xv_get(lpub, XV_INSTANCE_NAME);
-	sprintf(instname, "%sSB", liinst ? liinst : "ScrollList");
-
-    /* Create the Scrolling List Scrollbar
-     */
-    dp->list_sb = xv_create(ip->panel->paint_window->pw, SCROLLBAR,
-		XV_INSTANCE_NAME, instname,
-    	WIN_INHERIT_COLORS, TRUE, /* inherit both the visual and CMS */
-	XV_HEIGHT, dp->list_box.r_height,
-	XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA, ip,
-	SCROLLBAR_NOTIFY_CLIENT, ip->panel->paint_window->pw,
-	SCROLLBAR_VIEW_LENGTH,	dp->rows_displayed,  /* in rows */
-	SCROLLBAR_OBJECT_LENGTH, dp->nrows,  /* in rows */
-	SCROLLBAR_PIXELS_PER_UNIT, dp->row_height,
-	SCROLLBAR_INACTIVE, inactive(ip),
-	XV_SHOW, !hidden(ip),
-	XV_KEY_DATA, FRAME_ORPHAN_WINDOW, TRUE,
-	NULL);
-    if (ip->color_index >= 0)
-	xv_set(dp->list_sb,
-	       WIN_FOREGROUND_COLOR, ip->color_index,
-	       NULL);
-    dp->sb_rect = *(Rect *) xv_get(dp->list_sb, XV_RECT);
-    if (dp->left_hand_sb)
-	dp->list_box.r_left += dp->sb_rect.r_width;
-
-    /*
-     * Don't allow the Scrolling List Scrollbar to accept keyboard input focus.
-     */
-    win_set_no_focus(dp->list_sb, TRUE);
-}
-
-
-static void panel_list_delete_row(Panel_list_info *dp, Row_info *node, int repaint)
-{
-    Row_info       *prev = node->prev;
-
-    if (prev) {
-	prev->next = node->next;
-    } else {
-	dp->rows = node->next;
-    }
-
-    if (node->next) {
-	node->next->prev = prev;
-    }
-
-    if (dp->focus_row == node) {
-	dp->focus_row = node->next;
-	if (!dp->focus_row)
-	    dp->focus_row = prev;
-    }
-
-    if (node == dp->current_row)
-	dp->current_row = NULL;
-
-    /* Adjust the row numbers */
-    prev = node;
-    node = node->next;
-#ifdef OW_I18N
-    _xv_free_ps_string_attr_dup(&prev->string);
-#else
-    if (prev->f.free_string)
-	xv_free(prev->string);
-#endif /* OW_I18N */
-    xv_free(prev);
-    while (node) {
-	node->row--;
-	node->string_y -= dp->row_height;
-	node = node->next;
-    }
-    dp->nrows--;
-    if (dp->list_sb)
-	xv_set(dp->list_sb,
-	       SCROLLBAR_OBJECT_LENGTH, dp->nrows,  /* in rows */
-	       NULL);
-
-    if (repaint) {
-	/* Erase old rows */
-	panel_clear_rect(PANEL_PRIVATE(dp->parent_panel), dp->list_box);
-	/* Repaint list box and currently visible rows */
-	paint_list_box(dp);
-    }
-}
-
-
-static Row_info *panel_list_insert_row(Panel_list_info *dp, int which_row, int show, int repaint)
-{
-    Row_info       *node = dp->rows;
-    Row_info       *prev = NULL;
-    Row_info       *row = xv_alloc(Row_info);
-
-    while (node && (node->row != which_row)) {
-	prev = node;
-	node = node->next;
-    }
-    row->f.selected = FALSE;
-    row->f.show = show;
-    row->next = node;
-    row->prev = prev;
-    row->glyph = NULL;
-#ifdef OW_I18N
-    /*
-     * xv_alloc uses callc, therefor you do not need to zeroing again.
-     */
-#else
-    row->string = NULL;
-    row->f.free_string = FALSE;
-#endif /* OW_I18N */
-
-    /*
-     * It's possible that prev->row + 1 is not equal to which_row ie. the row
-     * is created at the end of the list
-     */
-    if (prev) {
-	prev->next = row;
-	row->row = prev->row + 1;
-    } else {			/* Insert at the begining of the list */
-	dp->rows = row;
-	row->row = 0;
-	if (!dp->focus_row)
-	    dp->focus_row = row;
-    }
-    row->string_y = LIST_BOX_BORDER_WIDTH + ROW_MARGIN +
-	row->row*dp->row_height;
-    if (node) {
-	node->prev = row;
-    }
-    while (node) {
-	node->row++;
-	node->string_y += dp->row_height;
-	node = node->next;
-    }
-    dp->nrows++;
-    if (dp->list_sb)
-	xv_set(dp->list_sb,
-	       SCROLLBAR_OBJECT_LENGTH, dp->nrows,  /* in rows */
-	       NULL);
-
-    if (repaint)
-	paint_list_box(dp);
-
-    return(row);
-}
-
-
-static int row_visible(Panel_list_info *dp, int desired_row_nbr)
-{
-    int			first_row_nbr_in_view;
-
-    first_row_nbr_in_view = (int) xv_get(dp->list_sb, SCROLLBAR_VIEW_START);
-    return (desired_row_nbr >= first_row_nbr_in_view &&
-	(unsigned)desired_row_nbr < (unsigned)first_row_nbr_in_view + dp->rows_displayed);
-}
-
-
-static void set_current_row(Panel_list_info *dp, Row_info *event_row, Event *event)
-{
-    int		    new_state = TRUE;
-    int		    toggle = FALSE;
-    
-    if ( event_row->f.row_inactive )
-	return;
-
-    if (dp->choose_one) {
-    	if (dp->current_row == event_row) {
-    	    if (dp->choose_none)
-    	    	toggle = TRUE;
-    	} else if (dp->current_row) {
-	    dp->setting_current_row = TRUE;
-	    dp->current_row->f.selected = FALSE;
-    	}
-	if (toggle)
-	    new_state = event_row->f.selected ? FALSE : TRUE;
-	event_row->f.selected = new_state;
-	if (dp->setting_current_row) {
-	    /* Note: The notify proc is called with the DESELECT operation
-	     * after the new row has been selected.  This lets the notify
-	     * proc differentiate between toggling off a row or choosing a
-	     * new row in a Choggle (choose_one && choose_none).
-	     */
-	    dp->insert_delete_enabled = FALSE;
-    	    show_feedback(dp, dp->current_row, event);
-	    dp->insert_delete_enabled = TRUE;
-	}
-	dp->current_row = event_row;
-	show_feedback(dp, dp->current_row, event);
-	dp->setting_current_row = FALSE;
-    } else {
-    	new_state = event_row->f.selected ? FALSE : TRUE;
-    	event_row->f.selected = new_state;
-	dp->current_row = event_row;
-    	show_feedback(dp, dp->current_row, event);
-    }
-}
-
-
-static void set_edit_row(Panel_list_info *dp, Row_info *event_row, int toggle, Event *event)
-{
-    Row_info	*row;
-    int		new_state = TRUE;
-    
-    /* NOTE: This routine depends on no rows being inserted or deleted while in
-     * show_feedback.  Since show_feedback doesn't call the notify proc, this
-     * is not an issue.
-     */
-    if (!toggle) {
-	event_row->f.edit_selected = TRUE;
-	show_feedback(dp, event_row, event);
-    	for (row=dp->rows; row; row=row->next) {
-    	    if (row != event_row && row->f.edit_selected) {
-    	    	row->f.edit_selected = FALSE;
-    	        show_feedback(dp, row, event);
-    	    }
-    	}
-    } else {
-    	new_state = event_row->f.edit_selected ? FALSE : TRUE;
-    	event_row->f.edit_selected = new_state;
-    	show_feedback(dp, event_row, event);
-    }
-    dp->last_edit_row = event_row;
-}
-
-
-static void set_row_display_str_length(Panel_list_info *dp, Row_info *row)
-{
-#ifdef OW_I18N
-    XFontSet	    font_set;
-#else
-    XFontStruct	   *font_struct;
-#endif /* OW_I18N */
-    int		    max_string_width;
-
-#ifdef OW_I18N
-    if (row->font)
-	font_set = (XFontSet) xv_get(row->font, FONT_SET_ID);
-    else
-	font_set = dp->font_set;
-    row->display_str_len = row->STRING ? wslen(row->STRING) : 0;
-    max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
-	ROW_MARGIN - dp->string_x;
-    while (XwcTextEscapement(font_set, row->STRING, row->display_str_len) >
-	   max_string_width) {
-#else
-    if (row->font)
-	font_struct = (XFontStruct *) xv_get(row->font, FONT_INFO);
-    else
-	font_struct = dp->font_struct;
-    row->display_str_len = row->string ? strlen(row->string) : 0;
-    max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
-	ROW_MARGIN - dp->string_x;
-    while (XTextWidth(font_struct, row->string, row->display_str_len) >
-	   max_string_width) {
-#endif /* OW_I18N */
-	row->display_str_len--;
-    }
-}
-
-
-static void set_row_font(Panel_list_info *dp, Row_info *row, Xv_Font font)
-{
-	Xv_Font old_font = row->font;
-
-	if (!font) {
-		row->font = font;
-	}
-	else if ((unsigned)xv_get(font, FONT_DEFAULT_CHAR_HEIGHT) <= dp->row_height)
-	{
-		row->font = font;
-	}
-	else {
-		xv_error(font,
-				ERROR_STRING,
-				XV_MSG("Font height exceeds row height; font ignored"),
-				ERROR_PKG, PANEL, NULL);
-		row->font = XV_NULL;
-	}
-	if (row->font != old_font)
-		row->display_str_len = 0;	/* force recomputation */
-}
-
-
-static void set_row_glyph(Panel_list_info *dp, Row_info *row, Pixrect *glyph_pr)
-{
-    if ((unsigned)(glyph_pr->pr_height) <= dp->row_height) {
-	row->glyph = glyph_pr;
-    } else {
-	xv_error((Xv_opaque)glyph_pr,
-		 ERROR_STRING,
-		   XV_MSG("Panel List glyph height exceeds row height; glyph ignored"),
-		 ERROR_PKG, PANEL,
-		 NULL);
-	row->glyph = NULL;
-    }
-}
-
-
-
-static void set_row_mask_glyph(Panel_list_info *dp, Row_info *row, Pixrect *glyph_pr)
-{
-    if ( !glyph_pr ) {
-	row->mask_glyph = (Pixrect *)NULL;
-	return;
-    }
-
-    if ( (int)(glyph_pr->pr_depth) != 1 ) {
-	xv_error((Xv_opaque)glyph_pr,
-		 ERROR_STRING,
-		 	XV_MSG("Panel List mask glyph depth not equal 1; mask glyph ignored"),
-		 ERROR_PKG, PANEL,
-		 NULL);
-	row->mask_glyph = NULL;
-	return;
-    }
-
-    if ((unsigned)(glyph_pr->pr_height) <= dp->row_height) {
-	row->mask_glyph = glyph_pr;
-    } else {
-	xv_error((Xv_opaque)glyph_pr,
-		 ERROR_STRING,
-		   XV_MSG("Panel List mask glyph height exceeds row height; glyph ignored"),
-		 ERROR_PKG, PANEL,
-		 NULL);
-	row->mask_glyph = NULL;
-    }
-}
-
-static int is_dbl_click(Panel_list_info *dp, Row_info *row, Event *event)
-{
-	Item_info *ip = ITEM_FROM_PANEL_LIST(dp);
-	int is_multiclick;
-	static struct timeval empty_time = { 0, 0 };
-
-	/* make sure they don't try to pull one over on us */
-	if ((event_action(event) != ACTION_SELECT) || !event_is_down(event))
-		return FALSE;
-
-	/* make sure both click's occured on the same row */
-	if (!dp->last_click_row || (dp->last_click_row != row)) {
-		dp->last_click_row = row;
-		dp->last_click_time = event_time(event);
-		return FALSE;
-	}
-
-	/* weigh timeval's against multiclick-timeout resource */
-	is_multiclick = panel_is_multiclick(ip->panel,
-			&dp->last_click_time, &event_time(event));
-
-	if (is_multiclick)
-		dp->last_click_time = empty_time;	/* reset timeval */
-	else
-		dp->last_click_time = event_time(event);
-
-	SERVERTRACE((500, "is %smulticlick\n", is_multiclick ? "" : "no "));
-	return is_multiclick;
-}
-
-static void show_feedback(Panel_list_info *dp, Row_info *row, Event *event)
-{
-	Item_info *panel_list_ip = ITEM_PRIVATE(dp->public_self);
-	list_notify_proc_t notify_proc = (list_notify_proc_t)panel_list_ip->notify;
-	int have_double_click = FALSE, dbl_click = FALSE;
-
-	if (!panel_list_ip->panel->status.painted) return;
-
-#ifdef OW_I18N
-	if (wchar_notify(panel_list_ip))
-		notify_proc = panel_list_ip->notify_wc;
-#endif
-
-	/*
-	 * if double-click, we must convert a de-select into a select/dbl-click op.
-	 */
-
-	/* But to detect a double click, we must "always" call is_dbl_click
-	 * because only *there* dp->last_click_row will be set
-	 */
-	if (event) have_double_click = is_dbl_click(dp, row, event);
-
-	if (notify_proc && event && row->f.selected && dp->do_dbl_click
-		&& have_double_click)
-	{
-		dbl_click = TRUE;
-	}
-
-	if (!hidden(panel_list_ip))
-		paint_row(dp, row);
-
-
-	if (!dp->edit_mode) {
-		if (notify_proc && event) {
-			Panel_list_op op;
-
-			if (dbl_click)
-				op = PANEL_LIST_OP_DBL_CLICK;
-			else
-				op = row->f.selected ? PANEL_LIST_OP_SELECT :
-										PANEL_LIST_OP_DESELECT;
-
-#ifdef OW_I18N
-			if (wchar_notify(panel_list_ip)) {
-				(*notify_proc) (dp->public_self, row->STRING, row->client_data,
-						op, event, row->row);
-			}
-			else {
-				(*notify_proc) (dp->public_self,
-						_xv_get_mbs_attr_dup(&row->string),
-						row->client_data, op, event, row->row);
-			}
-#else
-			(*notify_proc) (dp->public_self, row->string, row->client_data,
-					op, event, row->row);
-#endif /* OW_I18N */
-		}
-	}
-}
-
-
-static void list_menu_done_proc(Menu menu, Xv_opaque result)
-{
-	typedef void (*menu_done_t)(Menu, Xv_opaque);
-    Item_info	*ip;
-    menu_done_t orig_done_proc;	/* original menu-done procedure */
-    
-    ip = (Item_info *) xv_get(menu, XV_KEY_DATA, PANEL_FIRST_ITEM);
-
-    /* Restore original menu done proc. */
-    orig_done_proc = (menu_done_t)xv_get(menu, XV_KEY_DATA, MENU_DONE_PROC);
-    xv_set(menu, MENU_DONE_PROC, orig_done_proc, NULL );
-
-    /* Invoke original menu done proc (if any) */
-    if (orig_done_proc)
-		(orig_done_proc)(menu, result);
-
-    ip->panel->status.current_item_active = FALSE;
-}
-
 const Xv_pkg xv_panel_list_pkg = {
-    "Panel_list Item", ATTR_PKG_PANEL,
+    "Panel_list Item",
+	ATTR_PKG_PANEL,
     sizeof(Xv_panel_list),
     PANEL_ITEM,
     panel_list_init,
