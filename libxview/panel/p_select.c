@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.35 2026/04/12 08:11:52 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.36 2026/04/12 20:40:07 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -556,6 +556,11 @@ static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 		s = image_string(&ip->label);
 		sx = ip->label_rect.r_left;
 		ex = rect_right(&ip->label_rect);
+		/* this is 0 for PANEL_BUTTONS */
+		if (ip->value_rect.r_width == 0) {
+			sx += ButtonEndcap_Width(ip->value_ginfo);
+			ex += ButtonEndcap_Width(ip->value_ginfo);
+		}
 
 		xv_set(qo,
 			QUICK_BASELINE,
