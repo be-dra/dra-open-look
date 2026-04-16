@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_get.c 20.62 93/06/28 DRA: $Id: fm_get.c,v 4.3 2025/11/01 13:00:16 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_get.c 20.62 93/06/28 DRA: $Id: fm_get.c,v 4.4 2026/04/15 19:36:04 dra Exp $ ";
 #endif
 #endif
 
@@ -19,419 +19,454 @@ static char     sccsid[] = "@(#)fm_get.c 20.62 93/06/28 DRA: $Id: fm_get.c,v 4.3
 
 static int frame_fit_direction(Frame_class_info *frame, Window_attribute direction);
 
-Pkg_private Xv_opaque frame_get_attr(Frame frame_public, int *status, Attr_attribute attr, va_list valist)
+Pkg_private Xv_opaque frame_get_attr(Frame frame_public, int *status,
+									Attr_attribute attr, va_list valist)
 {
-    register Frame_class_info *frame = FRAME_CLASS_PRIVATE(frame_public);
-    static Rect     rect_local;
+	register Frame_class_info *frame = FRAME_CLASS_PRIVATE(frame_public);
+	static Rect rect_local;
 
-    switch (attr) {
-      case XV_RECT:
-	{
-	    static Rect rect;
-	    
-	    win_getrect(frame_public, &rect);
-	    /* need to account for the possible footer window */
-	    if (status_get(frame, show_footer) && status_get(frame, created)) 
-	      rect.r_height -= (int)xv_get(frame->footer, XV_HEIGHT);
+	switch (attr) {
+		case XV_RECT:
+			{
+				static Rect rect;
+
+				win_getrect(frame_public, &rect);
+				/* need to account for the possible footer window */
+				if (status_get(frame, show_footer)
+						&& status_get(frame, created))
+					rect.r_height -= (int)xv_get(frame->footer, XV_HEIGHT);
+
 #ifdef OW_I18N
-	    /* need to account for the possible imstatus window */
-	    if (status_get(frame, show_imstatus) && status_get(frame, created)) 
-	      rect.r_height -= (int)xv_get(frame->imstatus, XV_HEIGHT);
+				/* need to account for the possible imstatus window */
+				if (status_get(frame, show_imstatus)
+						&& status_get(frame, created))
+					rect.r_height -= (int)xv_get(frame->imstatus, XV_HEIGHT);
 #endif
-	    return (Xv_opaque)&rect;
-	}
-	
-      case XV_HEIGHT: 
-	{
-	    Rect rect;
-	    int height;
-	    
-	    win_getrect(frame_public, &rect);
-	    height = rect.r_height;
-	    /* need to account for the possible footer window */
-	    if (status_get(frame, show_footer) && status_get(frame, created))
-	      height -= (int)xv_get(frame->footer, XV_HEIGHT);
+
+				return (Xv_opaque) & rect;
+			}
+
+		case XV_HEIGHT:
+			{
+				Rect rect;
+				int height;
+
+				win_getrect(frame_public, &rect);
+				height = rect.r_height;
+				/* need to account for the possible footer window */
+				if (status_get(frame, show_footer)
+						&& status_get(frame, created))
+					height -= (int)xv_get(frame->footer, XV_HEIGHT);
+
 #ifdef OW_I18N
-	    /* need to account for the possible imstatus window */
-	    if (status_get(frame, show_imstatus) && status_get(frame, created))
-	      height -= (int)xv_get(frame->imstatus, XV_HEIGHT);
+				/* need to account for the possible imstatus window */
+				if (status_get(frame, show_imstatus)
+						&& status_get(frame, created))
+					height -= (int)xv_get(frame->imstatus, XV_HEIGHT);
 #endif
-	    return (Xv_opaque)height;
-	}	  
-	
-      case WIN_FIT_WIDTH:
-	return (Xv_opaque)frame_fit_direction(frame, WIN_DESIRED_WIDTH);
 
-      case WIN_FIT_HEIGHT:
-	{
-	    int height;
-	    
-	    height = frame_fit_direction(frame, WIN_DESIRED_HEIGHT);
-	    if (status_get(frame, show_footer) && status_get(frame, created))
-	      height += (int)xv_get(frame->footer, XV_HEIGHT);
+				return (Xv_opaque) height;
+			}
+
+		case WIN_FIT_WIDTH:
+			return (Xv_opaque) frame_fit_direction(frame, WIN_DESIRED_WIDTH);
+
+		case WIN_FIT_HEIGHT:
+			{
+				int height;
+
+				height = frame_fit_direction(frame, WIN_DESIRED_HEIGHT);
+				if (status_get(frame, show_footer)
+						&& status_get(frame, created))
+					height += (int)xv_get(frame->footer, XV_HEIGHT);
+
 #ifdef OW_I18N
-	    if (status_get(frame, show_imstatus) && status_get(frame, created))
-	      height += (int)xv_get(frame->imstatus, XV_HEIGHT);
+				if (status_get(frame, show_imstatus)
+						&& status_get(frame, created))
+					height += (int)xv_get(frame->imstatus, XV_HEIGHT);
 #endif
-	    return (Xv_opaque)height;
-	}
 
-      case FRAME_ICON:
-	return frame->icon;
+				return (Xv_opaque) height;
+			}
 
-      case FRAME_NTH_SUBWINDOW:{
-	    register Xv_Window sw;
-	    register int    n = va_arg(valist, int);
+		case FRAME_ICON:
+			return frame->icon;
 
-	    FRAME_EACH_SUBWINDOW(frame, sw)
-		if (--n == 0)
-		return sw;
-	    FRAME_END_EACH
-		return XV_NULL;
-	}
+		case FRAME_NTH_SUBWINDOW:
+			{
+				register Xv_Window sw;
+				register int n = va_arg(valist, int);
 
-      case FRAME_OLD_RECT:
-	return ((Xv_opaque) & frame->oldrect);
+				FRAME_EACH_SUBWINDOW(frame, sw)
+					if (--n == 0) return sw;
+				FRAME_END_EACH return XV_NULL;
+			}
 
-      case FRAME_DEFAULT_DONE_PROC:
-	return (Xv_opaque) frame->default_done_proc;
+		case FRAME_OLD_RECT:
+			return ((Xv_opaque) & frame->oldrect);
 
-      case FRAME_DONE_PROC:
-	return (Xv_opaque) (frame->done_proc ?
-			    frame->done_proc : frame->default_done_proc);
+		case FRAME_DEFAULT_DONE_PROC:
+			return (Xv_opaque) frame->default_done_proc;
 
-      case FRAME_FOCUS_DIRECTION:
-	return (Xv_opaque) (frame->focus_window ?
-	    xv_get(frame->focus_window, XV_KEY_DATA, FRAME_FOCUS_DIRECTION) :
-	    FRAME_FOCUS_UP);
+		case FRAME_DONE_PROC:
+			return (Xv_opaque) (frame->done_proc ?
+					frame->done_proc : frame->default_done_proc);
 
-      case FRAME_FOCUS_WIN:
-	return (Xv_opaque) frame->focus_window;
+		case FRAME_FOCUS_DIRECTION:
+			return (Xv_opaque) (frame->focus_window ?
+					xv_get(frame->focus_window, XV_KEY_DATA,
+							FRAME_FOCUS_DIRECTION) : FRAME_FOCUS_UP);
 
-      case FRAME_FOREGROUND_COLOR: 
-	{
-	    static Xv_singlecolor fg;
-	    fg.red = (unsigned char)(frame->fg.red >> 8);
-	    fg.green = (unsigned char)(frame->fg.green >> 8);
-	    fg.blue = (unsigned char)(frame->fg.blue >> 8);
-	    return ((Xv_opaque) (&fg));
-	}
-	
-      case FRAME_BACKGROUND_COLOR:
-	{
-	    static Xv_singlecolor bg;
-	    bg.red = (unsigned char)(frame->bg.red >> 8);
-	    bg.green = (unsigned char)(frame->bg.green >> 8);
-	    bg.blue = (unsigned char)(frame->bg.blue >> 8);
-	    return ((Xv_opaque) (&bg));
-	}
-	    
-      case FRAME_SHOW_FOOTER:
-	return (Xv_opaque) status_get(frame, show_footer);
+		case FRAME_FOCUS_WIN:
+			return (Xv_opaque) frame->focus_window;
 
-      case FRAME_LEFT_FOOTER:
+		case FRAME_FOREGROUND_COLOR:
+			{
+				static Xv_singlecolor fg;
+
+				fg.red = (unsigned char)(frame->fg.red >> 8);
+				fg.green = (unsigned char)(frame->fg.green >> 8);
+				fg.blue = (unsigned char)(frame->fg.blue >> 8);
+				return ((Xv_opaque) (&fg));
+			}
+
+		case FRAME_BACKGROUND_COLOR:
+			{
+				static Xv_singlecolor bg;
+
+				bg.red = (unsigned char)(frame->bg.red >> 8);
+				bg.green = (unsigned char)(frame->bg.green >> 8);
+				bg.blue = (unsigned char)(frame->bg.blue >> 8);
+				return ((Xv_opaque) (&bg));
+			}
+
+		case FRAME_SHOW_FOOTER:
+			return (Xv_opaque) status_get(frame, show_footer);
+
+		case FRAME_LEFT_FOOTER:
+
 #ifdef OW_I18N
-        return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->left_footer);
+			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->left_footer);
 #else
-	return (Xv_opaque) frame->left_footer;
-#endif 
+			return (Xv_opaque) frame->left_footer;
+#endif
 
 #ifdef OW_I18N
-      case FRAME_LEFT_FOOTER_WCS:
-        return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->left_footer);
-#endif 
+		case FRAME_LEFT_FOOTER_WCS:
+			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->left_footer);
+#endif
 
-      case FRAME_RIGHT_FOOTER:
+		case FRAME_RIGHT_FOOTER:
+
 #ifdef OW_I18N
-        return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->right_footer);
+			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->right_footer);
 #else
-	return (Xv_opaque) frame->right_footer;
+			return (Xv_opaque) frame->right_footer;
 #endif
 
 #ifdef OW_I18N
-      case FRAME_RIGHT_FOOTER_WCS:
-        return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->right_footer);
+		case FRAME_RIGHT_FOOTER_WCS:
+			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->right_footer);
 #endif
-	
-      case FRAME_LABEL:
+
+		case FRAME_LABEL:
+
 #ifdef OW_I18N
-        return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->label);
+			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->label);
 #else
-	return (Xv_opaque) frame->label;
+			return (Xv_opaque) frame->label;
 #endif
 
 #ifdef OW_I18N
-      case XV_LABEL_WCS:
-        return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->label);
+		case XV_LABEL_WCS:
+			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->label);
 #endif
 
-      case FRAME_NO_CONFIRM:
-	return (Xv_opaque) status_get(frame, no_confirm);
+		case FRAME_NO_CONFIRM:
+			return (Xv_opaque) status_get(frame, no_confirm);
 
-      case FRAME_NTH_SUBFRAME:{
-	    register Xv_Window sw;
-	    register int    n = va_arg(valist, int);
+		case FRAME_NTH_SUBFRAME:{
+				register Xv_Window sw;
+				register int n = va_arg(valist, int);
 
-	    FRAME_EACH_SUBFRAME(frame, sw)
-		if (--n == 0)
-		return sw;
-	    FRAME_END_EACH
-		return XV_NULL;
-	}
+				FRAME_EACH_SUBFRAME(frame, sw)
+						if (--n == 0)
+					return sw;
+				FRAME_END_EACH return XV_NULL;
+			}
 
-      case FRAME_CLOSED:
-	/* If the frame is Withdrawn, return the inital_state the frame will
-	 * be in when it is mapped.					     */
-	if (xv_get(frame_public, XV_SHOW))
-	    return (Xv_opaque) frame_is_iconic(frame);
-	else
-	    return (Xv_opaque) status_get(frame, initial_state);
+		case FRAME_CLOSED:
+			/* If the frame is Withdrawn, return the inital_state the frame will
+			 * be in when it is mapped.                      */
+			if (xv_get(frame_public, XV_SHOW))
+				return (Xv_opaque) frame_is_iconic(frame);
+			else
+				return (Xv_opaque) status_get(frame, initial_state);
 
-      case FRAME_INHERIT_COLORS:
-	return (Xv_opaque) xv_get(frame_public, WIN_INHERIT_COLORS);
+		case FRAME_INHERIT_COLORS:
+			return (Xv_opaque) xv_get(frame_public, WIN_INHERIT_COLORS);
 
-      case FRAME_SUBWINDOWS_ADJUSTABLE:	/* WIN_BOUNDARY_MGR: */
-	return (Xv_opaque) status_get(frame, bndrymgr);
+		case FRAME_SUBWINDOWS_ADJUSTABLE:	/* WIN_BOUNDARY_MGR: */
+			return (Xv_opaque) status_get(frame, bndrymgr);
 
-      case WIN_TYPE:
-	return (Xv_opaque) FRAME_TYPE;
+		case WIN_TYPE:
+			return (Xv_opaque) FRAME_TYPE;
 
-      case FRAME_BUSY:
-	return (Xv_opaque) status_get(frame, busy);
+		case FRAME_BUSY:
+			return (Xv_opaque) status_get(frame, busy);
 
 #ifdef OW_I18N
-      case FRAME_RIGHT_IMSTATUS:
-        return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->right_IMstatus);
+		case FRAME_RIGHT_IMSTATUS:
+			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->right_IMstatus);
 
-      case FRAME_LEFT_IMSTATUS:
-        return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->left_IMstatus);
+		case FRAME_LEFT_IMSTATUS:
+			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->left_IMstatus);
 
-      case FRAME_RIGHT_IMSTATUS_WCS:
-        return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->right_IMstatus);
+		case FRAME_RIGHT_IMSTATUS_WCS:
+			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->right_IMstatus);
 
-      case FRAME_LEFT_IMSTATUS_WCS:
-        return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->left_IMstatus);
+		case FRAME_LEFT_IMSTATUS_WCS:
+			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->left_IMstatus);
 
-      case FRAME_SHOW_IMSTATUS:
-	return (Xv_opaque) status_get(frame, show_imstatus);
+		case FRAME_SHOW_IMSTATUS:
+			return (Xv_opaque) status_get(frame, show_imstatus);
 
-      case FRAME_INACTIVE_IMSTATUS:
-	return (Xv_opaque) status_get(frame, inactive_imstatus);
+		case FRAME_INACTIVE_IMSTATUS:
+			return (Xv_opaque) status_get(frame, inactive_imstatus);
 
 #ifdef FULL_R5
-      case FRAME_IMSTATUS_RECT: {
-        static Rect    imstatus_rect;
+		case FRAME_IMSTATUS_RECT:{
+				static Rect imstatus_rect;
 
-        if (status_get(frame, show_imstatus)
-            && status_get(frame, created)
-            && frame->imstatus) {
-            imstatus_rect = *(Rect *)xv_get(frame->imstatus, WIN_RECT);
-        } else {
-            imstatus_rect.r_left = 0;
-            imstatus_rect.r_top = 0;
-            imstatus_rect.r_width = 0;
-            imstatus_rect.r_height = 0;
-        }
-        return (Xv_opaque)&imstatus_rect;
-      }  
-#endif /* FULL_R5 */	        
+				if (status_get(frame, show_imstatus)
+						&& status_get(frame, created)
+						&& frame->imstatus) {
+					imstatus_rect = *(Rect *) xv_get(frame->imstatus, WIN_RECT);
+				}
+				else {
+					imstatus_rect.r_left = 0;
+					imstatus_rect.r_top = 0;
+					imstatus_rect.r_width = 0;
+					imstatus_rect.r_height = 0;
+				}
+				return (Xv_opaque) & imstatus_rect;
+			}
+#endif /* FULL_R5 */
 #endif
 
-      case FRAME_ACCELERATOR:
-      case FRAME_X_ACCELERATOR: {
-        short code = (short)va_arg(valist, int);
-        KeySym	    keysym = va_arg(valist, KeySym);
-        Frame_accelerator *accel;
+		case FRAME_ACCELERATOR:
+		case FRAME_X_ACCELERATOR:{
+				short code = (short)va_arg(valist, int);
+				KeySym keysym = va_arg(valist, KeySym);
+				Frame_accelerator *accel;
 
-	for (accel = frame->accelerators; accel; accel = accel->next) {
-	    if (accel->code == code || accel->keysym == keysym)
-		break;
-	}
-	return (Xv_opaque) accel;
-      }
+				for (accel = frame->accelerators; accel; accel = accel->next) {
+					if (accel->code == code || accel->keysym == keysym)
+						break;
+				}
+				return (Xv_opaque) accel;
+			}
 
-      /* ACC_XVIEW */
-      case FRAME_MENUS:
-	return((Xv_opaque)frame->menu_list);
+			/* ACC_XVIEW */
+		case FRAME_MENUS:
+			return ((Xv_opaque) frame->menu_list);
 
-      case FRAME_MENU_COUNT:
-	return((Xv_opaque)frame->menu_count);
+		case FRAME_MENU_COUNT:
+			return ((Xv_opaque) frame->menu_count);
 
 #ifdef OW_I18N
-	case FRAME_MENU_ACCELERATOR:
-	case FRAME_MENU_ACCELERATOR_WCS: {
-	/*
-	 * which_attr is to determine which attribute is used.
-	 * pswcs is used to take advantage of the _xv_pswcs functions
-	 * that malloc/convert mb/wcs strings.
-	 */
-        Attr_attribute    which_attr = attr;
-	_xv_pswcs_t     pswcs = {0, NULL, NULL};
+		case FRAME_MENU_ACCELERATOR:
+		case FRAME_MENU_ACCELERATOR_WCS:
+			/*
+			 * which_attr is to determine which attribute is used.
+			 * pswcs is used to take advantage of the _xv_pswcs functions
+			 * that malloc/convert mb/wcs strings.
+			 */
+			Attr_attribute which_attr = attr;
+			_xv_pswcs_t pswcs = { 0, NULL, NULL };
 #else
-	case FRAME_MENU_ACCELERATOR: {
+		case FRAME_MENU_ACCELERATOR:
 #endif /* OW_I18N */
-	short kc;
-	KeyCode keycode;
-	int	result;
-	unsigned int		state;
-	KeySym			keysym;
-        Frame_menu_accelerator *menu_accel;
-	Xv_server		server_public;
-	CHAR			*keystr;
+
+			{
 
 #ifdef OW_I18N
-	/*
-	 * Use different macro to duplicate/convert strings depending
-	 * on whether mb/wcs attribute was used.
-	 */
-	if (which_attr == FRAME_MENU_ACCELERATOR)  {
-            _xv_pswcs_mbsdup(&pswcs, va_arg(valist, char *));
-	}
-	else  {
-	    _xv_pswcs_wcsdup(&pswcs, va_arg(valist, CHAR *));
-	}
+				/*
+				 * which_attr is to determine which attribute is used.
+				 * pswcs is used to take advantage of the _xv_pswcs functions
+				 * that malloc/convert mb/wcs strings.
+				 */
+				Attr_attribute which_attr = attr;
+				_xv_pswcs_t pswcs = { 0, NULL, NULL };
+#endif /* OW_I18N */
 
-	keystr = pswcs.value;
+				short kc;
+				KeyCode keycode;
+				int result;
+				unsigned int state;
+				KeySym keysym;
+				Frame_menu_accelerator *menu_accel;
+				Xv_server server_public;
+				CHAR *keystr;
+
+#ifdef OW_I18N
+				/*
+				 * Use different macro to duplicate/convert strings depending
+				 * on whether mb/wcs attribute was used.
+				 */
+				if (which_attr == FRAME_MENU_ACCELERATOR) {
+					_xv_pswcs_mbsdup(&pswcs, va_arg(valist, char *));
+				}
+				else {
+					_xv_pswcs_wcsdup(&pswcs, va_arg(valist, CHAR *));
+				}
+
+				keystr = pswcs.value;
 #else
-	keystr = va_arg(valist, char *);
+				keystr = va_arg(valist, char *);
 #endif
 
-	/*
-	 * Return NULL if key string passed in is NULL
-	 */
-	if (!keystr)  {
-	    return (Xv_opaque)NULL;
-	}
+				/*
+				 * Return NULL if key string passed in is NULL
+				 */
+				if (!keystr) {
+					return (Xv_opaque) NULL;
+				}
 
-	/*
-	 * Get server handle
-	 */
-	server_public = XV_SERVER_FROM_WINDOW(frame_public);
+				/*
+				 * Get server handle
+				 */
+				server_public = XV_SERVER_FROM_WINDOW(frame_public);
 
-	/*
-	 * From keystring, get keycode, state, keysym...
-	 */
-        result = server_parse_keystr(server_public, keystr, &keysym, 
-				&kc, &state, 0, NULL);
-		keycode = kc;
+				/*
+				 * From keystring, get keycode, state, keysym...
+				 */
+				result = server_parse_keystr(server_public, keystr, &keysym,
+						&kc, &state, 0, NULL);
+				keycode = kc;
 
-	/*
-	 * If get parsing error, return NULL
-	 */
-	if (result != XV_OK)  {
+				/*
+				 * If get parsing error, return NULL
+				 */
+				if (result != XV_OK) {
+
 #ifdef OW_I18N
-            if (pswcs.storage != NULL)
-                xv_free(pswcs.storage);
+					if (pswcs.storage != NULL)
+						xv_free(pswcs.storage);
 #endif /* OW_I18N */
-	    return (Xv_opaque)NULL;
-	}
 
-	/*
-	 * Search for menu accelerator with matching keycode/state
-	 * or keysym
-	 */
-	menu_accel = frame_find_menu_acc(frame_public, keycode, state, 
-			keysym, FALSE);
+					return (Xv_opaque) NULL;
+				}
+
+				/*
+				 * Search for menu accelerator with matching keycode/state
+				 * or keysym
+				 */
+				menu_accel = frame_find_menu_acc(frame_public, keycode, state,
+						keysym, FALSE);
 
 #ifdef OW_I18N
-            if (pswcs.storage != NULL)
-                xv_free(pswcs.storage);
+				if (pswcs.storage != NULL)
+					xv_free(pswcs.storage);
 #endif /* OW_I18N */
-	return (Xv_opaque) menu_accel;
-      }
 
-      case FRAME_MENU_X_ACCELERATOR: {
-	int			keycode;
-	unsigned int		state;
-	KeySym			keysym;
-        Frame_menu_accelerator *menu_accel;
+				return (Xv_opaque) menu_accel;
+			}
 
-	keycode =  va_arg(valist, int);
-	state = va_arg(valist, unsigned int);
-	keysym = va_arg(valist, KeySym);
+		case FRAME_MENU_X_ACCELERATOR:{
+				int keycode;
+				unsigned int state;
+				KeySym keysym;
+				Frame_menu_accelerator *menu_accel;
 
-	/*
-	 * Search for menu accelerator with matching state and 
-	 * keycode/keysym
-	 */
-	menu_accel = frame_find_menu_acc(frame_public, keycode, state, 
-				keysym, FALSE);
+				keycode = va_arg(valist, int);
+				state = va_arg(valist, unsigned int);
 
-	return (Xv_opaque) menu_accel;
+				keysym = va_arg(valist, KeySym);
 
-      }
-      /* ACC_XVIEW */
+				/*
+				 * Search for menu accelerator with matching state and 
+				 * keycode/keysym
+				 */
+				menu_accel = frame_find_menu_acc(frame_public, keycode, state,
+						keysym, FALSE);
 
-      case FRAME_COMPOSE_STATE:
-	return((Xv_opaque)status_get(frame, compose_led));
+				return (Xv_opaque) menu_accel;
 
-      case FRAME_MIN_SIZE: {
-	 int *width = va_arg(valist, int *),
-	     *height = va_arg(valist, int *),
-	      footer_height = 0;
+			}
+			/* ACC_XVIEW */
 
-         if (status_get(frame, show_footer) && frame->footer &&
-	     (frame->normal_hints.flags & PMinSize))
-             footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
+		case FRAME_COMPOSE_STATE:
+			return ((Xv_opaque) status_get(frame, compose_led));
+
+		case FRAME_MIN_SIZE:{
+				int *width = va_arg(valist, int *),
+						*height = va_arg(valist, int *), footer_height = 0;
+
+				if (status_get(frame, show_footer) && frame->footer &&
+						(frame->normal_hints.flags & PMinSize))
+					footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
+
 #ifdef OW_I18N
-         if (status_get(frame, show_imstatus) && frame->imstatus &&
-	     (frame->normal_hints.flags & PMinSize))
-             footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
+				if (status_get(frame, show_imstatus) && frame->imstatus &&
+						(frame->normal_hints.flags & PMinSize))
+					footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
 #endif
 
-	 *width = frame->normal_hints.min_width;
-	 *height = frame->normal_hints.min_height - footer_height;
-	 return((Xv_opaque)0);
-      }
+				*width = frame->normal_hints.min_width;
+				*height = frame->normal_hints.min_height - footer_height;
+				return ((Xv_opaque) 0);
+			}
 
-      case FRAME_MAX_SIZE: {
-	 int *width = va_arg(valist, int *),
-	     *height = va_arg(valist, int *),
-	      footer_height = 0;
+		case FRAME_MAX_SIZE:{
+				int *width = va_arg(valist, int *),
+						*height = va_arg(valist, int *), footer_height = 0;
 
-         if (status_get(frame, show_footer) && frame->footer &&
-	     (frame->normal_hints.flags & PMaxSize))
-             footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
+				if (status_get(frame, show_footer) && frame->footer &&
+						(frame->normal_hints.flags & PMaxSize))
+					footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
+
 #ifdef OW_I18N
-         if (status_get(frame, show_imstatus) && frame->imstatus &&
-	     (frame->normal_hints.flags & PMaxSize))
-             footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif 
+				if (status_get(frame, show_imstatus) && frame->imstatus &&
+						(frame->normal_hints.flags & PMaxSize))
+					footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
+#endif
 
-	 *width = frame->normal_hints.max_width;
-	 *height = frame->normal_hints.max_height - footer_height;
-	 return((Xv_opaque)0);
-      }
+				*width = frame->normal_hints.max_width;
+				*height = frame->normal_hints.max_height - footer_height;
+				return ((Xv_opaque) 0);
+			}
 
-      /* Here for SunView1 compatibility only. */
-      case FRAME_CLOSED_RECT:
-	{
-	    register int is_subframe =
-			(int)xv_get(xv_get(frame_public, WIN_OWNER),
-					       XV_IS_SUBTYPE_OF, FRAME_CLASS);
-	    
-	    /* subframes don't have a closed rect */
-	    if (is_subframe)
-	      return XV_NULL;
-	    (void) win_getrect(frame->icon, &rect_local);
-	    return (Xv_opaque) & rect_local;
+			/* Here for SunView1 compatibility only. */
+		case FRAME_CLOSED_RECT:
+			{
+				register int is_subframe =
+						(int)xv_get(xv_get(frame_public, WIN_OWNER),
+						XV_IS_SUBTYPE_OF, FRAME_CLASS);
+
+				/* subframes don't have a closed rect */
+				if (is_subframe)
+					return XV_NULL;
+				(void)win_getrect(frame->icon, &rect_local);
+				return (Xv_opaque) & rect_local;
+			}
+
+			/* Here for SunView1 compatibility only. */
+		case FRAME_CURRENT_RECT:
+			if (frame_is_iconic(frame)) {
+				(void)win_getrect(frame->icon, &rect_local);
+				return (Xv_opaque) & rect_local;
+			}
+			else {
+				return xv_get(frame_public, WIN_RECT);
+			}
+
+		default:
+			if (xv_check_bad_attr(FRAME_CLASS, attr) == XV_ERROR) {
+				*status = XV_ERROR;
+			}
+			return (Xv_opaque) 0;
 	}
-
-	/* Here for SunView1 compatibility only. */
-      case FRAME_CURRENT_RECT:
-	if (frame_is_iconic(frame)) {
-	    (void) win_getrect(frame->icon, &rect_local);
-	    return (Xv_opaque) & rect_local;
-	} else {
-	    return xv_get(frame_public, WIN_RECT);
-	}
-
-      default:
-	if (xv_check_bad_attr(FRAME_CLASS, attr) == XV_ERROR) {
-	    *status = XV_ERROR;
-	}
-	return (Xv_opaque) 0;
-    }
 }
 
 
