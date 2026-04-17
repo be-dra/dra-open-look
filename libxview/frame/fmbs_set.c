@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmbs_set.c 1.44 93/06/28 DRA: $Id: fmbs_set.c,v 4.3 2025/07/23 16:48:22 dra Exp $ ";
+static char     sccsid[] = "@(#)fmbs_set.c 1.44 93/06/28 DRA: $Id: fmbs_set.c,v 4.4 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -23,17 +23,9 @@ Pkg_private Xv_opaque frame_base_set_avlist(Frame frame_public,
 {
 	Attr_avlist attrs;
 	Frame_base_info *frame = FRAME_BASE_PRIVATE(frame_public);
-	Xv_Drawable_info *info;
-	Xv_opaque server_public;
 	int result = XV_OK;
-	int add_decor, delete_decor;
-	Atom add_decor_list[WM_MAX_DECOR], delete_decor_list[WM_MAX_DECOR];
 	char **cmd_line = NULL;
 	int cmd_line_count = 0;
-
-	DRAWABLE_INFO_MACRO(frame_public, info);
-	server_public = xv_server(info);
-	add_decor = delete_decor = 0;
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
@@ -58,34 +50,6 @@ Pkg_private Xv_opaque frame_base_set_avlist(Frame frame_public,
 				attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
 				cmd_line_count = (int)attrs[1];
 				cmd_line = (char **)attrs[2];
-				break;
-
-			case FRAME_SHOW_LABEL:	/* same as FRAME_SHOW_HEADER */
-				attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
-				if (status_get(frame, show_label) == (int)attrs[1])
-					break;
-
-				status_set(frame, show_label, (int)attrs[1]);
-
-				if ((int)attrs[1])
-					add_decor++;
-				else
-					delete_decor++;
-
-				break;
-
-			case FRAME_SHOW_RESIZE_CORNER:
-				attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
-				if (status_get(frame, show_resize_corner) == (int)attrs[1])
-					break;
-
-				status_set(frame, show_resize_corner, (int)attrs[1]);
-
-				if ((int)attrs[1])
-					add_decor++;
-				else
-					delete_decor++;
-
 				break;
 
 			case FRAME_PROPERTIES_PROC:
@@ -232,42 +196,6 @@ Pkg_private Xv_opaque frame_base_set_avlist(Frame frame_public,
 				frame->cmd_line_strings[i] = strdup(cmd_line[i]);
 			}
 		}
-	}
-
-	/* recompute wmgr decorations */
-
-	if (add_decor || delete_decor) {
-		add_decor = delete_decor = 0;
-
-		if (xv_get(xv_screen(info), SCREEN_CHECK_SUN_WM_PROTOCOL,
-							"_SUN_OL_WIN_ATTR_5"))
-		{
-			/*
-			 * Tell wmgr not to write icon labels - for now this will be done
-			 * by XView
-			 */
-			delete_decor_list[delete_decor++] =
-					(Atom) xv_get(server_public, SERVER_ATOM,
-					"_OL_DECOR_ICON_NAME");
-		}
-
-		if (status_get(frame, show_label))
-			add_decor_list[add_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_HEADER);
-		else
-			delete_decor_list[delete_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_HEADER);
-
-		if (status_get(frame, show_resize_corner))
-			add_decor_list[add_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_RESIZE);
-		else
-			delete_decor_list[delete_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_RESIZE);
-
-		wmgr_add_decor(frame_public, add_decor_list, add_decor);
-
-		wmgr_delete_decor(frame_public, delete_decor_list, delete_decor);
 	}
 
 	return (Xv_opaque) result;
