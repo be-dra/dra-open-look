@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.h 1.39 93/06/28 DRA: $Id: frame_cmd.h,v 4.3 2024/11/30 12:38:45 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.h 1.39 93/06/28 DRA: $Id: frame_cmd.h,v 4.4 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -66,10 +66,8 @@ typedef	struct	{
     WM_Win_Type	win_attr;	/* _OL_WIN_ATTR */
 
     struct {
-	BIT_FIELD(show_label); 		/* show label or not */
 	BIT_FIELD(pushpin_in);		/* is pushpin in or out */
 	BIT_FIELD(warp_pointer);	/* whether to warp the pointer when window is mapped */
-	BIT_FIELD(show_resize_corner);	/* show resize corner or not */
 	BIT_FIELD(default_pin_state);   /* default (or initial) pin state */
 	BIT_FIELD(default_pin_state_valid);   /* whether default_pin_state has useful value */
     } status_bits;
