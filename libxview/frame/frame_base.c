@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.c,v 4.5 2025/11/01 13:00:16 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.c,v 4.6 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -27,7 +27,8 @@ static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.
 #endif
 
 /* ARGSUSED */
-Pkg_private int frame_base_init(Xv_Window owner, Frame frame_public, Attr_attribute avlist[], int *u)
+Pkg_private int frame_base_init(Xv_Window owner, Frame frame_public,
+						Attr_attribute avlist[], int *u)
 {
     Xv_frame_base  *frame_object = (Xv_frame_base *) frame_public;
     Xv_Drawable_info *info;
@@ -53,11 +54,7 @@ Pkg_private int frame_base_init(Xv_Window owner, Frame frame_public, Attr_attrib
     frame->win_attr.win_type = (Atom)xv_get(server_public,SERVER_WM_WT_BASE);
     frame->win_attr.menu_type = (Atom)xv_get(server_public,SERVER_WM_MENU_FULL);
 
-    status_set(frame, show_label, TRUE);
     status_set(frame, props_active, FALSE);
-
-    /* Wmgr default to have resize corner for cmd frame */
-    status_set(frame, show_resize_corner, TRUE);
 
     for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 	switch (*attrs) {
@@ -97,7 +94,6 @@ Pkg_private int frame_base_init(Xv_Window owner, Frame frame_public, Attr_attrib
 		(Atom) xv_get(server_public, SERVER_ATOM, "_OL_DECOR_ICON_NAME");
         wmgr_delete_decor(frame_public, delete_decor_list, delete_decor);
     }
-
 
     return XV_OK;
 }
