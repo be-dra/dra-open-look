@@ -7,7 +7,7 @@
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.54 2026/04/08 18:59:36 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.55 2026/04/16 14:24:36 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -191,7 +191,7 @@ static int client_convert_proc(Selection_owner sel_own, Atom *type,
 		return TRUE;
 	}
 	if (*type == priv->targets) {
-		static Atom tgts[3];
+		static Atom tgts[5];
 		int i = 0;
 		Xv_window win = xv_get(sel_own, XV_OWNER);
 		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
