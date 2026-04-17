@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.7 2025/11/01 14:52:46 dra Exp $ ";
+static char     sccsid[] = "@(#)fmcmd_set.c 1.46 93/06/28 DRA: $Id: fmcmd_set.c,v 4.8 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -120,12 +120,11 @@ Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 	Xv_Drawable_info *info;
 	Xv_opaque server_public;
 	int result = XV_OK;
-	int add_decor, delete_decor, set_win_attr;
-	Atom add_decor_list[WM_MAX_DECOR], delete_decor_list[WM_MAX_DECOR];
+	int set_win_attr;
 
 	DRAWABLE_INFO_MACRO(frame_public, info);
 	server_public = xv_server(info);
-	set_win_attr = add_decor = delete_decor = 0;
+	set_win_attr = 0;
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) switch (attrs[0]) {
 
@@ -176,32 +175,6 @@ Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 
 			status_set(frame, pushpin_in, (int)attrs[1]);
 			set_win_attr = TRUE;
-			break;
-
-		case FRAME_SHOW_LABEL:	/* same as FRAME_SHOW_HEADER */
-			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
-			if (status_get(frame, show_label) == (int)attrs[1])
-				break;
-
-			status_set(frame, show_label, (int)attrs[1]);
-
-			if ((int)attrs[1])
-				add_decor++;
-			else
-				delete_decor++;
-			break;
-
-		case FRAME_SHOW_RESIZE_CORNER:
-			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
-			if (status_get(frame, show_resize_corner) == (int)attrs[1])
-				break;
-
-			status_set(frame, show_resize_corner, (int)attrs[1]);
-
-			if ((int)attrs[1])
-				add_decor++;
-			else
-				delete_decor++;
 			break;
 
 		case FRAME_SCALE_STATE:
@@ -432,30 +405,6 @@ Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 	if (set_win_attr)
 		(void)wmgr_set_win_attr(frame_public, &(frame->win_attr));
 
-	/* recompute wmgr decorations */
-
-	if (add_decor || delete_decor) {
-		add_decor = delete_decor = 0;
-
-		if (status_get(frame, show_label))
-			add_decor_list[add_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_HEADER);
-		else
-			delete_decor_list[delete_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_HEADER);
-
-		if (status_get(frame, show_resize_corner))
-			add_decor_list[add_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_RESIZE);
-		else
-			delete_decor_list[delete_decor++] =
-					(Atom) xv_get(server_public, SERVER_WM_DECOR_RESIZE);
-
-		wmgr_add_decor(frame_public, add_decor_list, add_decor);
-
-		wmgr_delete_decor(frame_public, delete_decor_list, delete_decor);
-	}
-
 	return (Xv_opaque) result;
 }
 
@@ -628,7 +577,7 @@ static void free_key_data(Xv_opaque obj, int key, char *data)
 	if (key == fl_key) xv_free(data);
 }
 
-Xv_public void xv_set_frame_resizing(Frame frame, int resize_width,
+Pkg_private void set_frame_resizing(Frame frame, int resize_width,
 								xv_frame_layout_cb_t cb, void *cldt)
 {
 	/* OLD:  pan = xv_get(frame, FRAME_CMD_PANEL)
