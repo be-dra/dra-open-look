@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_get.c 20.62 93/06/28 DRA: $Id: fm_get.c,v 4.4 2026/04/15 19:36:04 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_get.c 20.62 93/06/28 DRA: $Id: fm_get.c,v 4.5 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -460,6 +460,14 @@ Pkg_private Xv_opaque frame_get_attr(Frame frame_public, int *status,
 			else {
 				return xv_get(frame_public, WIN_RECT);
 			}
+
+		case FRAME_SHOW_LABEL:
+			attr = (Frame_attribute) ATTR_NOP(attr);
+			return (Xv_opaque) status_get(frame, show_label);
+
+		case FRAME_SHOW_RESIZE_CORNER:
+			attr = (Frame_attribute) ATTR_NOP(attr);
+			return (Xv_opaque) status_get(frame, show_resize_corner);
 
 		default:
 			if (xv_check_bad_attr(FRAME_CLASS, attr) == XV_ERROR) {
