@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.9 2025/07/23 16:48:22 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.10 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -159,6 +159,8 @@ typedef	struct	{
 	BIT_FIELD(compose_led);		/* whether the compose LED is on/off */
 	BIT_FIELD(accept_default_focus);/* whether frame will take focus if none
 					   of it's subwindows wants it */
+	BIT_FIELD(show_label); 		/* show label or not */
+	BIT_FIELD(show_resize_corner);	/* show resize corner or not */
 #ifdef OW_I18N
 	BIT_FIELD(show_imstatus);	/* whether the IMstatus is visable */
 	BIT_FIELD(inactive_imstatus);	/* whether the IMstatus is active */
@@ -287,5 +289,8 @@ Pkg_private void frame_set_position(unsigned long parent, Frame_class_info *fram
 Pkg_private int frame_all_set_cmdline_options(Frame frame_public);
 Pkg_private void frame_compute_constraint(Frame_class_info *frame, Xv_Window target_sw, register Rect *rconstrain);
 Xv_private	void frame_set_accept_default_focus(Frame frame_public, int flag);
+
+Pkg_private void set_frame_resizing(Frame frame, int resize_width,
+								xv_frame_layout_cb_t cb, void *cldt);
 
 #endif
