@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.5 2025/11/01 13:00:16 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.6 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -67,12 +67,8 @@ static int frame_cmd_init(Xv_Window owner, Frame frame_public,
 
 	frame->panel_bordered = TRUE;
 
-	status_set(frame, show_label, TRUE);
 	status_set(frame, pushpin_in, FALSE);
 	status_set(frame, default_pin_state, FRAME_CMD_PIN_OUT);	/* new attr */
-
-	/* Wmgr default to have resize corner for cmd frame */
-	status_set(frame, show_resize_corner, TRUE);
 
 	notify_interpose_event_func(frame_public, frame_cmd_input, NOTIFY_SAFE);
 	notify_interpose_event_func(frame_public, frame_cmd_input,
