@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_help.h 1.27 93/06/28 DRA: $Id: frame_help.h,v 4.3 2024/11/30 12:38:45 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_help.h 1.27 93/06/28 DRA: $Id: frame_help.h,v 4.5 2026/04/16 20:15:23 dra Exp $ ";
 #endif
 #endif
 
@@ -55,20 +55,6 @@ static char     sccsid[] = "@(#)frame_help.h 1.27 93/06/28 DRA: $Id: frame_help.
 typedef	struct	{
     Frame	public_self;	/* back pointer to object */
     WM_Win_Type	win_attr;	/* _OL_WIN_ATTR */
-
-    struct {
-	BIT_FIELD(show_label); 		/* show label or not */
-	BIT_FIELD(show_resize_corner);	/* show resize corner or not */
-    } status_bits;
 } Frame_help_info;
-
-/* frame_help_get.c */
-Pkg_private Xv_opaque frame_help_get_attr(Frame frame_public, int *status, Attr_attribute attr, va_list valist);
-
-/* frame_help_set.c */
-Pkg_private Xv_opaque frame_help_set_avlist(Frame frame_public, Attr_attribute avlist[]);
-
-/* frame_help_destroy.c */
-Pkg_private int frame_help_destroy(Frame frame_public, Destroy_status status);
 
 #endif
