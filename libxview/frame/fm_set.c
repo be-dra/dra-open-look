@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.7 2026/04/15 19:36:04 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_set.c 20.110 93/06/28 DRA: $Id: fm_set.c,v 4.8 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -80,6 +80,11 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public,
 	unsigned long new_frame_fg = XV_NULL;
 	int new_frame_fg_set = FALSE;
 	Bool update_footer_color = FALSE;
+	int add_decor = 0, delete_decor = 0;
+	int need_resizing = FALSE;
+	int resize_width;
+	xv_frame_layout_cb_t layout = NULL;
+	void *layout_cldt = NULL;
 
 #ifdef OW_I18N
 	int paint_imstatus = FALSE;
@@ -1004,6 +1009,46 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public,
 			}
 			/* ACC_XVIEW */
 
+		case FRAME_SHOW_LABEL:	/* same as FRAME_SHOW_HEADER */
+			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
+			if (status_get(frame, show_label) == (int)attrs[1])
+				break;
+
+			status_set(frame, show_label, (int)attrs[1]);
+
+			if ((int)attrs[1])
+				add_decor++;
+			else
+				delete_decor++;
+
+			break;
+
+		case FRAME_SHOW_RESIZE_CORNER:
+			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
+			if (status_get(frame, show_resize_corner) == (int)attrs[1])
+				break;
+
+			status_set(frame, show_resize_corner, (int)attrs[1]);
+
+			if ((int)attrs[1])
+				add_decor++;
+			else
+				delete_decor++;
+
+			break;
+
+		case FRAME_RESIZE_PANEL:
+			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
+			resize_width = (int)attrs[1];
+			need_resizing = TRUE;
+			break;
+
+		case FRAME_RESIZE_LAYOUT_PROC:
+			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
+			layout = (xv_frame_layout_cb_t)attrs[1];
+			layout_cldt = (void *)attrs[2];
+			break;
+
 		case XV_RECT:
 			/* Intercept attempt to set the rect and adjust for footer */
 			if (status_get(frame, show_footer) && frame->footer) {
@@ -1387,7 +1432,53 @@ Pkg_private Xv_opaque frame_set_avlist(Frame frame_public,
 		default:
 			xv_check_bad_attr(FRAME_CLASS, attrs[0]);
 			break;
+	}
+
+	if (need_resizing) {
+		set_frame_resizing(frame_public, resize_width, layout, layout_cldt);
+	}
+
+	/* recompute wmgr decorations */
+	if (add_decor || delete_decor) {
+		Xv_Drawable_info *info;
+		Xv_opaque server_public;
+		Atom add_decor_list[WM_MAX_DECOR], delete_decor_list[WM_MAX_DECOR];
+
+		add_decor = delete_decor = 0;
+
+		DRAWABLE_INFO_MACRO(frame_public, info);
+		server_public = xv_server(info);
+
+		if (xv_get(xv_screen(info), SCREEN_CHECK_SUN_WM_PROTOCOL,
+							"_SUN_OL_WIN_ATTR_5"))
+		{
+			/*
+			 * Tell wmgr not to write icon labels - for now this will be done
+			 * by XView
+			 */
+			delete_decor_list[delete_decor++] =
+					(Atom) xv_get(server_public, SERVER_ATOM,
+					"_OL_DECOR_ICON_NAME");
 		}
+
+		if (status_get(frame, show_label))
+			add_decor_list[add_decor++] =
+					(Atom) xv_get(server_public, SERVER_WM_DECOR_HEADER);
+		else
+			delete_decor_list[delete_decor++] =
+					(Atom) xv_get(server_public, SERVER_WM_DECOR_HEADER);
+
+		if (status_get(frame, show_resize_corner))
+			add_decor_list[add_decor++] =
+					(Atom) xv_get(server_public, SERVER_WM_DECOR_RESIZE);
+		else
+			delete_decor_list[delete_decor++] =
+					(Atom) xv_get(server_public, SERVER_WM_DECOR_RESIZE);
+
+		wmgr_add_decor(frame_public, add_decor_list, add_decor);
+
+		wmgr_delete_decor(frame_public, delete_decor_list, delete_decor);
+	}
 
 	/*
 	 * If the frame's color was changed via WIN_CMS or WIN_FOREGROUND_COLOR,
