@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.h,v 4.3 2025/07/23 16:48:22 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.h,v 4.4 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -60,9 +60,7 @@ typedef	struct	{
     char		**cmd_line_strings;
     int			cmd_line_strings_count;
     struct {
-	BIT_FIELD(show_label); 		/* show label or not */
-	BIT_FIELD(props_active);
-	BIT_FIELD(show_resize_corner);  /* show resize corner or not */
+		BIT_FIELD(props_active);
     } status_bits;
 } Frame_base_info;
 
