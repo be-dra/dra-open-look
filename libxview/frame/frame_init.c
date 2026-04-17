@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.14 2025/12/18 21:03:44 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.15 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -213,7 +213,10 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	 * OPEN LOOK change: no cofirmer by default
 	 */
 	status_set(frame, no_confirm, (int)TRUE);
+    status_set(frame, show_label, TRUE);
 
+	/* Wmgr default to have resize corner for base and cmd frame */
+	status_set(frame, show_resize_corner, TRUE);
 
 	/*
 	 * Iconic state and name stripe have to be determined before any size
