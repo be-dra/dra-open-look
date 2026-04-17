@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.10 2025/07/23 16:48:22 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.11 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -221,6 +221,8 @@ typedef enum {
 	FRAME_GROUP_LEADER	= FRAME_ATTR(ATTR_BOOLEAN,		 135),
 	FRAME_MIN_SIZE		= FRAME_ATTR(ATTR_INT_PAIR,	 	 136),
 	FRAME_MAX_SIZE		= FRAME_ATTR(ATTR_INT_PAIR,	 	 137),
+	FRAME_RESIZE_PANEL  = FRAME_ATTR(ATTR_BOOLEAN,       138),
+	FRAME_RESIZE_LAYOUT_PROC = FRAME_ATTR(ATTR_OPAQUE_PAIR,   139),
         /* ACC_XVIEW */
 	FRAME_MENUS		= FRAME_ATTR_LIST(ATTR_NULL,ATTR_OPAQUE,245),
 	FRAME_MENU_ADD		= FRAME_ATTR(ATTR_OPAQUE,		 246),
@@ -399,8 +401,6 @@ typedef void (*xv_frame_layout_cb_t)(Frame, void *);
 typedef void (*xv_frame_help_proc_t)(Frame, Event *);
 
 extern Attr_attribute xv_get_rwid_key(void);
-extern void xv_set_frame_resizing(Frame_cmd frame, int resize_width,
-										xv_frame_layout_cb_t cb, void *cldt);
 extern void xv_activate_resizing(void);
 
 /* set this on panel items that are to be resized horizontally */
