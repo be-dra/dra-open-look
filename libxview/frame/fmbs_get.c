@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmbs_get.c 1.28 93/06/28 DRA: $Id: fmbs_get.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fmbs_get.c 1.28 93/06/28 DRA: $Id: fmbs_get.c,v 4.2 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -14,42 +14,35 @@ static char     sccsid[] = "@(#)fmbs_get.c 1.28 93/06/28 DRA: $Id: fmbs_get.c,v 
 #include <xview_private/frame_base.h>
 
 /* ARGSUSED */
-Pkg_private Xv_opaque frame_base_get_attr(Frame frame_public, int *status, Attr_attribute attr, va_list valist)
+Pkg_private Xv_opaque frame_base_get_attr(Frame frame_public, int *status,
+								Attr_attribute attr, va_list valist)
 {
-    register Frame_base_info *frame = FRAME_BASE_PRIVATE(frame_public);
+	register Frame_base_info *frame = FRAME_BASE_PRIVATE(frame_public);
 
-    switch (attr) {
+	switch (attr) {
 
-      case FRAME_WM_COMMAND_ARGV:
-	attr = (Frame_attribute) ATTR_NOP(attr);
-	return (Xv_opaque) frame->cmd_line_strings;
+		case FRAME_WM_COMMAND_ARGV:
+			attr = (Frame_attribute) ATTR_NOP(attr);
+			return (Xv_opaque) frame->cmd_line_strings;
 
-      case FRAME_WM_COMMAND_ARGC:
-	attr = (Frame_attribute) ATTR_NOP(attr);
-	return (Xv_opaque) frame->cmd_line_strings_count;
+		case FRAME_WM_COMMAND_ARGC:
+			attr = (Frame_attribute) ATTR_NOP(attr);
+			return (Xv_opaque) frame->cmd_line_strings_count;
 
-      case FRAME_PROPERTIES_PROC:
-	attr = (Frame_attribute) ATTR_NOP(attr);
-	return (Xv_opaque) frame->props_proc;
+		case FRAME_PROPERTIES_PROC:
+			attr = (Frame_attribute) ATTR_NOP(attr);
+			return (Xv_opaque) frame->props_proc;
 
-      case FRAME_SHOW_LABEL:
-	attr = (Frame_attribute) ATTR_NOP(attr);
-	return (Xv_opaque) status_get(frame, show_label);
+		case FRAME_SCALE_STATE:
+			attr = (Frame_attribute) ATTR_NOP(attr);
+			/*
+			 * WAIT FOR NAYEEM return (Xv_opaque)
+			 * window_get_rescale_state(frame_public);
+			 */
+			return (Xv_opaque) 0;
 
-      case FRAME_SHOW_RESIZE_CORNER:
-	attr = (Frame_attribute) ATTR_NOP(attr);
-	return (Xv_opaque) status_get(frame, show_resize_corner);
-
-      case FRAME_SCALE_STATE:
-	attr = (Frame_attribute) ATTR_NOP(attr);
-	/*
-	 * WAIT FOR NAYEEM return (Xv_opaque)
-	 * window_get_rescale_state(frame_public);
-	 */
-	return (Xv_opaque) 0;
-
-      default:
-	*status = XV_ERROR;
-	return (Xv_opaque) 0;
-    }
+		default:
+			*status = XV_ERROR;
+			return (Xv_opaque) 0;
+	}
 }
