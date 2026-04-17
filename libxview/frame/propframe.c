@@ -35,7 +35,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.18 2026/03/30 19:36:32 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.19 2026/04/16 14:21:51 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -1457,7 +1457,7 @@ static void create_buttons(Propframe_private *priv, Attr_attribute *which)
 				if (xv_get(item, XV_KEY_DATA, rw_key)) rw = TRUE;
 			PANEL_END_EACH
 
-			xv_set_frame_resizing(self, rw, NULL, NULL);
+			xv_set(self, FRAME_RESIZE_PANEL, rw, NULL);
 			xv_set(pan,
 					XV_Y, YOFF, /* to prevent the drawing of the line */
 					NULL);
