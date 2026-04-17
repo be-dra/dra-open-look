@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fmcmd_get.c 1.27 93/06/28 DRA: $Id: fmcmd_get.c,v 4.2 2024/11/22 22:13:51 dra Exp $ ";
+static char     sccsid[] = "@(#)fmcmd_get.c 1.27 93/06/28 DRA: $Id: fmcmd_get.c,v 4.3 2026/04/16 14:21:51 dra Exp $ ";
 #endif
 #endif
 
@@ -20,15 +20,6 @@ Pkg_private Xv_opaque frame_cmd_get_attr(Frame frame_public, int *status,
 	register Frame_cmd_info *frame = FRAME_CMD_PRIVATE(frame_public);
 
 	switch (attr) {
-
-		case FRAME_SHOW_LABEL:
-			attr = (Frame_attribute) ATTR_NOP(attr);
-			return (Xv_opaque) status_get(frame, show_label);
-
-		case FRAME_SHOW_RESIZE_CORNER:
-			attr = (Frame_attribute) ATTR_NOP(attr);
-			return (Xv_opaque) status_get(frame, show_resize_corner);
-
 		case FRAME_CMD_PUSHPIN_IN:	/* attr. here only for compatibility */
 		case FRAME_CMD_PIN_STATE:
 			attr = (Frame_attribute) ATTR_NOP(attr);
