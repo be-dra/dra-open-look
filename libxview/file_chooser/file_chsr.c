@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.8 2025/08/27 14:43:31 dra Exp $ ";
+static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.9 2026/04/16 14:59:14 dra Exp $ ";
 #endif
 #endif
 
@@ -724,7 +724,7 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 
 			case XV_END_CREATE:
 				fc_end_create(private);
-				xv_set_frame_resizing(public, TRUE, NULL, NULL);
+				xv_set(public, FRAME_RESIZE_PANEL, TRUE, NULL);
 				/* the PANEL_BUTTONS_TO_MENU is needed here, because
 				 * FILE_CHOOSER is a real subclass of FRAME_CMD - and only
 				 * for proper FRAME_CMD the "pane menu" will be created
