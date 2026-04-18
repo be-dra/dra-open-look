@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_help.h 1.27 93/06/28 DRA: $Id: frame_help.h,v 4.5 2026/04/16 20:15:23 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_help.h 1.27 93/06/28 DRA: $Id: frame_help.h,v 4.6 2026/04/17 08:42:03 dra Exp $ ";
 #endif
 #endif
 
@@ -45,16 +45,5 @@ static char     sccsid[] = "@(#)frame_help.h 1.27 93/06/28 DRA: $Id: frame_help.
 /* all this for XWMHints */
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
-#define	FRAME_HELP_PRIVATE(f)	XV_PRIVATE(Frame_help_info, Xv_frame_help, f)
-#define FRAME_HELP_PUBLIC(f)	XV_PUBLIC(f)
-#define FRAME_CLASS_FROM_HELP(f) FRAME_PRIVATE(FRAME_HELP_PUBLIC(f))
-
-#define FRAME_HELP_FLAGS  WMDecorationHeader
-
-typedef	struct	{
-    Frame	public_self;	/* back pointer to object */
-    WM_Win_Type	win_attr;	/* _OL_WIN_ATTR */
-} Frame_help_info;
 
 #endif
