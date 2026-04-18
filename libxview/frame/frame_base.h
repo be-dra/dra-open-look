@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.h,v 4.4 2026/04/16 14:21:51 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.h,v 4.5 2026/04/17 08:43:08 dra Exp $ ";
 #endif
 #endif
 
@@ -45,36 +45,5 @@ static char     sccsid[] = "@(#)frame_base.h 1.30 93/06/28 DRA: $Id: frame_base.
 /* all this for XWMHints */
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
-#define	FRAME_BASE_PRIVATE(f)	XV_PRIVATE(Frame_base_info, Xv_frame_base, f)
-#define FRAME_BASE_PUBLIC(f)	XV_PUBLIC(f)
-#define FRAME_CLASS_FROM_BASE(f) FRAME_PRIVATE(FRAME_BASE_PUBLIC(f))
-
-#define FRAME_BASE_FLAGS  WMDecorationHeader | WMDecorationCloseButton | \
-                          WMDecorationResizeable
-
-typedef	struct	{
-    Frame		 public_self;	/* back pointer to object */
-	frame_props_proc_t props_proc;
-    WM_Win_Type		 win_attr;	/* _OL_WIN_ATTR */
-    char		**cmd_line_strings;
-    int			cmd_line_strings_count;
-    struct {
-		BIT_FIELD(props_active);
-    } status_bits;
-} Frame_base_info;
-
-/* frame_base.c */
-Pkg_private int frame_base_init(Xv_Window owner, Frame frame_public, Attr_attribute avlist[], int *u);
-
-/* fmbs_get.c */
-Pkg_private Xv_opaque frame_base_get_attr(Frame frame_public, int *status, Attr_attribute attr, va_list valist);
-
-/* fmbs_set.c */
-Pkg_private     Xv_opaque frame_base_set_avlist(Frame frame_public, Attr_attribute avlist[]);
-
-/* fmbs_destroy.c */
-Pkg_private int frame_base_destroy(Frame frame_public, Destroy_status status);
-Xv_private void frame_handle_props(Frame frame_public);
 
 #endif
