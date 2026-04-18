@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.h 1.39 93/06/28 DRA: $Id: frame_cmd.h,v 4.4 2026/04/16 14:21:51 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.h 1.39 93/06/28 DRA: $Id: frame_cmd.h,v 4.5 2026/04/17 12:00:13 dra Exp $ ";
 #endif
 #endif
 
@@ -41,54 +41,13 @@ static char     sccsid[] = "@(#)frame_cmd.h 1.39 93/06/28 DRA: $Id: frame_cmd.h,
 #include <xview_private/fm_impl.h>
 #include <xview/icon.h>
 #include <xview/openmenu.h>
-#include <xview/panel.h>
 
 /* all this for XWMHints */
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#define	FRAME_CMD_PRIVATE(f)	XV_PRIVATE(Frame_cmd_info, Xv_frame_cmd, f)
-#define FRAME_CMD_PUBLIC(f)	XV_PUBLIC(f)
-#define FRAME_CLASS_FROM_CMD(f) FRAME_PRIVATE(FRAME_CMD_PUBLIC(f))
-
-#define	FRAME_PROPS_PRIVATE(f)	FRAME_CMD_PRIVATE(f)
-#define FRAME_PROPS_PUBLIC(f)   FRAME_CMD_PUBLIC(f)
-#define FRAME_CLASS_FROM_PROPS(f) FRAME_CLASS_FROM_CMD(f)
-
-
-#define FRAME_CMD_FLAGS		WMDecorationHeader | WMDecorationCloseButton | \
-				WMDecorationPushPin
-
-#define FRAME_PROPS_FLAGS	FRAME_CMD_FLAGS
-
-typedef	struct	{
-    Frame	public_self;	/* back pointer to object */
-    WM_Win_Type	win_attr;	/* _OL_WIN_ATTR */
-
-    struct {
-	BIT_FIELD(pushpin_in);		/* is pushpin in or out */
-	BIT_FIELD(warp_pointer);	/* whether to warp the pointer when window is mapped */
-	BIT_FIELD(default_pin_state);   /* default (or initial) pin state */
-	BIT_FIELD(default_pin_state_valid);   /* whether default_pin_state has useful value */
-    } status_bits;
-	int panel_bordered;
-    Panel	panel;
-} Frame_cmd_info;
-
-#define	Frame_props_info	Frame_cmd_info
-
 /* frame_cmd.c */
 Pkg_private Notify_value frame_cmd_input(Frame frame_public, Notify_event ev,
 					Notify_arg arg, Notify_event_type type);
-
-/* frame_cmd_get.c */
-Pkg_private Xv_opaque frame_cmd_get_attr(Frame frame_public, int *status,
-						Attr_attribute attr, va_list valist);
-
-/* frame_cmd_set.c */
-Pkg_private Xv_opaque frame_cmd_set_avlist(Frame frame_public, Attr_attribute avlist[]);
-
-/* frame_cmd_destroy.c */
-Pkg_private int frame_cmd_destroy(Frame frame_public, Destroy_status status);
 
 #endif
