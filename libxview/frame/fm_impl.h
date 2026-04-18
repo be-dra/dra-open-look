@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.10 2026/04/16 14:21:51 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.12 2026/04/18 08:15:36 dra Exp $ ";
 #endif
 #endif
 
@@ -221,20 +221,12 @@ typedef	struct	{
 
 /* frame.c */
 Pkg_private int		frame_notify_count;
-Pkg_private void	frame_default_done_func(Frame);
-
-/* frame_get.c */
-Pkg_private Xv_opaque frame_get_attr(Frame, int *, Attr_attribute, va_list);
-
-/* frame_set.c */
-Pkg_private Xv_opaque frame_set_avlist(Frame, Attr_attribute *);
 
 /* frame_layout.c */
 Pkg_private int	frame_layout(Xv_Window frame_public, Xv_Window child, Window_layout_op op, Xv_opaque d1, Xv_opaque d2, Xv_opaque d3, Xv_opaque d4, Xv_opaque d5);
 Pkg_private Xv_Window frame_last_child(Xv_Window first);
 
-/* frame_destroy.c */
-Pkg_private int frame_destroy(Frame frame_public, Destroy_status status);
+Pkg_private void frame_rescale_subwindows(Frame frame_public, int scale);
 
 /* frame_win.c */
 Pkg_private int frame_is_exposed(Frame frame);
@@ -272,25 +264,19 @@ Pkg_private int frame_inter_footer_gap(Frame_rescale_state scale);
 Pkg_private int		frame_set_cmdline_options(Frame, int);
 Pkg_private int frame_set_icon_cmdline_options(Frame frame_public);
 
-/* frame_rescale.c */
-Pkg_private void frame_rescale_subwindows(Frame frame_public, int scale);
-
 /* frame_sw.c */
 Pkg_private void frame_layout_subwindows(Frame frame_public);
 
-Pkg_private void frame_update_compose_led(Frame_class_info *frame, int state);
-Pkg_private int frame_gravity_from_flags(int flags);
-Pkg_private Xv_window frame_create_footer(Frame_class_info *frame);
-Pkg_private Frame_menu_accelerator *frame_find_menu_acc(Frame frame_public, int keycode, unsigned int	state, KeySym keysym, int remove);
 Pkg_private void frame_display_busy(Frame_class_info *frame, int status);
 Pkg_private void frame_update_status_win_color(Frame frame_public, Xv_Window	status_window, Cms new_frame_cms, unsigned long	new_frame_fg, int new_frame_fg_set, int *repaint_needed);
 
-Pkg_private void frame_set_position(unsigned long parent, Frame_class_info *frame);
 Pkg_private int frame_all_set_cmdline_options(Frame frame_public);
 Pkg_private void frame_compute_constraint(Frame_class_info *frame, Xv_Window target_sw, register Rect *rconstrain);
 Xv_private	void frame_set_accept_default_focus(Frame frame_public, int flag);
 
 Pkg_private void set_frame_resizing(Frame frame, int resize_width,
 								xv_frame_layout_cb_t cb, void *cldt);
+
+Xv_private void frame_handle_props(Frame frame_public);
 
 #endif
