@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.6 2026/04/16 20:18:26 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.7 2026/04/17 08:42:16 dra Exp $ ";
 #endif
 #endif
 
@@ -12,7 +12,6 @@ static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.
 
 #include <X11/Xlib.h>
 #include <xview_private/fm_impl.h>
-#include <xview_private/frame_help.h>
 #include <xview_private/draw_impl.h>
 #include <xview/cursor.h>
 #include <xview/server.h>
@@ -26,8 +25,17 @@ static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.
 #define jcsetpgrp(p)  setpgrp((p),(p))
 #endif
 
-/* ARGSUSED */
-static int frame_help_init(Xv_Window owner, Frame frame_public, Attr_attribute avlist[], int *u)
+#define	FRAME_HELP_PRIVATE(f)	XV_PRIVATE(Frame_help_info, Xv_frame_help, f)
+#define FRAME_HELP_PUBLIC(f)	XV_PUBLIC(f)
+#define FRAME_CLASS_FROM_HELP(f) FRAME_PRIVATE(FRAME_HELP_PUBLIC(f))
+
+typedef	struct	{
+    Frame	public_self;	/* back pointer to object */
+    WM_Win_Type	win_attr;	/* _OL_WIN_ATTR */
+} Frame_help_info;
+
+static int frame_help_init(Xv_Window owner, Frame frame_public,
+							Attr_attribute avlist[], int *u)
 {
 	Xv_frame_help *frame_object = (Xv_frame_help *) frame_public;
 	Xv_Drawable_info *info;
@@ -189,28 +197,21 @@ static Xv_opaque frame_help_set_avlist(Frame frame_public,
 	return (Xv_opaque) result;
 }
 
-/*
- * free the frame struct and all its resources.
- */
-static void frame_help_free(Frame_help_info *frame)
-{
-    /* Free frame struct */
-    free((char *) frame);
-}
-
 /* Destroy the frame struct */
 static int frame_help_destroy(Frame frame_public, Destroy_status status)
 {
     Frame_help_info *frame = FRAME_HELP_PRIVATE(frame_public);
 
     if (status == DESTROY_CLEANUP) {	/* waste of time if ...PROCESS_DEATH */
-	frame_help_free(frame);
+    	/* Free frame struct */
+    	free((char *) frame);
     }
     return XV_OK;
 }
 
 const Xv_pkg          xv_frame_help_pkg = {
-    "Frame_help", (Attr_pkg) ATTR_PKG_FRAME,
+    "Frame_help",
+	(Attr_pkg) ATTR_PKG_FRAME,
     sizeof(Xv_frame_help),
     FRAME_CLASS,
     frame_help_init,
