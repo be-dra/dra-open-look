@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.9 2025/11/01 14:53:14 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.10 2026/04/19 06:56:55 dra Exp $ ";
 #endif
 #endif
 
@@ -313,8 +313,8 @@ static void start_panning(Canvas_info *priv, Xv_window pw, Event *ev)
 	priv->panhsb = xv_get(CANVAS_PUBLIC(priv),OPENWIN_HORIZONTAL_SCROLLBAR,view);
 	priv->panvsb = xv_get(CANVAS_PUBLIC(priv),OPENWIN_VERTICAL_SCROLLBAR,view);
 
-	grabwindow = xv_get(pw, XV_XID);
-	/* mal versuchen */
+/* 	grabwindow = xv_get(pw, XV_XID); */
+	/* let's try to use the view window for the panning */
 	grabwindow = xv_get(view, XV_XID);
 
 	/* grab the pointer for this paint window */
@@ -327,68 +327,51 @@ static void start_panning(Canvas_info *priv, Xv_window pw, Event *ev)
 	status_set(priv, panning);
 }
 
+static void update_common_panning(Canvas_info *priv, Display *dpy, Window win,
+									Event *ev)
+{
+	XEvent event;
+	int new_win_x, new_win_y;
+	int x, y, cnt;
+
+	/* get rid of OLD MotionNotify events, only take the last */
+	cnt = 0;
+	while (XCheckTypedWindowEvent(dpy, win, MotionNotify,&event))
+		++cnt;
+
+	if (cnt) {
+		x = event.xmotion.x;
+		y = event.xmotion.y;
+	}
+	else {
+		x = (int)event_x(ev);
+		y = (int)event_y(ev);
+	}
+
+	new_win_x = x - priv->pan_x;
+	new_win_y = y - priv->pan_y;
+
+	if (new_win_y > 0) new_win_y = 0;
+	if (new_win_x > 0) new_win_x = 0;
+
+	XMoveWindow(dpy, win, new_win_x, new_win_y);
+}
+
 static void update_view_panning(Canvas_info *priv, Canvas_view_info *view,
 											Event *ev)
 {
 	Display *dpy = (Display *)xv_get(view->paint_window, XV_DISPLAY);
-	Window win = xv_get(view->paint_window, XV_XID);
-	XEvent event;
-	int new_win_x, new_win_y;
-	int x, y, cnt;
 
-	/* get rid of OLD MotionNotify events, only take the last */
-	cnt = 0;
-	while (XCheckTypedWindowEvent(dpy, win, MotionNotify,&event))
-		++cnt;
-
-	if (cnt) {
-		x = event.xmotion.x;
-		y = event.xmotion.y;
-	}
-	else {
-		x = (int)event_x(ev);
-		y = (int)event_y(ev);
-	}
-
-	new_win_x = x - priv->pan_x;
-	new_win_y = y - priv->pan_y;
-
-	if (new_win_y > 0) new_win_y = 0;
-	if (new_win_x > 0) new_win_x = 0;
-
-	XMoveWindow(dpy, win, new_win_x, new_win_y);
+	update_common_panning(priv, dpy, xv_get(view->paint_window, XV_XID), ev);
 	XSync(dpy, False);
 }
 
-static void update_panning(Canvas_info *priv, Xv_window pw, Event *ev)
+static void update_pw_panning(Canvas_info *priv, Xv_window pw, Event *ev)
 {
 	Display *dpy = (Display *)xv_get(pw, XV_DISPLAY);
-	Window win = xv_get(pw, XV_XID);
-	XEvent event;
-	int new_win_x, new_win_y;
-	int x, y, cnt;
 
-	/* get rid of OLD MotionNotify events, only take the last */
-	cnt = 0;
-	while (XCheckTypedWindowEvent(dpy, win, MotionNotify,&event))
-		++cnt;
+	update_common_panning(priv, dpy, xv_get(pw, XV_XID), ev);
 
-	if (cnt) {
-		x = event.xmotion.x;
-		y = event.xmotion.y;
-	}
-	else {
-		x = (int)event_x(ev);
-		y = (int)event_y(ev);
-	}
-
-	new_win_x = x - priv->pan_x;
-	new_win_y = y - priv->pan_y;
-
-	if (new_win_x > 0) new_win_x = 0;
-	if (new_win_y > 0) new_win_y = 0;
-
-	XMoveWindow(dpy, win, new_win_x, new_win_y);
 /* 	XSync(dpy, True); */
 #ifdef NOT_YET
 	if (x < priv->vminx) x = priv->vminx;
@@ -571,7 +554,7 @@ static void canvas_inform_repaint(Canvas_info *canvas, Xv_Window paint_window)
 	rl_free(&damage);
 }
 
-static void end_panning(Canvas_info *priv, Xv_window pw, Event *ev)
+static void end_pw_panning(Canvas_info *priv, Xv_window pw, Event *ev)
 {
 	Display *dpy = (Display *)xv_get(pw, XV_DISPLAY);
 /* 	int x, y, vs, unit; */
@@ -738,13 +721,13 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 				}
 			}
 			else if (status(canvas, panning)) {
-				end_panning(canvas, pw, ev);
+				end_pw_panning(canvas, pw, ev);
 				return NOTIFY_DONE;
 			}
 			break;
 		case LOC_DRAG:
 			if (action_select_is_down(ev) && status(canvas, panning)) {
-				update_panning(canvas, pw, ev);
+				update_pw_panning(canvas, pw, ev);
 				return NOTIFY_DONE;
 			}
 		default:
