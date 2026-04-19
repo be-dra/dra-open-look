@@ -1,4 +1,4 @@
-/*	@(#)wmgr.h 20.24 93/06/28 SMI RCS $Id: wmgr.h,v 2.2 2024/02/08 21:38:24 dra Exp $ */
+/*	@(#)wmgr.h 20.24 93/06/28 SMI RCS $Id: wmgr.h,v 2.3 2026/04/18 17:28:54 dra Exp $ */
 
 #ifndef xview_wmgr_DEFINED
 #define xview_wmgr_DEFINED	1
@@ -39,8 +39,6 @@ typedef enum  {
  * Move and stretch require user interaction.
  */
 _XVFUNCPROTOBEGIN
-EXTERN_FUNCTION (void wmgr_open, (Frame frame_public));
-EXTERN_FUNCTION (void wmgr_close, (Frame frame_public));
 EXTERN_FUNCTION (void wmgr_top, (Frame frame));
 EXTERN_FUNCTION (void wmgr_bottom, (Frame frame));
 
@@ -56,17 +54,6 @@ EXTERN_FUNCTION (void wmgr_refreshwindow, (Xv_opaque window));
  * Exported by wmgr_state.c:
  */
 EXTERN_FUNCTION (void wmgr_changelevel, (Xv_object window, int parent, int top));
-
-/*
- * Fork programname with otherargs.  Place its normal rect at normalrect.
- * Place its icon rect at iconrect.  Iconicflag indicates the original
- * state of the tool.  Positioning/state information are only hints.
- * The tool can ignore them.
- *
- * NOTE: This function prototype exists only for backwards compatibility reasons.
- * In wmgr_menu.c, it is marked Pkg_private. It's use is highly discouraged.
- */
-EXTERN_FUNCTION (int 	wmgr_forktool, (char *programname, char *otherargs, Rect *rectnormal, Rect *recticon, int iconic));
 
 _XVFUNCPROTOEND
 
