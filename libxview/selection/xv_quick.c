@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.11 2026/04/09 13:02:49 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.12 2026/04/20 19:33:37 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -60,7 +60,7 @@ typedef struct {
 	Window xid;
 	GC gc;
 	int baseline;
-	int multiclick_timeout;
+	int multiclick_timeout_ms;
 	char delimtab[256];   /* TRUE= character is a word delimiter */
 	XFontStruct *fs;
 	Xv_opaque client_data;
@@ -86,7 +86,7 @@ static int quick_init(Xv_Window parent, Quick_owner self, Attr_avlist avlist,
 	Xv_quick_owner *slf = (Xv_quick_owner *) self;
 	XGCValues   gcv;
 	Cms cms;
-	int i, fore_index, back_index;
+	int fore_index, back_index;
 	unsigned long fg, bg;
 	char *delims, delim_chars[256];	/* delimiter characters */
 
@@ -113,7 +113,7 @@ static int quick_init(Xv_Window parent, Quick_owner self, Attr_avlist avlist,
 	priv->gc = XCreateGC(priv->dpy, priv->xid, GCForeground | GCFunction, &gcv);
 	priv->baseline = (int)xv_get(parent, XV_HEIGHT) - 2;
 
-	priv->multiclick_timeout = 100 *
+	priv->multiclick_timeout_ms = 100 *
 	    defaults_get_integer_check("openWindows.multiClickTimeout",
 		                   "OpenWindows.MultiClickTimeout", 4, 2, 10);
 
@@ -124,7 +124,6 @@ static int quick_init(Xv_Window parent, Quick_owner self, Attr_avlist avlist,
 	 */
 	strcpy(delim_chars, delims);
 	/* Mark off the delimiters specified */
-	for (i = 0; i < sizeof(priv->delimtab); i++) priv->delimtab[i] = FALSE;
 	for (delims = delim_chars; *delims; delims++) {
 		priv->delimtab[(int)*delims] = TRUE;
 	}
@@ -226,17 +225,17 @@ static void note_quick_lose(Quick_owner self)
 	}
 }
 
-static int determine_multiclick(int multitime,
+static int determine_multiclick(int multitimeMS,
             struct timeval *last_click_time, struct timeval *new_click_time)
 {
-	int delta;
+	int deltaMS;
 
 	if (last_click_time->tv_sec == 0 && last_click_time->tv_usec == 0)
 		return FALSE;
-	delta = (new_click_time->tv_sec - last_click_time->tv_sec) * 1000;
-	delta += new_click_time->tv_usec / 1000;
-	delta -= last_click_time->tv_usec / 1000;
-	return (delta <= multitime);
+	deltaMS = (new_click_time->tv_sec - last_click_time->tv_sec) * 1000;
+	deltaMS += new_click_time->tv_usec / 1000;
+	deltaMS -= last_click_time->tv_usec / 1000;
+	return (deltaMS <= multitimeMS);
 }   
 
 static void mouse_to_charpos(Quick_private_t *priv, int mx, char *s,
@@ -342,7 +341,7 @@ static void select_start(Quick_private_t *priv, char *s, int sx, int ex)
 static void quick_select_down(Quick_private_t *priv, Event *ev)
 {
 	int save_startx = priv->startx, save_endx = priv->endx;
-	int is_multiclick = determine_multiclick(priv->multiclick_timeout,
+	int is_multiclick = determine_multiclick(priv->multiclick_timeout_ms,
 					&priv->last_click_time, &event_time(ev));
 	priv->last_click_time = event_time(ev);
 
