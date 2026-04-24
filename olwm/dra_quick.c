@@ -7,7 +7,7 @@
 #include "globals.h"
 #include <X11/Xatom.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.25 2026/01/11 19:48:08 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.26 2026/04/23 19:06:07 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -21,12 +21,14 @@ typedef struct _quick_dupl {
 	int select_click_cnt;
 	XFontStruct *fs;
 	int baseline;
+	int selectIsDownMask;
 } quick_data_t;
 
 typedef unsigned char uch_t;
 	
 static quick_data_t *supply_quick_data(Display *dpy, quick_data_t *qd,
-						Window root, Client *cli, Graphics_info *gi)
+						Window root, Client *cli, Graphics_info *gi,
+						int selectbutton)
 {
 	int i;
 	XGCValues   gcv;
@@ -46,6 +48,7 @@ static quick_data_t *supply_quick_data(Display *dpy, quick_data_t *qd,
 		}
 	}
 
+	qd->selectIsDownMask = ((Button1Mask) << (selectbutton - 1));
 	if (Dimension(gi) == OLGX_2D) {
 		gcv.foreground =(gi->pixvals[OLGX_BLACK] ^ gi->pixvals[OLGX_WHITE]);
 	}
@@ -61,7 +64,6 @@ static quick_data_t *supply_quick_data(Display *dpy, quick_data_t *qd,
 		XChangeGC(dpy, qd->gc, GCForeground, &gcv);
 	}
 
-	qd->baseline = cli->framewin->titley + 2;
 	return qd;
 }
 
@@ -165,6 +167,32 @@ static Bool answer_true(Client *cli, Time t)
 	return True;
 }
 
+static int is_dupl(Display *dpy, ScreenInfo *scr)
+{
+	unsigned char *data = NULL;
+	Atom notUsed;
+	int format;
+	unsigned long nitems, bytes_after;
+
+	if (XGetWindowProperty(dpy, scr->rootid, Atom_SUN_QUICK_SELECTION_KEY_STATE,
+					0L, 1L, False, XA_ATOM, &notUsed, &format, &nitems,
+					&bytes_after, &data) != Success) {
+		return False;
+	}
+	if (!data)
+		return False;
+
+	/* key_type == DUPLICATE in this case */
+	if (AtomDUPLICATE != *(Atom *) data) {
+		/* quick move is not supported */
+		XFree((char *)data);
+		return False;
+	}
+	XFree((char *)data);
+
+	return True;
+}
+
 static Time quickTimestamp;
 
 /* now I finally know the reason why non-XView applications lock up
@@ -179,10 +207,6 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 	Client *cli;
 	ScreenInfo *scr;
 	quick_data_t *qd;
-	Atom notUsed;
-	int format;
-	unsigned long nitems, bytes_after;
-	unsigned char *data;
 	char *s;
 	int sx;
 	int is_multiclick;
@@ -196,110 +220,196 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		return answer_true(cli, event->xbutton.time);
 	if (event->type != ButtonPress) return False;
 
-	/* wir sahen auch WIN_ICON... derzeit noch nicht */
-	if (frameInfo->core.kind != WIN_FRAME)
-		return answer_true(cli, event->xbutton.time);
-
-	/* now, a window kann also have a olwm-owned footer
-	 * see _OL_WINMSG_ERROR, _OL_WINMSG_STATE, _OL_DECOR_FOOTER.
-	 * In such a situation we see ButtonPress events with y much bigger than 26
+	/* this function is called from GFrameEventButtonPress when
+	 * ACTION_SELECT has been seen.
+	 * We remember which mouse button was this SELECT for use with
+	 * MotionNotify events later.... see supply_quick_data
 	 */
-	if (event->xbutton.y > heightTopFrame(frameInfo))
-		return answer_true(cli, event->xbutton.time);
 
-	scr = cli->scrInfo;
-	FrameAllowEvents(cli, event->xbutton.time);
+	if (frameInfo->core.kind == WIN_FRAME) {
+		/* now, a window kann also have a olwm-owned footer
+		 * see _OL_WINMSG_ERROR, _OL_WINMSG_STATE, _OL_DECOR_FOOTER.
+		 * In such a situation we see ButtonPress events with y much
+		 * bigger than 26
+		 */
+		if (event->xbutton.y > heightTopFrame(frameInfo))
+			return answer_true(cli, event->xbutton.time);
 
-	data = NULL;
-	if (XGetWindowProperty(dpy, scr->rootid, Atom_SUN_QUICK_SELECTION_KEY_STATE,
-					0L, 1L, False, XA_ATOM, &notUsed, &format, &nitems,
-					&bytes_after, &data) != Success) {
-		return True;
-	}
-	if (!data)
-		return True;
+		scr = cli->scrInfo;
+		FrameAllowEvents(cli, event->xbutton.time);
 
-	/* key_type == DUPLICATE in this case */
-	if (AtomDUPLICATE != *(Atom *) data) {
-		/* quick move is not supported */
-		XFree((char *)data);
-		return True;
-	}
-	XFree((char *)data);
+		if (! is_dupl(dpy, scr)) return True;
 
-	scr->qc = supply_quick_data(dpy, scr->qc, scr->rootid, cli,
-								WinGI(frameInfo, NORMAL_GINFO));
-	qd = scr->qc;
+		scr->qc = supply_quick_data(dpy, scr->qc, scr->rootid, cli,
+						WinGI(frameInfo, NORMAL_GINFO), event->xbutton.button);
+		qd = scr->qc;
+		qd->baseline = cli->framewin->titley + 2;
 
-	is_multiclick = ((event->xbutton.time - qd->last_click_time)
-			< GRV.DoubleClickTime);
-	qd->last_click_time = event->xbutton.time;
+		is_multiclick = ((event->xbutton.time - qd->last_click_time)
+				< GRV.DoubleClickTime);
+		qd->last_click_time = event->xbutton.time;
 
-	/* tried out: event->xbutton.window == frameInfo->core.self */
+		/* tried out: event->xbutton.window == frameInfo->core.self */
 
-	s = frameInfo->fcore.name;
-	sx = cli->framewin->titlex;
+		s = frameInfo->fcore.name;
+		sx = cli->framewin->titlex;
 
-	qd->xpos[0] = 0;
-	if (s) {
-		int save_startx = qd->startx, save_endx = qd->endx;
+		qd->xpos[0] = 0;
+		if (s) {
+			int save_startx = qd->startx, save_endx = qd->endx;
 
-		qd->startx = sx;
-		mouse_to_charpos(qd, qd->fs, event->xbutton.x, s,
-				&qd->startx, &qd->startindex);
+			qd->startx = sx;
+			mouse_to_charpos(qd, qd->fs, event->xbutton.x, s,
+					&qd->startx, &qd->startindex);
 
-		if (is_multiclick) {
+			if (is_multiclick) {
 
-			++qd->select_click_cnt;
-			if (qd->select_click_cnt == 2) {
-				/* really sx here ? Or rather qd->startx ???? */
-				select_word(qd, s, sx, qd->fs);
-			}
-			else if (qd->select_click_cnt == 3) {
-				int u;
-				XCharStruct tit;
+				++qd->select_click_cnt;
+				if (qd->select_click_cnt == 2) {
+					/* really sx here ? Or rather qd->startx ???? */
+					select_word(qd, s, sx, qd->fs);
+				}
+				else if (qd->select_click_cnt == 3) {
+					int u;
+					XCharStruct tit;
 
-				/* clean the "word underlining" */
+					/* clean the "word underlining" */
+					XDrawLine(dpy, event->xbutton.window, qd->gc,
+						save_startx, qd->baseline, save_endx, qd->baseline);
+					
+					/* whole text */
+					qd->startindex = 0;
+					qd->startx = cli->framewin->titlex;
+					qd->endindex = strlen(s) - 1;
+					XTextExtents(qd->fs, frameInfo->fcore.name,
+						strlen(frameInfo->fcore.name), &u, &u, &u, &tit);
+					qd->endx = qd->startx + tit.width;
+				}
+
 				XDrawLine(dpy, event->xbutton.window, qd->gc,
-					save_startx, qd->baseline, save_endx, qd->baseline);
-				
-				/* whole text */
-				qd->startindex = 0;
-				qd->startx = cli->framewin->titlex;
-				qd->endindex = strlen(s) - 1;
-				XTextExtents(qd->fs, frameInfo->fcore.name,
-					strlen(frameInfo->fcore.name), &u, &u, &u, &tit);
-				qd->endx = qd->startx + tit.width;
+						qd->startx, qd->baseline, qd->endx, qd->baseline);
 			}
-
-			XDrawLine(dpy, event->xbutton.window, qd->gc,
-					qd->startx, qd->baseline, qd->endx, qd->baseline);
+			else {
+				qd->select_click_cnt = 1;
+				qd->endx = qd->startx;
+			}
 		}
 		else {
 			qd->select_click_cnt = 1;
 			qd->endx = qd->startx;
 		}
+
+		qd->seltext[0] = '\0';
+
+		oldowner = XGetSelectionOwner(dpy, XA_SECONDARY);
+		if (oldowner != None && oldowner != frameInfo->core.self) {
+			/* without this we didn't see a SelectionClear event if
+			 * the user selected something in frame1 and then in frame2:
+			 * the underline in frame1 was not cleared.
+			 */
+			XSetSelectionOwner(dpy, XA_SECONDARY, None, event->xbutton.time);
+		}
+
+		quickTimestamp = event->xbutton.time;
+		XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self,
+										quickTimestamp);
+
+		dra_olwm_trace(300, "own SECONDARY selection\n");
 	}
-	else {
-		qd->select_click_cnt = 1;
-		qd->endx = qd->startx;
+	else if (frameInfo->core.kind == WIN_ICON) {
+		scr = cli->scrInfo;
+		FrameAllowEvents(cli, event->xbutton.time);
+
+		fprintf(stderr, "%s-%d: win=%lx, kind=ICON\n", __FUNCTION__, __LINE__,
+					event->xbutton.window);
+
+		if (! is_dupl(dpy, scr)) return True;
+
+		scr->qc = supply_quick_data(dpy, scr->qc, scr->rootid, cli,
+						WinGI(frameInfo, NORMAL_GINFO), event->xbutton.button);
+		qd = scr->qc;
+
+		if (cli->wmDecors->flags & WMDecorationIconName) {
+			qd->baseline = cli->iconwin->nameY + 2;
+		}
+		else {
+			/* maybe the application draws its own text - about here: */
+			qd->baseline = 60;
+		}
+
+		is_multiclick = ((event->xbutton.time - qd->last_click_time)
+				< GRV.DoubleClickTime);
+		qd->last_click_time = event->xbutton.time;
+
+		/* tried out: event->xbutton.window != frameInfo->core.self */
+		/* event->xbutton.window is the application's icon window */
+
+		s = frameInfo->fcore.name;
+		sx = cli->iconwin->nameX;
+
+		qd->xpos[0] = 0;
+		if (s) {
+			int save_startx = qd->startx, save_endx = qd->endx;
+
+			qd->startx = sx;
+			mouse_to_charpos(qd, qd->fs, event->xbutton.x, s,
+					&qd->startx, &qd->startindex);
+
+			if (is_multiclick) {
+
+				++qd->select_click_cnt;
+				if (qd->select_click_cnt == 2) {
+					/* really sx here ? Or rather qd->startx ???? */
+					select_word(qd, s, sx, qd->fs);
+				}
+				else if (qd->select_click_cnt == 3) {
+					int u;
+					XCharStruct tit;
+
+					/* clean the "word underlining" */
+					XDrawLine(dpy, event->xbutton.window, qd->gc,
+						save_startx, qd->baseline, save_endx, qd->baseline);
+					
+					/* whole text */
+					qd->startindex = 0;
+					qd->startx = cli->framewin->titlex;
+					qd->endindex = strlen(s) - 1;
+					XTextExtents(qd->fs, frameInfo->fcore.name,
+						strlen(frameInfo->fcore.name), &u, &u, &u, &tit);
+					qd->endx = qd->startx + tit.width;
+				}
+
+				XDrawLine(dpy, event->xbutton.window, qd->gc,
+						qd->startx, qd->baseline, qd->endx, qd->baseline);
+			}
+			else {
+				qd->select_click_cnt = 1;
+				qd->endx = qd->startx;
+			}
+		}
+		else {
+			qd->select_click_cnt = 1;
+			qd->endx = qd->startx;
+		}
+
+		qd->seltext[0] = '\0';
+
+		oldowner = XGetSelectionOwner(dpy, XA_SECONDARY);
+		if (oldowner != None && oldowner != frameInfo->core.self) {
+			/* without this we didn't see a SelectionClear event if
+			 * the user selected something in frame1 and then in frame2:
+			 * the underline in frame1 was not cleared.
+			 */
+			XSetSelectionOwner(dpy, XA_SECONDARY, None, event->xbutton.time);
+		}
+
+		quickTimestamp = event->xbutton.time;
+		XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self, quickTimestamp);
+
+		dra_olwm_trace(300, "own SECONDARY selection\n");
 	}
+	else return answer_true(cli, event->xbutton.time);
 
-	qd->seltext[0] = '\0';
-
-	oldowner = XGetSelectionOwner(dpy, XA_SECONDARY);
-	if (oldowner != None && oldowner != frameInfo->core.self) {
-		/* without this we didn't see a SelectionClear event if
-		 * the user selected something in frame1 and then in frame2:
-		 * the underline in frame1 was not cleared.
-		 */
-		XSetSelectionOwner(dpy, XA_SECONDARY, None, event->xbutton.time);
-	}
-
-	quickTimestamp = event->xbutton.time;
-	XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self, quickTimestamp);
-
-	dra_olwm_trace(300, "own SECONDARY selection\n");
 
 	return True;
 }
@@ -473,23 +583,20 @@ Bool dra_quick_duplicate_update(Display *dpy, XEvent *event,
 	ScreenInfo *scr = cli->scrInfo;
 	quick_data_t *qd = scr->qc;
 	char *s;
-	int baseline, len, i;
+	int len, i;
 	int mx;
 	Window w;
 
 	if (event->type != MotionNotify) return False;
 	if ((event->xmotion.state & ModMaskMap[MOD_QUICKDUPL])==0) return False;
 
-	/* INCOMPLETE 'select_is_down' !!! */
-	if ((event->xmotion.state & Button1Mask) == 0) return True;
+	if ((event->xmotion.state & qd->selectIsDownMask) == 0) return True;
 	mx = event->xmotion.x;
 	w = event->xmotion.window;
 
 	if (! qd) return False;
 
-	baseline = cli->framewin->titley + 2;
-
-	XDrawLine(dpy, w, qd->gc, qd->startx, baseline, qd->endx, baseline);
+	XDrawLine(dpy, w, qd->gc, qd->startx, qd->baseline, qd->endx, qd->baseline);
 	qd->endx = 0;
 
 	s = frameInfo->fcore.name;
@@ -510,7 +617,7 @@ Bool dra_quick_duplicate_update(Display *dpy, XEvent *event,
 		qd->endx = qd->startx;
 	}
 
-	XDrawLine(dpy, w, qd->gc, qd->startx, baseline, qd->endx, baseline);
+	XDrawLine(dpy, w, qd->gc, qd->startx, qd->baseline, qd->endx, qd->baseline);
 
 	return True;
 }
