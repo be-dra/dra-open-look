@@ -1,5 +1,5 @@
 /* #ident	"@(#)winicon.c	26.42	93/06/28 SMI" */
-char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.9 2026/02/28 13:42:18 dra Exp $";
+char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.10 2026/04/23 19:04:36 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -570,6 +570,10 @@ Display *dpy;
 	classIconFrame.core.xevents[FocusIn] = GFrameEventFocus;
 	classIconFrame.core.xevents[FocusOut] = GFrameEventFocus;
 	classIconFrame.core.xevents[ConfigureRequest] = eventConfigureRequest;
+	classIconFrame.core.xevents[SelectionRequest] =
+											(EvFunc)dra_quick_handle_selection;
+	classIconFrame.core.xevents[SelectionClear] =
+											(EvFunc)dra_quick_handle_selection;
 	classIconFrame.core.focusfunc = GFrameFocus;
 	classIconFrame.core.drawfunc = drawIcon;
 	classIconFrame.core.destroyfunc = destroyIcon;
