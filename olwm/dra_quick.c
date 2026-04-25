@@ -7,7 +7,7 @@
 #include "globals.h"
 #include <X11/Xatom.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.26 2026/04/23 19:06:07 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.28 2026/04/24 12:42:16 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -22,6 +22,7 @@ typedef struct _quick_dupl {
 	XFontStruct *fs;
 	int baseline;
 	int selectIsDownMask;
+	Window windowToClear;
 } quick_data_t;
 
 typedef unsigned char uch_t;
@@ -244,6 +245,7 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 						WinGI(frameInfo, NORMAL_GINFO), event->xbutton.button);
 		qd = scr->qc;
 		qd->baseline = cli->framewin->titley + 2;
+		qd->windowToClear = event->xbutton.window;
 
 		is_multiclick = ((event->xbutton.time - qd->last_click_time)
 				< GRV.DoubleClickTime);
@@ -320,14 +322,12 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		scr = cli->scrInfo;
 		FrameAllowEvents(cli, event->xbutton.time);
 
-		fprintf(stderr, "%s-%d: win=%lx, kind=ICON\n", __FUNCTION__, __LINE__,
-					event->xbutton.window);
-
 		if (! is_dupl(dpy, scr)) return True;
 
 		scr->qc = supply_quick_data(dpy, scr->qc, scr->rootid, cli,
 						WinGI(frameInfo, NORMAL_GINFO), event->xbutton.button);
 		qd = scr->qc;
+		qd->windowToClear = event->xbutton.window;
 
 		if (cli->wmDecors->flags & WMDecorationIconName) {
 			qd->baseline = cli->iconwin->nameY + 2;
@@ -395,7 +395,8 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		qd->seltext[0] = '\0';
 
 		oldowner = XGetSelectionOwner(dpy, XA_SECONDARY);
-		if (oldowner != None && oldowner != frameInfo->core.self) {
+
+		if (oldowner != None && oldowner != event->xbutton.window) {
 			/* without this we didn't see a SelectionClear event if
 			 * the user selected something in frame1 and then in frame2:
 			 * the underline in frame1 was not cleared.
@@ -404,7 +405,8 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		}
 
 		quickTimestamp = event->xbutton.time;
-		XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self, quickTimestamp);
+		XSetSelectionOwner(dpy, XA_SECONDARY, frameInfo->core.self,
+												quickTimestamp);
 
 		dra_olwm_trace(300, "own SECONDARY selection\n");
 	}
@@ -708,7 +710,7 @@ int dra_quick_handle_selection(Display *dpy, XEvent *xev,
 
 		qd->startindex = qd->endindex = 0;
 		qd->seltext[0] = '\0';
-		XClearArea(dpy, frameInfo->core.self, 0, 0, 0, 0, True);
+		XClearArea(dpy, qd->windowToClear, 0, 0, 0, 0, True);
 	}
 	return 0;
 }
