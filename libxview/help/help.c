@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.32 2026/03/29 18:03:00 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.33 2026/04/26 17:54:35 dra Exp $";
 #endif
 
 /*
@@ -39,6 +39,8 @@ static FILE    *help_file;
 static char     help_buffer[1280];
 
 Xv_private char	*xv_strtok(char *, char *);
+
+Xv_private FILE * xv_help_find_file(Xv_server srv, char *filename);
 
 Xv_private void xv_help_save_image(Xv_Window pw,
 		int client_width, int unused_client_height, int mouse_x, int mouse_y);
@@ -88,8 +90,6 @@ static const unsigned short mglass_mask_data[] = {
 #define GEOM_LEFTPAN 3
 
 Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index);
-
-Xv_private FILE * xv_help_find_file(Xv_server srv, char *filename);
 
 typedef struct {
      Frame	      help_frame;
@@ -982,8 +982,6 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
  * can't add an extra parameter to help_find_file for the XV_LC_DISPLAY_LANG
  * so we'll use LC_MESSAGES for now
  */
-
-Xv_private FILE * xv_help_find_file(Xv_server srv, char *filename);
 
 Xv_private FILE * xv_help_find_file(Xv_server srv, char *filename)
 {
