@@ -1,4 +1,4 @@
-/*      @(#)font_impl.h 20.33 93/06/28 SMI   DRA: RCS $Id: font_impl.h,v 4.2 2024/05/23 11:14:24 dra Exp $     */
+/*      @(#)font_impl.h 20.33 93/06/28 SMI   DRA: RCS $Id: font_impl.h,v 4.3 2026/04/27 18:50:09 dra Exp $     */
 
 /***********************************************************************/
 /*	                      font_impl.h			       */
@@ -172,8 +172,6 @@ typedef struct font_info {
 } Font_info;
 
 /* from font.c */
-Pkg_private     Xv_opaque font_set_avlist(Xv_Font font_public, Attr_attribute avlist[]);
-Pkg_private     Xv_opaque font_get_attr(Xv_font font_public, int *status, Attr_attribute attr, va_list args);
 Xv_private char *xv_font_monospace(void);
 Pkg_private XID xv_load_x_font(Display *display, char *name, Xv_opaque *font_opaque, int *default_x, int *default_y, int *max_char, int *min_char);
 Pkg_private void xv_unload_x_font(Display *display, Xv_opaque font_opaque);
