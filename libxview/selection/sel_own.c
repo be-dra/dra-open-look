@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.51 2026/04/08 18:56:56 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.52 2026/05/02 14:35:59 dra Exp $";
 #endif
 #endif
 
@@ -1267,6 +1267,7 @@ static int sel_owner_destroy(Selection_owner sel_owner_public, Destroy_status st
 
 	RegisterSelClient(sel_owner, SEL_DELETE_CLIENT);
 
+	if (sel_owner->req) xv_free(sel_owner->req);
 	XFree((char *)sel_owner);
 
 	return XV_OK;
