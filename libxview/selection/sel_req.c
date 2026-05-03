@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.57 2026/04/09 16:27:58 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.60 2026/05/03 01:34:26 dra Exp $";
 #endif
 #endif
 
@@ -1051,8 +1051,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	if (selReq->reply_proc) {
 		(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, type,
 				(Xv_opaque) propValue, length, format);
-		/* INCOMPLETE - what if the caller accesses replyInfo->data */
-		/* darauf ist offenbar keiner vorbereitet: replyInfo->data =XV_NULL; */
+		/* but doesn't HAVE to free it in case of a blocking request... */
 	}
 
 	XDeleteProperty(ev->display, replyInfo->sri_requestor, property);
@@ -1564,6 +1563,12 @@ Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev)
 	if (XvGetRequestedValue(selReq,ev,reply,ev->property,*reply->sri_target,0))
 	{
 		if (!reply->sri_during_incr) {
+			/* this resulted in a "double free" on quick duplicate
+			 * if (reply->sri_propdata && reply->sri_length == 0) {
+			 * 	xv_free(reply->sri_propdata);
+			 * 	reply->sri_propdata = XV_NULL;
+			 * }
+			 */
 			xv_sel_end_request(reply);
 		}
 	}
