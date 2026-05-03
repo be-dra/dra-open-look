@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.19 2026/04/06 08:57:33 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.21 2026/05/03 01:34:51 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -622,7 +622,8 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
 {
 	long length;
-	int owner_is_remote, i, j, format, *idata;
+	int owner_is_remote, i, j, format;
+	long *ldata;
 	char *cdata;
 	struct utsname name;
 	char rem_name[sizeof(name.nodename) + 1];
@@ -820,14 +821,14 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 			SEL_TIME, &tim,
 			SEL_TYPE_NAME, "_SUN_ENUMERATION_COUNT",
 			NULL);
-	idata = (int *)xv_get(sr, SEL_DATA, &length, &format);
+	ldata = (long *)xv_get(sr, SEL_DATA, &length, &format);
 	if (length == SEL_ERROR) {
 		priv->status = FR_CONVERSION_REJECTED;
 		return;
 	}
 
-	priv->count = *idata;
-	xv_free((char *)idata);
+	priv->count = *ldata;
+	xv_free((char *)ldata);
 
 	if (priv->single && priv->count > 1) priv->count = 1;
 
