@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.21 2026/05/03 01:34:51 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.22 2026/05/05 17:43:12 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -319,6 +319,11 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 		return;
 	}
 
+	if (type == (Atom)xv_get(priv->srv, SERVER_ATOM, "_SUN_SELECTION_END")) {
+		if (value) xv_free((char *)value);
+		return;
+	}
+
 	if (type == (Atom)xv_get(priv->srv, SERVER_ATOM, "INCR")) {
 		priv->during_incr = TRUE;
 		if (priv->is_string_request) {
@@ -379,7 +384,10 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 			}
 		}
 
-		if (value) xv_free((char *)value);
+		if (value) {
+			xv_free((char *)value);
+			value = XV_NULL;
+		}
 	}
 
 	if (priv->is_string_request && target == XA_STRING) {
