@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.5 2026/01/18 21:22:37 dra Exp $ ";
+static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.6 2026/05/11 19:33:30 dra Exp $ ";
 #endif
 #endif
 
@@ -16,76 +16,6 @@ static char     sccsid[] = "@(#)dndutil.c 1.16 93/06/28 DRA: $Id: dndutil.c,v 4.
 #include <xview/server.h>
 #include <xview/dragdrop.h>
 #include <xview_private/dndimpl.h>
-
-/* 
- * Determine what cursor to use, create one if none defined.  Return the XID.
- */
-Xv_private XID DndGetCursor(Dnd_info *dnd)
-{
-	if (!dnd->xCursor && !dnd->cursor) {
-		/* Actually, the CURSOR package has **no** find-method...
-		 * and it's superclass GENERIC also has **no** find-method
-		 * What happens here?
-		 *
-		 * It is just a simple xv_create...
-		 */
-		dnd->cursor = xv_find(dnd->parent, CURSOR,
-			CURSOR_SRC_CHAR,(dnd->type==DND_MOVE)?OLC_MOVE_PTR
-												:OLC_COPY_PTR,
-			CURSOR_MASK_CHAR,(dnd->type==DND_MOVE)?OLC_MOVE_MASK_PTR
-												:OLC_COPY_MASK_PTR,
-			NULL);
-		return ((XID) xv_get(dnd->cursor, XV_XID));
-	}
-	else if (dnd->cursor)
-		return ((XID) xv_get(dnd->cursor, XV_XID));
-	else
-		return ((XID) dnd->xCursor);
-}
-
-/* I'm just 'saving atoms' .... */
-static Atom InternSelection(Xv_server server, int n, XID xid)
-{
-    char buf[60]; 
-
-	/* orig was
-	 * sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d_%ld", n, xid);
-	 */
-    sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d", n);
-    return xv_get(server, SERVER_ATOM, buf);
-}
-
-Xv_private int DndGetSelection(Dnd_info *dnd, Display *dpy)
-{
-	int i = 0;
-	Atom seln;
-	Xv_Server server = XV_SERVER_FROM_WINDOW(dnd->parent);
-	XID xid;
-
-	/* Application defined selection. */
-	if (xv_get(DND_PUBLIC(dnd), SEL_OWN))
-		return DND_SUCCEEDED;
-
-	/* Create our own transient selection. */
-	/* Look for a selection no one else is using. */
-
- 	xid = (XID) xv_get(dnd->parent, XV_XID);
-
-	/* XXX: This will become very slow if the app
-	 * has > 100 selections in use.  We will go
-	 * through > 100 XGetSelectionOwner() requests
-	 * looking for a free selection.
-	 */
-	for (i = 0;; i++) {
-		seln = InternSelection(server, i, xid);
-		if (XGetSelectionOwner(dpy, seln) == None) {
-			dnd->transientSel = True;
-			xv_set(DND_PUBLIC(dnd), SEL_RANK, seln, SEL_OWN, True, NULL);
-			break;
-		}
-	}
-	return DND_SUCCEEDED;
-}
 
 static int sendEventError;
 static XErrorHandler old_handler;
@@ -124,16 +54,4 @@ Pkg_private int DndSendEvent(Display *dpy, XEvent *event, const char *nam)
     if (status && ! sendEventError) return DND_SUCCEEDED;
     
     return DND_ERROR;
-}
-
-/*ARGSUSED*/
-Pkg_private Bool DndMatchProp(Display *dpy, XEvent *event, XPointer cldt)
-{
-	DnDWaitEvent *wE = (DnDWaitEvent *)cldt;
-
-    if ((event->type == wE->eventType) &&
-                           (((XPropertyEvent*)event)->atom == (Atom)wE->window))
-        return(True);
-    else
-        return(False);
 }
