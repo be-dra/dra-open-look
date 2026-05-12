@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dndimpl.h 1.15 93/06/28 DRA: $Id: dndimpl.h,v 4.5 2025/01/07 18:39:29 dra Exp $ ";
+static char     sccsid[] = "@(#)dndimpl.h 1.15 93/06/28 DRA: $Id: dndimpl.h,v 4.6 2026/05/11 19:33:30 dra Exp $ ";
 #endif
 #endif
 
@@ -150,12 +150,9 @@ typedef struct dnd_info {
 #endif /* NO_XDND */
 } Dnd_info;
 
-Pkg_private int DndGetSelection(Dnd_info *, Display *);
 Pkg_private int DndContactDSDM(Dnd_info *dnd);
 Pkg_private int DndFindSite(Dnd_info *, XButtonEvent *);
-Pkg_private XID  DndGetCursor(Dnd_info *);
 Pkg_private int DndSendPreviewEvent(Dnd_info *dnd, int site, XEvent *e);
-Pkg_private Bool DndMatchProp(Display *dpy, XEvent *event, XPointer);
 Pkg_private Bool DndMatchEvent(Display *dpy, XEvent *event, XPointer);
 typedef Bool (*DndEventWaiterFunc)(Display *, XEvent *, XPointer);
 Pkg_private int DndWaitForEvent(Display *dpy, Window window, int eventType,
