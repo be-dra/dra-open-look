@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.25 2026/04/09 08:10:26 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.26 2026/05/11 19:33:30 dra Exp $ ";
 #endif
 #endif
 
@@ -26,6 +26,31 @@ static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.25 2026/
 
 Xv_private Xv_opaque server_get_timestamp(Xv_Server server_public);
 
+/* 
+ * Determine what cursor to use, create one if none defined.  Return the XID.
+ */
+static XID DndGetCursor(Dnd_info *dnd)
+{
+	if (!dnd->xCursor && !dnd->cursor) {
+		/* Actually, the CURSOR package has **no** find-method...
+		 * and it's superclass GENERIC also has **no** find-method
+		 * What happens here?
+		 *
+		 * It is just a simple xv_create...
+		 */
+		dnd->cursor = xv_find(dnd->parent, CURSOR,
+			CURSOR_SRC_CHAR,(dnd->type==DND_MOVE)?OLC_MOVE_PTR
+												:OLC_COPY_PTR,
+			CURSOR_MASK_CHAR,(dnd->type==DND_MOVE)?OLC_MOVE_MASK_PTR
+												:OLC_COPY_MASK_PTR,
+			NULL);
+		return ((XID) xv_get(dnd->cursor, XV_XID));
+	}
+	else if (dnd->cursor)
+		return ((XID) xv_get(dnd->cursor, XV_XID));
+	else
+		return ((XID) dnd->xCursor);
+}
 static void UpdateGrabCursor( Dnd_info *dnd, int type, int rejected, Time t)
 {
 	Xv_Drawable_info *info;
@@ -134,6 +159,17 @@ static int SendOldDndEvent(Dnd_info *dnd, XButtonEvent *buttonEvent)
 }
 /* DND_HACK end */
 
+static Bool match_prop(Display *dpy, XEvent *event, XPointer cldt)
+{
+	DnDWaitEvent *wE = (DnDWaitEvent *)cldt;
+
+    if ((event->type == wE->eventType) &&
+                           (((XPropertyEvent*)event)->atom == (Atom)wE->window))
+        return(True);
+    else
+        return(False);
+}
+
 static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 {
 	Display *dpy = xv_display(info);
@@ -190,11 +226,11 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 	if (debug_DND > 0)
 		fprintf(stderr, "%ld in WairForAck, before DndWaitForEvent(prop)\n",
 				time(0));
-	/* the second param is declared as Window, but DndMatchProp
+	/* the second param is declared as Window, but match_prop
 	 * compares it with the atom of a PropertyNotify event....
 	 */
 	status = DndWaitForEvent(dpy, property, PropertyNotify, None, &dnd->timeout,
-			&event, DndMatchProp);
+			&event, match_prop);
 
 	if (debug_DND > 0)
 		fprintf(stderr, "%ld in WairForAck, after DndWaitForEvent(prop)\n",
@@ -983,6 +1019,50 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 	}
 
 	return DND_ILLEGAL_TARGET;
+}
+
+/* I'm just 'saving atoms' .... */
+static Atom InternSelection(Xv_server server, int n, XID xid)
+{
+    char buf[60]; 
+
+	/* orig was
+	 * sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d_%ld", n, xid);
+	 */
+    sprintf(buf, "_SUN_DRAGDROP_TRANSIENT_%d", n);
+    return xv_get(server, SERVER_ATOM, buf);
+}
+
+static int DndGetSelection(Dnd_info *dnd, Display *dpy)
+{
+	int i = 0;
+	Atom seln;
+	Xv_Server server = XV_SERVER_FROM_WINDOW(dnd->parent);
+	XID xid;
+
+	/* Application defined selection. */
+	if (xv_get(DND_PUBLIC(dnd), SEL_OWN))
+		return DND_SUCCEEDED;
+
+	/* Create our own transient selection. */
+	/* Look for a selection no one else is using. */
+
+ 	xid = (XID) xv_get(dnd->parent, XV_XID);
+
+	/* XXX: This will become very slow if the app
+	 * has > 100 selections in use.  We will go
+	 * through > 100 XGetSelectionOwner() requests
+	 * looking for a free selection.
+	 */
+	for (i = 0;; i++) {
+		seln = InternSelection(server, i, xid);
+		if (XGetSelectionOwner(dpy, seln) == None) {
+			dnd->transientSel = True;
+			xv_set(DND_PUBLIC(dnd), SEL_RANK, seln, SEL_OWN, True, NULL);
+			break;
+		}
+	}
+	return DND_SUCCEEDED;
 }
 
 extern Xv_object xview_x_input_readevent(Display *display, Event *event,
