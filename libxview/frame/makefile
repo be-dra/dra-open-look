@@ -599,7 +599,7 @@ STD_DEFINES = -Dlinux -D_POSIX_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE -DX_LOCALE
 HDRSPUBLIC=	frame.h permprop.h
 HDRSPRIVATE= fm_impl.h
 
-SRCS = frame.c frame_init.c fm_get.c fm_set.c fm_destroy.c fm_layout.c fm_cmdline.c fm_display.c fm_win.c fm_geom.c fm_input.c fm_bdry.c frame_sw.c fm_rescale.c frame_base.c frame_cmd.c frame_help.c fm_rodata.c propframe.c permprop.c
+SRCS = frame.c frame_init.c fm_get.c fm_set.c fm_layout.c fm_cmdline.c fm_display.c fm_win.c fm_geom.c fm_input.c fm_bdry.c frame_sw.c fm_rescale.c frame_base.c frame_cmd.c frame_help.c fm_rodata.c propframe.c permprop.c
 OBJS=$(SRCS:.c=.o)
 
 LIBTARGET = xview
@@ -797,8 +797,9 @@ frame.o: frame.c /usr/include/stdc-predef.h /usr/include/X11/Xlib.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -878,17 +879,17 @@ frame_init.o: frame_init.c /usr/include/stdc-predef.h \
  /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
  /usr/include/bits/signal_ext.h /usr/include/bits/param.h \
  /usr/include/linux/param.h /usr/include/asm/param.h \
- /usr/include/asm-generic/param.h /usr/include/X11/Xlib.h \
- /usr/include/X11/X.h /usr/include/X11/Xfuncproto.h \
- /usr/include/X11/Xosdefs.h /usr/include/X11/Xatom.h \
- /usr/include/X11/Xutil.h /usr/include/X11/keysym.h \
- /usr/include/X11/keysymdef.h \
+ /usr/include/asm-generic/param.h /usr/include/ctype.h \
+ /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
+ /usr/include/X11/Xlib.h /usr/include/X11/X.h \
+ /usr/include/X11/Xfuncproto.h /usr/include/X11/Xosdefs.h \
+ /usr/include/X11/Xatom.h /usr/include/X11/Xutil.h \
+ /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
  ../../build/include/xview_private/draw_impl.h \
  ../../build/include/xview_private/portable.h \
  ../../build/include/xview/attr.h ../../build/include/xview/base.h \
- /usr/include/string.h /usr/include/bits/types/locale_t.h \
- /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
- /usr/include/malloc.h /usr/include/stdio.h \
+ /usr/include/string.h /usr/include/strings.h /usr/include/malloc.h \
+ /usr/include/stdio.h \
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stdarg.h \
  /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
  /usr/include/bits/types/__fpos64_t.h /usr/include/bits/types/__FILE.h \
@@ -898,12 +899,13 @@ frame_init.o: frame_init.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h ../../build/include/xview/xv_c_types.h \
  /usr/include/stdlib.h /usr/include/bits/waitflags.h \
  /usr/include/bits/waitstatus.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h ../../build/include/xview/pkg.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/bits/types/idtype_t.h /usr/include/sys/time.h \
- /usr/include/sys/resource.h /usr/include/bits/resource.h \
- /usr/include/bits/types/struct_rusage.h /usr/include/sys/signal.h \
- ../../build/include/xview/drawable.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ ../../build/include/xview/pkg.h ../../build/include/xview/notify.h \
+ /usr/include/sys/wait.h /usr/include/bits/types/idtype_t.h \
+ /usr/include/sys/time.h /usr/include/sys/resource.h \
+ /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
+ /usr/include/sys/signal.h ../../build/include/xview/drawable.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h \
  ../../build/include/xview/xv_error.h ../../build/include/xview/sun.h \
  ../../build/include/xview/cms.h \
@@ -936,8 +938,16 @@ frame_init.o: frame_init.c /usr/include/stdc-predef.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/bits/types/error_t.h \
  ../../build/include/xview_private/win_info.h \
+ ../../build/include/xview_private/svr_impl.h \
+ /usr/include/X11/Xresource.h ../../build/include/xview/notice.h \
+ ../../build/include/xview/canvas.h ../../build/include/xview/openwin.h \
+ ../../build/include/xview/xv_xrect.h \
+ ../../build/include/pixrect/memvar.h \
+ ../../build/include/xview_private/om_impl.h \
+ ../../build/include/xview_private/omi_impl.h \
  ../../build/include/images/focus_up.cursor \
- ../../build/include/images/focus_right.cursor
+ ../../build/include/images/focus_right.cursor \
+ ../../build/include/images/default.icon
 fm_get.o: fm_get.c /usr/include/stdc-predef.h \
  ../../build/include/xview_private/fm_impl.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h /usr/include/features.h \
@@ -993,8 +1003,9 @@ fm_get.o: fm_get.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -1018,10 +1029,7 @@ fm_get.o: fm_get.c /usr/include/stdc-predef.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
  ../../build/include/xview_private/draw_impl.h \
  ../../build/include/xview_private/scrn_vis.h \
- ../../build/include/xview_private/svr_impl.h \
- ../../build/include/xview_private/xv_list.h /usr/include/X11/Xresource.h \
- ../../build/include/xview_private/svr_atom.h \
- ../../build/include/xview_private/win_info.h /usr/include/ctype.h
+ ../../build/include/xview_private/win_info.h
 fm_set.o: fm_set.c /usr/include/stdc-predef.h /usr/include/X11/Xlib.h \
  /usr/include/sys/types.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
@@ -1058,10 +1066,11 @@ fm_set.o: fm_set.c /usr/include/stdc-predef.h /usr/include/X11/Xlib.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/signal.h /usr/include/bits/signum-generic.h \
- /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
+ /usr/include/alloca.h /usr/include/bits/types/once_flag.h \
+ /usr/include/bits/stdlib-float.h ../../build/include/xview/notify.h \
+ /usr/include/sys/wait.h /usr/include/signal.h \
+ /usr/include/bits/signum-generic.h /usr/include/bits/signum-arch.h \
+ /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
  /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
  /usr/include/bits/siginfo-consts-arch.h \
@@ -1102,98 +1111,12 @@ fm_set.o: fm_set.c /usr/include/stdc-predef.h /usr/include/X11/Xlib.h \
  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
  ../../build/include/xview_private/draw_impl.h \
  ../../build/include/xview_private/scrn_vis.h \
- ../../build/include/xview/canvas.h ../../build/include/xview/openwin.h \
- ../../build/include/xview/xv_xrect.h \
  ../../build/include/xview/defaults.h \
  ../../build/include/xview_private/svr_impl.h \
  ../../build/include/xview_private/xv_list.h /usr/include/X11/Xresource.h \
  ../../build/include/xview_private/svr_atom.h \
  ../../build/include/xview_private/win_info.h \
- ../../build/include/xview_private/om_impl.h \
- ../../build/include/xview_private/omi_impl.h \
- ../../build/include/xview/font.h ../../build/include/pixrect/memvar.h
-fm_destroy.o: fm_destroy.c /usr/include/stdc-predef.h \
- ../../build/include/xview_private/i18n_impl.h \
- ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
- ../../build/include/xview/pkg.h ../../build/include/xview/attr.h \
- /usr/include/sys/types.h /usr/include/features.h \
- /usr/include/features-time64.h /usr/include/bits/wordsize.h \
- /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \
- /usr/include/bits/long-double.h /usr/include/gnu/stubs.h \
- /usr/include/gnu/stubs-64.h /usr/include/bits/types.h \
- /usr/include/bits/typesizes.h /usr/include/bits/time64.h \
- /usr/include/bits/types/clock_t.h /usr/include/bits/types/clockid_t.h \
- /usr/include/bits/types/time_t.h /usr/include/bits/types/timer_t.h \
- /usr/lib64/gcc/x86_64-suse-linux/15/include/stddef.h \
- /usr/include/bits/stdint-intn.h /usr/include/endian.h \
- /usr/include/bits/endian.h /usr/include/bits/endianness.h \
- /usr/include/bits/byteswap.h /usr/include/bits/uintn-identity.h \
- /usr/include/sys/select.h /usr/include/bits/select.h \
- /usr/include/bits/types/sigset_t.h /usr/include/bits/types/__sigset_t.h \
- /usr/include/bits/types/struct_timeval.h \
- /usr/include/bits/types/struct_timespec.h \
- /usr/include/bits/pthreadtypes.h /usr/include/bits/thread-shared-types.h \
- /usr/include/bits/pthreadtypes-arch.h \
- /usr/include/bits/atomic_wide_counter.h /usr/include/bits/struct_mutex.h \
- /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
- /usr/include/string.h /usr/include/bits/libc-header-start.h \
- /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
- /usr/include/strings.h /usr/include/malloc.h /usr/include/stdio.h \
- /usr/lib64/gcc/x86_64-suse-linux/15/include/stdarg.h \
- /usr/include/bits/types/__fpos_t.h /usr/include/bits/types/__mbstate_t.h \
- /usr/include/bits/types/__fpos64_t.h /usr/include/bits/types/__FILE.h \
- /usr/include/bits/types/FILE.h /usr/include/bits/types/struct_FILE.h \
- /usr/include/bits/types/cookie_io_functions_t.h \
- /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
- /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
- /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/signal.h /usr/include/bits/signum-generic.h \
- /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
- /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
- /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
- /usr/include/bits/siginfo-consts-arch.h \
- /usr/include/bits/types/sigval_t.h /usr/include/bits/types/sigevent_t.h \
- /usr/include/bits/sigevent-consts.h /usr/include/bits/sigaction.h \
- /usr/include/bits/sigcontext.h /usr/include/bits/types/stack_t.h \
- /usr/include/sys/ucontext.h /usr/include/bits/sigstack.h \
- /usr/include/bits/sigstksz.h /usr/include/unistd.h \
- /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
- /usr/include/bits/confname.h /usr/include/bits/getopt_posix.h \
- /usr/include/bits/getopt_core.h /usr/include/bits/unistd_ext.h \
- /usr/include/linux/close_range.h /usr/include/bits/ss_flags.h \
- /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
- /usr/include/bits/signal_ext.h /usr/include/bits/types/idtype_t.h \
- /usr/include/sys/time.h /usr/include/sys/resource.h \
- /usr/include/bits/resource.h /usr/include/bits/types/struct_rusage.h \
- /usr/include/sys/signal.h ../../build/include/xview/xv_i18n.h \
- /usr/include/libintl.h /usr/include/locale.h /usr/include/bits/locale.h \
- ../../build/include/xview_private/fm_impl.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
- ../../build/include/xview/pkg_public.h \
- ../../build/include/xview/xv_error.h ../../build/include/xview/sun.h \
- ../../build/include/xview/rectlist.h \
- ../../build/include/xview/win_struct.h \
- ../../build/include/xview/win_input.h /usr/include/X11/Xlib.h \
- /usr/include/X11/X.h /usr/include/X11/Xosdefs.h \
- ../../build/include/xview/win_event.h \
- ../../build/include/xview/win_screen.h ../../build/include/xview/wmgr.h \
- ../../build/include/xview/frame.h ../../build/include/xview/window.h \
- ../../build/include/xview/server.h ../../build/include/xview/screen.h \
- ../../build/include/xview/drawable.h ../../build/include/xview/attrol.h \
- ../../build/include/xview_private/wmgr_decor.h \
- ../../build/include/xview/icon.h ../../build/include/xview/svrimage.h \
- ../../build/include/pixrect/pixrect.h \
- ../../build/include/pixrect/pixfont.h \
- ../../build/include/xview/openmenu.h ../../build/include/xview/cms.h \
- ../../build/include/xview_private/portable.h \
- ../../build/include/olgx/olgx.h /usr/include/X11/Xutil.h \
- /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
- ../../build/include/xview_private/draw_impl.h \
- ../../build/include/xview_private/scrn_vis.h \
- ../../build/include/xview_private/win_info.h \
- ../../build/include/xview/notice.h
+ ../../build/include/pixrect/memvar.h
 fm_layout.o: fm_layout.c /usr/include/stdc-predef.h \
  ../../build/include/xview_private/i18n_impl.h \
  ../../build/include/xview/xv_c_types.h /usr/include/X11/Xfuncproto.h \
@@ -1229,10 +1152,11 @@ fm_layout.o: fm_layout.c /usr/include/stdc-predef.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/signal.h /usr/include/bits/signum-generic.h \
- /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
+ /usr/include/alloca.h /usr/include/bits/types/once_flag.h \
+ /usr/include/bits/stdlib-float.h ../../build/include/xview/notify.h \
+ /usr/include/sys/wait.h /usr/include/signal.h \
+ /usr/include/bits/signum-generic.h /usr/include/bits/signum-arch.h \
+ /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
  /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
  /usr/include/bits/siginfo-consts-arch.h \
@@ -1320,10 +1244,11 @@ fm_cmdline.o: fm_cmdline.c /usr/include/stdc-predef.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/signal.h /usr/include/bits/signum-generic.h \
- /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
+ /usr/include/alloca.h /usr/include/bits/types/once_flag.h \
+ /usr/include/bits/stdlib-float.h ../../build/include/xview/notify.h \
+ /usr/include/sys/wait.h /usr/include/signal.h \
+ /usr/include/bits/signum-generic.h /usr/include/bits/signum-arch.h \
+ /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
  /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
  /usr/include/bits/siginfo-consts-arch.h \
@@ -1429,8 +1354,9 @@ fm_display.o: fm_display.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -1464,7 +1390,14 @@ fm_win.o: fm_win.c /usr/include/stdc-predef.h /usr/include/sys/file.h \
  /usr/include/bits/fcntl.h /usr/include/bits/fcntl-linux.h \
  /usr/include/bits/types/struct_iovec.h \
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stddef.h \
- /usr/include/linux/falloc.h /usr/include/bits/types/struct_timespec.h \
+ /usr/include/bits/cloexec.h /usr/include/linux/falloc.h \
+ /usr/include/linux/openat2.h /usr/include/linux/types.h \
+ /usr/include/asm/types.h /usr/include/asm-generic/types.h \
+ /usr/include/asm-generic/int-ll64.h /usr/include/asm/bitsperlong.h \
+ /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
+ /usr/include/linux/stddef.h /usr/include/asm/posix_types.h \
+ /usr/include/asm/posix_types_64.h /usr/include/asm-generic/posix_types.h \
+ /usr/include/bits/openat2.h /usr/include/bits/types/struct_timespec.h \
  /usr/include/bits/endian.h /usr/include/bits/endianness.h \
  /usr/include/bits/types/time_t.h /usr/include/bits/stat.h \
  /usr/include/bits/struct_stat.h /usr/include/X11/Xlib.h \
@@ -1494,10 +1427,11 @@ fm_win.o: fm_win.c /usr/include/stdc-predef.h /usr/include/sys/file.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/signal.h /usr/include/bits/signum-generic.h \
- /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
+ /usr/include/alloca.h /usr/include/bits/types/once_flag.h \
+ /usr/include/bits/stdlib-float.h ../../build/include/xview/notify.h \
+ /usr/include/sys/wait.h /usr/include/signal.h \
+ /usr/include/bits/signum-generic.h /usr/include/bits/signum-arch.h \
+ /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
  /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
  /usr/include/bits/siginfo-consts-arch.h \
@@ -1594,8 +1528,9 @@ fm_geom.o: fm_geom.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -1683,8 +1618,9 @@ fm_input.o: fm_input.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -1775,8 +1711,9 @@ fm_bdry.o: fm_bdry.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -1855,8 +1792,9 @@ frame_sw.o: frame_sw.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -1935,8 +1873,9 @@ fm_rescale.o: fm_rescale.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -2027,8 +1966,9 @@ frame_base.o: frame_base.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -2112,8 +2052,9 @@ frame_cmd.o: frame_cmd.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -2204,8 +2145,9 @@ frame_help.o: frame_help.c /usr/include/stdc-predef.h \
  /usr/include/string.h /usr/include/bits/types/locale_t.h \
  /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
  /usr/include/malloc.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/sys/signal.h \
- ../../build/include/xview/rect.h ../../build/include/xview/generic.h \
+ /usr/include/bits/types/once_flag.h /usr/include/bits/stdlib-float.h \
+ /usr/include/sys/signal.h ../../build/include/xview/rect.h \
+ ../../build/include/xview/generic.h \
  ../../build/include/xview/pkg_public.h ../../build/include/xview/pkg.h \
  ../../build/include/xview/attr.h ../../build/include/xview/xv_error.h \
  ../../build/include/xview/sun.h ../../build/include/xview/rectlist.h \
@@ -2268,8 +2210,8 @@ fm_rodata.o: fm_rodata.c /usr/include/stdc-predef.h \
  /usr/include/bits/floatn-common.h ../../build/include/xview/xv_c_types.h \
  /usr/include/X11/Xfuncproto.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/images/default.icon
+ /usr/include/alloca.h /usr/include/bits/types/once_flag.h \
+ /usr/include/bits/stdlib-float.h
 propframe.o: propframe.c /usr/include/stdc-predef.h \
  ../../build/include/xview/frame.h ../../build/include/xview/window.h \
  ../../build/include/xview/generic.h \
@@ -2307,10 +2249,11 @@ propframe.o: propframe.c /usr/include/stdc-predef.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/floatn.h \
  /usr/include/bits/floatn-common.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/signal.h /usr/include/bits/signum-generic.h \
- /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
+ /usr/include/alloca.h /usr/include/bits/types/once_flag.h \
+ /usr/include/bits/stdlib-float.h ../../build/include/xview/notify.h \
+ /usr/include/sys/wait.h /usr/include/signal.h \
+ /usr/include/bits/signum-generic.h /usr/include/bits/signum-arch.h \
+ /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
  /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
  /usr/include/bits/siginfo-consts-arch.h \
@@ -2396,10 +2339,11 @@ permprop.o: permprop.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/bits/struct_rwlock.h ../../build/include/xview/base.h \
  /usr/include/malloc.h /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
- ../../build/include/xview/notify.h /usr/include/sys/wait.h \
- /usr/include/signal.h /usr/include/bits/signum-generic.h \
- /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
+ /usr/include/alloca.h /usr/include/bits/types/once_flag.h \
+ /usr/include/bits/stdlib-float.h ../../build/include/xview/notify.h \
+ /usr/include/sys/wait.h /usr/include/signal.h \
+ /usr/include/bits/signum-generic.h /usr/include/bits/signum-arch.h \
+ /usr/include/bits/types/sig_atomic_t.h \
  /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
  /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
  /usr/include/bits/siginfo-consts-arch.h \
