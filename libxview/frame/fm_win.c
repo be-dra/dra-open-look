@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_win.c 20.31 90/11/08 DRA: $Id: fm_win.c,v 4.3 2026/03/27 08:51:55 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_win.c 20.31 90/11/08 DRA: $Id: fm_win.c,v 4.4 2026/04/18 07:49:41 dra Exp $ ";
 #endif
 #endif
 
@@ -19,43 +19,6 @@ static char     sccsid[] = "@(#)fm_win.c 20.31 90/11/08 DRA: $Id: fm_win.c,v 4.3
 #include <xview_private/fm_impl.h>
 #include <xview_private/draw_impl.h>
 #include <xview_private/win_info.h>
-
-/*
- * use the window manager to set the position and trim the size of the base
- * frame.
- */
-/* ARGSUSED */
-Pkg_private void frame_set_position(unsigned long parent, Frame_class_info *frame)
-{
-    Frame           frame_public = FRAME_PUBLIC(frame);
-    Rect            rectnormal;
-    /*
-     * int		rect_info = (int) xv_get(frame_public,
-     * WIN_RECT_INFO);
-     */
-
-    win_getrect(frame_public, &rectnormal);
-
-    /* if the position is not set, then let the window manager set it */
-
-    /*
-     * csk 5/3/89: rect_info is never set to anything but 0.  Should it be
-     * removed?  If anything, it should test rectnormal.r_* for set values...
-     * This code needs to be reviewed by Mr. Ng!!
-     *
-     * if (!(rect_info & WIN_X_SET)) rectnormal.r_left = 0; if (!(rect_info &
-     * WIN_Y_SET)) rectnormal.r_top = 0;
-     */
-
-
-    win_setrect(frame_public, &rectnormal);
-    frame->rectcache = rectnormal;
-
-    /*
-     * Cached rect is self relative.
-     */
-    frame->rectcache.r_left = frame->rectcache.r_top = 0;
-}
 
 /* INCOMPLETE: there seems to be not a single call of this function !?!? */
 Pkg_private int frame_is_exposed(Frame frame)
