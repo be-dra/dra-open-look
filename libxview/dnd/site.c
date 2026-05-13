@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.2 2026/01/18 21:22:37 dra Exp $ ";
+static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.3 2026/05/13 14:06:49 dra Exp $ ";
 #endif
 #endif
 
@@ -10,20 +10,79 @@ static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.2 2026
  *      file for terms of the license.
  */
 
-#include <assert.h>
+#include <sys/time.h>
+#include <X11/Xlib.h>
+#include <xview/pkg.h>
+#include <xview/attr.h>
+#include <xview/rect.h>
+#include <xview/window.h>
 #include <xview_private/xv_list.h>
 #include <xview_private/site_impl.h>
 #include <xview_private/windowimpl.h>
 #include <xview_private/dndimpl.h>
+#include <xview_private/xv_list.h>
+#include <assert.h>
 
+#define DNDS_BIT_FIELD(field)		unsigned	field:1
+#define dnds_status(item, field)		((item)->status_bits.field)
+#define dnds_status_set(item, field)       	dnds_status(item, field) = TRUE
+#define dnds_status_reset(item, field)     	dnds_status(item, field) = FALSE
+
+
+#define DND_SITE_PRIVATE(dnd_site_public) \
+		XV_PRIVATE(Dnd_site_info, Xv_dropsite, dnd_site_public)
+#define DND_SITE_PUBLIC(site)         XV_PUBLIC(site)
+
+typedef enum dnd_region_ops {
+	Dnd_Add_Window, 	Dnd_Delete_Window,
+	Dnd_Add_Window_Ptr, 	Dnd_Delete_Window_Ptr,
+	Dnd_Add_Rect, 		Dnd_Delete_Rect,
+	Dnd_Add_Rect_Ptr, 	Dnd_Delete_Rect_Ptr,
+	Dnd_Get_Window,		Dnd_Get_Window_Ptr,
+	Dnd_Get_Rect,		Dnd_Get_Rect_Ptr,
+	Dnd_Delete_All_Rects,	Dnd_Delete_All_Windows
+} Dnd_region_ops;
+
+typedef struct dnd_window_list {
+	Xv_sl_link	next;
+	Xv_Window	window;
+} Dnd_window_list;
+
+typedef struct dnd_rect_list {
+	Xv_sl_link	next;
+	int		real_x;
+	int		real_y;
+	Rect		rect;
+} Dnd_rect_list;
+
+typedef struct dnd_site_info {
+	Xv_drop_site	 public_self;
+	Xv_window	 owner;
+	Window		 owner_xid;
+	long		 site_id;
+	int		 event_mask;
+	unsigned int	 site_size;
+
+	struct {
+		DNDS_BIT_FIELD(site_id_set);
+		DNDS_BIT_FIELD(window_set);
+		DNDS_BIT_FIELD(is_window_region);
+		DNDS_BIT_FIELD(created);
+	} status_bits;
+
+	union {
+	    Dnd_window_list *windows;
+	    Dnd_rect_list   *rects;
+	} region;
+	unsigned int	 num_regions;
+} Dnd_site_info;
 static void TransCoords(Dnd_site_info *site, Dnd_rect_list *node)
 {
-    Xv_Window 	frame,
-		window;
+    Xv_Window 	frame, window;
     int		x, y;
 
     frame = win_get_top_level(site->owner);
-    assert(frame != XV_ERROR);
+    assert(frame != (Xv_opaque)XV_ERROR);
 
     x = node->rect.r_left;
     y = node->rect.r_top;
@@ -39,7 +98,7 @@ static void TransCoords(Dnd_site_info *site, Dnd_rect_list *node)
     node->real_y = y;
 }
 
-Pkg_private Xv_opaque DndDropAreaOps(Dnd_site_info	*site, Dnd_region_ops mode,
+static Xv_opaque DndDropAreaOps(Dnd_site_info	*site, Dnd_region_ops mode,
 							Xv_opaque area)
 {
 	switch (mode) {
@@ -388,7 +447,7 @@ Pkg_private Xv_opaque DndDropAreaOps(Dnd_site_info	*site, Dnd_region_ops mode,
 	return (XV_OK);
 }
 
-Pkg_private void DndSizeOfSite(register Dnd_site_info *site)
+static void DndSizeOfSite(register Dnd_site_info *site)
 {
     site->site_size = 3;             /* Window + site id + flags */
 
@@ -478,3 +537,232 @@ Xv_private int DndSiteContains(Xv_drop_site site_public, int fx, int fy)
 }
 
 #endif /* NO_XDND */
+
+#define ADONE ATTR_CONSUME(*attrs);break
+
+static int dnd_site_init(Xv_Window owner, Xv_drop_site site_public,
+								Attr_avlist avlist, int *u)
+{
+	Dnd_site_info *site = NULL;
+	Xv_dropsite *site_object;
+
+	site = xv_alloc(Dnd_site_info);
+	site->public_self = site_public;
+	site_object = (Xv_dropsite *) site_public;
+	site_object->private_data = (Xv_opaque) site;
+
+	dnds_status_reset(site, site_id_set);
+	dnds_status_reset(site, window_set);
+	dnds_status_reset(site, created);
+
+#ifdef WINDOW_SITES
+	dnds_status_set(site, is_window_region);
+	dnds_status_reset(site, is_window_region);
+#else
+	dnds_status_reset(site, is_window_region);
+#endif /* WINDOW_SITES */
+
+	site->owner = owner;
+	site->owner_xid = (Window) xv_get(owner, XV_XID);
+	site->region.windows = NULL;
+	site->region.rects = NULL;
+	site->num_regions = 0;
+	site->site_size = 0;
+	site->event_mask = 0;
+
+	return (XV_OK);
+}
+
+static Xv_opaque dnd_site_set_avlist(Xv_drop_site site_public,
+							Attr_attribute	avlist[])
+{
+	register Dnd_site_info *site = DND_SITE_PRIVATE(site_public);
+	register Attr_avlist attrs;
+
+	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
+		switch (attrs[0]) {
+
+#ifdef WINDOW_SITES
+			case DROP_SITE_TYPE:
+				if (DND_WINDOW_SITE == (int)attrs[1])
+					dnds_status_set(site, is_window_region);
+				else
+					dnds_status_reset(site, is_window_region);
+				ADONE;
+#endif /* WINDOW_SITES */
+
+			case DROP_SITE_ID:
+				site->site_id = (long)attrs[1];
+				dnds_status_set(site, site_id_set);
+				ADONE;
+			case DROP_SITE_DEFAULT:
+				if ((int)attrs[1])
+					site->event_mask |= DND_DEFAULT_SITE;
+				else
+					site->event_mask ^= DND_DEFAULT_SITE;
+				ADONE;
+			case DROP_SITE_EVENT_MASK:
+				site->event_mask &= DND_DEFAULT_SITE;
+				site->event_mask |= (int)attrs[1];
+				ADONE;
+			case DROP_SITE_REGION:
+				if (dnds_status(site, is_window_region))
+					(void)DndDropAreaOps(site, Dnd_Add_Window, attrs[1]);
+				else
+					(void)DndDropAreaOps(site, Dnd_Add_Rect, attrs[1]);
+				dnds_status_set(site, window_set);
+				ADONE;
+			case DROP_SITE_DELETE_REGION:
+				if (!attrs[1])
+					(void)DndDropAreaOps(site, (dnds_status(site,
+											is_window_region) ?
+									Dnd_Delete_All_Windows :
+									Dnd_Delete_All_Rects), attrs[1]);
+				else
+					(void)DndDropAreaOps(site, (dnds_status(site,
+											is_window_region) ?
+									Dnd_Delete_Window : Dnd_Delete_Rect),
+							attrs[1]);
+				ADONE;
+			case DROP_SITE_REGION_PTR:
+				if (dnds_status(site, is_window_region))
+					(void)DndDropAreaOps(site, Dnd_Add_Window_Ptr, attrs[1]);
+				else
+					(void)DndDropAreaOps(site, Dnd_Add_Rect_Ptr, attrs[1]);
+				dnds_status_set(site, window_set);
+				ADONE;
+			case DROP_SITE_DELETE_REGION_PTR:
+				if (!attrs[1])
+					(void)DndDropAreaOps(site, (dnds_status(site,
+											is_window_region) ?
+									Dnd_Delete_All_Windows :
+									Dnd_Delete_All_Rects), attrs[1]);
+				else
+					(void)DndDropAreaOps(site, (dnds_status(site,
+											is_window_region) ?
+									Dnd_Delete_Window_Ptr :
+									Dnd_Delete_Rect_Ptr), attrs[1]);
+				ADONE;
+			case XV_END_CREATE:{
+					if (!dnds_status(site, site_id_set))
+						site->site_id = xv_unique_key();
+
+#ifdef WINDOW_SITES
+					if (!dnds_status(site, window_set)
+							&& dnds_status(site, is_window_region))
+						(void)DndDropAreaOps(site, Dnd_Add_Window, site->owner);
+#endif /* WIDNOW_SITES */
+
+					dnds_status_set(site, created);
+					xv_set(site->owner, WIN_ADD_DROP_ITEM,
+							DND_SITE_PUBLIC(site), NULL);
+				}
+				break;
+			default:
+				(void)xv_check_bad_attr(&xv_drop_site_item, attrs[0]);
+				break;
+		}
+	}
+
+	/* When ever some attribute of the drop site changes, we update the
+	 * intrest property.
+	 */
+	if (dnds_status(site, created))
+		(void)DndSizeOfSite(site);
+	if (dnds_status(site, created) && xv_get(site->owner, XV_SHOW)) {
+		xv_set(win_get_top_level(site->owner),
+				WIN_ADD_DROP_INTEREST, DND_SITE_PUBLIC(site), NULL);
+	}
+
+	return ((Xv_opaque) XV_OK);
+}
+
+static Xv_opaque dnd_site_get_attr(Xv_drop_site site_public, int *error,
+									Attr_attribute attr, va_list args)
+{
+	Dnd_site_info *site = DND_SITE_PRIVATE(site_public);
+	Xv_opaque value;
+
+	switch (attr) {
+#ifdef WINDOW_SITES
+		case DROP_SITE_TYPE:
+			if (dnds_status(site, is_window_region))
+				value = (Xv_opaque) DND_WINDOW_SITE;
+			else
+				value = (Xv_opaque) DND_RECT_SITE;
+			break;
+#endif /* WINDOW_SITES */
+
+		case DROP_SITE_SIZE:
+			value = (Xv_opaque) site->site_size;
+			break;
+		case DROP_SITE_ID:
+			value = (Xv_opaque) site->site_id;
+			break;
+		case DROP_SITE_DEFAULT:
+			value = (Xv_opaque) ((site->event_mask & DND_DEFAULT_SITE) ?
+					TRUE : FALSE);
+			break;
+		case DROP_SITE_EVENT_MASK:
+			value = (Xv_opaque) (site->event_mask ^ DND_DEFAULT_SITE);
+			break;
+		case DROP_SITE_REGION:
+			if (dnds_status(site, is_window_region))
+				value = (Xv_opaque) DndDropAreaOps(site, Dnd_Get_Window,
+						XV_NULL);
+			else
+				value = (Xv_opaque) DndDropAreaOps(site, Dnd_Get_Rect, XV_NULL);
+			if (value == XV_ERROR)
+				*error = XV_ERROR;
+			break;
+		case DROP_SITE_REGION_PTR:
+			if (dnds_status(site, is_window_region))
+				value = (Xv_opaque) DndDropAreaOps(site, Dnd_Get_Window_Ptr,
+						XV_NULL);
+			else
+				value = (Xv_opaque) DndDropAreaOps(site, Dnd_Get_Rect_Ptr,
+						XV_NULL);
+			if (value == XV_ERROR)
+				*error = XV_ERROR;
+			break;
+		default:
+			if (xv_check_bad_attr(&xv_drop_site_item, attr) == XV_ERROR)
+				*error = XV_ERROR;
+			value = XV_NULL;
+			break;
+	}
+
+	return (value);
+}
+
+static int dnd_site_destroy(Xv_drop_site site_public, Destroy_status state)
+{
+	if (state == DESTROY_CLEANUP) {
+		Dnd_site_info *site = DND_SITE_PRIVATE(site_public);
+
+		xv_set(site->owner,
+					WIN_DELETE_DROP_ITEM, site_public,
+					NULL);
+		xv_set(win_get_top_level(site->owner),
+					WIN_DELETE_DROP_INTEREST, site_public,
+					NULL);
+		if (dnds_status(site, is_window_region))
+			(void)DndDropAreaOps(site, Dnd_Delete_All_Windows, XV_NULL);
+		else
+			(void)DndDropAreaOps(site, Dnd_Delete_All_Rects, XV_NULL);
+		xv_free(site);
+	}
+
+	return (XV_OK);
+}
+
+const Xv_pkg		xv_drop_site_item = {
+    "DropSite", ATTR_PKG_DND,
+    sizeof(Xv_dropsite),
+    XV_GENERIC_OBJECT,
+    dnd_site_init,
+    dnd_site_set_avlist,
+    dnd_site_get_attr,
+    dnd_site_destroy,
+    NULL
+};
