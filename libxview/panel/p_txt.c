@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.45 2026/01/11 12:53:01 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.46 2026/05/21 15:54:01 dra Exp $";
 #endif
 #endif
 
@@ -92,10 +92,10 @@ typedef struct {
     int		    select_down_y;
 	    /* y coordinate of SELECT-down event. Used in determining when to
 	     * initiate a drag and drop operation. */
-    int             sel_first[2];	/* index of first char selected
-					 * (primary, secondary) */
-    int             sel_last[2];	/* index of last char selected
-					 * (primary, secondary) */
+    int        sel_first[NBR_PANEL_SELECTIONS];	/* index of first char selected
+												 * (primary, secondary) */
+    int        sel_last[NBR_PANEL_SELECTIONS];	/* index of last char selected
+												 * (primary, secondary) */
     int             stored_length;
     char           *terminators;
     Rect            text_rect;	/* rect containing text (i.e., not arrows) */
@@ -1877,6 +1877,8 @@ static void text_begin_preview (Panel_item item_public, Event *event)
 				 */
     			panel->sel_owner[PANEL_SEL_DND] = dp->dnd;
     			panel->sel_holder[PANEL_SEL_DND] = ip;
+    			dp->sel_first[PANEL_SEL_DND] = dp->sel_first[PANEL_SEL_PRIMARY];
+    			dp->sel_last[PANEL_SEL_DND] = dp->sel_last[PANEL_SEL_PRIMARY];
 				status = dnd_send_drop(dp->dnd);
 
 				if (neutral_cursor) xv_destroy(neutral_cursor);
@@ -3842,7 +3844,7 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
 		}
 		else if (rank_atom == XA_PRIMARY)
 			rank_index = PANEL_SEL_PRIMARY;
-		else rank_index = PANEL_SEL_DND; /* problem in text_seln_delete */
+		else rank_index = PANEL_SEL_DND;
 
 		return text_seln_delete(panel->sel_holder[rank_index], rank_index);
 	}
@@ -3958,6 +3960,10 @@ static int text_convert_proc(Selection_owner sel_own, Atom *type,
 		int retval;
 		/* Use default Selection Package convert procedure */
 
+		dp = TEXT_FROM_ITEM(panel->sel_holder[PANEL_SEL_DND]);
+		if (! dp) {
+			dp = TEXT_FROM_ITEM(panel->sel_holder[PANEL_SEL_PRIMARY]);
+		}
 		retval = sel_convert_proc(sel_own, type, data, (unsigned long *)length,
 				format);
 #ifdef NO_XDND
@@ -4135,7 +4141,11 @@ static int text_seln_delete(Item_info *ip, int rank)
 	if (dp->flags & PTXT_READ_ONLY)
 		return FALSE;
 
-	if (rank == PANEL_SEL_DND) rank = PANEL_SEL_PRIMARY;
+	if (rank == PANEL_SEL_DND) {
+		rank = PANEL_SEL_PRIMARY;
+		dp->sel_first[PANEL_SEL_PRIMARY] = dp->sel_first[PANEL_SEL_DND];
+		dp->sel_last[PANEL_SEL_PRIMARY] = dp->sel_last[PANEL_SEL_DND];
+	}
 
 	if (rank == PANEL_SEL_PRIMARY)
 		dp->delete_pending = FALSE;
