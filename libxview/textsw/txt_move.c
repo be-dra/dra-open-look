@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.52 2025/03/15 20:15:58 dra Exp $";
+char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.53 2026/05/21 19:59:46 dra Exp $";
 #endif
 
 /*
@@ -480,7 +480,12 @@ Pkg_private int textsw_do_remote_drag_copy_move(Textsw_view_private view, Event 
 	 * ask the source to delete the selection.
 	 */
 	SERVERTRACE((777, "is_copy=%d, index=%d\n", is_copy, index));
-	/* if we are a TERMSW, then index seems to be always 0 ! */
+	/* if we are a TERMSW, then index seemed to be always 0 - therefore,
+	 * no DELETE request....
+	 */
+	if (xv_get(tsw, TEXTSW_IS_TERMSW)) {
+		index = 1;
+	}
 	if (!is_copy && index) {
 		long dummylen;
 		char *str;
