@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.41 2026/03/07 19:57:21 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.42 2026/06/02 08:32:27 dra Exp $";
 #endif
 #endif
 
@@ -4491,11 +4491,15 @@ static void server_appl_set_busy(Server_info *srvpriv, int busy, Frame except)
 
 /* MIGHT_BE_FALSE_WHEN_BUSY_IS_FALSE_BUT_WAS_TRUE_BEFORE */
 	for (p = inst->data.popups; p; p = p->next) {
-		if (except != p->frame
-				&& p->frame
-				&& xv_get(p->frame, XV_SHOW)
-				)
-		{
+		if (except == p->frame) continue;
+		if (!p->frame) continue;
+		if (! xv_get(p->frame, XV_SHOW)) {
+			/* invisible, but we want to be sure */
+			if (! busy) {
+				xv_set(p->frame, FRAME_BUSY, FALSE, NULL);
+			}
+		}
+		else {
 			xv_set(p->frame, FRAME_BUSY, busy, NULL);
 		}
 	}
