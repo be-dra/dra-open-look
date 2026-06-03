@@ -1,4 +1,4 @@
-/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.8 2025/03/03 14:17:50 dra Exp $ */
+/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.9 2026/06/02 20:59:42 dra Exp $ */
 /* #ident	"@(#)win.h	26.43	93/06/28 SMI" */
 
 /*
@@ -118,6 +118,8 @@ typedef struct _windowstate {
 * Client structures
 ***************************************************************************/
 
+struct _clientColorInfo;
+
 /* a top-level client window */
 
 typedef struct _client
@@ -152,7 +154,7 @@ typedef struct _client
 	Bool		isShaped;
 #endif
 	Bool		menuAccelerators;
-	void *client_colors; /* non-NULL only for group leaders */
+	struct _clientColorInfo *client_colors; /* non-NIL only for group leaders */
 	Window color_master; /* non-NULL only for popups with _OL_COLOR_FOLLOW */
 } Client;
 
