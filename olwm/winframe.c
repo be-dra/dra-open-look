@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.9 2026/02/28 13:42:41 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.11 2026/06/02 21:02:32 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -435,52 +435,50 @@ static void eventLeaveNotify(Display *dpy, XEvent *event, WinPaneFrame *frameInf
 /*
  * drawHeaderBusy3D - draw header in busy state (3D mode)
  */
-static void
-drawHeaderBusy3D(dpy, win, cli, sel)
-    Display *dpy;
-    WinPaneFrame *win;
-    Client *cli;
-    Bool sel;
+static void drawHeaderBusy3D(Display *dpy, WinPaneFrame *win, Client *cli,
+								Bool sel)
 {
 	Window self = win->core.self;
 	int w = win->core.width;
 	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
 	int armh = ResizeArm_Height(gisNormal);
 	int armw = ResizeArm_Width(gisNormal);
+	int rw = w - 2 * armw;
 
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), armw, armh, 
-		w-2*armw, heightTopFrame(win)-armh);
+		rw, heightTopFrame(win)-armh);
 	XFillRectangle(dpy, self, WinGC(win,BUSY_GC), armw, armh, 
-		w-2*armw, heightTopFrame(win)-armh);
+		rw, heightTopFrame(win)-armh);
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
-		win->titley, 0, OLGX_NORMAL | TextOLGX);
+		win->titley, rw - win->titleOff,
+		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 	if (GRV.BoldFontEmulation)
 	    olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1,
-			   win->titley, 0, OLGX_NORMAL | TextOLGX);
+			   win->titley, rw - win->titleOff,
+			   OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 }
 
 
 /*
  * drawHeaderBusy2D - draw header in busy state (2D mode)
  */
-static void
-drawHeaderBusy2D(dpy, win, cli, sel)
-    Display *dpy;
-    WinPaneFrame *win;
-    Client *cli;
-    Bool sel;
+static void drawHeaderBusy2D(Display *dpy, WinPaneFrame *win, Client *cli,
+							Bool sel)
 {
 	Window self = win->core.self;
 	int w = win->core.width;
-	int armh = ResizeArm_Height(WinGI(win,NORMAL_GINFO));
-	int armw = ResizeArm_Width(WinGI(win,NORMAL_GINFO));
+	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
+	int armh = ResizeArm_Height(gisNormal);
+	int armw = ResizeArm_Width(gisNormal);
+	int rw = w - 2 * armw;
 
 	/* fill in frame-colored area below titlebar */
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), armw, armh, 
-		w-2*armw, heightTopFrame(win)-armh);
+		rw, heightTopFrame(win)-armh);
 	XFillRectangle(dpy, self, WinGC(win,BUSY_GC), armw, armh, 
-		w-2*armw, heightTopFrame(win)-armh);
+		rw, heightTopFrame(win)-armh);
 
+#ifdef OLD_STUFF
 	/* fill in window name in titlebar */
 	DrawText(dpy,self,TitleFont,WinGC(win,FOREGROUND_GC),
 		 win->titlex, win->titley,
@@ -492,23 +490,31 @@ drawHeaderBusy2D(dpy, win, cli, sel)
 			 win->titlex + 1, win->titley,
 			 win->fcore.name, win->nameLength);
 	}
+#else /* OLD_STUFF */
+	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
+		win->titley, rw - win->titleOff,
+		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
+	if (GRV.BoldFontEmulation) {
+		olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1, 
+			win->titley, rw - win->titleOff,
+			OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
+	}
+#endif /* OLD_STUFF */
 }
 
 
 /*
  * drawHeaderBar3D - draw the header, with indented focus bar (3D mode)
  */
-static void
-drawHeaderBar3D(dpy, win, cli, sel)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
-Bool sel;
+static void drawHeaderBar3D(Display *dpy, WinPaneFrame *win, Client *cli,
+								Bool sel)
 {
 	Window self = win->core.self;
 	int w = win->core.width;
 	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
 	int armh = ResizeArm_Height(gisNormal);
+	int armw = ResizeArm_Width(gisNormal);
+	int rw = w - 2 * armw;
 
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), 
 		widthLeftFrame(win), heightTopFrame(win)-armh, 
@@ -520,22 +526,20 @@ Bool sel;
 		OLGX_INVOKED, True);
 
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
-		win->titley, 0, OLGX_INVOKED | TextOLGX);
+		win->titley, rw - win->titleOff,
+		OLGX_INVOKED | OLGX_MORE_ARROW | TextOLGX);
 	if (GRV.BoldFontEmulation)
 	    olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1,
-			   win->titley, 0, OLGX_NORMAL | TextOLGX);
+			   win->titley, rw - win->titleOff,
+			   OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 }
 
 
 /*
  * drawHeaderLines3D - draw the header, with two focus lines (3D mode)
  */
-static void
-drawHeaderLines3D(dpy, win, cli, sel)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
-Bool sel;
+static void drawHeaderLines3D(Display *dpy, WinPaneFrame *win, Client *cli,
+								Bool sel)
 {
 	Window self = win->core.self;
 	int outlinewidth = sel?FRAME_SELECTED_WIDTH:FRAME_OUTLINE_WIDTH;
@@ -543,6 +547,7 @@ Bool sel;
 	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
 	int armh = ResizeArm_Height(gisNormal);
 	int armw = ResizeArm_Width(gisNormal);
+	int rw = w - 2 * armw;
 	int lineleft, linelen;
 static	Bool chiseledFocusLines = False;
 
@@ -550,11 +555,13 @@ static	Bool chiseledFocusLines = False;
 		w-2*armw, heightTopFrame(win)-armh);
 
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
-		win->titley, 0, OLGX_NORMAL | TextOLGX);
+		win->titley, rw - win->titleOff,
+		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 
 	if (GRV.BoldFontEmulation)
 	    olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1,
-			   win->titley, 0, OLGX_NORMAL | TextOLGX);
+			   win->titley, rw - win->titleOff,
+			   OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 
 	if (cli->wmDecors->flags & WMDecorationResizeable) {
 	    lineleft = Resize_width + 1;
@@ -586,43 +593,41 @@ static	Bool chiseledFocusLines = False;
 /*
  * drawHeaderNoFocus3D - draw the header, without focus (3D mode)
  */
-static void
-drawHeaderNoFocus3D(dpy, win, cli, sel)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
-Bool sel;
+static void drawHeaderNoFocus3D(Display *dpy, WinPaneFrame *win, Client *cli,
+								Bool sel)
 {
 	Window self = win->core.self;
 	int w = win->core.width;
 	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
 	int armh = ResizeArm_Height(gisNormal);
 	int armw = ResizeArm_Width(gisNormal);
+	int rw = w - 2 * armw;
 
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), armw, armh, 
 		w-2*armw, heightTopFrame(win)-armh);
 
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
-		win->titley, 0, OLGX_NORMAL | TextOLGX);
+		win->titley, rw - win->titleOff,
+		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 	if (GRV.BoldFontEmulation)
 	    olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1,
-			   win->titley, 0, OLGX_NORMAL | TextOLGX);
+			   win->titley, rw - win->titleOff,
+			   OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 }
 
 
 /* 
  * drawHeaderBar2D - draw the header, with inverted focus bar (2D mode)
  */
-static void
-drawHeaderBar2D(dpy, win, cli, sel)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
-Bool sel;
+static void drawHeaderBar2D(Display *dpy, WinPaneFrame *win, Client *cli,
+								Bool sel)
 {
 	Window self = win->core.self;
 	int w = win->core.width;
-	int armh = ResizeArm_Height(WinGI(win,NORMAL_GINFO));
+	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
+	int armh = ResizeArm_Height(gisNormal);
+	int armw = ResizeArm_Width(gisNormal);
+	int rw = w - 2 * armw;
 
 	/* draw frame-colored rectangle below titlebar box */
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), 
@@ -637,6 +642,7 @@ Bool sel;
 		w-widthLeftFrame(win)-widthRightFrame(win), 
 		heightTopFrame(win)-(2*armh)+1);
 
+#ifdef OLD_STUFF
 	/* fill in window name */
 	DrawText(dpy,self,TitleFont,WinGC(win,WINDOW_GC),
 		 win->titlex, win->titley,
@@ -648,18 +654,24 @@ Bool sel;
 			 win->titlex + 1, win->titley,
 			 win->fcore.name, win->nameLength);
 	}
+#else /* OLD_STUFF */
+	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
+		win->titley, rw - win->titleOff,
+		OLGX_INVOKED | OLGX_MORE_ARROW | TextOLGX);
+	if (GRV.BoldFontEmulation) {
+		olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1, 
+			win->titley, rw - win->titleOff,
+			OLGX_INVOKED | OLGX_MORE_ARROW | TextOLGX);
+	}
+#endif /* OLD_STUFF */
 }
 
 
 /*
  * drawHeaderLines2D - draw the header, with focus lines (2D mode)
  */
-static void
-drawHeaderLines2D(dpy, win, cli, sel)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
-Bool sel;
+static void drawHeaderLines2D(Display *dpy, WinPaneFrame *win, Client *cli,
+								Bool sel)
 {
 	Window 	self = win->core.self;
 	int 	outlinewidth = sel?FRAME_SELECTED_WIDTH:FRAME_OUTLINE_WIDTH;
@@ -668,11 +680,13 @@ Bool sel;
 	int 	armh = ResizeArm_Height(gisNormal);
 	int 	armw = ResizeArm_Width(gisNormal);
 	GC	foregroundGC = WinGC(win,FOREGROUND_GC);
+	int rw = w - 2 * armw;
 
 	/* fill in frame-colored area below titlebar area */
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), armw, armh, 
 		w-2*armw, heightTopFrame(win)-armh);
 
+#ifdef OLD_STUFF
 	/* fill in window name */
 	DrawText(dpy,self,TitleFont,foregroundGC,
 		 win->titlex, win->titley,
@@ -684,6 +698,16 @@ Bool sel;
 			 win->titlex + 1, win->titley,
 			 win->fcore.name, win->nameLength);
 	}
+#else /* OLD_STUFF */
+	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
+		win->titley, rw - win->titleOff,
+		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
+	if (GRV.BoldFontEmulation) {
+		olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1, 
+			win->titley, rw - win->titleOff,
+			OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
+	}
+#endif /* OLD_STUFF */
 
 	/* draw 2 pixel tall black focus indicator line above titlebar area 
 	 * (without overwriting the resize corners)
@@ -707,23 +731,22 @@ Bool sel;
 /*
  * drawHeaderNoFocus2D - draw the header, without focus (2D mode)
  */
-static void
-drawHeaderNoFocus2D(dpy, win, cli, sel)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
-Bool sel;
+static void drawHeaderNoFocus2D(Display *dpy, WinPaneFrame *win, Client *cli,
+									Bool sel)
 {
 	Window 	self = win->core.self;
 	int 	w = win->core.width;
-	int 	armh = ResizeArm_Height(WinGI(win,NORMAL_GINFO));
-	int 	armw = ResizeArm_Width(WinGI(win,NORMAL_GINFO));
+	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
+	int 	armh = ResizeArm_Height(gisNormal);
+	int 	armw = ResizeArm_Width(gisNormal);
+	int rw = w - 2 * armw;
 	GC	foregroundGC = WinGC(win,FOREGROUND_GC);
 
 	/* fill in frame-colored area below titlebar */
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), armw, armh, 
-		w-2*armw, heightTopFrame(win)-armh);
+		rw, heightTopFrame(win)-armh);
 
+#ifdef OLD_STUFF
 	/* fill in window name */
 	DrawText(dpy,self,TitleFont,foregroundGC,
 		 win->titlex, win->titley,
@@ -735,16 +758,23 @@ Bool sel;
 			 win->titlex + 1, win->titley,
 			 win->fcore.name, win->nameLength);
 	}
+#else /* OLD_STUFF */
+
+	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
+		win->titley, rw - win->titleOff,
+		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
+	if (GRV.BoldFontEmulation) {
+		olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex+1, 
+			win->titley, rw - win->titleOff,
+			OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
+	}
+#endif /* OLD_STUFF */
 }
 
 
 /* drawFooter - draw the footer
  */
-static void
-drawFooter(dpy, win, cli)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
+static void drawFooter(Display *dpy, WinPaneFrame *win, Client *cli)
 {
 	Window 	self = win->core.self;
 	int 	w = win->core.width;
@@ -1278,58 +1308,60 @@ int wid,high;
  */
 static void setTitleText(Display *dpy, WinPaneFrame *w, Window panewin)
 {
-	int 		availwidth;
-	Text 		*ptr, *tmp;
+	int availwidth;
+	Text *ptr, *tmp;
 
-        /* 	
+	/*  
 	 * Get window name
 	 */
 
 	if (w->fcore.name)
 		MemFree(w->fcore.name);
 
-	if (!PropGetWMName(dpy,panewin,&(w->fcore.name))) {
-	    w->fcore.name = MemNewText(GRV.DefaultWinName);
+	if (!PropGetWMName(dpy, panewin, &(w->fcore.name))) {
+		w->fcore.name = MemNewText(GRV.DefaultWinName);
 	}
 
 	w->nameLength = TextLen(w->fcore.name);
-	w->nameWidth = FontWidth(TitleFont,w->fcore.name,w->nameLength);
+	w->nameWidth = FontWidth(TitleFont, w->fcore.name, w->nameLength);
 
 	availwidth = w->core.width - widthRightFrame(w) - w->titleOff;
-	availwidth = MAX(0,availwidth);
+	availwidth = MAX(0, availwidth);
 
-        if (availwidth < w->nameWidth)
-        {
-                /* Must truncate the title.
-                 * First we see if there is a colon and truncate
-                 * all the chars up to the colon.
-                 */
-                if ((ptr = TextChr(w->fcore.name, ':')))
-                {
-                        ptr++; /* after ':' */
-                        w->nameLength -= ptr - w->fcore.name;
-			tmp = w->fcore.name;
-                        w->fcore.name = MemNewText(ptr);
-			MemFree(tmp);
-                        w->nameWidth = FontWidth(TitleFont,
-						 w->fcore.name,w->nameLength);
-                }
-        }
+	if (availwidth < w->nameWidth) {
+		/* first see whether there is a dash in the title */
+		if ((ptr = TextChr(w->fcore.name, '-'))) {
+			/* this is probably a base window - we do **not** truncate */
+		}
+		else {
+			/* Must truncate the title.
+			 * First we see if there is a colon and truncate
+			 * all the chars up to the colon.
+			 */
+			if ((ptr = TextChr(w->fcore.name, ':'))) {
+				ptr++;	/* after ':' */
+				w->nameLength -= ptr - w->fcore.name;
+				tmp = w->fcore.name;
+				w->fcore.name = MemNewText(ptr);
+				MemFree(tmp);
+				w->nameWidth = FontWidth(TitleFont, w->fcore.name,
+												w->nameLength);
+			}
+		}
+	}
 
-        while (availwidth < w->nameWidth)
-        {
-                /* Truncate the title from the right. */
-                w->fcore.name[TextLen(w->fcore.name) - 1] = '\0';
-                w->nameLength--;
-                w->nameWidth = FontWidth(TitleFont,
-						 w->fcore.name,w->nameLength);
-        }
+	while (availwidth < w->nameWidth) {
+		/* Truncate the title from the right. */
+		w->fcore.name[TextLen(w->fcore.name) - 1] = '\0';
+		w->nameLength--;
+		w->nameWidth = FontWidth(TitleFont, w->fcore.name, w->nameLength);
+	}
 
 
-        /* Center that title. */
-        w->titlex = w->titleOff + (availwidth - w->nameWidth)/2;
-        w->titley = FontAscent(TitleFont)
-		    + ResizeArm_Height(WinGI(w,NORMAL_GINFO));
+	/* Center that title. */
+	w->titlex = w->titleOff + (availwidth - w->nameWidth) / 2;
+	w->titley = FontAscent(TitleFont)
+			+ ResizeArm_Height(WinGI(w, NORMAL_GINFO));
 }
 
 /*
