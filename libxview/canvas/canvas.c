@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.10 2026/04/19 06:56:55 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.11 2026/06/15 16:46:39 dra Exp $ ";
 #endif
 #endif
 
@@ -761,6 +761,11 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 		case WIN_RESIZE:
 			/* scrollbars have already been updated */
 			/* tell the client the paint window changed size */
+			/* in fact, this WIN_RESIZE does NOT always mean that the size has
+			 * changed. WIN_RESIZE is the 'translation' of ConfigureNotify,
+			 * but a ConfigureNotify will also be received when the 
+			 * paint window is MOVED, e.g. as a result of a scrolbar action
+			 */
 			canvas_inform_resize(canvas);
 			break;
 
