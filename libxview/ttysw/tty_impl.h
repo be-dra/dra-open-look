@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.34 2026/01/11 09:52:50 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.35 2026/06/22 09:06:37 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -66,7 +66,7 @@ struct cbuf {
     CHAR               *cb_rbp;    /* read pointer */
     CHAR               *cb_wbp;    /* write pointer */
     CHAR               *cb_ebp;    /* end of buffer */
-    CHAR                cb_buf[2048];
+    CHAR                cb_buf[8192];
 };
 
 struct input_cbuf {
