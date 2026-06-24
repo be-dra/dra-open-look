@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.11 2026/03/31 17:52:33 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.13 2026/06/23 19:23:38 dra Exp $";
 #endif
 #endif
 
@@ -63,6 +63,7 @@ typedef struct {
     _xv_string_attr_dup_t  string;	/* text cursor string */
 #endif
     Cursor_type	    type;		/* pixmap, glyph or text cursor */
+	int use_std_cursor_font;
 } Cursor_info;
 
 #define CURSOR_PRIVATE(cursor_public)	\
@@ -229,6 +230,9 @@ static Xv_opaque cursor_get_internal(Xv_Cursor cursor_public, int *status,
 		case CURSOR_BACKGROUND_COLOR:
 			return ((Xv_opaque) & cursor->bg);
 
+		case CURSOR_USE_STD_FONT:
+			return (Xv_opaque)cursor->use_std_cursor_font;
+
 		default:
 			if (xv_check_bad_attr(CURSOR, which_attr) == XV_ERROR) {
 				*status = XV_ERROR;
@@ -238,28 +242,36 @@ static Xv_opaque cursor_get_internal(Xv_Cursor cursor_public, int *status,
 
 }
 
-static unsigned long cursor_make_x_font(Xv_Drawable_info *root_info, unsigned int src_char, unsigned int mask_char, XColor *xfg, XColor *xbg)
+static unsigned long cursor_make_x_font(Xv_Drawable_info *root_info,
+				unsigned int src_char, unsigned int mask_char,
+				XColor *xfg, XColor *xbg, int use_x11_cursor_font)
 {
-    Display        *display = xv_display(root_info);
-    Font            x_cursor_font;
-    Xv_Font         xview_cursor_font;
+	Display *display = xv_display(root_info);
+	Font x_cursor_font;
+	Xv_Font xview_cursor_font;
 
-    xview_cursor_font = (Xv_Font) xv_find(xv_server(root_info), FONT,
-					  FONT_FAMILY, FONT_FAMILY_OLCURSOR,
-					  FONT_TYPE, FONT_TYPE_CURSOR,
-					  NULL);
-    if (!xview_cursor_font)
-	xv_error(XV_NULL,
-		 ERROR_STRING, 
-		 XV_MSG("Unable to find OPEN LOOK cursor font"),
-		 ERROR_PKG, CURSOR,
-		 NULL);
-    x_cursor_font = (Font) xv_get(xview_cursor_font, XV_XID);
-    if (mask_char == 0) {
-	mask_char = src_char;
-    }
-    return (XCreateGlyphCursor(display, x_cursor_font, x_cursor_font,
-		src_char, mask_char, xfg, xbg));
+	if (use_x11_cursor_font) {
+		xview_cursor_font = xv_find(xv_server(root_info), FONT,
+										FONT_NAME, "cursor",
+										NULL);
+	}
+	else {
+		xview_cursor_font = xv_find(xv_server(root_info), FONT,
+										FONT_FAMILY, FONT_FAMILY_OLCURSOR,
+										FONT_TYPE, FONT_TYPE_CURSOR,
+										NULL);
+		if (!xview_cursor_font)
+			xv_error(XV_NULL,
+					ERROR_STRING,XV_MSG("Unable to find OPEN LOOK cursor font"),
+					ERROR_PKG, CURSOR,
+					NULL);
+	}
+	x_cursor_font = (Font) xv_get(xview_cursor_font, XV_XID);
+	if (mask_char == 0) {
+		mask_char = src_char;
+	}
+	return (XCreateGlyphCursor(display, x_cursor_font, x_cursor_font,
+					src_char, mask_char, xfg, xbg));
 }
 
 /* returns XV_OK or XV_ERROR */
@@ -336,7 +348,7 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 
 		cursor->cursor_id = cursor_make_x_font(root_info,
 				(unsigned int)OLC_COPY_PTR, (unsigned int)OLC_COPY_PTR + 1,
-				&xfg, &xbg);
+				&xfg, &xbg, cursor->use_std_cursor_font);
 		return XV_OK;
 	}
 
@@ -713,6 +725,11 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 				ATTR_CONSUME(avlist[0]);
 				break;
 
+			case CURSOR_USE_STD_FONT:
+				cursor->use_std_cursor_font = (int)arg1;
+				ATTR_CONSUME(avlist[0]);
+				break;
+
 			case XV_COPY_OF:
 				dirty = TRUE;
 				break;
@@ -757,7 +774,8 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 	if (cursor->cur_src_char != NOFONTCURSOR) {
 		cursor->cursor_id = cursor_make_x_font(root_info,
 				(unsigned int)cursor->cur_src_char,
-				(unsigned int)cursor->cur_mask_char, &xfg, &xbg);
+				(unsigned int)cursor->cur_mask_char,
+				&xfg, &xbg, cursor->use_std_cursor_font);
 	}
 	else {
 		pr = cursor->cur_shape;
