@@ -1,4 +1,4 @@
-/*	@(#)cursor.h 20.36 93/06/28 SMI DRA: RCS  $Id: cursor.h,v 2.3 2025/03/08 13:28:12 dra Exp $	*/
+/*	@(#)cursor.h 20.36 93/06/28 SMI DRA: RCS  $Id: cursor.h,v 2.5 2026/06/23 19:23:38 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -231,6 +231,7 @@ typedef enum {
 #endif
     CURSOR_XHOT			= CURSOR_ATTR(ATTR_INT,		 	20),
     CURSOR_YHOT			= CURSOR_ATTR(ATTR_INT,		 	25),
+	CURSOR_USE_STD_FONT = CURSOR_ATTR(ATTR_BOOLEAN,     26),
 	/*
 	 * OPEN LOOK cursors.  Used as index to XV_KEY_DATA on server.
 	 */
