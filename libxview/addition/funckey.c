@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.24 2026/02/01 18:18:19 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.25 2026/06/25 20:30:10 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -41,7 +41,6 @@ typedef void (*copy_func_t)(Function_keys, Funckey_descr_t *src,
 									Funckey_descr_t *target);
 typedef int (*verify_func_t)(Function_keys, Xv_opaque data,
 									Proplist_verify_op op, Xv_opaque orig);
-typedef void (*funckey_function_t)(Xv_opaque, Event *, Xv_opaque);
 /* can be used with a PANEL_BUTTON's notify proc: */
 typedef void (*funckey_pfunction_t)(Xv_opaque, Event *, Xv_opaque);
 /* can be used with a MENU_NOTIFY_PROC: */
