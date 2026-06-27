@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.12 2026/04/20 19:33:37 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.13 2026/06/26 11:55:00 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -64,6 +64,7 @@ typedef struct {
 	char delimtab[256];   /* TRUE= character is a word delimiter */
 	XFontStruct *fs;
 	Xv_opaque client_data;
+	Xv_opaque client_item;
 	int full_startx;
 	int full_endx;
 	char seltext[MAX_SELECTED];
@@ -338,6 +339,16 @@ static void select_start(Quick_private_t *priv, char *s, int sx, int ex)
 	SERVERTRACE((300, "%s\n", __FUNCTION__));
 }
 
+static void select_cancel(Quick_private_t *priv)
+{
+	SERVERTRACE((300, "%s\n", __FUNCTION__));
+	priv->full_startx = priv->full_endx = -1;
+	priv->full_text[0] = '\0';
+	if (priv->remove_underline) {
+		priv->remove_underline(QUICKPUB(priv));
+	}
+}
+
 static void quick_select_down(Quick_private_t *priv, Event *ev)
 {
 	int save_startx = priv->startx, save_endx = priv->endx;
@@ -551,6 +562,10 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 				select_start(priv, (char *)A1, (int)A2, (int)A3);
 				ADONE;
 
+			case QUICK_CANCEL:
+				select_cancel(priv);
+				ADONE;
+
 			case QUICK_BASELINE: priv->baseline = (int)A1; ADONE;
 			case QUICK_FONTINFO: priv->fs = (XFontStruct *)A1; ADONE;
 			case QUICK_CLIENT_DATA_SIZE:
@@ -579,6 +594,10 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 				quick_adjust_up(priv, (Event *)A1);
 				ADONE;
 
+			case QUICK_CLIENT_ITEM: 
+				priv->client_item = (Xv_opaque)A1;
+				ADONE;
+
 			case XV_END_CREATE:
 				xv_set(self, 
 					SEL_RANK, XA_SECONDARY,
@@ -601,6 +620,7 @@ static Xv_opaque quick_get(Quick_owner self, int *status, Attr_attribute attr,
 	switch (attr) {
 		case QUICK_NEED_START: return (Xv_opaque)(priv->full_text[0] == '\0');
 		case QUICK_BASELINE: return (Xv_opaque)priv->baseline;
+		case QUICK_CLIENT_ITEM: return priv->client_item;
 		case QUICK_CLIENT_DATA: return (Xv_opaque)priv->client_data;
 		case QUICK_REMOVE_UNDERLINE_PROC:
 			return (Xv_opaque)priv->remove_underline;
