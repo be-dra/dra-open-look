@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.36 2026/04/12 20:40:07 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.38 2026/06/27 03:49:46 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -480,11 +480,15 @@ extern char *xv_app_name;
 static void q_remove_underline(Quick_owner qo)
 {
 	quick_data_t *qd = (quick_data_t *)xv_get(qo, QUICK_CLIENT_DATA);
-	Item_info *priv = qd->priv;
 	Xv_window panel = xv_get(qo, XV_OWNER);
 	Xv_Drawable_info *info;
-	Rect *r = &priv->label_rect;
+	Item_info *priv = qd->priv;
+	Rect *r;
 
+	if (! priv) {
+		return;
+	}
+	r = &priv->label_rect;
 	DRAWABLE_INFO_MACRO(panel, info);
 	/* the following panel_redisplay_item seems to keep the underline
 	 * untouched...
@@ -535,7 +539,15 @@ static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 	Panel pan = xv_get(item, XV_OWNER);
 
 	qo = xv_get(pan, XV_KEY_DATA,quick_dupl_key);
-	if (! qo) {
+	if (qo) {
+		/* do we have a QUICK_CLIENT_ITEM ? */
+		Panel_item q_item = xv_get(qo, QUICK_CLIENT_ITEM);
+		if (q_item != item) {
+			xv_set(qo, QUICK_CANCEL, NULL);
+			/* now, QUICK_NEED_START returns TRUE */
+		}
+	}
+	else {
 		qo = xv_create(pan, QUICK_OWNER,
 				QUICK_REMOVE_UNDERLINE_PROC, q_remove_underline,
 				QUICK_CLIENT_DATA_SIZE, sizeof(quick_data_t),
@@ -556,10 +568,12 @@ static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 		s = image_string(&ip->label);
 		sx = ip->label_rect.r_left;
 		ex = rect_right(&ip->label_rect);
-		/* this is 0 for PANEL_BUTTONS */
+		/* this is 0 for PANEL_BUTTONs but also for PANEL_MESSAGEs */
 		if (ip->value_rect.r_width == 0) {
-			sx += ButtonEndcap_Width(ip->value_ginfo);
-			ex += ButtonEndcap_Width(ip->value_ginfo);
+			if (xv_get(item, XV_IS_SUBTYPE_OF, PANEL_BUTTON)) {
+				sx += ButtonEndcap_Width(ip->value_ginfo);
+				ex += ButtonEndcap_Width(ip->value_ginfo);
+			}
 		}
 
 		xv_set(qo,
@@ -567,10 +581,27 @@ static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 						(int)xv_get(item, PANEL_ITEM_LABEL_BASELINE)+2,
 			QUICK_FONTINFO, get_fontstruct(ip),
 			QUICK_START, s, sx, ex,
+			QUICK_CLIENT_ITEM, item,
 			NULL);
 	}
 
 	xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
+}
+
+static int check_and_start_quick_dup(Panel_item item, Event *ev)
+{
+	Item_info *ip = ITEM_PRIVATE(item);
+
+	if (ip->label.im_type != PIT_STRING) return FALSE;
+
+	if (! rect_includespoint(&ip->label_rect,
+							event_x(ev),event_y(ev)))
+	{
+		return FALSE;
+	}
+
+	start_quick_dup(item, ip, ev);
+	return TRUE;
 }
 
 static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
@@ -579,37 +610,42 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 	quick_data_t *qd;
 	Item_info *ip;
 	Panel pan;
+	Panel_item q_item;
 
 	if (! item) return FALSE;
 
 	switch (event_action(ev)) {
 		case ACTION_SELECT:
+			SERVERTRACE((300, "%s ACTION_SELECT\n", __FUNCTION__));
 			if (! quick_dupl_key) quick_dupl_key = xv_unique_key();
 
 			if (! event_is_quick_duplicate(ev)) return FALSE;
 			if (! event_is_down(ev)) return TRUE;
 
-			ip = ITEM_PRIVATE(item);
-			if (ip->label.im_type != PIT_STRING) return FALSE;
-
-			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
-				return FALSE;
-			}
-
-			start_quick_dup(item, ip, ev);
-			return TRUE;
+			return check_and_start_quick_dup(item, ev);
 
 		case LOC_DRAG:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
 			if (! quick_dupl_key) return TRUE;
 
+			pan = xv_get(item, XV_OWNER);
+			qo = xv_get(pan, XV_KEY_DATA, quick_dupl_key);
+			if (! qo) {
+				xv_set(pan, WIN_ALARM, NULL);
+				return TRUE;
+			}
+			/* do we have a QUICK_CLIENT_ITEM ? */
+			q_item = xv_get(qo, QUICK_CLIENT_ITEM);
+			if (q_item != item) {
+				xv_set(qo, QUICK_CANCEL, NULL);
+				xv_set(qo, QUICK_CLIENT_ITEM, XV_NULL, NULL);
+				return TRUE;
+			}
 			ip = ITEM_PRIVATE(item);
 			if (ip->label.im_type != PIT_STRING) return FALSE;
 			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
 				return FALSE;
 			}
-			qo = xv_get(xv_get(item, XV_OWNER), XV_KEY_DATA,quick_dupl_key);
-			if (! qo) return TRUE;
 			if (! xv_get(qo, SEL_OWN)) return TRUE;
 			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
 			return TRUE;
@@ -620,16 +656,24 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 				xv_set(event_window(ev), WIN_ALARM, NULL);
 				return TRUE;
 			}
-			ip = ITEM_PRIVATE(item);
-			if (ip->label.im_type != PIT_STRING) return FALSE;
-			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
-				return FALSE;
-			}
 			pan = xv_get(item, XV_OWNER);
 			qo = xv_get(pan, XV_KEY_DATA, quick_dupl_key);
 			if (! qo) {
 				xv_set(pan, WIN_ALARM, NULL);
 				return TRUE;
+			}
+			/* do we have a QUICK_CLIENT_ITEM ? */
+			q_item = xv_get(qo, QUICK_CLIENT_ITEM);
+			if (q_item != item) {
+				xv_set(qo, QUICK_CANCEL, NULL);
+				xv_set(qo, QUICK_CLIENT_ITEM, XV_NULL, NULL);
+				return TRUE;
+			}
+
+			ip = ITEM_PRIVATE(item);
+			if (ip->label.im_type != PIT_STRING) return FALSE;
+			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
+				return FALSE;
 			}
 			if (event_is_down(ev)) {
 				if (! xv_get(qo, SEL_OWN)) xv_set(pan, WIN_ALARM, NULL);
