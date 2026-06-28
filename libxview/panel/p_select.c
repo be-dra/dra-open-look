@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.38 2026/06/27 03:49:46 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.39 2026/06/27 18:19:17 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -627,6 +627,11 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 		case LOC_DRAG:
 			if (! event_is_quick_duplicate(ev)) return FALSE;
 			if (! quick_dupl_key) return TRUE;
+			ip = ITEM_PRIVATE(item);
+			if (ip->label.im_type != PIT_STRING) return FALSE;
+			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
+				return FALSE;
+			}
 
 			pan = xv_get(item, XV_OWNER);
 			qo = xv_get(pan, XV_KEY_DATA, quick_dupl_key);
@@ -640,11 +645,6 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 				xv_set(qo, QUICK_CANCEL, NULL);
 				xv_set(qo, QUICK_CLIENT_ITEM, XV_NULL, NULL);
 				return TRUE;
-			}
-			ip = ITEM_PRIVATE(item);
-			if (ip->label.im_type != PIT_STRING) return FALSE;
-			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
-				return FALSE;
 			}
 			if (! xv_get(qo, SEL_OWN)) return TRUE;
 			xv_set(qo, QUICK_LOC_DRAG, ev, NULL);
@@ -656,6 +656,12 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 				xv_set(event_window(ev), WIN_ALARM, NULL);
 				return TRUE;
 			}
+			ip = ITEM_PRIVATE(item);
+			if (ip->label.im_type != PIT_STRING) return FALSE;
+			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
+				return FALSE;
+			}
+
 			pan = xv_get(item, XV_OWNER);
 			qo = xv_get(pan, XV_KEY_DATA, quick_dupl_key);
 			if (! qo) {
@@ -670,11 +676,6 @@ static int is_quick_duplicate_on_label(Panel_item item, Event *ev)
 				return TRUE;
 			}
 
-			ip = ITEM_PRIVATE(item);
-			if (ip->label.im_type != PIT_STRING) return FALSE;
-			if (! rect_includespoint(&ip->label_rect,event_x(ev),event_y(ev))) {
-				return FALSE;
-			}
 			if (event_is_down(ev)) {
 				if (! xv_get(qo, SEL_OWN)) xv_set(pan, WIN_ALARM, NULL);
 				return TRUE;
