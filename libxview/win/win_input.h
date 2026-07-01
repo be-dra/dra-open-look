@@ -1,4 +1,4 @@
-/*      @(#)win_input.h  20.55  93/06/28  SMI  DRA: $Id: win_input.h,v 4.5 2025/04/29 04:59:10 dra Exp $   */
+/*      @(#)win_input.h  20.55  93/06/28  SMI  DRA: $Id: win_input.h,v 4.6 2026/06/30 12:47:59 dra Exp $   */
   
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -583,7 +583,11 @@ typedef	struct	inputevent {
 	short	ie_code;		/* input code */
 	short	ie_flags;
 	short	ie_shiftmask;		/* input code shift state */
+#ifdef BEFORE_2026_06_30
 	short	ie_locx, ie_locy;	/* locator (usually a mouse) position */
+#else
+	int		ie_locx, ie_locy;	/* locator (usually a mouse) position */
+#endif
 	struct	timeval ie_time;	/* time of event */
 	short	action;			/* keymapped version of ie_code */
 	Xv_object	ie_win; 	/* window the event is directed to */
