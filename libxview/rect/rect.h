@@ -1,4 +1,4 @@
-/*	@(#)rect.h 20.20 93/06/28 SMI DRA: $Id: rect.h,v 4.2 2024/03/28 18:25:40 dra Exp $	*/
+/*	@(#)rect.h 20.20 93/06/28 SMI DRA: $Id: rect.h,v 4.3 2026/06/30 11:02:30 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -36,7 +36,14 @@
 #ifndef xv_size_t
 /* strange: SEGFAULT in TERMSW... */
 /* #    define xv_size_t	int */
+#  ifdef BEFORE_2026_06_30
 #    define xv_size_t	short
+#  else
+     /* we had a problem when we had a CANVAS where the CANVAS_HEIGHT
+	  * became e.g. 50000. As a short, this is negative....
+	  */
+#    define xv_size_t	int
+#  endif
 #endif
 
 /*
