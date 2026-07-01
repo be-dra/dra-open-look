@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.11 2026/06/15 16:46:39 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.12 2026/06/30 11:35:24 dra Exp $ ";
 #endif
 #endif
 
@@ -10,8 +10,8 @@ static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.
  *	file for terms of the license.
  */
 
+#include <assert.h>
 #define xview_other_rl_funcs 1
-/* #include <xview_private/cnvs_impl.h> */
 #include <xview_private/draw_impl.h> 
 #include <xview_private/scrn_impl.h>
 #include <xview_private/svr_impl.h>
@@ -201,7 +201,8 @@ static void canvas_view_maxsize(Canvas_info *canvas, int *view_width,
 	OPENWIN_END_EACH
 }
 
-static void canvas_set_paint_window_size(Canvas_info *canvas, int width, int height)
+static void canvas_set_paint_window_size(Canvas_info *canvas, int width,
+															int height)
 {
     Canvas	    canvas_public = CANVAS_PUBLIC(canvas);
     Xv_Window       paint_window;
@@ -295,6 +296,10 @@ static void canvas_resize_paint_window(Canvas_info *canvas, int width, int heigh
 	width = MAX(width, canvas->min_paint_width);
 	height = MAX(height, canvas->min_paint_height);
 
+	/* we encountered this when Rect contained "short r_height"
+	 * and a CANVAS_HEIGHT became more that 32767 .....
+	 */
+	assert(height > 0);
 	canvas_set_paint_window_size(canvas, width, height);
 }
 
