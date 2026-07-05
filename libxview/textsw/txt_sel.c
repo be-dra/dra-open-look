@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.26 2025/12/11 18:25:58 dra Exp $";
+char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.27 2026/07/04 17:13:13 dra Exp $";
 #endif
 
 /*
@@ -297,7 +297,7 @@ Pkg_private	void textsw_checkpoint_again(Textsw abstract)
     priv->state &= ~(TXTSW_AGAIN_HAS_FIND | TXTSW_AGAIN_HAS_MATCH);
 }
 
-static void extend_selbuffer(Textsw_private priv, int reqsize)
+static void extend_selbuffer(Textsw_private priv, size_t reqsize)
 {
 	if (reqsize > priv->bufsize) {
 		while (reqsize > priv->bufsize) priv->bufsize += 500;
@@ -1184,6 +1184,6 @@ Xv_public int textsw_get_primary_selection(Textsw tsw, char *buf, int maxlen,
 	if (last_plus_one) *last_plus_one = (Textsw_index)lpo;
 
 	strncpy(buf, (char *)xv_get(priv->sel_item[TSW_SEL_PRIMARY], SEL_DATA),
-							(size_t)(lpo - f));
+							(size_t)MIN(lpo - f, maxlen));
 	return lpo - f;
 }
