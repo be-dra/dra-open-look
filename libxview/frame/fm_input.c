@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.27 2026/04/17 08:43:08 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.28 2026/07/09 16:12:26 dra Exp $ ";
 #endif
 #endif
 
@@ -14,7 +14,7 @@ static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v
 #include <xview_private/draw_impl.h>
 #include <xview_private/svr_impl.h>
 #include <xview_private/win_info.h>
-#include <xview_private/xv_quick.h>
+#include <xview/xv_quick.h>
 #include <xview/notice.h>
 #include <xview/help.h>
 #include <xview/defaults.h>
