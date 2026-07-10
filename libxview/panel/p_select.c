@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.39 2026/06/27 18:19:17 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.40 2026/07/09 16:13:37 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -16,7 +16,7 @@ char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v
 #include <xview/help.h>
 #include <xview/defaults.h>
 #include <xview_private/svr_impl.h>
-#include <xview_private/xv_quick.h>
+#include <xview/xv_quick.h>
 
 extern int panel_item_destroy_flag;
 
