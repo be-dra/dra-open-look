@@ -2,7 +2,7 @@
 #define scrollw_h_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.4 2025/06/06 18:49:58 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.5 2026/07/10 21:55:39 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -69,6 +69,7 @@ typedef enum {
 	SCROLLWIN_SCALE_PERCENT   = SCROLL_ATTR(ATTR_INT, 1),           /* CSG */
 	SCROLLWIN_RESTRICT_PAN_PTR= SCROLL_ATTR(ATTR_BOOLEAN, 2),       /* CSG */
 	SCROLLWIN_TRIGGER_REPAINT = SCROLL_ATTR(ATTR_NO_VALUE, 3),      /* -S- */
+	SCROLLWIN_TRIGGER_REDRAW  = SCROLL_ATTR(ATTR_BOOLEAN, 8),       /* -S- */
 	SCROLLWIN_V_OBJECT_LENGTH = SCROLL_ATTR(ATTR_INT, 4),           /* CSG */
 	SCROLLWIN_H_OBJECT_LENGTH = SCROLL_ATTR(ATTR_INT, 5),           /* CSG */
 	SCROLLWIN_V_UNIT          = SCROLL_ATTR(ATTR_INT, 6),           /* CSG */
