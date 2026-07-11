@@ -35,7 +35,7 @@
 #include <olgx/olgx.h>
 #include <xview/win_notify.h>
 
-char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.8 2025/06/06 18:49:58 dra Exp $";
+char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.9 2026/07/10 21:55:58 dra Exp $";
 
 extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 
@@ -1476,6 +1476,14 @@ static Xv_opaque scrollwin_set(Scrollwin self, Attr_avlist avlist)
 					Scrollview_private *vp= VIEWPRIV(view);
 
 					pw_paint(vp->pwp, TRUE);
+				OPENWIN_END_EACH
+				ADONE;
+
+			case SCROLLWIN_TRIGGER_REDRAW:
+				OPENWIN_EACH_VIEW(self, view)
+					Scrollview_private *vp= VIEWPRIV(view);
+
+					pw_paint(vp->pwp, (int)A1);
 				OPENWIN_END_EACH
 				ADONE;
 
