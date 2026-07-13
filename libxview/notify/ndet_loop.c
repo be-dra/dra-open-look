@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.5 2025/03/29 21:08:56 dra Exp $ ";
+static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro DRA: $Id: ndet_loop.c,v 4.6 2026/07/12 10:51:20 dra Exp $ ";
 #endif
 #endif
 
@@ -29,8 +29,6 @@ static char     sccsid[] = "@(#)ndet_loop.c 20.36 93/06/28 Copyr 1985 Sun Micro 
 #endif  /* SVR4 */
 #include <stdio.h>		/* For temp debugging */
 #include <rpc/rpc.h>
-
-/* #define DRA_FIND_TIMER_BUG 1 */
 
 pkg_private_data u_int ndet_flags = 0;
 pkg_private_data NTFY_CLIENT *ndet_clients = 0;
@@ -651,10 +649,6 @@ static void ndet_update_itimer(NDET_ENUM_ITIMER *enum_itimer)
 		timerclear(&enum_itimer->min_tv);
 	}
 	process_itimer.it_value = enum_itimer->min_tv;
-#ifdef DRA_FIND_TIMER_BUG
-	fprintf(stderr, "%s: %s: val=%ld:%ld\n", xv_app_name, __FUNCTION__,
-			process_itimer.it_value.tv_sec, process_itimer.it_value.tv_usec);
-#endif /* DRA_FIND_TIMER_BUG */
 	n = setitimer(enum_itimer->which, &process_itimer,	/* SYSTEM CALL */
 			(struct itimerval *)0);
 	ntfy_assert(n == 0, 5 /* Unexpected error: setitimer */ );
