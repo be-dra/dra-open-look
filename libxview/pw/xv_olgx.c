@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.5 2025/02/12 16:55:05 dra Exp $";
+static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.6 2026/07/15 18:34:32 dra Exp $";
 #endif
 #endif
 
@@ -11,9 +11,7 @@ static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,
  */
 
 #include <X11/X.h>
-#ifdef OW_I18N
 #include <xview/xv_i18n.h>
-#endif /* OW_I18N */
 #include <olgx/olgx.h>
 #include <xview/defaults.h>
 #include <xview/font.h>
@@ -29,7 +27,6 @@ static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,
 #include <images/bg2.xbm>
 #include <images/bg3.xbm>
 #endif
-
 
 typedef struct ginfo_list_struct {
     Cms		    cms;
@@ -93,25 +90,19 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	unsigned long cms_size;
 	int cms_status = 0;
 	Display *display;
-	Ginfo_list *first;
-	Ginfo_list *ginfo_list;
+	Ginfo_list *first, *last, *ginfo_list;
 	Xv_Font glyph_font;
 	XFontStruct *glyph_font_struct;
 	unsigned long *index_table;
 	Xv_Drawable_info *info;
-	Ginfo_list *last;
-	int control_cms = FALSE;
+	int match, control_cms = FALSE;
 	unsigned long pixvals[OLGX_NUM_COLORS];
 	Xv_Screen screen;
 	int screen_number;
 	Pixmap stipple_pixmaps[3];
 	screen_ui_style_t ui_style;
-
-#ifdef OW_I18N
-	XFontSet font_set;
-#else
+	XFontSet text_font_set = NULL;
 	XFontStruct *text_font_struct;
-#endif /* OW_I18N */
 
 	int three_d_state;
 
@@ -188,38 +179,43 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	 * the ginfo_list.
 	 */
 
-#ifdef OW_I18N
-	text_font = (Xv_Font) xv_get(win, XV_FONT);
-	font_set = (XFontSet) xv_get(text_font, FONT_SET_ID);
-#endif /* OW_I18N */
+	if (_xv_is_multibyte) {
+/* 		text_font = (Xv_Font) xv_get(win, XV_FONT); */
+		text_font_set = (XFontSet) xv_get(text_font, FONT_SET_ID);
+	}
 
 	glyph_font = xv_get(win, WIN_GLYPH_FONT);
-
-#ifdef OW_I18N
 	glyph_font_struct = (XFontStruct *) xv_get(glyph_font, FONT_INFO);
-#endif /* OW_I18N */
 
 	screen = xv_screen(info);
 	first = (Ginfo_list *) xv_get(screen, XV_KEY_DATA, screen_ginfo);
 	last = first;
 	for (ginfo_list = first; ginfo_list; ginfo_list = ginfo_list->next) {
-		if (ginfo_list->cms == cms && ginfo_list->depth == xv_depth(info) &&
-
-#ifdef OW_I18N
-				TextFont_Set(ginfo_list->ginfo) == font_set &&
-				ginfo_list->ginfo->glyphfont == glyph_font_struct)
-#else
-				ginfo_list->glyph_font == glyph_font &&
-				ginfo_list->text_font == text_font)
-#endif /* OW_I18N */
-
-		{
-			if (ui_style == SCREEN_UIS_2D_COLOR) *three_d = FALSE;
-			else *three_d = (int)xv_get(cms, CMS_CONTROL_CMS, 0);
-			SERVERTRACE((111, "%ld (%s): ui_style = %d reused 3d = %d\n",
-				win, ((Xv_pkg *)xv_get(win, XV_TYPE))->name,
-				ui_style, *three_d));
-			return (ginfo_list->ginfo);
+		if (ginfo_list->cms == cms && ginfo_list->depth == xv_depth(info)) {
+			if (_xv_is_multibyte && text_font_set) {
+				/* UTF-8 Modus: Wir vergleichen das FontSet und
+				 * den GlyphFontStruct
+				 */
+				if (TextFont_Set(ginfo_list->ginfo) == text_font_set &&
+					ginfo_list->ginfo->glyphfont == glyph_font_struct) {
+					match = 1;
+				}
+			} 
+			else {
+				/* Klassischer Pfad: Vergleich der XView-Handles */
+				if (ginfo_list->glyph_font == glyph_font &&
+					ginfo_list->text_font == text_font) {
+					match = 1;
+				}
+			}
+			if (match) {
+				if (ui_style == SCREEN_UIS_2D_COLOR) *three_d = FALSE;
+				else *three_d = (int)xv_get(cms, CMS_CONTROL_CMS, 0);
+				SERVERTRACE((111, "%ld (%s): ui_style = %d reused 3d = %d\n",
+						win, ((Xv_pkg *)xv_get(win, XV_TYPE))->name,
+						ui_style, *three_d));
+				return ginfo_list->ginfo;
+			}
 		}
 		last = ginfo_list;
 	}
@@ -251,10 +247,8 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	else
 		three_d_state = OLGX_2D;
 
-#ifndef OW_I18N
 	text_font_struct = (XFontStruct *) xv_get(text_font, FONT_INFO);
 	glyph_font_struct = (XFontStruct *) xv_get(glyph_font, FONT_INFO);
-#endif /* OW_I18N */
 
 #ifdef MONO3D
 	if (three_d_state == OLGX_3D_MONO) {
@@ -293,20 +287,22 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	}
 #endif
 
-#ifdef OW_I18N
-	ginfo_list->ginfo = olgx_i18n_initialize(display, screen_number,
-			xv_depth(info),
-			three_d_state,
-			glyph_font_struct, font_set, pixvals, stipple_pixmaps);
-#else
 	SERVERTRACE((111, "%ld (%s): ui_style = %d 3d = %d\n",
 				win, ((Xv_pkg *)xv_get(win, XV_TYPE))->name,
 				ui_style, *three_d));
-	ginfo_list->ginfo =
+
+	if (_xv_is_multibyte && text_font_set) {
+		ginfo_list->ginfo = olgx_utf8_initialize(display, screen_number,
+			xv_depth(info),
+			three_d_state,
+			glyph_font_struct, text_font_set, pixvals, stipple_pixmaps);
+	}
+	else {
+		ginfo_list->ginfo =
 			olgx_main_initialize(display, screen_number, xv_depth(info),
 			three_d_state, glyph_font_struct, text_font_struct, pixvals,
 			stipple_pixmaps);
-#endif /* OW_I18N */
+	}
 
 	return (ginfo_list->ginfo);
 }
