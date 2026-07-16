@@ -1,4 +1,4 @@
-/*      @(#)font.h 20.35 93/06/28 SMI  DRA: RCS $Id: font.h,v 4.2 2025/03/08 13:32:15 dra Exp $      */
+/*      @(#)font.h 20.35 93/06/28 SMI  DRA: RCS $Id: font.h,v 4.3 2026/07/15 18:35:17 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -16,9 +16,7 @@
  */
 
 #include <xview/generic.h>
-#ifdef OW_I18N
 #include <xview/xv_i18n.h>
-#endif /*OW_I18N*/
 
 
 /*
@@ -32,12 +30,8 @@
  */
 #ifndef XV_ATTRIBUTES_ONLY
 
-#ifdef OW_I18N
 #define FONT_SET        &xv_font_pkg
 #define FONT            FONT_SET
-#else
-#define FONT                    &xv_font_pkg
-#endif /*OW_I18N*/
 
 
 /*
@@ -58,9 +52,7 @@
 #define FONT_FAMILY_OLGLYPH	"FONT_FAMILY_OLGLYPH"
 #define FONT_FAMILY_OLCURSOR	"FONT_FAMILY_OLCURSOR"
 
-#ifdef OW_I18N
 #define FONT_FAMILY_SANS_SERIF      "FONT_FAMILY_SANS_SERIF"
-#endif /*OW_I18N*/
 
 #define FONT_STYLE_DEFAULT	"FONT_STYLE_DEFAULT"
 #define FONT_STYLE_NORMAL	"FONT_STYLE_NORMAL"
@@ -106,12 +98,8 @@ typedef enum {
     FONT_CHAR_WIDTH	= FONT_ATTR(ATTR_CHAR,		 1),	/* G 	*/
     FONT_CHAR_HEIGHT	= FONT_ATTR(ATTR_CHAR,		 5),	/* G 	*/
 
-#ifdef OW_I18N
-    FONT_CHAR_WIDTH_WC  = FONT_ATTR(ATTR_WCHAR,          6),    /* G    */
-    FONT_CHAR_HEIGHT_WC = FONT_ATTR(ATTR_WCHAR,          7),    /* G    */
     FONT_NAMES          = FONT_ATTR(ATTR_OPAQUE,        26),    /* C-G  */
     FONT_SET_SPECIFIER  = FONT_ATTR(ATTR_STRING,        27),    /* C-G  */
-#endif /*OW_I18N*/
 
     FONT_DEFAULT_CHAR_HEIGHT
     			= FONT_ATTR(ATTR_NO_VALUE,	10),	/* G 	*/
@@ -126,20 +114,14 @@ typedef enum {
     					FONT_QUAD_ATTR, 50),	/* C-S-G*/
     FONT_STRING_DIMS	= FONT_ATTR(ATTR_OPAQUE_PAIR,	55),	/* G 	*/
 
-#ifdef OW_I18N
-    FONT_STRING_DIMS_WC = FONT_ATTR(ATTR_OPAQUE_PAIR,   56),    /* G    */
-#endif /*OW_I18N*/
-
     FONT_STYLE		= FONT_ATTR(ATTR_STRING,	60),	/* C-G 	*/
     FONT_TYPE		= FONT_ATTR(ATTR_ENUM,		65),	/* C-S-G */
     FONT_PIXFONT	= FONT_ATTR(ATTR_OPAQUE,	67),	/* G */
     FONT_INFO		= FONT_ATTR(ATTR_OPAQUE,	80),	/* G    */
 
-#ifdef OW_I18N
     FONT_LOCALE         = FONT_ATTR(ATTR_STRING,        68),    /* C-G */
     FONT_SET_ID         = FONT_ATTR(ATTR_OPAQUE,        69),    /* G    */
     FONT_COLUMN_WIDTH	= FONT_ATTR(ATTR_NO_VALUE,	85),	/* G   */
-#endif /*OW_I18N*/
 
     /*
      * Private attributes.
