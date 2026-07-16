@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.3 2025/03/27 14:45:32 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.5 2026/07/15 18:33:55 dra Exp $ ";
 #endif
 #endif
 
@@ -23,7 +23,7 @@ static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display
 #include <xview/cms.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
-
+#include <xview_private/i18n_impl.h>
 
 Pkg_private void frame_display_label(Frame_class_info *frame)
 {
@@ -141,31 +141,30 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 
 	scale = xv_get(xv_get(frame_public, XV_FONT), FONT_SCALE);
 
-#ifdef OW_I18N
-	if (frame->left_footer.pswcs.value == NULL)
-		left_width = 0;
-	else
-		left_width = XwcTextEscapement(TextFont_Set(frame->ginfo),
-				frame->left_footer.pswcs.value,
-				wslen(frame->left_footer.pswcs.value));
-	if (frame->right_footer.pswcs.value == NULL)
-		right_width = 0;
-	else
-		right_width = XwcTextEscapement(TextFont_Set(frame->ginfo),
-				frame->right_footer.pswcs.value,
-				wslen(frame->right_footer.pswcs.value));
-#else
 	if (frame->left_footer == NULL)
 		left_width = 0;
-	else
-		left_width = XTextWidth(frame->ginfo->textfont,
+	else {
+		if (_xv_is_multibyte) {
+			left_width = Xutf8TextEscapement(TextFont_Set(frame->ginfo), 
+					frame->left_footer, (int)strlen(frame->left_footer));
+		}
+		else {
+			left_width = XTextWidth(TextFont_Struct(frame->ginfo),
 				frame->left_footer, (int)strlen(frame->left_footer));
+		}
+	}
 	if (frame->right_footer == NULL)
 		right_width = 0;
-	else
-		right_width = XTextWidth(frame->ginfo->textfont,
+	else {
+		if (_xv_is_multibyte) {
+			right_width = Xutf8TextEscapement(TextFont_Set(frame->ginfo), 
+					frame->right_footer, (int)strlen(frame->right_footer));
+		}
+		else {
+			right_width = XTextWidth(TextFont_Struct(frame->ginfo),
 				frame->right_footer, (int)strlen(frame->right_footer));
-#endif
+		}
+	}
 
 	margin = frame_footer_margin(scale);
 	gap = frame_inter_footer_gap(scale);
