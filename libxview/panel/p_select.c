@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.40 2026/07/09 16:13:37 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.42 2026/07/15 18:34:12 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -11,6 +11,7 @@ char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v
 #include <assert.h>
 #include <xview_private/panel_impl.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/i18n_impl.h>
 #include <xview/scrollbar.h>
 #include <xview/font.h>
 #include <xview/help.h>
@@ -511,7 +512,7 @@ static XFontStruct *get_fontstruct(Item_info *ip)
 
 	gi = image_ginfo(&ip->label);
 	if (gi) {
-		fs = gi->textfont;
+		fs = TextFont_Struct(gi);
 	}
 	else {
 		Xv_font font = image_font(&ip->label);
@@ -521,7 +522,7 @@ static XFontStruct *get_fontstruct(Item_info *ip)
 			fs = (XFontStruct *)xv_get(font, FONT_INFO);
 		}
 		else {
-			fs = gi->textfont;
+			fs = TextFont_Struct(gi);
 		}
 	}
 
@@ -576,13 +577,20 @@ static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 			}
 		}
 
-		xv_set(qo,
-			QUICK_BASELINE,
-						(int)xv_get(item, PANEL_ITEM_LABEL_BASELINE)+2,
-			QUICK_FONTINFO, get_fontstruct(ip),
-			QUICK_START, s, sx, ex,
-			QUICK_CLIENT_ITEM, item,
-			NULL);
+		if (_xv_is_multibyte) {
+			xv_error(XV_NULL,
+					ERROR_STRING, "INCOMPLETE not yet: QUICK_FONTINFO",
+					NULL);
+		}
+		else {
+			xv_set(qo,
+				QUICK_BASELINE,
+							(int)xv_get(item, PANEL_ITEM_LABEL_BASELINE)+2,
+				QUICK_FONTINFO, get_fontstruct(ip),
+				QUICK_START, s, sx, ex,
+				QUICK_CLIENT_ITEM, item,
+				NULL);
+		}
 	}
 
 	xv_set(qo, QUICK_SELECT_DOWN, ev, NULL);
