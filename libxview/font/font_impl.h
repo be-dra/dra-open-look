@@ -1,4 +1,4 @@
-/*      @(#)font_impl.h 20.33 93/06/28 SMI   DRA: RCS $Id: font_impl.h,v 4.3 2026/04/27 18:50:09 dra Exp $     */
+/*      @(#)font_impl.h 20.33 93/06/28 SMI   DRA: RCS $Id: font_impl.h,v 4.4 2026/07/15 18:35:17 dra Exp $     */
 
 /***********************************************************************/
 /*	                      font_impl.h			       */
@@ -20,10 +20,8 @@
 #include <pixrect/pixfont.h>
 #include <xview/font.h>
 
-#ifdef OW_I18N
 #include <xview/xv_i18n.h>
 #include <X11/Xresource.h>
-#endif /*OW_I18N*/
 
 #include <X11/Xlib.h>
 
@@ -45,8 +43,6 @@
 
 #define	FONT_PIX(font)		(Pixfont *)XV_PUBLIC(font)
 
-#ifdef OW_I18N
-
 /* definitions for font set file key words */
 #define FS_DEF          "definition"
 #define FS_DEF_LEN      strlen(FS_DEF)
@@ -60,8 +56,6 @@
 #define FS_XLARGE_SIZE          "xv_font_set.extra_large"
 #define FS_DEFAULT_FAMILY       "xv_font_set.default_family"
  
-#endif /*OW_I18N*/
-
 /***********************************************************************/
 /*	        	Structures 				       */
 /***********************************************************************/
@@ -86,9 +80,7 @@ typedef struct style_definitions  {
 typedef struct font_locale_info {
     char		*locale;
 
-#ifdef OW_I18N
     XrmDatabase		db;
-#endif /*OW_I18N*/
 
     int			small_size;
     int			medium_size;
@@ -123,14 +115,9 @@ typedef struct font_info {
     Xv_opaque	 	 server;
     struct font_info	*next;
     
-#ifdef OW_I18N
     char		**names;
     char                *specifier;
-    char		*name;
-#else
-    /* family, style and point-size */
-    char		*name;
-#endif /*OW_I18N*/
+    char		*name; /* family, style and point-size */
     Font_locale_info	*locale_info;
     char		*foundry;
     char		*family;
@@ -158,11 +145,9 @@ typedef struct font_info {
     int			def_char_height;
 
     /* interface to Xlib */
-#ifdef OW_I18N
     XFontSet             set_id;
     XFontStruct          **font_structs;
     int			 column_width;
-#endif /*OW_I18N*/
     long unsigned	 xid;
     Xv_opaque 		 x_font_info;
 
