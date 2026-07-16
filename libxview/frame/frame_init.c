@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.16 2026/04/18 08:15:36 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.17 2026/07/15 13:38:36 dra Exp $ ";
 #endif
 #endif
 
@@ -525,8 +525,7 @@ static int frame_fit_direction(Frame_class_info *frame, Window_attribute directi
     Frame           frame_public = FRAME_PUBLIC(frame);
     register Xv_Window sw;
     Rect            rect, rbound;
-    register short *value = (direction == WIN_DESIRED_WIDTH) ?
-    &rect.r_width : &rect.r_height;
+    int *value = (direction==WIN_DESIRED_WIDTH) ?&rect.r_width :&rect.r_height;
 
     rbound = rect_null;
     FRAME_EACH_SHOWN_SUBWINDOW(frame, sw)
