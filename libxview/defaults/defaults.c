@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)defaults.c 20.33 93/06/28 DRA: RCS $Id: defaults.c,v 4.1 2024/03/28 17:52:52 dra Exp $  ";
+static char     sccsid[] = "@(#)defaults.c 20.33 93/06/28 DRA: RCS $Id: defaults.c,v 4.2 2026/07/15 16:44:29 dra Exp $  ";
 #endif
 #endif
 
@@ -20,9 +20,7 @@ static char     sccsid[] = "@(#)defaults.c 20.33 93/06/28 DRA: RCS $Id: defaults
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <xview/defaults.h>
-#ifdef OW_I18N
 #include <xview/server.h>
-#endif
 #include <xview/xv_error.h>
 #include <X11/Xlibint.h>
 #include <X11/Xatom.h>
@@ -50,16 +48,27 @@ static char     defaults_returned_value[DEFAULTS_MAX_VALUE_SIZE];
 XrmDatabase defaults_rdb;/* merged defaults database */
 
 static Bool symbol_equal(char  *symbol1, char  *symbol2);
-#ifdef OW_I18N
-static Bool	xv_XrmGetResource();
 static char	*defaults_locale = NULL;
-#endif /* OW_I18N */
 
 extern Display *xv_default_display;
 
 /* ---------------------------------------------------------- */
 
 
+static Bool xv_XrmGetResource( XrmDatabase rdb, char *name, char *class, char **type, XrmValue *value)
+{
+    char		 lc_name[1024];
+    char		 lc_class[1024];
+
+    if (defaults_locale != NULL) {
+	(void) sprintf(lc_name, "%s.%s", name, defaults_locale);
+	(void) sprintf(lc_class, "%s.%s", class, defaults_locale);
+	if (XrmGetResource(rdb, lc_name, lc_class, type, value))
+	    return True;
+    }
+
+    return XrmGetResource(rdb, name, class, type, value);
+}
 
 /*****************************************************************/
 /* Exported routines:                                            */
@@ -83,11 +92,7 @@ defaults_exists(name, class)
     char           *type;
     XrmValue       value;
 
-#ifdef OW_I18N
     return xv_XrmGetResource(defaults_rdb, name, class, &type, &value);
-#else
-    return XrmGetResource(defaults_rdb, name, class, &type, &value);
-#endif
 }
 
 /*
@@ -300,11 +305,7 @@ defaults_get_string(instance, class, default_string)
     char	   *end_ptr;
     char	   *word_ptr;
 
-#ifdef OW_I18N
     if (!xv_XrmGetResource(defaults_rdb, instance, class, &type, &value))
-#else
-    if (!XrmGetResource(defaults_rdb, instance, class, &type, &value))
-#endif
 	return default_string;
 
 /*
@@ -313,18 +314,10 @@ defaults_get_string(instance, class, default_string)
 
     word_ptr = defaults_returned_value;
     begin_ptr = value.addr;
-#ifdef OW_I18N
     while (isspace ((unsigned char)*begin_ptr)) ++begin_ptr;
-#else
-    while (isspace (*begin_ptr)) ++begin_ptr;
-#endif
     length = MIN(value.size - 1, DEFAULTS_MAX_VALUE_SIZE - 1);
     end_ptr = value.addr + length - 1;
-#ifdef OW_I18N
     while (isspace ((unsigned char)*end_ptr)) --end_ptr;
-#else
-    while (isspace (*end_ptr)) --end_ptr;
-#endif
     for (; begin_ptr <= end_ptr; begin_ptr++)
     {
 	*word_ptr = *begin_ptr;
@@ -514,25 +507,22 @@ defaults_lookup(name, pairs)
 }
 
 
-#ifdef OW_I18N
-void
-defaults_set_locale(locale, locale_attr)
-    char		*locale;
-    Xv_generic_attr	 locale_attr;
+void defaults_set_locale(char *locale, Xv_generic_attr locale_attr)
 {
 
-    if (defaults_locale != NULL) {
-	xv_free(defaults_locale);
-	defaults_locale = NULL;
-    }
+	if (defaults_locale != NULL) {
+		xv_free(defaults_locale);
+		defaults_locale = NULL;
+	}
 
-    if (locale != NULL) {
-	defaults_locale = xv_strsave(locale);
-    } else if (locale_attr != NULL) {
-	if ((defaults_locale =
-		(char *) xv_get(xv_default_server, locale_attr)) != NULL)
-	    defaults_locale = xv_strsave(defaults_locale);
-    }
+	if (locale != NULL) {
+		defaults_locale = xv_strsave(locale);
+	}
+	else if (locale_attr != 0) {
+		if ((defaults_locale =
+						(char *)xv_get(xv_default_server, locale_attr)) != NULL)
+			defaults_locale = xv_strsave(defaults_locale);
+	}
 }
 
 
@@ -541,7 +531,6 @@ defaults_get_locale()
 {
     return defaults_locale;
 }
-#endif /* OW_I18N */
 
 /*****************************************************************/
 /* Private routines:                                             */
@@ -565,27 +554,3 @@ static Bool symbol_equal(char  *symbol1, char  *symbol2)
 			return TRUE;
 	}
 }
-
-
-#ifdef OW_I18N
-static Bool
-xv_XrmGetResource(rdb, name, class, type, value)
-    XrmDatabase		  rdb;
-    char		 *name;
-    char		 *class;
-    char		**type;
-    XrmValue		 *value;
-{
-    char		 lc_name[1024];
-    char		 lc_class[1024];
-
-    if (defaults_locale != NULL) {
-	(void) sprintf(lc_name, "%s.%s", name, defaults_locale);
-	(void) sprintf(lc_class, "%s.%s", class, defaults_locale);
-	if (XrmGetResource(rdb, lc_name, lc_class, type, value))
-	    return True;
-    }
-
-    return XrmGetResource(rdb, name, class, type, value);
-}
-#endif /* OW_I18N */
