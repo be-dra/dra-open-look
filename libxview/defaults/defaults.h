@@ -1,4 +1,4 @@
-/*	"@(#)defaults.h 20.19 91/03/27 SMI DRA: RCS $Id: defaults.h,v 4.1 2024/03/28 17:52:52 dra Exp $  	*/
+/*	"@(#)defaults.h 20.19 91/03/27 SMI DRA: RCS $Id: defaults.h,v 4.2 2026/07/15 16:44:40 dra Exp $  	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -152,8 +152,6 @@ EXTERN_FUNCTION (void 	defaults_set_boolean, (char *resource, Bool value));
  */
 EXTERN_FUNCTION (void 	defaults_set_string, (char *resource, char *value));
 
-#ifdef OW_I18N
-
 /*
  * defaults_set_locale(locale, locale_attr) will set locale appendix
  * of the resource name for the subsequent call to defaults_get_* ().
@@ -167,7 +165,5 @@ EXTERN_FUNCTION (void	defaults_set_locale, (char *locale,
  */
 EXTERN_FUNCTION (char *	defaults_get_locale, (void));
 _XVFUNCPROTOEND
-
-#endif /* OW_I18N */
 
 #endif /* ~xview_defaults_DEFINED */
