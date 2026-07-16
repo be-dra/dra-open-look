@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.61 2026/02/11 21:21:53 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.62 2026/07/15 18:34:47 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -14,7 +14,6 @@ char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.61 2026/02/11 21:21:53 dra 
 #define XVIEW_CLASS_TARGET future_use1
 
 extern char *xv_app_name;
-extern int _xv_is_multibyte;
 
 /* copied basically from textsw_seln_yield */
 static void selection_give_up(Textsw_private priv, Atom rank)
