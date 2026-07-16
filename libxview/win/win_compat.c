@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_compat.c% 20.23 93/06/28 DRA: $Id: win_compat.c,v 4.2 2024/09/15 17:09:50 dra Exp $";
+static char     sccsid[] = "@(#)win_compat.c% 20.23 93/06/28 DRA: $Id: win_compat.c,v 4.3 2026/07/15 18:28:14 dra Exp $";
 #endif
 #endif
 
@@ -38,12 +38,15 @@ void win_setinputmask(Xv_object window, Inputmask *im, Inputmask *im_flush, Xv_o
     xv_set(window, WIN_INPUT_MASK, im, NULL);
 }
 
+xv_coord_t win_getheight(Xv_object window);
 
 xv_coord_t win_getheight(Xv_object window)
 {
 
     return (xv_coord_t) window_get(window, WIN_GET_HEIGHT, NULL);
 }
+
+xv_coord_t win_getwidth(Xv_object window);
 
 xv_coord_t win_getwidth(Xv_object window)
 {
