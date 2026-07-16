@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.7 2025/04/21 07:10:32 dra Exp $";
+static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.8 2026/07/15 18:33:04 dra Exp $";
 #endif
 #endif
 
@@ -176,11 +176,10 @@ Xv_private Xv_opaque xv_object_to_standard(Xv_opaque object, const char *caller)
 	lu_ptr = (Xv_embedding *) object;
 	lu_ptr--;
 	if ((*lu_ptr & XV_EMBEDDING_MASK) != XV_EMBEDDING_SEAL) {
-		/* hier kam immer  0 != f1b69200 
+		/* hier kam immer  0 != f1b69200 */
 		fprintf(stderr, "%ld: xv_object_to_standard: %lx != %lx\n",
 				object, (*lu_ptr & XV_EMBEDDING_MASK),
 				(unsigned long)XV_EMBEDDING_SEAL);
-		*/
 		if (getenv("XVIEW_DESTROY_ABORT")) {
 			abort();
 		}
