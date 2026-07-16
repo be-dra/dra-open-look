@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.52 2026/04/03 08:29:35 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.53 2026/07/15 18:28:23 dra Exp $";
 #endif
 #endif
 
@@ -69,7 +69,6 @@ static int win_handle_window_accel(Event *event);
 
 extern struct rectlist *win_get_damage(Xv_object);
 extern char *xv_app_name;
-extern int _xv_is_multibyte;
 
 #ifdef NO_XDND
 #else /* NO_XDND */
