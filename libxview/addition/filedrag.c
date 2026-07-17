@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.14 2026/02/12 19:48:18 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.15 2026/07/16 13:58:07 dra Exp $";
 #endif
 
 typedef struct {
@@ -594,7 +594,10 @@ static int filedrag_init(Xv_window owner, Xv_opaque xself, Attr_avlist avlist,
 
 	xv_set((Xv_opaque)self, SEL_DONE_PROC, filedrag_done_proc, NULL);
 
-	cursfont = xv_find(owner, FONT, FONT_FAMILY, FONT_FAMILY_OLCURSOR, NULL);
+	cursfont = xv_find(owner, FONT,
+						FONT_FAMILY, FONT_FAMILY_OLCURSOR,
+						FONT_TYPE, FONT_TYPE_CURSOR,
+						NULL);
 	info = (XFontStruct *)xv_get(cursfont, FONT_INFO);
 
 	if (info->max_char_or_byte2 >= 0x7c) {
