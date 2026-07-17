@@ -1,5 +1,5 @@
 #ifndef lint
-char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.8 2026/02/09 19:37:04 dra Exp $ ";
+char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.9 2026/07/16 14:01:36 dra Exp $ ";
 #endif
 
 /*
@@ -593,6 +593,7 @@ static int openwin_init(Xv_opaque parent, Xv_opaque self, Attr_avlist avlist,
 
 	cursfont = xv_find((Xv_opaque)self, FONT,
 					FONT_FAMILY, FONT_FAMILY_OLCURSOR,
+					FONT_TYPE, FONT_TYPE_CURSOR,
 					NULL);
 	fontinfo = (XFontStruct *)xv_get(cursfont, FONT_INFO);
 
