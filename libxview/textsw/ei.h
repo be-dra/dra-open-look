@@ -1,4 +1,4 @@
-/*	@(#)ei.h 20.21 93/06/28 SMI  DRA: $Id: ei.h,v 4.1 2024/03/28 19:06:00 dra Exp $	*/
+/*	@(#)ei.h 20.21 93/06/28 SMI  DRA: $Id: ei.h,v 4.2 2026/07/16 14:02:10 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -144,12 +144,8 @@ struct ei_ops {
 typedef enum {
 	EI_CONTROL_CHARS_USE_FONT	= EI_ATTR(ATTR_BOOLEAN,		 10),
 	EI_FONT				= EI_ATTR(ATTR_PIXFONT_PTR,	 20),
-#ifdef OW_I18N
 	EI_LOCALE_IS_ALE		= EI_ATTR(ATTR_INT,		 25),
-#ifdef FULL_R5
 	EI_LINE_SPACE			= EI_ATTR(ATTR_INT,		 26),
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 	EI_SPANW			= EI_ATTR(ATTR_OPAQUE,		 30),
 	EI_SPAN1			= EI_ATTR(ATTR_OPAQUE,		 40),
 	EI_SPAN2			= EI_ATTR(ATTR_OPAQUE,		 50),
