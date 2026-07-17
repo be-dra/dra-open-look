@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.21 2026/02/23 09:28:05 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.22 2026/07/16 20:09:11 dra Exp $ ";
 #endif
 #endif
 
@@ -317,35 +317,38 @@ static GC *screen_get_cached_gc_list(Screen_info *screen, Xv_Window window)
 				gc_value.foreground = xv_bg(info);
 				break;
 			case SCREEN_TEXT_GC:
-
-#ifdef OW_I18N
-				/* do nothing since using font sets always */
-#else /* OW_I18N */
-				gc_value.font = (Font) xv_get(std_font, XV_XID);
-				gc_value_mask |= GCFont;
-#endif /* OW_I18N */
+				if (_xv_is_multibyte) {
+					/* do nothing since using font sets always */
+				}
+				else {
+					gc_value.font = (Font) xv_get(std_font, XV_XID);
+					gc_value_mask |= GCFont;
+				}
 
 				break;
 			case SCREEN_BOLD_GC:
 
-#ifdef OW_I18N
-				/* do nothing since using font sets always */
-#else /* OW_I18N */
-				bold_font = (Xv_Font) xv_find(window, FONT,
-						FONT_FAMILY, xv_get(std_font, FONT_FAMILY),
-						FONT_STYLE, FONT_STYLE_BOLD,
-						FONT_SIZE, xv_get(std_font, FONT_SIZE), NULL);
-				if (bold_font == XV_NULL) {
-					xv_error(XV_NULL,
-							ERROR_STRING,
-							XV_MSG
-							("Unable to find bold font; using standard font"),
-							ERROR_PKG, SCREEN, NULL);
-					bold_font = std_font;
+				if (_xv_is_multibyte) {
+					/* do nothing since using font sets always */
 				}
-				gc_value.font = (Font) xv_get(bold_font, XV_XID);
-				gc_value_mask |= GCFont;
-#endif /* OW_I18N */
+				else {
+					bold_font = (Xv_Font) xv_find(window, FONT,
+							FONT_FAMILY, xv_get(std_font, FONT_FAMILY),
+							FONT_STYLE, FONT_STYLE_BOLD,
+							FONT_SIZE, xv_get(std_font, FONT_SIZE),
+							NULL);
+					if (bold_font == XV_NULL) {
+						xv_error(XV_NULL,
+								ERROR_STRING,
+								XV_MSG
+								("Unable to find bold font; using standard font"),
+								ERROR_PKG, SCREEN,
+								NULL);
+						bold_font = std_font;
+					}
+					gc_value.font = (Font) xv_get(bold_font, XV_XID);
+					gc_value_mask |= GCFont;
+				}
 
 				break;
 			case SCREEN_GLYPH_GC:
