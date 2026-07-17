@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)pf_text.c 20.34 93/06/28 SMI DRA: RCS $Id: pf_text.c,v 4.1 2024/03/28 17:55:25 dra Exp $ ";
+static char     sccsid[] = "@(#)pf_text.c 20.34 93/06/28 SMI DRA: RCS $Id: pf_text.c,v 4.2 2026/07/15 18:35:17 dra Exp $ ";
 #endif
 #endif
 
@@ -17,9 +17,7 @@ static char     sccsid[] = "@(#)pf_text.c 20.34 93/06/28 SMI DRA: RCS $Id: pf_te
 #include <sys/types.h>
 #include <pixrect/pixrect.h>
 #include <pixrect/pixfont.h>
-#ifdef OW_I18N
 #include <xview/xv_i18n.h>
-#endif /* OW_I18N */
 #include <xview_private/font_impl.h>
 #include <xview_private/pw_impl.h>
 #include <xview/font.h>
@@ -209,12 +207,10 @@ Xv_public struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str)
     int             ascent = 0;
     int             descent = 0;
     XCharStruct     overall_return;
-#ifdef OW_I18N
     Font_info	  *font = FONT_PRIVATE(pf);
     XFontSet	   font_set = (XFontSet)xv_get(pf, FONT_SET_ID);
     XRectangle	   overall_ink_extents = {0};
     XRectangle	   overall_logical_extents = {0};
-#endif /* OW_I18N */
 
     /*
      * Initialize overall_return to zeros
@@ -223,44 +219,16 @@ Xv_public struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str)
      */
     XV_BZERO(&overall_return, sizeof(XCharStruct));
 
-#ifdef OW_I18N
-    if (font->type == FONT_TYPE_TEXT)  {
+    if (_xv_is_multibyte && font->type == FONT_TYPE_TEXT)  {
         XmbTextExtents(font_set, str, len, &overall_ink_extents, &overall_logical_extents);
         size.x = overall_logical_extents.width;
         size.y = overall_logical_extents.height;	/* max height so won't clip */
     }
     else  {
-        (void) XTextExtents(font_info, str, len,
+        XTextExtents(font_info, str, len,
 			&direction, &ascent, &descent, &overall_return);
         size.x = overall_return.width;
         size.y = ascent + descent;	/* max height so won't clip */
     }
-#else
-    (void) XTextExtents(font_info, str, len,
-			&direction, &ascent, &descent, &overall_return);
-    size.x = overall_return.width;
-    size.y = ascent + descent;	/* max height so won't clip */
-			
-#endif
-    return (size);
+    return size;
 }
-
-#ifdef OW_I18N
-Xv_public struct pr_size
-xv_pf_textwidth_wc(len, pf, ws)
-    int             	len;
-    register Xv_font 	pf;
-    register wchar_t  	*ws;
-{
-    struct pr_size  size;
-    XRectangle	overall_ink_extents = {0};
-    XRectangle 	overall_logical_extents = {0};
-    XFontSet	    font_set = (XFontSet)xv_get(pf, FONT_SET_ID);
-
-    XwcTextExtents(font_set, ws, len, &overall_ink_extents, &overall_logical_extents);
-    size.x = overall_logical_extents.width;
-    size.y = overall_logical_extents.height;	/* max height so won't clip */   
-    return (size);
-}
-#endif /*OW_I18N*/
-
