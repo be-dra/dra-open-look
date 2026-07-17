@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.11 2026/07/15 18:35:17 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.12 2026/07/16 13:56:27 dra Exp $ ";
 #endif
 #endif
 
@@ -25,8 +25,10 @@ static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.
 #include <xview_private/i18n_impl.h>
 #include <xview_private/pw_impl.h>
 #include <xview_private/portable.h>
+#include <xview_private/svr_impl.h>
 #include <sys/param.h>
 #include <ctype.h>
+#include <assert.h>
 
 /*
  * Public
@@ -170,7 +172,6 @@ static int font_convert_style( Font_return_attrs return_attrs);
 static void font_default_font(Font_return_attrs return_attrs);
 static char *font_default_font_from_scale(char *scale, Font_locale_info *linfo);
 static char *font_determine_font_name(Font_return_attrs my_attrs);
-static char *font_rescale_from_font(Font_info *font, int scale, struct font_return_attrs *attrs);
 static int font_read_attrs(Font_return_attrs return_attrs, int consume_attrs, Attr_avlist avlist);
 static int font_string_compare(char *str1, char *str2);
 static int font_string_compare_nchars(char *str1, char *str2, int n_chars);
@@ -725,6 +726,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 	XFontSet font_set = NULL;
 	XFontSetExtents *font_set_extents;
 
+	SERVERTRACE((777, "%s: %ld begin\n", __FUNCTION__,selfpub));
 	if (! fh_key) fh_key = xv_unique_key();
 
 	if (!parent_public) {
@@ -777,13 +779,15 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 	 */
 	my_attrs.linfo = linfo;
 	font_init_create_attrs(&my_attrs);
+	SERVERTRACE((777, "%s: %ld: type=%d, mb=%d\n", __FUNCTION__,selfpub, my_attrs.type, _xv_is_multibyte));
 
 	/*
 	 * Get the optional creation arguments
 	 */
 	font_attrs_exist = font_read_attrs(&my_attrs, TRUE, avlist);
-	if (!font_attrs_exist)
+	if (!font_attrs_exist) {
 		(void)font_default_font(&my_attrs);
+	}
 
 	if (my_attrs.type == FONT_TYPE_TEXT) {
 		error_code = font_construct_names(display, &my_attrs);
@@ -806,7 +810,9 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 			active_loc = "C"; /* Letzter sicherer Fallback */
 		}
 		/* load the font set */
+		SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, my_attrs.names[0]));
 		font_set = xv_load_font_set(display, active_loc, my_attrs.names);
+		SERVERTRACE((777, "%s: %ld: font_set=%p\n", __FUNCTION__,selfpub, font_set));
 
 		if ((font_set == NULL) &&
 			(my_attrs.specifier ||
@@ -832,6 +838,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 			font_set = xv_load_font_set(display, my_attrs.locale,
 								my_attrs.names);
 		}
+		assert(font_set != NULL);
 
 		/* If load failed, print error msg and return error code */
 		if (!font_set) {
@@ -897,6 +904,10 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		 *  font_destroy_struct() will need to be changed.
 		 */
 		(void)XFontsOfFontSet(font_set, &font->font_structs, &font->names);
+		SERVERTRACE((777, "%s: %ld: font_structs=%p\n", __FUNCTION__,selfpub, font->font_structs));
+		SERVERTRACE((777, "%s: %ld: font_structs[0]=%p\n", __FUNCTION__,selfpub, font->font_structs[0]));
+		SERVERTRACE((777, "%s: %ld: names=%p\n", __FUNCTION__,selfpub, font->names));
+		SERVERTRACE((777, "%s: %ld: names[0]=%p\n", __FUNCTION__,selfpub, font->names[0]));
 		font_set_extents = XExtentsOfFontSet(font_set);
 		font->def_char_width = font_set_extents->max_logical_extent.width;
 		font->def_char_height = font_set_extents->max_logical_extent.height;
@@ -926,10 +937,8 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		font->size = (int)my_attrs.size;
 	else {
 		short size_found = FALSE;
-		char *ptsize_str =
-
-							get_attr_str_from_opened_names(font->names,
-							PTSIZEPOS);
+		char *ptsize_str = get_attr_str_from_opened_names(font->names,
+											PTSIZEPOS);
 
 		/*
 		 * Get point size from the xlfd font names of font set
@@ -950,7 +959,6 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		/*
 		 * A size was not obtained from the font names
 		 */
-/* multibyte not found:		if (!size_found && multibyte) { */
 		if (!size_found && _xv_is_multibyte) {
 			/*
 			 * Set up the size as the smaller of the ascent+descent
@@ -1060,7 +1068,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		if (my_attrs.specifier)
 			font->specifier = strdup(my_attrs.specifier);
 
-		font->name = font->names[0];
+		if (_xv_is_multibyte) font->name = font->names[0];
 	}
 	else {
 		if (my_attrs.name)
@@ -1101,6 +1109,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 			(void)xv_set((Xv_opaque) font_public, XV_INCREMENT_REF_COUNT, NULL);
 		}
 	}
+	SERVERTRACE((777, "%s: %ld end: %s\n", __FUNCTION__,selfpub, font->name));
 	return XV_OK;
 }
 
@@ -1272,27 +1281,23 @@ Xv_private Xv_Font xv_font_with_name(Xv_opaque server, char *name)
 	if (_xv_is_multibyte) {
 		/* ------------------ MULTIBYTE / UTF-8 PFAD ------------------ */
 		char *str;
+		int free_name = FALSE;
 
 		defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
 
-		if (name || (save_name = name = xv_font_regular())) {
-			short free_name = FALSE;
-
-			/* If name was returned from defaults pkg, cache it */
-			if (save_name) {
-				save_name = xv_strsave(name);
-				free_name = TRUE;
-			}
-			else {
-				save_name = name;
-			}
-
-			font_public = (Xv_Font) xv_find(server, FONT,
+		if (name) {
+			save_name = xv_strsave(name);
+			free_name = TRUE;
+		}
+		else if ((name = xv_font_regular())) {
+			save_name = xv_strsave(name);
+			free_name = TRUE;
+		}
+		font_public = (Xv_Font) xv_find(server, FONT,
 					FONT_SET_SPECIFIER, save_name, NULL);
-			/* Free cached name */
-			if (free_name) {
-				xv_free(save_name);
-			}
+		/* Free cached name */
+		if (free_name) {
+			xv_free(save_name);
 		}
 
 		defaults_set_locale(NULL, 0);
@@ -1726,7 +1731,8 @@ static int font_get_default_scale(Font_locale_info *linfo)
 	return (FONT_NO_SCALE);
 }
 
-static char *font_rescale_from_font(Font_info *font, int scale, struct font_return_attrs *attrs)
+static char *font_rescale_from_font(Font_info *font, int scale,
+							struct font_return_attrs *attrs)
 {
 	Font_locale_info *linfo;
 	char *font_name = NULL;
@@ -1754,61 +1760,48 @@ static char *font_rescale_from_font(Font_info *font, int scale, struct font_retu
 	if (_xv_is_multibyte && linfo && (font->type == FONT_TYPE_TEXT)) {
 		/* ------------------ MULTIBYTE PFAD (Fontset-Format) ------------------ */
 		fs = 1;
-		sprintf(name, "%s-%s",
-				(font->family ? font->family : "*"),
-				(font->style ? font->style : "*"));
-		if (font->family) {
-			attrs->family = xv_strsave(font->family);
-			attrs->free_family = 1;
-		}
-		if (font->style) {
-			attrs->style = xv_strsave(font->style);
-			attrs->free_style = 1;
-		}
 	}
-	else {
-		/* ------------------ KLASSISCHER 8-BIT XLFD PFAD ------------------ */
-		if (font->foundry) {
-			attrs->foundry = xv_strsave(font->foundry);
-			attrs->free_foundry = 1;
-		}
-		if (font->family) {
-			attrs->family = xv_strsave(font->family);
-			attrs->free_family = 1;
-		}
-		if (font->style) {
-			attrs->style = xv_strsave(font->style);
-			attrs->free_style = 1;
-		}
-		if (font->weight) {
-			attrs->weight = xv_strsave(font->weight);
-			attrs->free_weight = 1;
-		}
-		if (font->slant) {
-			attrs->slant = xv_strsave(font->slant);
-			attrs->free_slant = 1;
-		}
-		if (font->setwidthname) {
-			attrs->setwidthname = xv_strsave(font->setwidthname);
-			attrs->free_setwidthname = 1;
-		}
-		if (font->addstylename) {
-			attrs->addstylename = xv_strsave(font->addstylename);
-			attrs->free_addstylename = 1;
-		}
-
-		/* Wildcards auflösen (nur im klassischen Modus) */
-		font_reduce_wildcards(attrs);
-
-		/* XLFD-Mittelteil zusammenbauen */
-		sprintf(name, "-%s-%s-%s-%s-%s-%s",
-				(attrs->foundry ? attrs->foundry : "*"),
-				(attrs->family ? attrs->family : "*"),
-				(attrs->weight ? attrs->weight : "*"),
-				(attrs->slant ? attrs->slant : "*"),
-				(attrs->setwidthname ? attrs->setwidthname : "*"),
-				(attrs->addstylename ? attrs->addstylename : "*"));
+	/* ------------------ KLASSISCHER 8-BIT XLFD PFAD ------------------ */
+	if (font->foundry) {
+		attrs->foundry = xv_strsave(font->foundry);
+		attrs->free_foundry = 1;
 	}
+	if (font->family) {
+		attrs->family = xv_strsave(font->family);
+		attrs->free_family = 1;
+	}
+	if (font->style) {
+		attrs->style = xv_strsave(font->style);
+		attrs->free_style = 1;
+	}
+	if (font->weight) {
+		attrs->weight = xv_strsave(font->weight);
+		attrs->free_weight = 1;
+	}
+	if (font->slant) {
+		attrs->slant = xv_strsave(font->slant);
+		attrs->free_slant = 1;
+	}
+	if (font->setwidthname) {
+		attrs->setwidthname = xv_strsave(font->setwidthname);
+		attrs->free_setwidthname = 1;
+	}
+	if (font->addstylename) {
+		attrs->addstylename = xv_strsave(font->addstylename);
+		attrs->free_addstylename = 1;
+	}
+
+	/* Wildcards auflösen (nur im klassischen Modus) */
+	font_reduce_wildcards(attrs);
+
+	/* XLFD-Mittelteil zusammenbauen */
+	sprintf(name, "-%s-%s-%s-%s-%s-%s",
+			(attrs->foundry ? attrs->foundry : "*"),
+			(attrs->family ? attrs->family : "*"),
+			(attrs->weight ? attrs->weight : "*"),
+			(attrs->slant ? attrs->slant : "*"),
+			(attrs->setwidthname ? attrs->setwidthname : "*"),
+			(attrs->addstylename ? attrs->addstylename : "*"));
 
 	/* Ziel-Größe ermitteln */
 	switch (scale) {
@@ -2118,10 +2111,12 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 		font_list = (Font_info *) xv_get(server, XV_KEY_DATA, fh_key);
 		if (!font_list) {
 			font_free_font_return_attr_strings(&my_attrs);
-			return ((Xv_object) NULL);
+			SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,XV_NULL));
+			return XV_NULL;
 		}
 
 		if (my_attrs.specifier) {
+			SERVERTRACE((777, "%s: spec %s\n", __FUNCTION__,my_attrs.specifier));
 			for (finfo = font_list; finfo != NULL; finfo = finfo->next) {
 				if ((linfo == finfo->locale_info) && finfo->specifier &&
 						!strcmp(my_attrs.specifier, finfo->specifier) &&
@@ -2141,9 +2136,11 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 			}
 		}
 		else if (my_attrs.names != NULL) {
+			SERVERTRACE((777, "%s: names %p !!!!!\n", __FUNCTION__,my_attrs.names));
 			/* Keep original "Bug - FIX me" placeholder as is */
 		}
 		else if (my_attrs.name) {
+			SERVERTRACE((777, "%s: name %s\n", __FUNCTION__,my_attrs.name));
 			my_attrs.name = normalize_font_name(my_attrs.name, linfo);
 			for (finfo = font_list; finfo != NULL; finfo = finfo->next) {
 				if ((linfo == finfo->locale_info) && finfo->name &&
@@ -2154,6 +2151,7 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 			}
 		}
 		else if (my_attrs.resize_from_font) {
+			SERVERTRACE((777, "%s: resize\n", __FUNCTION__));
 			font_name = font_rescale_from_font(my_attrs.resize_from_font,
 					my_attrs.rescale_factor, &my_attrs);
 			if (font_name && ((int)strlen(font_name) > 0)) {
@@ -2191,6 +2189,7 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 					my_attrs.size);
 #endif
 
+			SERVERTRACE((777, "%s: key=%s\n", __FUNCTION__,key));
 			for (finfo = font_list; finfo != NULL; finfo = finfo->next) {
 				if ((linfo == finfo->locale_info) && finfo->specifier &&
 						!strcmp(key, finfo->specifier) &&
@@ -2242,10 +2241,8 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 
 		if (finfo) {
 			(void)xv_set(FONT_PUBLIC(finfo), XV_INCREMENT_REF_COUNT, NULL);
+			SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,FONT_PUBLIC(finfo)));
 			return (FONT_PUBLIC(finfo));
-		}
-		else {
-			return ((Xv_object) NULL);
 		}
 	}
 	else {
@@ -2254,7 +2251,8 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 
 		if (error_code != XV_OK) {
 			font_free_font_return_attr_strings(&my_attrs);
-			return (Xv_object) 0;
+			SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,XV_NULL));
+			return XV_NULL;
 		}
 
 		if ((font_list = (Font_info *) xv_get(server, XV_KEY_DATA, fh_key))) {
@@ -2266,6 +2264,7 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 					font_free_font_return_attr_strings(&my_attrs);
 					(void)xv_set(FONT_PUBLIC(font_list), XV_INCREMENT_REF_COUNT,
 							NULL);
+					SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,FONT_PUBLIC(font_list)));
 					return (FONT_PUBLIC(font_list));
 				}
 				font_list = font_list->next;
@@ -2273,8 +2272,9 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 		}
 
 		font_free_font_return_attr_strings(&my_attrs);
-		return ((Xv_object) 0);
 	}
+	SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,XV_NULL));
+	return XV_NULL;
 }
 
 static void font_free_font_return_attr_strings(struct font_return_attrs *attrs)
@@ -3782,6 +3782,15 @@ Pkg_private void font_setup_pixfont(Xv_font_struct	*font_public)
 		x_font_info = (XFontStruct *)xv_font_info->x_font_info;
 	}
 
+	/* this is just "hiding the problem" instead of finding the reason */
+#ifdef STUPID_PROBLEM_HIDING
+	/* Safety check: If we still don't have a valid XFontStruct,
+	 * we must bail out
+	 */
+    if (!x_font_info) return;
+#endif
+	assert(x_font_info != NULL);
+
     pixfont = (Pixfont *)xv_get((Xv_opaque)font_public, FONT_PIXFONT);
 
     default_x = xv_font_info->def_char_width;
@@ -3875,8 +3884,12 @@ static void font_init_create_attrs(Font_return_attrs	font_attrs)
     font_attrs->resize_from_font = (Font_info *) 0;
     font_attrs->no_size = font_attrs->no_style = 0;
 
-	if (font_attrs->type == 0) {
-    	font_attrs->type = FONT_TYPE_TEXT;
+	switch (font_attrs->type) {
+		case FONT_TYPE_CURSOR: break;
+		case FONT_TYPE_GLYPH: break;
+		default:
+			font_attrs->type = FONT_TYPE_TEXT;
+			break;
 	}
     font_attrs->locale = font_attrs->linfo->locale;
     font_attrs->specifier = (char *)NULL;
