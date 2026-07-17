@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.1 2024/03/28 17:55:25 dra Exp $ ";
+static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.2 2026/07/15 18:35:17 dra Exp $ ";
 #endif
 #endif
 
@@ -18,10 +18,8 @@ static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v
 #include <xview/font.h>		/* for FONT_INFO */
 #include <xview_private/font_impl.h>
 #include <xview_private/pw_impl.h>
-#ifdef OW_I18N
 #include <locale.h>
 #include <string.h>
-#endif /*OW_I18N*/
 
 /*
  * PERFORMANCE BUG!  [Space traded for time] glyph_pixmap/_gc/_pr are left
@@ -32,13 +30,9 @@ static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v
  /* static GC       glyph_gc; */	/* = 0 for -A-R */
  /* static int      gp_height, gp_width; */	/* = 0 for -A-R */
  /* static Pixrect *glyph_pr; */
+Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale, char **fs_list);
 
-#ifdef OW_I18N
-Pkg_private  XFontSet
-xv_load_font_set(dpy, locale, fs_list)
-    Display             *dpy;
-    char                *locale;
-    char                **fs_list;
+Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale, char **fs_list)
 {
 #define		TEMP_NAME_BUF_SIZE	1024
     char                save_locale[125];
@@ -65,22 +59,22 @@ xv_load_font_set(dpy, locale, fs_list)
     temp_fs_list = fs_list;
     while ( *fs_list) {
         str_len += (strlen(*fs_list) + 1);
-        *fs_list++;
+        fs_list++;
     }
     fs_list = temp_fs_list;
 
     font_name_list = temp_list = (str_len > TEMP_NAME_BUF_SIZE) ?
     				      (char *)malloc(str_len + 1) :
     				      temp_name_buf;
-    font_name_list[0] = NULL;
+    font_name_list[0] = '\0';
     for (;;) {
         strcat(font_name_list, *fs_list);
-        *fs_list++;
+        fs_list++;
         if (!*fs_list)
            break;
         temp_list = font_name_list + strlen(font_name_list);
         *temp_list++ = ',';
-        *temp_list = NULL;
+        *temp_list = '\0';
     }
    font_set = XCreateFontSet(dpy, font_name_list, &miss_list, &missing_charset_count, &def_string);
 
@@ -99,7 +93,6 @@ xv_load_font_set(dpy, locale, fs_list)
 #undef	TEMP_NAME_BUF_SIZE
     return(font_set);
 }
-#endif /*OW_I18N*/
 
 
 Pkg_private XID xv_load_x_font(Display *display, char *name, Xv_opaque *font_opaque, int *default_x, int *default_y, int *max_char, int *min_char)
