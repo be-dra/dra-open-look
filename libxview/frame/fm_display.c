@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.5 2026/07/15 18:33:55 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.6 2026/07/16 14:00:31 dra Exp $ ";
 #endif
 #endif
 
@@ -17,6 +17,7 @@ static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display
 #include <X11/Xlib.h>
 #include <xview_private/fm_impl.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/svr_impl.h>
 #include <xview/server.h>
 #include <xview/screen.h>
 #include <xview/font.h>
@@ -145,6 +146,8 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 		left_width = 0;
 	else {
 		if (_xv_is_multibyte) {
+
+			SERVERTRACE((777, "fs = %p\n", TextFont_Set(frame->ginfo)));
 			left_width = Xutf8TextEscapement(TextFont_Set(frame->ginfo), 
 					frame->left_footer, (int)strlen(frame->left_footer));
 		}
@@ -157,6 +160,7 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 		right_width = 0;
 	else {
 		if (_xv_is_multibyte) {
+			SERVERTRACE((777, "fs = %p\n", TextFont_Set(frame->ginfo)));
 			right_width = Xutf8TextEscapement(TextFont_Set(frame->ginfo), 
 					frame->right_footer, (int)strlen(frame->right_footer));
 		}
