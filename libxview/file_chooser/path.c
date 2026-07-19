@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)path.c 1.18 93/06/29  DRA: RCS $Id: path.c,v 4.3 2025/03/08 13:24:37 dra Exp $ ";
+static char     sccsid[] = "@(#)path.c 1.18 93/06/29  DRA: RCS $Id: path.c,v 4.4 2026/07/18 20:28:49 dra Exp $ ";
 #endif
 #endif
 
@@ -88,15 +88,6 @@ static Xv_opaque path_set_avlist(Path_name public, Attr_avlist avlist)
 				private->use_frame = (int)attrs[1];
 				break;
 
-#ifdef OW_I18N
-			case PATH_RELATIVE_TO_WCS:
-				ATTR_CONSUME(attrs[0]);
-
-				xv_free_ref(private->relative);
-				private->relative = _xv_wcstombsdup((wchar_t *)attrs[1]);
-				break;
-#endif /* OW_I18N */
-
 			case PATH_RELATIVE_TO:
 				ATTR_CONSUME(attrs[0]);
 				private->relative = xv_strcpy(private->relative,
@@ -105,11 +96,6 @@ static Xv_opaque path_set_avlist(Path_name public, Attr_avlist avlist)
 				break;
 
 			case PATH_LAST_VALIDATED:
-
-#ifdef OW_I18N
-			case PATH_LAST_VALIDATED_WCS:
-#endif
-
 				ATTR_CONSUME(attrs[0]);
 				xv_error(public,
 						ERROR_CANNOT_SET, attrs[0], ERROR_PKG, PATH_NAME, NULL);
@@ -121,11 +107,6 @@ static Xv_opaque path_set_avlist(Path_name public, Attr_avlist avlist)
 				break;
 
 			case PANEL_NOTIFY_PROC:
-
-#ifdef OW_I18N
-			case PANEL_NOTIFY_PROC_WCS:
-#endif
-
 				ATTR_CONSUME(attrs[0]);
 				private->client_notify = (Panel_setting(*)(Panel_item, Event *,
 												struct stat *))attrs[1];
@@ -171,20 +152,6 @@ static Xv_opaque path_get_attr(Path_name public, int *status, Attr_attribute att
 		case PATH_LAST_VALIDATED:
 			return (Xv_opaque) private->valid_path;
 
-#ifdef OW_I18N
-		case PATH_RELATIVE_TO_WCS:{
-				xv_free_ref(private->relative_wcs);
-				private->relative_wcs = _xv_mbstowcsdup(private->relative);
-				return (Xv_opaque) private->relative_wcs;
-			}
-
-		case PATH_LAST_VALIDATED_WCS:{
-				xv_free_ref(private->valid_path_wcs);
-				private->valid_path_wcs = _xv_mbstowcsdup(private->valid_path);
-				return (Xv_opaque) private->valid_path_wcs;
-			}
-#endif /* OW_I18N */
-
 		case PATH_IS_NEW_FILE:
 			return (Xv_opaque) private->new_file;
 
@@ -215,11 +182,6 @@ static int path_destroy_private(Path_name public, Destroy_status status)
 
     xv_free_ref( private->valid_path );
     xv_free_ref( private->relative );
-
-#ifdef OW_I18N
-    xv_free_ref( private->valid_path_wcs );
-    xv_free_ref( private->relative_wcs );
-#endif
 
     xv_free ( private );
 
