@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.28 2026/07/09 16:12:26 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_input.c 20.59 93/06/28 DRA: $Id: fm_input.c,v 4.29 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 #endif
 
@@ -112,23 +112,6 @@ Pkg_private Notify_value frame_input(Frame fp, Notify_event nev,
 				sizeHints.height = frame->rectcache.r_height;
 				XSetNormalHints(xv_display(info), xv_xid(info), &sizeHints);
 			}
-
-#ifdef OW_I18N
-			if (status_get(frame, show_imstatus)) {
-				if (status_get(frame, show_footer))
-					xv_set(frame->imstatus,
-							XV_WIDTH, frame->rectcache.r_width,
-							XV_Y, frame->rectcache.r_height -
-							xv_get(frame->footer, XV_HEIGHT) -
-							xv_get(frame->imstatus, XV_HEIGHT), NULL);
-				else
-					xv_set(frame->imstatus,
-							XV_WIDTH, frame->rectcache.r_width,
-							XV_Y, frame->rectcache.r_height -
-							xv_get(frame->imstatus, XV_HEIGHT), NULL);
-
-			}
-#endif
 
 			if (status_get(frame, show_footer)) {
 				xv_set(frame->footer,
@@ -317,25 +300,6 @@ Pkg_private void frame_focus_win_event_proc(Xv_Window window, Event *event, Noti
 		       (unsigned)width, (unsigned)height);
     }
 }
-
-#ifdef OW_I18N
-Pkg_private     Notify_value
-frame_IMstatus_input(IMstatus, event, arg, type)
-    Xv_Window       IMstatus;
-    Event          *event;
-    Notify_arg      arg;
-    Notify_event_type type;
-{
-    switch (event_action(event)) {
-      case WIN_REPAINT:
-	frame_display_IMstatus(xv_get(IMstatus, WIN_PARENT), FALSE);
-	break;
-      default:
-	break;
-    }
-    return notify_next_event_func(IMstatus, (Notify_event)event, arg, type);
-}
-#endif
 
 /*
  * XView private function to set the accept_default_focus bit
