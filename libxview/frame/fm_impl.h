@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.12 2026/04/18 08:15:36 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.13 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 #endif
 
@@ -24,8 +24,6 @@ static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4
 #include <stdio.h>
 #endif  /* FILE */
 #include <sys/time.h>
-#ifdef OW_I18N
-#endif /* OW_I18N */
 #include <xview/xv_i18n.h>
 #include <xview/notify.h>
 #include <xview/rect.h>
@@ -52,10 +50,8 @@ static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
-#ifdef OW_I18N
 #include <X11/Xresource.h>
-#endif
+
 #define	FRAME_CLASS_PRIVATE(f)	XV_PRIVATE(Frame_class_info, Xv_frame_class, f)
 #define	FRAME_CLASS_PUBLIC(frame)	XV_PUBLIC(frame)
 #define FRAME_PUBLIC(frame)	FRAME_CLASS_PUBLIC(frame)
@@ -65,11 +61,7 @@ static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4
 
 /* ACC_XVIEW */
 typedef struct frame_menu_accelerator {
-#ifdef OW_I18N
-    _xv_string_attr_dup_t	keystr;
-#else
     char	   		*keystr; /* e.g. "Shift+Ctrl+m" */
-#endif /* OW_I18N */
     short	    code;   /* = event->ie_code */
     KeySym	    keysym; /* X keysym */
     frame_accel_notify_func	notify_proc; /* accelerator notify proc */
@@ -87,9 +79,7 @@ typedef struct _frame_a_d{
 
 typedef	struct	{
     Frame	 public_self;	  /* back pointer to object */
-#ifndef OW_I18N
     char	*label;		  /* string in name stripe & default icon */
-#endif
     Icon 	 icon;
     Icon 	 default_icon;    /* Default Icon */
     Frame	 first_subframe;  /* first subframe in list of subframes */
@@ -108,10 +98,8 @@ typedef	struct	{
     XColor	 fg;		  /* foreground color */
     Xv_Window	 focus_window;	  /* Location Cursor window */
     Xv_Window	 footer;          /* Win that is used to implement the footer */
-#ifndef OW_I18N
     char	*left_footer;	  /* string in left footer */
     char	*right_footer;	  /* string in right footer */
-#endif
     Graphics_info	*ginfo;	  /* OLGX structure used to paint footers */
     Frame_accelerator	*accelerators;	/* Window Level Accelerator list */
     /* ACC_XVIEW */
@@ -120,19 +108,6 @@ typedef	struct	{
     int		menu_count;	/* Count of menus in list */
     int		max_menu_count;	/* Max count of menus in list */
     /* ACC_XVIEW */
-#ifdef OW_I18N
-    Xv_Window	 imstatus;	  /* Win that is used to implement IMstatus */
-    _xv_string_attr_dup_t
-		 label;           /* string in name stripe & default icon */
-    _xv_string_attr_dup_t
-		 left_footer;     /* left footer */
-    _xv_string_attr_dup_t
-		 right_footer;    /* right footer */
-    _xv_string_attr_dup_t
-		 left_IMstatus;   /* IM Status region */
-    _xv_string_attr_dup_t
-		 right_IMstatus;  /* IM Status region */
-#endif
 
 	/* footer text coordinates, set in frame_display_footer */
 	int left_x, right_x;
@@ -161,10 +136,6 @@ typedef	struct	{
 					   of it's subwindows wants it */
 	BIT_FIELD(show_label); 		/* show label or not */
 	BIT_FIELD(show_resize_corner);	/* show resize corner or not */
-#ifdef OW_I18N
-	BIT_FIELD(show_imstatus);	/* whether the IMstatus is visable */
-	BIT_FIELD(inactive_imstatus);	/* whether the IMstatus is active */
-#endif
     } status_bits;
 } Frame_class_info;
 
@@ -214,11 +185,6 @@ typedef	struct	{
 #define	FRAME_ICON_WIDTH	64
 #define	FRAME_ICON_HEIGHT	64
 
-#ifdef OW_I18N
-#define LEFT_IMSTATUS           0
-#define RIGHT_IMSTATUS          1
-#endif
-
 /* frame.c */
 Pkg_private int		frame_notify_count;
 
@@ -234,18 +200,12 @@ Pkg_private int frame_is_exposed(Frame frame);
 /* frame_input.c */
 Pkg_private Notify_value frame_input(Frame, Notify_event, Notify_arg, Notify_event_type);
 Pkg_private Notify_value frame_footer_input(Xv_Window footer, Event *event, Notify_arg arg, Notify_event_type type);
-#ifdef OW_I18N
-Pkg_private Notify_value frame_IMstatus_input(void);
-#endif
 Pkg_private void frame_focus_win_event_proc(Xv_Window window, Event *event, Notify_arg arg);
 
 /* frame_display.c */
 Pkg_private void frame_display_label(Frame_class_info *frame);
 Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 			int *left_start, int *left_end, int *right_start, int *right_end);
-#ifdef OW_I18N
-Pkg_private void	frame_display_IMstatus(Frame, int);
-#endif
 Pkg_private void frame_set_color(Frame_class_info *frame, XColor *fg, XColor *bg);
 
 /* fm_geom.c */
@@ -253,9 +213,6 @@ Pkg_private int frame_height_from_lines(int n, int show_label);
 Pkg_private int frame_width_from_columns(int x);
 Pkg_private void frame_position_sw(Frame_class_info *frame, Xv_Window nsw, Xv_Window swprevious, int width, int height, Rect *rect);
 Pkg_private int frame_footer_height(Frame_rescale_state scale);
-#ifdef OW_I18N
-Pkg_private int frame_IMstatus_height(Frame_rescale_state scale);
-#endif
 Pkg_private int frame_footer_baseline(Frame_rescale_state scale);
 Pkg_private int frame_footer_margin(Frame_rescale_state scale);
 Pkg_private int frame_inter_footer_gap(Frame_rescale_state scale);
