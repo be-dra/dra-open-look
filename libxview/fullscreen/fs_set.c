@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fs_set.c 20.31 93/06/28 DRA $Id: fs_set.c,v 2.3 2024/09/15 08:43:51 dra Exp $";
+static char     sccsid[] = "@(#)fs_set.c 20.31 93/06/28 DRA $Id: fs_set.c,v 2.4 2026/07/18 20:48:52 dra Exp $";
 #endif
 #endif
 
@@ -170,13 +170,7 @@ Pkg_private Xv_opaque fullscreen_set_avlist(Xv_opaque self,
 		fullscreen->grab_server = FALSE;
 	}
 	if (new_kbd_grab == FALSE && fullscreen->grab_kbd == TRUE) {
-
-#ifdef OW_I18N
-		window_set_xungrabkeyboard(fullscreen->input_window, display,
-				CurrentTime);
-#else
 		XUngrabKeyboard(display, CurrentTime);
-#endif
 
 		fullscreen->grab_kbd = FALSE;
 	}
