@@ -1,4 +1,4 @@
-/*      @(#)path.h 1.6 93/06/28 SMI  DRA: RCS $Id: path.h,v 4.2 2025/03/08 13:24:37 dra Exp $      */
+/*      @(#)path.h 1.6 93/06/28 SMI  DRA: RCS $Id: path.h,v 4.3 2026/07/18 20:29:00 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -24,12 +24,6 @@ typedef enum {
     PATH_USE_FRAME	= PATH_ATTR(ATTR_BOOLEAN,	2), /* CGS */
     PATH_RELATIVE_TO	= PATH_ATTR(ATTR_STRING,	3), /* CGS */
     PATH_LAST_VALIDATED	= PATH_ATTR(ATTR_STRING,	4), /* -G- */
-
-#ifdef OW_I18N
-    PATH_RELATIVE_TO_WCS	= PATH_ATTR(ATTR_WSTRING,	6), /* CGS */
-    PATH_LAST_VALIDATED_WCS	= PATH_ATTR(ATTR_WSTRING,	7), /* -G- */
-#endif /* OW_I18N */    
-
 
     /***************************************************************
     	Private Attributes
