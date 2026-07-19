@@ -1,4 +1,4 @@
-/*      @(#)fchsr_impl.h 1.22 93/06/28 SMI  DRA: RCS $Id: fchsr_impl.h,v 4.4 2025/07/25 09:23:18 dra Exp $      */
+/*      @(#)fchsr_impl.h 1.22 93/06/28 SMI  DRA: RCS $Id: fchsr_impl.h,v 4.5 2026/07/18 20:29:00 dra Exp $      */
 
 /*
  *	(c) Copyright 1992, 1993 Sun Microsystems, Inc. Sun design patents 
@@ -104,11 +104,6 @@ typedef struct {
     File_chooser_op	custom;		/* "customized" dialog */
     int			exten_height;
     fchsr_exten_func_t	exten_func;
-
-#ifdef OW_I18N
-    int			wchar_notify; /* use wide char for notify procs */
-    int			(* notify_func_wcs)();
-#endif
 } Fc_private;
 
 
