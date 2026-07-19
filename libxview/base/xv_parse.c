@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_parse.c 20.59 93/06/28  DRA: $Id: xv_parse.c,v 4.2 2026/03/27 08:45:39 dra Exp $";
+static char     sccsid[] = "@(#)xv_parse.c 20.59 93/06/28  DRA: $Id: xv_parse.c,v 4.3 2026/07/18 19:37:11 dra Exp $";
 #endif
 #endif
 
@@ -106,17 +106,7 @@ typedef enum {
     FLAG_LC_DISPLAYLANG,
     FLAG_LC_INPUTLANG,
     FLAG_LC_NUMERIC,
-#ifdef OW_I18N
-#ifdef FULL_R5
-    FLAG_LC_TIMEFORMAT,
-    FLAG_IM_INPUT_STYLE,
-    FLAG_IM_STATUS_STYLE
-#else /* FULL_R5 */
     FLAG_LC_TIMEFORMAT
-#endif /* FULL_R5 */
-#else /* OW_I18N */
-    FLAG_LC_TIMEFORMAT
-#endif /* OW_I18N */
 #ifdef _XV_DEBUG
   , FLAG_LIST_FONTS,
     FLAG_DEBUG,
@@ -173,12 +163,6 @@ static Cmd_line_flag cmd_line_flags[] = {
     { "-lc_inputlang", "-lc_inputlang", { "openWindows.inputLang", 0 }, 1 },
     { "-lc_numeric", "-lc_numeric", { "openWindows.numericFormat", 0 }, 1 },
     { "-lc_timeformat", "-lc_timeformat", { "openWindows.timeFormat", 0 }, 1 },
-#ifdef OW_I18N
-#ifdef FULL_R5
-    { "-preedit_style", "-preedit_style", { "openWindows.imPreeditStyle.cmdline", "OpenWindows.ImPreeditStyle.cmdline" }, 1 },
-    { "-status_style", "-status_style", { "openWindows.imStatusStyle.cmdline", "OpenWindows.ImStatusStyle.cmdline" }, 1 },
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 #ifdef _XV_DEBUG
     { "", "-list_fonts", { 0, 0 }, 0 },
     { "", "-Xv_debug", { 0, 0 }, 1 },
@@ -495,14 +479,6 @@ static int xv_parse_one(char *app_name, int argc, char **argv)
 		case FLAG_LC_INPUTLANG:
 		case FLAG_LC_NUMERIC:
 		case FLAG_LC_TIMEFORMAT:
-
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-		case FLAG_IM_INPUT_STYLE:
-		case FLAG_IM_STATUS_STYLE:
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 			xv_add_cmdline_entry(slot, NULL, argv[1], NULL, argv);
 			break;
