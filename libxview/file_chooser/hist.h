@@ -1,4 +1,4 @@
-/*      @(#)hist.h 1.5 93/06/28 SMI  DRA: RCS $Id: hist.h,v 4.2 2025/03/08 13:24:37 dra Exp $      */
+/*      @(#)hist.h 1.5 93/06/28 SMI  DRA: RCS $Id: hist.h,v 4.3 2026/07/18 20:29:00 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -45,18 +45,6 @@ typedef enum {
     HISTORY_VALUE		= HIST_ATTR(ATTR_INT_PAIR,	11), /* -G- */
     HISTORY_LABEL		= HIST_ATTR(ATTR_INT_PAIR,	12), /* -G- */
     HISTORY_INACTIVE		= HIST_ATTR(ATTR_INT_TRIPLE,	13), /* -GS */
-
-#ifdef OW_I18N
-    /*
-     * Wide-Char Interface
-     */
-    HISTORY_ADD_FIXED_ENTRY_WCS	 	= HIST_ATTR(ATTR_OPAQUE_PAIR,	16), /* C-S */
-    HISTORY_ADD_ROLLING_ENTRY_WCS	= HIST_ATTR(ATTR_OPAQUE_PAIR,	17), /* C-S */
-    HISTORY_VALUE_WCS			= HIST_ATTR(ATTR_INT_PAIR,	18), /* -G- */
-    HISTORY_LABEL_WCS			= HIST_ATTR(ATTR_INT_PAIR,	19), /* -G- */
-    HISTORY_NOTIFY_PROC_WCS		= HIST_ATTR(ATTR_FUNCTION_PTR,	20), /* CGS */
-#endif  /* OW_I18N */
-
 
     /*
      * Private History_list Attributes, used by History_menu package.
