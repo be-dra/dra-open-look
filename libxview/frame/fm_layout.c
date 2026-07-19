@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_layout.c 20.51 93/06/28 DRA: $Id: fm_layout.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_layout.c 20.51 93/06/28 DRA: $Id: fm_layout.c,v 4.2 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 #endif
 
@@ -21,9 +21,6 @@ static void expand_sw(Frame_class_info *frame, Xv_Window child, Rect *rectp);
 static void frame_adjust_for_footer(Frame frame, Xv_Window footer, int insert);
 static Xv_Window frame_prev_child(Xv_Window first, Xv_Window target_child);
 static void frame_adjust_rect(Frame frame_public, Frame_class_info *frame, Xv_Window child, int is_subframe, Rect *r);
-#ifdef OW_I18N
-static void     frame_adjust_for_IMstatus();
-#endif
 
 int xv_deaf(Xv_window	parent, Bool on);
 
@@ -35,20 +32,12 @@ Pkg_private int frame_layout(Xv_Window frame_public, Xv_Window child, Window_lay
 	int is_frame;
 	int is_subframe;
 	int is_footer;
-
-#ifdef OW_I18N
-	int is_IMstatus;
-#endif
 	Rect rect;
 
 	is_frame = (int)xv_get(frame_public, XV_IS_SUBTYPE_OF, FRAME_CLASS);
 	is_subframe = (is_frame && (int)xv_get(child,XV_IS_SUBTYPE_OF,FRAME_CLASS));
 
 	is_footer = (int)xv_get(child, XV_KEY_DATA, FRAME_FOOTER_WINDOW);
-
-#ifdef OW_I18N
-	is_IMstatus = (int)xv_get(child, XV_KEY_DATA, FRAME_IMSTATUS_WINDOW);
-#endif
 
 	if (! is_frame) {
 		/* strange: rydyn ni'n dod yma gyda'r ROOT-WINDOW */
@@ -72,12 +61,6 @@ Pkg_private int frame_layout(Xv_Window frame_public, Xv_Window child, Window_lay
 					last_child = frame_last_child(frame->first_subframe);
 				else if (is_footer)
 					frame_adjust_for_footer(frame_public, child, TRUE);
-
-#ifdef OW_I18N
-				else if (is_IMstatus)
-					frame_adjust_for_IMstatus(frame_public, child, TRUE);
-#endif
-
 				else {
 					Xv_Window last_not_icon;
 
@@ -130,13 +113,7 @@ Pkg_private int frame_layout(Xv_Window frame_public, Xv_Window child, Window_lay
 							WIN_DESIRED_WIDTH, desired_w,
 							WIN_DESIRED_HEIGHT, desired_h, NULL);
 				}
-				if (!is_footer &&
-
-#ifdef OW_I18N
-						!is_IMstatus &&
-#endif
-
-						xv_get(child, XV_KEY_DATA,
+				if (!is_footer && xv_get(child, XV_KEY_DATA,
 								FRAME_ORPHAN_WINDOW) == FALSE) {
 
 					/* Add the child to the subwindow or subframe list */
@@ -222,12 +199,6 @@ Pkg_private int frame_layout(Xv_Window frame_public, Xv_Window child, Window_lay
 
 				if (is_footer)
 					frame_adjust_for_footer(frame_public, child, TRUE);
-
-#ifdef OW_I18N
-				else if (is_IMstatus)
-					frame_adjust_for_IMstatus(frame_public, child, TRUE);
-#endif
-
 				else if (EXTEND_HEIGHT(child) || EXTEND_WIDTH(child)) {
 					(void)win_get_outer_rect(child, &rect);
 					expand_sw(frame, child, &rect);
@@ -240,11 +211,6 @@ Pkg_private int frame_layout(Xv_Window frame_public, Xv_Window child, Window_lay
 			(void)win_remove(child);
 			if (is_footer)
 				frame_adjust_for_footer(frame_public, child, FALSE);
-
-#ifdef OW_I18N
-			else if (is_IMstatus)
-				frame_adjust_for_IMstatus(frame_public, child, TRUE);
-#endif
 
 			else if (!is_subframe && xv_get(child, WIN_KBD_FOCUS))
 				(void)win_set_kbd_focus(child, (unsigned long)WIN_NULLLINK);
@@ -406,39 +372,6 @@ static void frame_adjust_rect(Frame frame_public, Frame_class_info *frame, Xv_Wi
 		frame_grant_extend_to_edge(child, TRUE);
 	}
 }
-
-#ifdef OW_I18N
-/*
- * Adjust the frame's size to insert or remove the IMstatus window.
- * if insert is TRUE, then the IMstatus is being added to the frame,
- * otherwise the IMstatus is being removed from the frame.
- */
-static void
-frame_adjust_for_IMstatus(frame, IMstatus, insert)
-    Frame frame;
-    Xv_Window IMstatus;
-    int insert;
-{
-    Rect frame_rect;
-    Rect IMstatus_rect;
-    Rect footer_rect;
-
-    (void)win_getrect(frame, &frame_rect);
-    (void)win_getrect(IMstatus, &IMstatus_rect);
-
-    if (insert) {
-        IMstatus_rect.r_left = 0;
-        IMstatus_rect.r_top = frame_rect.r_height;
-        IMstatus_rect.r_width = frame_rect.r_width;
-        win_setrect(IMstatus, &IMstatus_rect);
-        frame_rect.r_height += IMstatus_rect.r_height;
-        win_setrect(frame, &frame_rect);
-    } else {
-        frame_rect.r_height -= IMstatus_rect.r_height;
-        win_setrect(frame, &frame_rect);
-    }
-}
-#endif
 
 Pkg_private Xv_Window frame_last_child(Xv_Window first)
 {
