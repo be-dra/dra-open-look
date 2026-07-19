@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)pf_text.c 20.34 93/06/28 SMI DRA: RCS $Id: pf_text.c,v 4.2 2026/07/15 18:35:17 dra Exp $ ";
+static char     sccsid[] = "@(#)pf_text.c 20.34 93/06/28 SMI DRA: RCS $Id: pf_text.c,v 4.3 2026/07/18 17:06:36 dra Exp $ ";
 #endif
 #endif
 
@@ -197,36 +197,33 @@ Xv_public void xv_pf_textbound(struct pr_subregion *bound, int len, Pixfont *pf,
 	}
 }
 
-Xv_public struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-
 Xv_public struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str)
 {
     struct pr_size  size;
-    XFontStruct    *font_info = (XFontStruct *) xv_get(pf, FONT_INFO);
-    int             direction = 0;
-    int             ascent = 0;
-    int             descent = 0;
-    XCharStruct     overall_return;
     Font_info	  *font = FONT_PRIVATE(pf);
-    XFontSet	   font_set = (XFontSet)xv_get(pf, FONT_SET_ID);
-    XRectangle	   overall_ink_extents = {0};
-    XRectangle	   overall_logical_extents = {0};
-
-    /*
-     * Initialize overall_return to zeros
-     * It is not initialized like overall_ink_extents above because the MIT 
-     * build (using cc), complains about "no automatic aggregate initialization"
-     */
-    XV_BZERO(&overall_return, sizeof(XCharStruct));
 
     if (_xv_is_multibyte && font->type == FONT_TYPE_TEXT)  {
-        XmbTextExtents(font_set, str, len, &overall_ink_extents, &overall_logical_extents);
+    	XRectangle	   overall_logical_extents = {0};
+    	XRectangle	   overall_ink_extents = {0};
+    	XFontSet	   font_set = (XFontSet)xv_get(pf, FONT_SET_ID);
+
+        XmbTextExtents(font_set, str, len, &overall_ink_extents,
+											&overall_logical_extents);
         size.x = overall_logical_extents.width;
-        size.y = overall_logical_extents.height;	/* max height so won't clip */
+        size.y = overall_logical_extents.height; /* max height so won't clip */
     }
     else  {
-        XTextExtents(font_info, str, len,
-			&direction, &ascent, &descent, &overall_return);
+    	XFontStruct    *font_info = (XFontStruct *) xv_get(pf, FONT_INFO);
+    	XCharStruct     overall_return;
+    	int             ascent = 0;
+    	int             descent = 0;
+    	int             direction = 0;
+
+		/* Initialize overall_return to zeros */
+		XV_BZERO(&overall_return, sizeof(XCharStruct));
+
+        XTextExtents(font_info, str, len, &direction, &ascent, &descent,
+										&overall_return);
         size.x = overall_return.width;
         size.y = ascent + descent;	/* max height so won't clip */
     }
