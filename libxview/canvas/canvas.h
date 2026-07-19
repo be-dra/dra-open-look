@@ -1,4 +1,4 @@
-/*      @(#)canvas.h 20.38 93/06/28 SMI    DRA: $Id: canvas.h,v 4.4 2025/06/04 19:58:37 dra Exp $    */
+/*      @(#)canvas.h 20.38 93/06/28 SMI    DRA: $Id: canvas.h,v 4.5 2026/07/18 19:46:29 dra Exp $    */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -101,10 +101,6 @@ typedef enum {
     CANVAS_PAINTWINDOW_ATTRS	= CANVAS_ATTR_LIST(ATTR_RECURSIVE, ATTR_AV, 70),
     CANVAS_NO_CLIPPING		= CANVAS_ATTR(ATTR_BOOLEAN,      75),
     CANVAS_CMS_REPAINT          = CANVAS_ATTR(ATTR_BOOLEAN,      80)
-#ifdef OW_I18N
-	,
-    CANVAS_IM_PREEDIT_FRAME     = CANVAS_ATTR(ATTR_OPAQUE,       85)
-#endif
 } Canvas_attribute;
 
 
