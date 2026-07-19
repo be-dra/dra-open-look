@@ -1,4 +1,4 @@
-/*	@(#)icon.h 20.13 90/03/13 SMI	DRA: RCS $Id: icon.h,v 4.3 2026/03/29 14:32:24 dra Exp $ 	*/
+/*	@(#)icon.h 20.13 90/03/13 SMI	DRA: RCS $Id: icon.h,v 4.4 2026/07/18 20:45:33 dra Exp $ 	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -35,9 +35,6 @@
 #define ICON_WIDTH		XV_WIDTH
 #define ICON_HEIGHT		XV_HEIGHT
 #define ICON_LABEL		XV_LABEL
-#ifdef OW_I18N
-#define ICON_LABEL_WCS          XV_LABEL_WCS
-#endif
 #define ICON_FONT		XV_FONT
 
 #define icon_attr_next(attr) 	(Icon_attribute *)attr_next((Xv_opaque *)attr)
@@ -69,11 +66,6 @@ typedef enum {
    ICON_TRANSPARENT       = ICON_ATTR(ATTR_BOOLEAN,       20),
    ICON_MASK_IMAGE	  = ICON_ATTR(ATTR_PIXRECT_PTR,   25),
    ICON_TRANSPARENT_LABEL = ICON_ATTR(ATTR_STRING,        30)
-#ifdef OW_I18N
-                                                             ,
-   ICON_TRANSPARENT_LABEL_WCS
-                          = ICON_ATTR(ATTR_WSTRING,        35)
-#endif /* OW_I18N */
 } Icon_attribute;
 
 typedef struct {
