@@ -1,4 +1,4 @@
-/*      @(#)file_chsr.h 1.20 93/06/28 SMI  DRA: RCS $Id: file_chsr.h,v 4.4 2025/07/25 09:23:18 dra Exp $      */
+/*      @(#)file_chsr.h 1.20 93/06/28 SMI  DRA: RCS $Id: file_chsr.h,v 4.5 2026/07/18 20:29:00 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -61,19 +61,6 @@ typedef enum {
     FILE_CHOOSER_EXTEN_HEIGHT	= FCHSR_ATTR(ATTR_INT,		19), /* CGS */
     FILE_CHOOSER_EXTEN_FUNC	= FCHSR_ATTR(ATTR_FUNCTION_PTR,	20),  /* CGS */
     FILE_CHOOSER_SAVE_TO_DIR	= FCHSR_ATTR(ATTR_BOOLEAN,	28), /* CGS */
-
-#ifdef OW_I18N
-    /*
-     * Wide Char Interface
-     */
-    FILE_CHOOSER_DOC_NAME_WCS		= FCHSR_ATTR(ATTR_WSTRING,	21), /* CGS */
-    FILE_CHOOSER_DIRECTORY_WCS		= FCHSR_ATTR(ATTR_WSTRING,	22), /* CGS */
-    FILE_CHOOSER_FILTER_STRING_WCS	= FCHSR_ATTR(ATTR_WSTRING,	23), /* CGS */
-    FILE_CHOOSER_APP_DIR_WCS		= FCHSR_ATTR(ATTR_OPAQUE_PAIR,	24), /* C-S */
-    FILE_CHOOSER_CUSTOMIZE_OPEN_WCS	= FCHSR_ATTR(ATTR_OPAQUE_TRIPLE,25), /* C-- */
-    FILE_CHOOSER_NOTIFY_FUNC_WCS	= FCHSR_ATTR(ATTR_FUNCTION_PTR,	26), /* CGS */
-    FILE_CHOOSER_WCHAR_NOTIFY		= FCHSR_ATTR(ATTR_BOOLEAN,	27), /* CGS */
-#endif /* OW_I18N */
 
     FILE_CHOOSER_ADD_UI_FUNC	= FCHSR_ATTR(ATTR_FUNCTION_PTR,	100), /* CG- */
     FILE_CHOOSER_SHOW_PATTERN	= FCHSR_ATTR(ATTR_BOOLEAN,	101), /* CG- */
@@ -165,17 +152,6 @@ typedef struct {
 } File_chooser_row;
 
 typedef int (*fchsr_compare_func_t)(File_chooser_row *, File_chooser_row *);
-
-#ifdef OW_I18N
-typedef struct {
-    wchar_t *		file_wcs;
-    struct stat *	stats;
-    File_chooser_op	matched;
-    char *		xfrm;		/* returned by strxfrm() */
-    Xv_opaque		reserved;	/* reserved for future use */
-} File_chooser_row_wcs;
-#endif
-
 
 /*
  * Built-in comparison functions
