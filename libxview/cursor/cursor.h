@@ -1,4 +1,4 @@
-/*	@(#)cursor.h 20.36 93/06/28 SMI DRA: RCS  $Id: cursor.h,v 2.5 2026/06/23 19:23:38 dra Exp $	*/
+/*	@(#)cursor.h 20.36 93/06/28 SMI DRA: RCS  $Id: cursor.h,v 2.6 2026/07/18 19:56:07 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -226,9 +226,6 @@ typedef enum {
     CURSOR_OP			= CURSOR_ATTR(ATTR_INT,		 	10),
     CURSOR_SRC_CHAR		= CURSOR_ATTR(ATTR_INT,		 	15),
     CURSOR_STRING		= CURSOR_ATTR(ATTR_STRING,		16),
-#ifdef OW_I18N
-    CURSOR_STRING_WCS		= CURSOR_ATTR(ATTR_WSTRING,	 	17),
-#endif
     CURSOR_XHOT			= CURSOR_ATTR(ATTR_INT,		 	20),
     CURSOR_YHOT			= CURSOR_ATTR(ATTR_INT,		 	25),
 	CURSOR_USE_STD_FONT = CURSOR_ATTR(ATTR_BOOLEAN,     26),
