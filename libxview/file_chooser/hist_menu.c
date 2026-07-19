@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)hist_menu.c 1.9 93/06/28  DRA: RCS $Id: hist_menu.c,v 4.3 2025/03/08 13:24:37 dra Exp $ ";
+static char     sccsid[] = "@(#)hist_menu.c 1.9 93/06/28  DRA: RCS $Id: hist_menu.c,v 4.4 2026/07/18 20:28:21 dra Exp $ ";
 #endif
 #endif
 
@@ -79,13 +79,6 @@ static Xv_opaque hist_menu_set(History_menu public, Attr_avlist avlist)
 	    private->notify_proc = (void (*)(History_menu, char *,char *))attrs[1];
 	    break;
 
-#ifdef OW_I18N
-	case HISTORY_NOTIFY_PROC_WCS:
-	    ATTR_CONSUME(attrs[0]);
-	    private->notify_proc_wcs = (void (*)()) attrs[1];
-	    break;
-#endif
-
 	case HISTORY_MENU_HISTORY_LIST: {
 	    ATTR_CONSUME(attrs[0]);
 
@@ -128,11 +121,6 @@ static Xv_opaque hist_menu_get(History_menu public, int *status, Attr_attribute 
 
 		case HISTORY_NOTIFY_PROC:
 			return (Xv_opaque) private->notify_proc;
-
-#ifdef OW_I18N
-		case HISTORY_NOTIFY_PROC_WCS:
-			return (Xv_opaque) private->notify_proc_wcs;
-#endif
 
 		default:
 			*status = xv_check_bad_attr(HISTORY_MENU, attr);
@@ -190,16 +178,6 @@ static void hist_menu_notify_proc(Menu menu, Menu_item mi)
 												XV_KEY_DATA, hist_key);
     char *value = (char *)xv_get(private->list, HISTORY_VALUE_FROM_MENUITEM,mi);
 
-#ifdef OW_I18N
-    if ( private->notify_proc_wcs ) {
-	wchar_t *value_wcs = _xv_mbstowcsdup( value );
-	wchar_t *label_wcs = _xv_mbstowcsdup( label );
-
-	(* private->notify_proc)( HIST_MENU_PUBLIC(private), label_wcs, value_wcs );
-	xv_free( label_wcs );
-	xv_free( value_wcs );
-    } else
-#endif
     if ( private->notify_proc )
 	(* private->notify_proc)( HIST_MENU_PUBLIC(private), label, value );
 
