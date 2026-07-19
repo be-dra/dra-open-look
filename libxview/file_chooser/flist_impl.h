@@ -1,4 +1,4 @@
-/*      @(#)flist_impl.h 1.11 93/06/28 SMI  DRA: RCS $Id: flist_impl.h,v 4.2 2024/11/30 12:44:35 dra Exp $      */
+/*      @(#)flist_impl.h 1.11 93/06/28 SMI  DRA: RCS $Id: flist_impl.h,v 4.3 2026/07/18 20:29:00 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -49,17 +49,8 @@ typedef struct {
 	unsigned int	use_frame : 1;		/* can i use the current frame? */
 	unsigned int	created : 1;		/* reached xv_end_create */
 	unsigned int	new_dir : 1;		/* opened a new directory */
-#ifdef OW_I18N
-	unsigned	wchar_notify : 1; 	/* convert to wide char */
-	unsigned	wchar_list_notify : 1;  /* PANEL_NOTIFY_WCS was set */
-#endif
     } f;
 
-#ifdef OW_I18N
-    wchar_t *		directory_wcs;
-    wchar_t *		regex_pattern_wcs;
-    wchar_t *		dotdot_string_wcs;
-#endif /* OW_I18N */
 } File_list_private;
 
 
