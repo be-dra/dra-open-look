@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.12 2026/03/16 16:58:57 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.13 2026/07/18 17:07:03 dra Exp $";
 #endif
 #endif
 
@@ -40,6 +40,7 @@ static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.
 
 #include <X11/Xlib.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/font_impl.h>
 #include <xview_private/scrn_impl.h>
 #include <xview_private/svr_impl.h>
 #include <xview_private/windowimpl.h>
@@ -50,12 +51,6 @@ static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.
 
 #define INHERIT_VALUE(f) im->f ? im->f : std_image ? std_image->f : 0
 #define IMAX(a, b) ((int)(b) > (int)(a) ? (int)(b) : (int)(a))
-
-#ifdef  OW_I18N
-extern struct pr_size xv_pf_textwidth_wc();
-#endif
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-
 
 typedef enum {
     CLEANUP_EXIT,
@@ -1912,13 +1907,7 @@ static int image_compute_size(Xv_menu_info *m, struct image *im,
 		else
 			font = INHERIT_VALUE(font);
 
-#ifdef OW_I18N
-		_xv_use_pswcs_value_nodup(&im->string);
-		im->button_size = xv_pf_textwidth_wc(wslen(im->string.pswcs.value),
-							font, im->string.pswcs.value);
-#else
 		im->button_size = xv_pf_textwidth((int)strlen(im->string), font, im->string);
-#endif /* OW_I18N */
 
 		/* make every string menu item with the same font the same height */
 		im->button_size.y = Button_Height(m->ginfo);
