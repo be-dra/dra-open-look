@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.9 2026/04/16 14:59:14 dra Exp $ ";
+static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.10 2026/07/18 20:28:11 dra Exp $ ";
 #endif
 #endif
 
@@ -190,66 +190,17 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 				}
 				break;
 
-#ifdef OW_I18N
-			case FILE_CHOOSER_DOC_NAME_WCS:
-				ATTR_CONSUME(attrs[0]);
-
-				if (private->type == FILE_CHOOSER_OPEN)
-					break;
-
-				if (private->state) {
-					xv_free_ref(private->state->doc_name);
-					private->state->doc_name =
-							_xv_wcstombsdup((wchar_t *)attrs[1]);
-				}
-				else
-					xv_set(private->ui.document_txt,
-							PANEL_VALUE_WCS, attrs[1], NULL);
-				if (!private->save_to_dir)
-					fc_item_inactive(private->ui.save_btn,
-							no_string((char *)attrs[1]));
-				break;
-#endif /* OW_I18N */
-
-
-
-
-#ifdef OW_I18N
-			case FILE_CHOOSER_DIRECTORY_WCS:
-#endif
-
 			case FILE_CHOOSER_DIRECTORY:
-
-#ifdef OW_I18N
-				if (attrs[0] == FILE_CHOOSER_DIRECTORY_WCS) {
-					if (private->state) {
-						xv_free_ref(private->state->directory);
-						private->state->directory
-								= _xv_wcstombsdup((wchar_t *)attrs[1]);
-					}
-					else {
-						xv_set(private->ui.list,
-								FILE_LIST_DIRECTORY_WCS, attrs[1], NULL);
-					}
+				if (private->state) {
+					private->state->directory
+							= xv_strcpy(private->state->directory,
+							(char *)attrs[1]
+							);
 				}
-				else {	/* Multibyte */
-#endif
-
-					if (private->state) {
-						private->state->directory
-								= xv_strcpy(private->state->directory,
-								(char *)attrs[1]
-								);
-					}
-					else {
-						xv_set(private->ui.list,
-								FILE_LIST_DIRECTORY, attrs[1], NULL);
-					}
-
-#ifdef OW_I18N
+				else {
+					xv_set(private->ui.list,
+							FILE_LIST_DIRECTORY, attrs[1], NULL);
 				}
-#endif
-
 				/*
 				 * make sure current folder gets null'd as well,
 				 * because the cd-func won't get activated.
@@ -275,14 +226,6 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 				ATTR_CONSUME(attrs[0]);
 				private->notify_func = (fchsr_notify_func_t) attrs[1];
 				break;
-
-
-#ifdef OW_I18N
-			case FILE_CHOOSER_NOTIFY_FUNC_WCS:
-				ATTR_CONSUME(attrs[0]);
-				private->notify_func_wcs = (int (*)())attrs[1];
-				break;
-#endif /* OW_I18N */
 
 
 			case FILE_CHOOSER_AUTO_UPDATE:
@@ -317,10 +260,6 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 							FILE_LIST_ABBREV_VIEW, attrs[1], NULL);
 				break;
 
-#ifdef OW_I18N
-			case FILE_CHOOSER_APP_DIR_WCS:
-#endif
-
 			case FILE_CHOOSER_APP_DIR:{
 					int fixed_count;
 
@@ -348,17 +287,9 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 					if (fixed_count <=
 							(FC_APP_SPACE_SIZE + private->user_entries))
 
-#ifdef OW_I18N
-						xv_set(private->hist_list,
-								(attrs[0] == FILE_CHOOSER_APP_DIR_WCS)
-								? HISTORY_ADD_FIXED_ENTRY_WCS
-								: HISTORY_ADD_FIXED_ENTRY,
-								attrs[1], attrs[2], NULL);
-#else
 						xv_set(private->hist_list,
 								HISTORY_ADD_FIXED_ENTRY, attrs[1], attrs[2],
 								NULL);
-#endif
 
 					/* else ignore */
 
@@ -381,23 +312,6 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 							FILE_LIST_FILTER_STRING, attrs[1], NULL);
 				}
 				break;
-
-
-#ifdef OW_I18N
-			case FILE_CHOOSER_FILTER_STRING_WCS:
-				ATTR_CONSUME(attrs[0]);
-
-				if (private->state) {
-					xv_free_ref(private->state->filter_string);
-					private->state->filter_string
-							= _xv_wcstombsdup((wchar_t *)attrs[1]);
-				}
-				else {
-					xv_set(private->ui.list,
-							FILE_LIST_FILTER_STRING_WCS, attrs[1], NULL);
-				}
-				break;
-#endif /* OW_I18N */
 
 
 			case FILE_CHOOSER_MATCH_GLYPH:
@@ -548,11 +462,6 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 				private->exten_func = (fchsr_exten_func_t) attrs[1];
 				break;
 
-
-#ifdef OW_I18N
-			case FILE_CHOOSER_CUSTOMIZE_OPEN_WCS:
-#endif
-
 			case FILE_CHOOSER_CUSTOMIZE_OPEN:
 
 				if (private->type != FILE_CHOOSER_OPEN) {
@@ -568,44 +477,18 @@ static Xv_opaque file_chooser_set(File_chooser public, Attr_avlist avlist)
 					break;
 				}
 
-#ifdef OW_I18N
-				if (attrs[0] == FILE_CHOOSER_CUSTOMIZE_OPEN_WCS) {
-					xv_free_ref(private->state->custom_name);
-					private->state->custom_name
-							= _xv_wcstombsdup((wchar_t *)attrs[1]);
+				private->state->custom_name
+						= xv_strcpy(private->state->custom_name,
+						(char *)attrs[1]);
 
-					xv_free_ref(private->state->custom_string);
-					private->state->custom_string
-							= _xv_wcstombsdup((wchar_t *)attrs[2]);
-				}
-				else {
-#endif
+				private->state->custom_string
+						= xv_strcpy(private->state->custom_string,
+						(char *)attrs[2]);
 
-					private->state->custom_name
-							= xv_strcpy(private->state->custom_name,
-							(char *)attrs[1]
-							);
-
-					private->state->custom_string
-							= xv_strcpy(private->state->custom_string,
-							(char *)attrs[2]
-							);
-
-#ifdef OW_I18N
-				}
-#endif
 
 				private->custom = (File_chooser_op) attrs[3];
 				ATTR_CONSUME(attrs[0]);
 				break;
-
-
-#ifdef OW_I18N
-			case FILE_CHOOSER_WCHAR_NOTIFY:
-				ATTR_CONSUME(attrs[0]);
-				private->wchar_notify = (int)attrs[1];
-				break;
-#endif /* OW_I18N */
 
 
 			case FILE_CHOOSER_HISTORY_LIST:
@@ -766,11 +649,6 @@ static Xv_opaque file_chooser_get(File_chooser	public, int *status, Attr_attribu
 		case FILE_CHOOSER_DIRECTORY:
 			return xv_get(private->ui.list, FILE_LIST_DIRECTORY);
 
-#ifdef OW_I18N
-		case FILE_CHOOSER_DIRECTORY_WCS:
-			return xv_get(private->ui.list, FILE_LIST_DIRECTORY_WCS);
-#endif
-
 		case FILE_CHOOSER_TYPE:
 			return (Xv_opaque) private->type;
 
@@ -820,27 +698,11 @@ static Xv_opaque file_chooser_get(File_chooser	public, int *status, Attr_attribu
 			else
 				return xv_get(private->ui.document_txt, PANEL_VALUE);
 
-#ifdef OW_I18N
-		case FILE_CHOOSER_DOC_NAME_WCS:
-			if (private->type == FILE_CHOOSER_OPEN)
-				return XV_NULL;
-			else
-				return xv_get(private->ui.document_txt, PANEL_VALUE_WCS);
-#endif /* OW_I18N */
-
 		case FILE_CHOOSER_FILTER_STRING:
 			return xv_get(private->ui.list, FILE_LIST_FILTER_STRING);
 
 		case FILE_CHOOSER_NOTIFY_FUNC:
 			return (Xv_opaque) private->notify_func;
-
-#ifdef OW_I18N
-		case FILE_CHOOSER_FILTER_STRING_WCS:
-			return xv_get(private->ui.list, FILE_LIST_FILTER_STRING_WCS);
-
-		case FILE_CHOOSER_NOTIFY_FUNC_WCS:
-			return (Xv_opaque) private->notify_func_wcs;
-#endif
 
 		case FILE_CHOOSER_SHOW_DOT_FILES:
 			return xv_get(private->ui.list, FILE_LIST_SHOW_DOT_FILES);
@@ -877,11 +739,6 @@ static Xv_opaque file_chooser_get(File_chooser	public, int *status, Attr_attribu
 
 		case FILE_CHOOSER_EXTEN_FUNC:
 			return (Xv_opaque) private->exten_func;
-
-#ifdef OW_I18N
-		case FILE_CHOOSER_WCHAR_NOTIFY:
-			return (Xv_opaque) private->wchar_notify;
-#endif
 
 		case FILE_CHOOSER_NO_CONFIRM:	/* private */
 			return (Xv_opaque) private->no_confirm;
@@ -944,22 +801,8 @@ static void fc_end_create(Fc_private *private)
 
     /* base the column width for layout on the font width */
     font = xv_get(FC_PUBLIC(private), XV_FONT);
-    private->col_width
-#ifdef OW_I18N
-	/*
-	 * HIGH WEIRDNESS:  somewhere between S493-Alpha4.3 and
-	 * Beta1.0, FONT_DEFAULT_CHAR_WIDTH started returning
-	 * strange values!  FONT_COLUMN_WIDTH still seems to return
-	 * the right stuff, but i'm not sure if a domestic build
-	 * will still work.  Since i don't see any Font package changes
-	 * in this timeframe, i suspect that the Xv_server is behaving
-	 * differently.
-	 */
-	= (int) xv_get(font, FONT_COLUMN_WIDTH);
-#else
-    = (int) xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
-#endif
-
+    private->col_width = (int) xv_get(font, FONT_COLUMN_WIDTH);
+    		/* FONT_DEFAULT_CHAR_WIDTH ??? */
 
 
     /*
@@ -1501,22 +1344,9 @@ static int fc_cd_func(File_list list, char *path, struct stat *sbuf, File_list_o
 	       NULL);
     }
 
-#ifdef OW_I18N
-    if ( private->cd_func && private->wchar_notify ) {
-	wchar_t *wpath = _xv_mbstowcsdup( path );
-	int status = (* private->cd_func)(FC_PUBLIC(private),
-					  wpath, sbuf,
-					  (File_chooser_op) op
-					  );
-	xv_free( wpath );
-	return status;
-    } else
-#endif
     if ( private->cd_func )
-	return (* private->cd_func)(FC_PUBLIC(private),
-				    path, sbuf,
-				    (File_chooser_op) op
-				    );
+		return (* private->cd_func)(FC_PUBLIC(private), path, sbuf,
+				    (File_chooser_op) op);
     return XV_OK;
 } /* fc_cd_func() */
 
@@ -1879,14 +1709,8 @@ static int fc_do_open(Fc_private *private, int row, char *dir, char *file,
 
 
     /* ASSume success */
-#ifdef OW_I18N
-    if ( !private->notify_func_wcs && !private->notify_func )
-	return XV_OK;
-#else
     if ( !private->notify_func )
 	return XV_OK;
-#endif /* OW_I18N */
-
 
     path = xv_dircat( dir, file );
 
@@ -1918,17 +1742,9 @@ static int fc_do_open(Fc_private *private, int row, char *dir, char *file,
 	return XV_ERROR;
     }
 
-#ifdef OW_I18N
-    if ( private->notify_func_wcs ) {
-	wchar_t *wpath = _xv_mbstowcsdup( path );
-	wchar_t *wfile = _xv_mbstowcsdup( file );
-
-	status = (* private->notify_func_wcs)( FC_PUBLIC(private), wpath, wfile, client_data );
-	xv_free( wpath );
-	xv_free( wfile );
-    } else if ( private->notify_func )
-#endif
-    status = (* private->notify_func)( FC_PUBLIC(private), path, file, client_data );
+    if ( private->notify_func )
+    	status = (* private->notify_func)(FC_PUBLIC(private), path, file,
+										client_data );
 
     xv_free_ref( path );
 
@@ -1959,13 +1775,8 @@ static int fc_do_save(Fc_private *private, char *dir, char *file)
 
 	/* ASSume success */
 
-#ifdef OW_I18N
-	if (!private->notify_func && !private->notify_func_wcs)
-		return XV_OK;
-#else
 	if (!private->notify_func)
 		return XV_OK;
-#endif
 
 	/*
 	 * Make sure the user has write permission on
@@ -2041,16 +1852,6 @@ static int fc_do_save(Fc_private *private, char *dir, char *file)
 	 */
 	if (canceled == NOTICE_NO) {
 
-#ifdef OW_I18N
-		if (private->notify_func_wcs) {
-			wchar_t *wpath = _xv_mbstowcsdup(path);
-
-			status = (*private->notify_func_wcs) (FC_PUBLIC(private), wpath,
-					exists);
-			xv_free(wpath);
-		}
-		else if (private->notify_func)
-#endif
 		{
 			typedef int (*fchsr_notify_SAVE_t)(File_chooser, char *, struct stat *);
 			fchsr_notify_SAVE_t note_save = (fchsr_notify_SAVE_t)private->notify_func;
@@ -2246,20 +2047,6 @@ static File_list_op fc_filter_func(char *path, File_list_row *row)
 	notify_client = TRUE;
 
     if ( notify_client && private->filter_func ) {
-#ifdef OW_I18N
-	if ( private->wchar_notify ) {
-	    wchar_t *wpath = _xv_mbstowcsdup( path );
-	    status = (* private->filter_func) ( FC_PUBLIC(private),
-					       wpath,
-					       row->stats,
-					       (File_chooser_op) row->matched,
-					       &glyph,
-					       &client_data,
-					       &mask_glyph
-					       );
-	    xv_free( wpath );
-	} else
-#endif
 	status = (* private->filter_func) ( FC_PUBLIC(private),
 					   path,
 					   row->stats,
@@ -2342,21 +2129,11 @@ static int fc_compare_func(File_list_row *row1, File_list_row *row2)
      * case it appears to be the order in which they were read in,
      * so this seems reasonable.
      */
-    if ( !private->compare_func )
-	return 0;
+    if ( !private->compare_func ) return 0;
 
 
-#ifdef OW_I18N
-    if ( private->wchar_notify ) {
-	fc_row1.file = (char *)_xv_mbstowcsdup( row1->vals.string );
-	fc_row2.file = (char *)_xv_mbstowcsdup( row2->vals.string );
-    } else {
-#endif
 	fc_row1.file = row1->vals.string;
 	fc_row2.file = row2->vals.string;
-#ifdef OW_I18N
-    }
-#endif
 
     fc_row1.stats = &(row1->stats);
     fc_row1.matched = (File_chooser_op) row1->matched;
@@ -2367,13 +2144,6 @@ static int fc_compare_func(File_list_row *row1, File_list_row *row2)
     fc_row2.xfrm = row2->xfrm;
 
     status = (* private->compare_func)( &fc_row1, &fc_row2 );
-
-#ifdef OW_I18N
-    if ( private->wchar_notify ) {
-	xv_free( fc_row1.file );
-	xv_free( fc_row2.file );
-    }
-#endif
 
     return status;
 }
