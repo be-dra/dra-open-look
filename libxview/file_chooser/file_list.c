@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.7 2025/03/08 13:24:37 dra Exp $ ";
+static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.8 2026/07/18 20:28:39 dra Exp $ ";
 #endif
 #endif
  
@@ -126,10 +126,6 @@ static int flist_load_dir(File_list_private *private, char *directory)
 	char *cwd = (char *)NULL;
 	int cd_status = XV_OK;
 
-#ifdef OW_I18N
-	wchar_t *dir_wcs = (wchar_t *)NULL;
-#endif
-
 	if (!directory)
 		return FALSE;
 
@@ -149,15 +145,6 @@ static int flist_load_dir(File_list_private *private, char *directory)
 	if (private->cd_func) {
 		(void)xv_stat(private->directory, &stats);
 
-#ifdef OW_I18N
-		if (private->f.wchar_notify) {
-			dir_wcs = _xv_mbstowcsdup(private->directory);
-			cd_status = (*private->cd_func) (public,
-					dir_wcs, &stats, FILE_LIST_BEFORE_CD);
-		}
-		else
-#endif
-
 			cd_status = (*private->cd_func) (public,
 					private->directory, &stats, FILE_LIST_BEFORE_CD);
 	}
@@ -167,10 +154,6 @@ static int flist_load_dir(File_list_private *private, char *directory)
 	 * Gad-Zoooks!  The CD was aborted!
 	 */
 	if (cd_status == XV_ERROR) {
-
-#ifdef OW_I18N
-		xv_free_ref(dir_wcs);
-#endif
 
 		private->directory
 				= xv_strcpy(private->directory, private->previous_dir);
@@ -229,12 +212,6 @@ static int flist_load_dir(File_list_private *private, char *directory)
 	(void)strxfrm(xfrm_buf, file_path, (long)MAXPATHLEN + 1);
 	current->xfrm = xv_strcpy(NULL, xfrm_buf);
 
-#ifdef OW_I18N
-	if (private->f.wchar_notify)
-		current->vals.string = (char *)_xv_mbstowcsdup(private->dotdot_string);
-	else
-#endif
-
 	current->vals.string = xv_strcpy(NULL, private->dotdot_string);
 	current->vals.glyph = private->dotdot_glyph;
 	current->vals.mask_glyph = private->dotdot_glyph;
@@ -249,15 +226,6 @@ static int flist_load_dir(File_list_private *private, char *directory)
 	 */
 	if (private->client_filter && (private->filter_mask & FL_DOTDOT_MASK)) {
 
-#ifdef OW_I18N
-		if (private->f.wchar_notify) {
-			wchar_t *wpath = _xv_mbstowcsdup(file_path);
-
-			status = (*private->client_filter) (wpath, current);
-			xv_free(wpath);
-		}
-		else
-#endif
 			status = (*private->client_filter) (file_path, current);
 	}
 
@@ -329,22 +297,7 @@ static int flist_load_dir(File_list_private *private, char *directory)
 		 * grayed out, but not directories.
 		 */
 
-#ifdef OW_I18N
-		/*
-		 * i18n impl note:
-		 * the Panel_list_row_values and Panel_list_row_values_wcs
-		 * structs are the same other than one has a char * and the
-		 * other has a wchar_t * as it's first member.  so, rather
-		 * than uglify the code to deal with both strutures, simply type
-		 * cast the wchar into a multibyte.  The callbacks for wchar
-		 * will be declaired with File_list_row_wcs, so they will be
-		 * oblivious to this.
-		 */
-		if (private->f.wchar_notify)
-			current->vals.string = (char *)_xv_mbstowcsdup(entry->d_name);
-		else
-#endif
-			current->vals.string = xv_strcpy(NULL, entry->d_name);
+		current->vals.string = xv_strcpy(NULL, entry->d_name);
 
 		/*
 		 * make xform copy for I18N-safe sorting
@@ -414,16 +367,6 @@ static int flist_load_dir(File_list_private *private, char *directory)
 
 			if (notify_client)
 
-#ifdef OW_I18N
-				if (private->f.wchar_notify) {
-					wchar_t *wpath = _xv_mbstowcsdup(file_path);
-
-					status = (*private->client_filter) (wpath, current);
-					xv_free(wpath);
-				}
-				else
-#endif
-
 					status = (*private->client_filter) (file_path, current);
 		}
 
@@ -485,15 +428,6 @@ static int flist_load_dir(File_list_private *private, char *directory)
 	 */
 	if (private->cd_func) {
 		(void)xv_stat(private->directory, &stats);
-
-#ifdef OW_I18N
-		if (private->f.wchar_notify) {
-			(void)(*private->cd_func) (public,
-					dir_wcs, &stats, FILE_LIST_AFTER_CD);
-			xv_free(dir_wcs);
-		}
-		else
-#endif
 
 			(void)(*private->cd_func) (public,
 					private->directory, &stats, FILE_LIST_AFTER_CD);
@@ -576,20 +510,6 @@ static int flist_list_notify(Panel_item item, char *entry_name,
 	 */
 	if (private->client_notify)
 
-#ifdef OW_I18N
-		if (private->f.wchar_list_notify) {
-			wchar_t *wdir = _xv_mbstowcsdup(private->directory);
-			wchar_t *wfile = _xv_mbstowcsdup(entry_name);
-			int status = (*private->client_notify) (item, wdir, wfile,
-					client_data, op,
-					event, row);
-
-			xv_free_ref(wdir);
-			xv_free_ref(wfile);
-			return status;
-		}
-		else
-#endif
 			return (*private->client_notify) (item, private->directory,
 					entry_name, client_data, op, event, row);
 
@@ -706,13 +626,7 @@ static void flist_update_list(File_list_private *private, File_list_row rows[], 
 	num++;
 
 	if ( (num == FLIST_INSERT_ROWS) || (ii == num_rows - 1) ) {
-#ifdef OW_I18N
-	    attrs[0] = (private->f.wchar_notify) 
-		? PANEL_LIST_ROW_VALUES_WCS 
-		: PANEL_LIST_ROW_VALUES;
-#else
 	    attrs[0] = PANEL_LIST_ROW_VALUES;
-#endif
 	    attrs[1] = (Attr_attribute) start_at;
 	    attrs[2] = (Attr_attribute) row_vals;
 	    attrs[3] = (Attr_attribute) num;
@@ -933,20 +847,11 @@ static Xv_opaque file_list_set(File_list public, Attr_avlist avlist)
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch ((int)attrs[0]) {
 
-#ifdef OW_I18N
-			case FILE_LIST_DIRECTORY_WCS:
-#endif
-
 			case FILE_LIST_DIRECTORY:
 				{
 					char *new_dir;
 					char *real_path;
 
-#ifdef OW_I18N
-					if (attrs[0] == FILE_LIST_DIRECTORY_WCS)
-						new_dir = _xv_wcstombsdup((wchar_t *)attrs[1]);
-					else
-#endif
 						new_dir = xv_strcpy(NULL, (char *)attrs[1]);
 
 					ATTR_CONSUME(attrs[0]);
@@ -1000,18 +905,7 @@ static Xv_opaque file_list_set(File_list public, Attr_avlist avlist)
 					break;
 				}	/* FILE_LIST_DIRECTORY */
 
-#ifdef OW_I18N
-			case FILE_LIST_FILTER_STRING_WCS:
-#endif
 			case FILE_LIST_FILTER_STRING:
-#ifdef OW_I18N
-				if (attrs[0] == FILE_LIST_FILTER_STRING_WCS) {
-					xv_free_ref(private->regex_pattern);
-					private->regex_pattern =
-							_xv_wcstombsdup((wchar_t *)attrs[1]);
-				}
-				else
-#endif
 					private->regex_pattern =
 							xv_strcpy(private->regex_pattern, (char *)attrs[1]);
 				if (private->regex_pattern) {
@@ -1100,19 +994,7 @@ static Xv_opaque file_list_set(File_list public, Attr_avlist avlist)
 				break;
 
 
-#ifdef OW_I18N
-			case FILE_LIST_DOTDOT_STRING_WCS:
-#endif
 			case FILE_LIST_DOTDOT_STRING:
-
-#ifdef OW_I18N
-				if (attrs[0] == FILE_LIST_DOTDOT_STRING_WCS) {
-					xv_free_ref(private->dotdot_string);
-					private->dotdot_string =
-							_xv_wcstombsdup((wchar_t *)attrs[1]);
-				}
-				else
-#endif
 
 					private->dotdot_string =
 							xv_strcpy(private->dotdot_string, (char *)attrs[1]);
@@ -1134,13 +1016,6 @@ static Xv_opaque file_list_set(File_list public, Attr_avlist avlist)
 						ERROR_CANNOT_SET, attrs[0],
 						NULL);
 				break;
-
-#ifdef OW_I18N
-			case FILE_LIST_WCHAR_NOTIFY:
-				ATTR_CONSUME(attrs[0]);
-				private->f.wchar_notify = (unsigned)attrs[1];
-				break;
-#endif
 
 			case PANEL_LIST_SORT:
 				/* FILE_LIST has a different sorting mechanism */
@@ -1170,18 +1045,7 @@ static Xv_opaque file_list_set(File_list public, Attr_avlist avlist)
 						(int (*)(Panel_item, char *, char *, Xv_opaque,
 								Panel_list_op, Event *, int))attrs[1];
 
-#ifdef OW_I18N
-				private->f.wchar_list_notify = FALSE;
-#endif
 				break;
-
-#ifdef OW_I18N
-			case PANEL_NOTIFY_PROC_WCS:
-				ATTR_CONSUME(attrs[0]);
-				private->client_notify = (int (*)())attrs[1];
-				private->f.wchar_list_notify = TRUE;
-				break;
-#endif
 
 			case XV_END_CREATE:
 				private->f.created = TRUE;
@@ -1217,13 +1081,6 @@ static Xv_opaque file_list_get(File_list public, int *status, Attr_attribute att
 
 		case FILE_LIST_DIRECTORY:
 			return (Xv_opaque) private->directory;
-
-#ifdef OW_I18N
-		case FILE_LIST_DIRECTORY_WCS:
-			xv_free_ref(private->directory_wcs);
-			private->directory_wcs = _xv_mbstowcsdup(private->directory);
-			return (Xv_opaque) private->directory_wcs;
-#endif
 
 		case FILE_LIST_FILTER_STRING:
 			return (Xv_opaque) private->regex_pattern;
@@ -1267,26 +1124,6 @@ static Xv_opaque file_list_get(File_list public, int *status, Attr_attribute att
 		case PANEL_NOTIFY_PROC:
 			return (Xv_opaque) private->client_notify;
 
-#ifdef OW_I18N
-		case FILE_LIST_FILTER_STRING_WCS:
-			xv_free_ref(private->regex_pattern_wcs);
-			private->regex_pattern_wcs =
-					_xv_mbstowcsdup(private->regex_pattern);
-			return (Xv_opaque) private->regex_pattern_wcs;
-
-		case FILE_LIST_DOTDOT_STRING_WCS:
-			xv_free_ref(private->dotdot_string_wcs);
-			private->dotdot_string_wcs =
-					_xv_mbstowcsdup(private->dotdot_string);
-			return (Xv_opaque) private->dotdot_string_wcs;
-
-		case FILE_LIST_WCHAR_NOTIFY:
-			return (Xv_opaque) private->f.wchar_notify;
-
-		case PANEL_NOTIFY_PROC_WCS:
-			return (Xv_opaque) private->client_notify;
-#endif /* OW_I18N */
-
 		default:
 			*status = xv_check_bad_attr(FILE_LIST, attr);
 			return (Xv_opaque) XV_OK;
@@ -1321,12 +1158,6 @@ static int file_list_destroy(File_list public, Destroy_status status)
 		xv_destroy(private->file_glyph);
 		xv_destroy(private->directory_glyph);
 		xv_destroy(private->dotdot_glyph);
-
-#ifdef OW_I18N
-		xv_free_ref(private->directory_wcs);
-		xv_free_ref(private->regex_pattern_wcs);
-		xv_free_ref(private->dotdot_string_wcs);
-#endif /* OW_I18N */
 
 		xv_free(private);
 	}
