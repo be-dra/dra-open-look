@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.27 2026/05/13 14:07:02 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.28 2026/07/18 19:57:59 dra Exp $ ";
 #endif
 #endif
 
@@ -1780,19 +1780,11 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 
 	/* Need to grab the keyboard to get STOP key events. */
 
-#ifdef OW_I18N
-	if (window_set_xgrabkeyboard(dnd->parent, dpy, xv_xid(info), FALSE,
-					GrabModeAsync, GrabModeAsync, lasttime) != GrabSuccess) {
-		status = DND_ERROR;
-		goto BreakOut;
-	}
-#else
 	if (XGrabKeyboard(dpy, xv_xid(info), FALSE, GrabModeAsync,
 					GrabModeAsync, lasttime) != GrabSuccess) {
 		status = DND_ERROR;
 		goto BreakOut;
 	}
-#endif
 
 	if (XGrabPointer(dpy, xv_xid(info), FALSE,
 					(int)(ButtonMotionMask | ButtonReleaseMask),
@@ -1800,12 +1792,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 					lasttime) != GrabSuccess) {
 		status = DND_ERROR;
 
-#ifdef OW_I18N
-		window_set_xungrabkeyboard(dnd->parent, dpy, lasttime);
-#else
 		XUngrabKeyboard(dpy, lasttime);
-#endif
-
 		goto BreakOut;
 	}
 
@@ -1932,12 +1919,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 
 	server_set_timestamp(srv, NULL, lasttime);
 	XUngrabPointer(dpy, lasttime);
-
-#ifdef OW_I18N
-	window_set_xungrabkeyboard(dnd->parent, dpy, lasttime);
-#else
 	XUngrabKeyboard(dpy, lasttime);
-#endif
 
 	if (dnd->numtargets > 0) {
 		/* this property is supposed to be used only during the
