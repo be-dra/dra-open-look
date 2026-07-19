@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.17 2026/07/15 13:38:36 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.18 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 #endif
 
@@ -205,22 +205,8 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	frame->ginfo = (Graphics_info *) NULL;
 	frame->default_icon = (Icon) NULL;
 
-#ifdef OW_I18N
-	frame->left_footer.pswcs.value = (wchar_t *) NULL;
-	frame->right_footer.pswcs.value = (wchar_t *) NULL;
-#else
 	frame->left_footer = (char *)NULL;
 	frame->right_footer = (char *)NULL;
-#endif
-
-#ifdef OW_I18N
-	/* initialize the IMstatus fields */
-	status_set(frame, show_imstatus, FALSE);
-	status_set(frame, inactive_imstatus, FALSE);
-	frame->imstatus = (Xv_Window) NULL;
-	frame->left_IMstatus.pswcs.value = (wchar_t *) NULL;
-	frame->right_IMstatus.pswcs.value = (wchar_t *) NULL;
-#endif
 
 	/* set default frame flags */
 	if (is_subframe) {
@@ -490,35 +476,6 @@ static Xv_window frame_create_footer(Frame_class_info *frame)
 
 	return footer;
 }
-
-#ifdef OW_I18N
-Pkg_private Xv_window frame_create_IMstatus(Frame_class_info *frame)
-{
-    Frame frame_public = FRAME_PUBLIC(frame);
-    Frame_rescale_state scale;
-    Xv_window IMstatus;
-    int three_d;
-
-    scale = xv_get(xv_get(frame_public, XV_FONT), FONT_SCALE);
-
-    IMstatus = (Xv_window)xv_create(frame_public, WINDOW,
-        WIN_NOTIFY_SAFE_EVENT_PROC, frame_IMstatus_input,
-
-        WIN_NOTIFY_IMMEDIATE_EVENT_PROC, frame_IMstatus_input,
-
-        WIN_BIT_GRAVITY, ForgetGravity,
-        XV_HEIGHT, frame_IMstatus_height(scale),
-        XV_KEY_DATA, FRAME_IMSTATUS_WINDOW, TRUE,
-        NULL);
-
-    three_d = defaults_get_boolean("OpenWindows.3DLook.Color",
-                                   "OpenWindows.3DLook.Color", TRUE);
-    frame->ginfo = xv_init_olgx(IMstatus, &three_d, xv_get(IMstatus,
-XV_FONT));
-
-    return(IMstatus);
-}
-#endif
 
 static int frame_fit_direction(Frame_class_info *frame, Window_attribute direction)
 {
@@ -869,16 +826,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 	xv_frame_layout_cb_t layout = NULL;
 	void *layout_cldt = NULL;
 
-#ifdef OW_I18N
-	int paint_imstatus = FALSE;
-
-	/*
-	 * pswcs is used to take advantage of the _xv_pswcs functions
-	 * that malloc/convert mb/wcs strings.
-	 */
-	_xv_pswcs_t pswcs = { 0, NULL, NULL };
-#endif
-
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) switch (attrs[0]) {
 		case FRAME_CLOSED:
 		case FRAME_CLOSED_RECT:
@@ -1181,19 +1128,8 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 
 			/* ACC_XVIEW */
 
-#ifdef OW_I18N
 		case FRAME_MENU_ACCELERATOR:
-		case FRAME_MENU_ACCELERATOR_WCS:
-#else
-		case FRAME_MENU_ACCELERATOR:
-#endif /* OW_I18N */
-
 			{
-
-#ifdef OW_I18N
-				Attr_attribute which_attr = attrs[0];
-#endif /* OW_I18N */
-
 				Xv_server server_public;
 				Frame_menu_accelerator *accel;
 				CHAR *keystr = (CHAR *) NULL;
@@ -1203,22 +1139,7 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 				KeySym keysym;
 				Xv_opaque data;
 
-#ifdef OW_I18N
-				/*
-				 * Use different macro to duplicate/convert strings depending
-				 * on whether mb/wcs attribute was used.
-				 */
-				if (which_attr == FRAME_MENU_ACCELERATOR) {
-					_xv_pswcs_mbsdup(&pswcs, (char *)attrs[1]);
-				}
-				else {
-					_xv_pswcs_wcsdup(&pswcs, (wchar_t *)attrs[1]);
-				}
-
-				keystr = pswcs.value;
-#else
-				keystr = (CHAR *) attrs[1];
-#endif /* OW_I18N */
+				keystr = (char *) attrs[1];
 
 				notify_proc = (frame_accel_notify_func) attrs[2];
 				data = (Xv_opaque) attrs[3];
@@ -1267,18 +1188,8 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 				break;
 			}
 
-#ifdef OW_I18N
 		case FRAME_MENU_REMOVE_ACCELERATOR:
-		case FRAME_MENU_REMOVE_ACCELERATOR_WCS:
-#else
-		case FRAME_MENU_REMOVE_ACCELERATOR:
-#endif /* OW_I18N */
 			{
-
-#ifdef OW_I18N
-				Attr_attribute which_attr = attrs[0];
-#endif /* OW_I18N */
-
 				Xv_server server_public;
 				Frame_menu_accelerator *accel;
 				CHAR *keystr;
@@ -1291,22 +1202,7 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 					break;
 				}
 
-#ifdef OW_I18N
-				/*
-				 * Use different macro to duplicate/convert strings depending
-				 * on whether mb/wcs attribute was used.
-				 */
-				if (which_attr == FRAME_MENU_REMOVE_ACCELERATOR) {
-					_xv_pswcs_mbsdup(&pswcs, (char *)attrs[1]);
-				}
-				else {
-					_xv_pswcs_wcsdup(&pswcs, (wchar_t *)attrs[1]);
-				}
-
-				keystr = pswcs.value;
-#else
-				keystr = (CHAR *) attrs[1];
-#endif /* OW_I18N */
+				keystr = (char *) attrs[1];
 
 				/*
 				 * Get server object handle
@@ -1343,12 +1239,7 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 					 * BUG ALERT: What about accel->data ??
 					 */
 
-#ifdef OW_I18N
-					_xv_free_ps_string_attr_dup(&accel->keystr);
-#else
 					xv_free(accel->keystr);
-#endif /* OW_I18N */
-
 					xv_free(accel);
 				}
 				break;
@@ -1437,13 +1328,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 			break;
 
 		case FRAME_LEFT_FOOTER:
-
-#ifdef OW_I18N
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_mbs_attr_dup(&frame->left_footer, (char *)attrs[1]);
-			if (status_get(frame, show_footer))
-				paint_footers = TRUE;
-#else
 			{
 				int length;
 
@@ -1468,18 +1352,9 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 				if (status_get(frame, show_footer))
 					paint_footers = TRUE;
 			}
-#endif /* OW_I18N */
-
 			break;
 
 		case FRAME_RIGHT_FOOTER:
-
-#ifdef OW_I18N
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_mbs_attr_dup(&frame->right_footer, (char *)attrs[1]);
-			if (status_get(frame, show_footer))
-				paint_footers = TRUE;
-#else
 			{
 				int length;
 
@@ -1504,25 +1379,8 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 				if (status_get(frame, show_footer))
 					paint_footers = TRUE;
 			}
-#endif /* OW_I18N */
 
 			break;
-
-#ifdef OW_I18N
-		case FRAME_LEFT_FOOTER_WCS:
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_wcs_attr_dup(&frame->left_footer, (wchar_t *)attrs[1]);
-			if (status_get(frame, show_footer))
-				paint_footers = TRUE;
-			break;
-
-		case FRAME_RIGHT_FOOTER_WCS:
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_wcs_attr_dup(&frame->right_footer, (wchar_t *)attrs[1]);
-			if (status_get(frame, show_footer))
-				paint_footers = TRUE;
-			break;
-#endif /* OW_I18N */
 
 			/* ACC_XVIEW */
 		case FRAME_MENUS:{
@@ -1844,20 +1702,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 				rect->r_height -= footer_height;
 				ATTR_CONSUME(attrs[0]);
 			}
-
-#ifdef OW_I18N
-			if (status_get(frame, show_imstatus) && frame->imstatus) {
-				Rect *rect = (Rect *) attrs[1];
-				int IMstatus_height = 0;
-
-				IMstatus_height = (int)xv_get(frame->imstatus, XV_HEIGHT);
-				rect->r_height += IMstatus_height;
-				(void)win_setrect(frame_public, rect);
-				rect->r_height -= IMstatus_height;
-				ATTR_CONSUME(attrs[0]);
-			}
-#endif
-
 			break;
 
 		case XV_HEIGHT:
@@ -1872,20 +1716,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 				win_setrect(frame_public, &rect);
 				ATTR_CONSUME(attrs[0]);
 			}
-
-#ifdef OW_I18N
-			if (status_get(frame, show_imstatus) && frame->imstatus) {
-				int height = (int)attrs[1];
-				Rect rect;
-
-				height += (int)xv_get(frame->imstatus, XV_HEIGHT);
-				(void)win_getrect(frame_public, &rect);
-				rect.r_height = height;
-				win_setrect(frame_public, &rect);
-				ATTR_CONSUME(attrs[0]);
-			}
-#endif
-
 			break;
 
 		case XV_SHOW:
@@ -1943,12 +1773,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 						(frame->normal_hints.flags & PMinSize))
 					footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
 
-#ifdef OW_I18N
-				if (status_get(frame, show_imstatus) && frame->imstatus &&
-						(frame->normal_hints.flags & PMinSize))
-					footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
-
 				frame->normal_hints.min_width = (int)attrs[1];
 				frame->normal_hints.min_height = (int)attrs[2] + footer_height;
 
@@ -1968,12 +1792,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 						(frame->normal_hints.flags & PMinSize))
 					footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
 
-#ifdef OW_I18N
-				if (status_get(frame, show_imstatus) && frame->imstatus &&
-						(frame->normal_hints.flags & PMinSize))
-					footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
-
 				frame->normal_hints.max_width = (int)attrs[1];
 				frame->normal_hints.max_height = (int)attrs[2] + footer_height;
 
@@ -1984,78 +1802,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 		case FRAME_COMPOSE_STATE:
 			frame_update_compose_led(frame, (int)attrs[1]);
 			break;
-
-#ifdef OW_I18N
-		case FRAME_SHOW_IMSTATUS:
-			{
-				int show_imstatus;
-
-				attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
-				show_imstatus = (int)attrs[1];
-
-				if (status_get(frame, show_imstatus) != show_imstatus) {
-					if (status_get(frame, created)) {
-						if (show_imstatus) {
-							if (frame->imstatus == NULL) {
-								frame->imstatus = frame_create_IMstatus(frame);
-							}
-							else {
-								xv_set(frame->imstatus, XV_SHOW, TRUE, NULL);
-							}
-							/* Adjust frame's min/max size hints. */
-							frame_adjust_normal_hints(frame,
-									(int)xv_get(frame->imstatus, XV_HEIGHT),
-									&update_hints);
-						}
-						else {
-							if (frame->imstatus != NULL) {
-								xv_set(frame->imstatus, XV_SHOW, FALSE, NULL);
-								/* Adjust frame's min/max size hints. */
-								frame_adjust_normal_hints(frame,
-										-(int)xv_get(frame->imstatus,
-												XV_HEIGHT), &update_hints);
-							}
-						}
-					}
-					status_set(frame, show_imstatus, show_imstatus);
-				}
-			}
-			break;
-
-		case FRAME_INACTIVE_IMSTATUS:
-			status_set(frame, inactive_imstatus, (int)attrs[1]);
-			if (status_get(frame, show_imstatus))
-				paint_imstatus = TRUE;
-			break;
-
-		case FRAME_LEFT_IMSTATUS:
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_mbs_attr_dup(&frame->left_IMstatus, (char *)attrs[1]);
-			if (status_get(frame, show_imstatus))
-				paint_imstatus = TRUE;
-			break;
-
-		case FRAME_LEFT_IMSTATUS_WCS:
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_wcs_attr_dup(&frame->left_IMstatus, (wchar_t *)attrs[1]);
-			if (status_get(frame, show_imstatus))
-				paint_imstatus = TRUE;
-			break;
-
-		case FRAME_RIGHT_IMSTATUS:
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_mbs_attr_dup(&frame->right_IMstatus, (char *)attrs[1]);
-			if (status_get(frame, show_imstatus))
-				paint_imstatus = TRUE;
-			break;
-
-		case FRAME_RIGHT_IMSTATUS_WCS:
-			*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-			_xv_set_wcs_attr_dup(&frame->right_IMstatus, (wchar_t *)attrs[1]);
-			if (status_get(frame, show_imstatus))
-				paint_imstatus = TRUE;
-			break;
-#endif /* OW_I18N */
 
 		case WIN_CMS:
 			/*
@@ -2195,19 +1941,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 							(int)xv_get(frame->footer, XV_HEIGHT), &update_hints);
 				}
 
-#ifdef OW_I18N
-				if (xv_get(frame_public, WIN_USE_IM) == TRUE
-						&& (XIM) xv_get((Xv_opaque) xv_server(info), XV_IM) != 0)
-					status_set(frame, show_imstatus, TRUE);
-				/* Create a IMstatus if needed */
-				if (status_get(frame, show_imstatus)) {
-					frame->imstatus = frame_create_IMstatus(frame);
-					/* Adjust frame's min/max size hints. */
-					frame_adjust_normal_hints(frame,
-							(int)xv_get(frame->imstatus, XV_HEIGHT), &update_hints);
-				}
-#endif
-
 				status_set(frame, created, TRUE);
 				break;
 			}
@@ -2276,22 +2009,10 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 		if (repaint_needed && status_get(frame, show_footer))
 			paint_footers = TRUE;
 
-#ifdef OW_I18N
-		frame_update_status_win_color(frame_public, frame->imstatus,
-				new_frame_cms, new_frame_fg, new_frame_fg_set, &repaint_needed);
-
-		if (repaint_needed && status_get(frame, show_imstatus))
-			paint_imstatus = TRUE;
-#endif /* OW_I18N */
 	}
 
 	if (status_get(frame, created) && paint_footers)
 		frame_display_footer(frame_public, TRUE, NULL, NULL, NULL, NULL);
-
-#ifdef OW_I18N
-	if (status_get(frame, created) && paint_imstatus)
-		frame_display_IMstatus(frame_public, TRUE);
-#endif
 
 	if (update_hints) {
 		Xv_Drawable_info *info;
@@ -2299,11 +2020,6 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 		DRAWABLE_INFO_MACRO(frame_public, info);
 		XSetWMNormalHints(xv_display(info), xv_xid(info), &frame->normal_hints);
 	}
-
-#ifdef OW_I18N
-	if (pswcs.storage != NULL)
-		xv_free(pswcs.storage);
-#endif /* OW_I18N */
 
 	return (Xv_opaque) result;
 }
@@ -2449,14 +2165,10 @@ static void frame_set_menu_acc(Frame frame_public, int keycode, unsigned int	sta
 
     new_accel->modifiers = state;
 
-#ifdef OW_I18N
-    _xv_set_wcs_attr_dup(&new_accel->keystr, keystr);
-#else
     /*
      * Use already malloc'd string
      */
     new_accel->keystr = xv_strsave(keystr);
-#endif /* OW_I18N */
 
     /*
      * Link to current list on frame
@@ -2518,13 +2230,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 						&& status_get(frame, created))
 					rect.r_height -= (int)xv_get(frame->footer, XV_HEIGHT);
 
-#ifdef OW_I18N
-				/* need to account for the possible imstatus window */
-				if (status_get(frame, show_imstatus)
-						&& status_get(frame, created))
-					rect.r_height -= (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
-
 				return (Xv_opaque) & rect;
 			}
 
@@ -2540,13 +2245,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 						&& status_get(frame, created))
 					height -= (int)xv_get(frame->footer, XV_HEIGHT);
 
-#ifdef OW_I18N
-				/* need to account for the possible imstatus window */
-				if (status_get(frame, show_imstatus)
-						&& status_get(frame, created))
-					height -= (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
-
 				return (Xv_opaque) height;
 			}
 
@@ -2561,12 +2259,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 				if (status_get(frame, show_footer)
 						&& status_get(frame, created))
 					height += (int)xv_get(frame->footer, XV_HEIGHT);
-
-#ifdef OW_I18N
-				if (status_get(frame, show_imstatus)
-						&& status_get(frame, created))
-					height += (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
 
 				return (Xv_opaque) height;
 			}
@@ -2625,44 +2317,11 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 		case FRAME_SHOW_FOOTER:
 			return (Xv_opaque) status_get(frame, show_footer);
 
-		case FRAME_LEFT_FOOTER:
+		case FRAME_LEFT_FOOTER: return (Xv_opaque) frame->left_footer;
 
-#ifdef OW_I18N
-			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->left_footer);
-#else
-			return (Xv_opaque) frame->left_footer;
-#endif
+		case FRAME_RIGHT_FOOTER: return (Xv_opaque) frame->right_footer;
 
-#ifdef OW_I18N
-		case FRAME_LEFT_FOOTER_WCS:
-			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->left_footer);
-#endif
-
-		case FRAME_RIGHT_FOOTER:
-
-#ifdef OW_I18N
-			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->right_footer);
-#else
-			return (Xv_opaque) frame->right_footer;
-#endif
-
-#ifdef OW_I18N
-		case FRAME_RIGHT_FOOTER_WCS:
-			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->right_footer);
-#endif
-
-		case FRAME_LABEL:
-
-#ifdef OW_I18N
-			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->label);
-#else
-			return (Xv_opaque) frame->label;
-#endif
-
-#ifdef OW_I18N
-		case XV_LABEL_WCS:
-			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->label);
-#endif
+		case FRAME_LABEL: return (Xv_opaque) frame->label;
 
 		case FRAME_NO_CONFIRM:
 			return (Xv_opaque) status_get(frame, no_confirm);
@@ -2697,45 +2356,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 		case FRAME_BUSY:
 			return (Xv_opaque) status_get(frame, busy);
 
-#ifdef OW_I18N
-		case FRAME_RIGHT_IMSTATUS:
-			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->right_IMstatus);
-
-		case FRAME_LEFT_IMSTATUS:
-			return (Xv_opaque) _xv_get_mbs_attr_dup(&frame->left_IMstatus);
-
-		case FRAME_RIGHT_IMSTATUS_WCS:
-			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->right_IMstatus);
-
-		case FRAME_LEFT_IMSTATUS_WCS:
-			return (Xv_opaque) _xv_get_wcs_attr_dup(&frame->left_IMstatus);
-
-		case FRAME_SHOW_IMSTATUS:
-			return (Xv_opaque) status_get(frame, show_imstatus);
-
-		case FRAME_INACTIVE_IMSTATUS:
-			return (Xv_opaque) status_get(frame, inactive_imstatus);
-
-#ifdef FULL_R5
-		case FRAME_IMSTATUS_RECT:{
-				static Rect imstatus_rect;
-
-				if (status_get(frame, show_imstatus)
-						&& status_get(frame, created)
-						&& frame->imstatus) {
-					imstatus_rect = *(Rect *) xv_get(frame->imstatus, WIN_RECT);
-				}
-				else {
-					imstatus_rect.r_left = 0;
-					imstatus_rect.r_top = 0;
-					imstatus_rect.r_width = 0;
-					imstatus_rect.r_height = 0;
-				}
-				return (Xv_opaque) & imstatus_rect;
-			}
-#endif /* FULL_R5 */
-#endif
-
 		case FRAME_ACCELERATOR:
 		case FRAME_X_ACCELERATOR:{
 				short code = (short)va_arg(valist, int);
@@ -2756,32 +2376,8 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 		case FRAME_MENU_COUNT:
 			return ((Xv_opaque) frame->menu_count);
 
-#ifdef OW_I18N
 		case FRAME_MENU_ACCELERATOR:
-		case FRAME_MENU_ACCELERATOR_WCS:
-			/*
-			 * which_attr is to determine which attribute is used.
-			 * pswcs is used to take advantage of the _xv_pswcs functions
-			 * that malloc/convert mb/wcs strings.
-			 */
-			Attr_attribute which_attr = attr;
-			_xv_pswcs_t pswcs = { 0, NULL, NULL };
-#else
-		case FRAME_MENU_ACCELERATOR:
-#endif /* OW_I18N */
-
 			{
-
-#ifdef OW_I18N
-				/*
-				 * which_attr is to determine which attribute is used.
-				 * pswcs is used to take advantage of the _xv_pswcs functions
-				 * that malloc/convert mb/wcs strings.
-				 */
-				Attr_attribute which_attr = attr;
-				_xv_pswcs_t pswcs = { 0, NULL, NULL };
-#endif /* OW_I18N */
-
 				short kc;
 				KeyCode keycode;
 				int result;
@@ -2791,22 +2387,7 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 				Xv_server server_public;
 				CHAR *keystr;
 
-#ifdef OW_I18N
-				/*
-				 * Use different macro to duplicate/convert strings depending
-				 * on whether mb/wcs attribute was used.
-				 */
-				if (which_attr == FRAME_MENU_ACCELERATOR) {
-					_xv_pswcs_mbsdup(&pswcs, va_arg(valist, char *));
-				}
-				else {
-					_xv_pswcs_wcsdup(&pswcs, va_arg(valist, CHAR *));
-				}
-
-				keystr = pswcs.value;
-#else
 				keystr = va_arg(valist, char *);
-#endif
 
 				/*
 				 * Return NULL if key string passed in is NULL
@@ -2831,12 +2412,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 				 * If get parsing error, return NULL
 				 */
 				if (result != XV_OK) {
-
-#ifdef OW_I18N
-					if (pswcs.storage != NULL)
-						xv_free(pswcs.storage);
-#endif /* OW_I18N */
-
 					return (Xv_opaque) NULL;
 				}
 
@@ -2846,11 +2421,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 				 */
 				menu_accel = frame_find_menu_acc(frame_public, keycode, state,
 						keysym, FALSE);
-
-#ifdef OW_I18N
-				if (pswcs.storage != NULL)
-					xv_free(pswcs.storage);
-#endif /* OW_I18N */
 
 				return (Xv_opaque) menu_accel;
 			}
@@ -2889,12 +2459,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 						(frame->normal_hints.flags & PMinSize))
 					footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
 
-#ifdef OW_I18N
-				if (status_get(frame, show_imstatus) && frame->imstatus &&
-						(frame->normal_hints.flags & PMinSize))
-					footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
-
 				*width = frame->normal_hints.min_width;
 				*height = frame->normal_hints.min_height - footer_height;
 				return ((Xv_opaque) 0);
@@ -2907,12 +2471,6 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 				if (status_get(frame, show_footer) && frame->footer &&
 						(frame->normal_hints.flags & PMaxSize))
 					footer_height += (int)xv_get(frame->footer, XV_HEIGHT);
-
-#ifdef OW_I18N
-				if (status_get(frame, show_imstatus) && frame->imstatus &&
-						(frame->normal_hints.flags & PMaxSize))
-					footer_height += (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
 
 				*width = frame->normal_hints.max_width;
 				*height = frame->normal_hints.max_height - footer_height;
@@ -3046,12 +2604,8 @@ static void frame_free(Frame_class_info *frame)
 
 	/* Free frame struct */
 
-#ifdef OW_I18N
-	_xv_free_ps_string_attr_dup(&frame->label);
-#else
 	if (frame->label)
 		xv_free(frame->label);
-#endif /* OW_I18N */
 
 	/*
 	 * Free window acclelerator info
@@ -3068,14 +2622,10 @@ static void frame_free(Frame_class_info *frame)
 			menu_accel = next_menu_accel) {
 		next_menu_accel = menu_accel->next;
 
-#ifdef OW_I18N
-		_xv_free_ps_string_attr_dup(&menu_accel->keystr);
-#else
 		if (menu_accel->keystr) {
 			xv_free(menu_accel->keystr);
 		}
 		xv_free(menu_accel);
-#endif /* OW_I18N */
 	}
 
 	/*
@@ -3158,20 +2708,10 @@ static int frame_destroy(Frame frame_public, Destroy_status status)
 			xv_destroy(frame->footer);
 		}
 
-#ifdef OW_I18N
-		_xv_free_ps_string_attr_dup(&frame->left_footer);
-		_xv_free_ps_string_attr_dup(&frame->right_footer);
-		if (frame->imstatus != NULL)
-			xv_destroy(frame->imstatus);
-		_xv_free_ps_string_attr_dup(&frame->left_IMstatus);
-		_xv_free_ps_string_attr_dup(&frame->right_IMstatus);
-#else
 		if (frame->left_footer != NULL)
 			free(frame->left_footer);
 		if (frame->right_footer != NULL)
 			free(frame->right_footer);
-#endif /* OW_I18N */
-
 		if (frame->default_icon) {
 			if (frame->icon == frame->default_icon) {
 				xv_destroy(frame->icon);
