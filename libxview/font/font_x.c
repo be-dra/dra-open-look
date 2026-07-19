@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.2 2026/07/15 18:35:17 dra Exp $ ";
+static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.3 2026/07/18 16:39:12 dra Exp $ ";
 #endif
 #endif
 
@@ -30,7 +30,6 @@ static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v
  /* static GC       glyph_gc; */	/* = 0 for -A-R */
  /* static int      gp_height, gp_width; */	/* = 0 for -A-R */
  /* static Pixrect *glyph_pr; */
-Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale, char **fs_list);
 
 Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale, char **fs_list)
 {
