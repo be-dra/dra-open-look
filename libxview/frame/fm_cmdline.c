@@ -1,5 +1,5 @@
 #if defined(sccs) && !defined(lint)
-static char     sccsid[] = "@(#)fm_cmdline.c 20.46 93/06/28 DRA: $Id: fm_cmdline.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_cmdline.c 20.46 93/06/28 DRA: $Id: fm_cmdline.c,v 4.2 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 
 /*
@@ -234,41 +234,8 @@ Pkg_private int frame_all_set_cmdline_options(Frame frame_public)
 	 * as the -scale cmdline option
 	 */
 
-#ifdef OW_I18N
 	/* Adding locale information to font.name resource */
-
 	defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
-
-	/*
-	 * if font specified but scale not on cmdline
-	 */
-	if (string = xv_font_regular()) {
-		Xv_font font;
-		char *save_name;
-
-		/*
-		 * Cache string obtained from defaults pkg, as it's
-		 * contents might change
-		 */
-		if (string) {
-			save_name = xv_strsave(string);
-		}
-
-		font = xv_find(frame_public, FONT, FONT_SET_SPECIFIER, save_name, NULL);
-		if (font) {
-			status = xv_set(frame_public, XV_FONT, font, NULL);
-			font_found = TRUE;
-		}
-
-		/*
-		 * Free cached string
-		 */
-		if (save_name) {
-			xv_free(save_name);
-		}
-	}
-	defaults_set_locale(NULL, NULL);
-#else
 
 	/* the xv_font_regular function return non-NULL even if there was 
 	 * no command line option: it queries (amongst others) the
@@ -290,7 +257,14 @@ Pkg_private int frame_all_set_cmdline_options(Frame frame_public)
 			save_name = xv_strsave(string);
 		}
 
-		font = xv_find(frame_public, FONT, FONT_NAME, save_name, NULL);
+		if (_xv_is_multibyte) {
+			font = xv_find(frame_public, FONT,
+							FONT_SET_SPECIFIER, save_name,
+							NULL);
+		}
+		else {
+			font = xv_find(frame_public, FONT, FONT_NAME, save_name, NULL);
+		}
 
 		if (font) {
 			status = xv_set(frame_public, XV_FONT, font, NULL);
@@ -304,16 +278,13 @@ Pkg_private int frame_all_set_cmdline_options(Frame frame_public)
 			xv_free(save_name);
 		}
 	}
-#endif /* OW_I18N */
-
+	defaults_set_locale(NULL, 0);
 
 	/*
 	 * if no font defined or scale specified on cmdline
 	 */
 
-#ifdef OW_I18N
 	defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
-#endif /* OW_I18N */
 
 	if (!font_found && (xv_font_bold() == (char *)NULL) &&
 			(xv_font_monospace() == (char *)NULL)) {
@@ -366,9 +337,7 @@ Pkg_private int frame_all_set_cmdline_options(Frame frame_public)
 		}
 	}
 
-#ifdef OW_I18N
-	defaults_set_locale(NULL, NULL);
-#endif /* OW_I18N */
+	defaults_set_locale(NULL, 0);
 
 	return (status);
 }
@@ -407,10 +376,8 @@ Pkg_private int frame_set_icon_cmdline_options(Frame frame_public)
         *defaults++ = xv_get(server, SERVER_FONT_WITH_NAME, string);
 
     } else {
-#ifdef OW_I18N
        /* Add locale info for Icon.Font.Name resource. */
        defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
-#endif /* OW_I18N */
 
        if (defaults_exists("icon.font.name", "Icon.Font.Name")) {
            *defaults++ = (Xv_opaque) ICON_FONT;
@@ -421,9 +388,7 @@ Pkg_private int frame_set_icon_cmdline_options(Frame frame_public)
            *defaults++ = xv_get(server, SERVER_FONT_WITH_NAME, string);
        }
 
-#ifdef OW_I18N
-       defaults_set_locale(NULL, NULL);
-#endif /* OW_I18N */
+       defaults_set_locale(NULL, 0);
     }
 
     if (frame_notify_count == 1) {
