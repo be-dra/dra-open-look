@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.13 2026/06/23 19:23:38 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.15 2026/07/19 07:06:09 dra Exp $";
 #endif
 #endif
 
@@ -57,11 +57,7 @@ typedef struct {
     Xv_singlecolor  fg, bg;		/* fg/bg color of cursor */
     int		    flags;		/* various options */
     Xv_object	    root;		/* root handle		     */
-#ifndef OW_I18N
     char	   *string;		/* text cursor string */
-#else
-    _xv_string_attr_dup_t  string;	/* text cursor string */
-#endif
     Cursor_type	    type;		/* pixmap, glyph or text cursor */
 	int use_std_cursor_font;
 } Cursor_info;
@@ -167,10 +163,6 @@ static int cursor_destroy_internal(Xv_Cursor cursor_public,
 		if (cursor->type == CURSOR_TYPE_TEXT && cursor->cursor_id) {
 			DRAWABLE_INFO_MACRO(cursor->root, info);
 			XFreeCursor(xv_display(info), cursor->cursor_id);
-
-#ifdef OW_I18N
-			_xv_free_ps_string_attr_dup(&cursor->string);
-#endif
 		}
 		free((char *)cursor);
 	}
@@ -190,15 +182,7 @@ static Xv_opaque cursor_get_internal(Xv_Cursor cursor_public, int *status,
 			return (Xv_opaque) show_cursor(cursor);
 
 		case CURSOR_STRING:
-
-#ifndef OW_I18N
 			return (Xv_opaque) cursor->string;
-#else
-			return (Xv_opaque) _xv_get_mbs_attr_dup(&cursor->string);
-
-		case CURSOR_STRING_WCS:
-			return (Xv_opaque) _xv_get_wcs_attr_dup(&cursor->string);
-#endif /* OW_I18N */
 
 		case CURSOR_DRAG_STATE:
 			return (Xv_opaque) cursor->drag_state;
@@ -309,12 +293,7 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 	display = xv_display(info);
 	xid = xv_xid(info);
 
-#ifdef OW_I18N
-	length = STRLEN(cursor->string.pswcs.value);
-#else
 	length = strlen(cursor->string);
-#endif
-
 	src_char = cursor_table[cursor->drag_state][cursor->drag_type];
 
     cursor_font = (Xv_Font) xv_find(xv_server(info), FONT,
@@ -395,8 +374,6 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 	if (!textfont)
 		return XV_ERROR;
 
-	XSetFont(display, visual->gc, xv_get(textfont, XV_XID));
-
 	if (length <= 5) {
 		XSetForeground(display, visual->gc, 0L);
 		/* erase the "more arrow" */
@@ -410,14 +387,16 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 
 	/* Draw string into cursor pixmap */
 
-#ifdef OW_I18N
-	XwcDrawString(display, src_pixmap, (XFontSet) xv_get(textfont, FONT_SET_ID),
-			visual->gc, 20, ascent+descent+3,
-			cursor->string.pswcs.value, length);
-#else
-	XDrawString(display,src_pixmap,visual->gc, 20, ascent+descent+3,
+	if (_xv_is_multibyte) {
+		XFontSet fs = (XFontSet)xv_get(textfont, FONT_SET_ID);
+		XmbDrawString(display,src_pixmap, fs, visual->gc, 20, ascent+descent+3,
 									cursor->string, length);
-#endif
+	}
+	else {
+		XSetFont(display, visual->gc, xv_get(textfont, XV_XID));
+		XDrawString(display,src_pixmap,visual->gc, 20, ascent+descent+3,
+									cursor->string, length);
+	}
 
 	/* Define foreground and background colors */
 	screen_nbr = (int)xv_get(xv_screen(info), SCREEN_NUMBER);
@@ -637,24 +616,10 @@ static Xv_opaque cursor_set_internal(Xv_Cursor cursor_public,
 				break;
 
 			case CURSOR_STRING:
-
-#ifdef OW_I18N
-				_xv_set_mbs_attr_dup(&cursor->string, (char *)arg1);
-#else
 				cursor->string = (char *)arg1;
-#endif
-
 				cursor->type = CURSOR_TYPE_TEXT;
 				ATTR_CONSUME(avlist[0]);
 				break;
-
-#ifdef OW_I18N
-			case CURSOR_STRING_WCS:
-				_xv_set_wcs_attr_dup(&cursor->string, (CHAR *) arg1);
-				cursor->type = CURSOR_TYPE_TEXT;
-				ATTR_CONSUME(avlist[0]);
-				break;
-#endif
 
 			case CURSOR_DRAG_STATE:
 				cursor->drag_state = (Cursor_drag_state) arg1;
