@@ -1,4 +1,4 @@
-/*      @(#)font_impl.h 20.33 93/06/28 SMI   DRA: RCS $Id: font_impl.h,v 4.4 2026/07/15 18:35:17 dra Exp $     */
+/*      @(#)font_impl.h 20.33 93/06/28 SMI   DRA: RCS $Id: font_impl.h,v 4.6 2026/07/18 17:06:36 dra Exp $     */
 
 /***********************************************************************/
 /*	                      font_impl.h			       */
@@ -158,21 +158,37 @@ typedef struct font_info {
 
 /* from font.c */
 Xv_private char *xv_font_monospace(void);
-Pkg_private XID xv_load_x_font(Display *display, char *name, Xv_opaque *font_opaque, int *default_x, int *default_y, int *max_char, int *min_char);
+Pkg_private XID xv_load_x_font(Display *display, char *name,
+						Xv_opaque *font_opaque, int *default_x, int *default_y,
+						int *max_char, int *min_char);
 Pkg_private void xv_unload_x_font(Display *display, Xv_opaque font_opaque);
-Pkg_private void font_check_overlapping(int	*neg_left_bearing, XFontStruct	*x_font_info);
-Pkg_private void font_check_var_height (int	*variable_height_font, XFontStruct	*x_font_info);
+Pkg_private void font_check_overlapping(int	*neg_left_bearing,
+						XFontStruct	*x_font_info);
+Pkg_private void font_check_var_height (int	*variable_height_font,
+						XFontStruct	*x_font_info);
 Xv_private Xv_font xv_find_olglyph_font(Xv_font font_public);
 Xv_private Xv_Font xv_font_with_name (Xv_opaque server, char *name);
 Xv_private char *xv_font_bold(void);
 Pkg_private void font_setup_pixfont(Xv_font_struct	*font_public);
-Xv_private void xv_x_char_info(XFontStruct *font, int i, int *x_home, int *y_home, int *x_advance, int *y_advance, Pixrect **pr);
+Xv_private void xv_x_char_info(XFontStruct *font,
+						int i, int *x_home, int *y_home,
+						int *x_advance, int *y_advance, Pixrect **pr);
 Pkg_private int font_init_pixfont(Xv_font_struct *font_public);
 Xv_public Pixfont *xv_pf_open(char *fontname, Xv_opaque srv);
 Xv_public void xv_pf_textbound(struct pr_subregion *, int , Pixfont *, char *);
-Xv_private void xv_x_char_info(XFontStruct *font, int i, int *x_home, int *y_home, int *x_advance, int *y_advance, Pixrect **pr);
-Pkg_private XID xv_load_x_font(Display *display, char *name, Xv_opaque *font_opaque, int *default_x, int *default_y, int *max_char, int *min_char);
-Xv_public void xv_real_baseline_when_using_pf(Xv_opaque font, int ch, int *x_x, int *x_y, int pr_x, int pr_y);
-Pkg_private XID xv_load_x_font(Display *display, char *name, Xv_opaque *font_opaque, int *default_x, int *default_y, int *max_char, int *min_char);
+Xv_private void xv_x_char_info(XFontStruct *font, int i,
+						int *x_home, int *y_home, int *x_advance,
+						int *y_advance, Pixrect **pr);
+Pkg_private XID xv_load_x_font(Display *display, char *name,
+						Xv_opaque *font_opaque, int *default_x, int *default_y,
+						int *max_char, int *min_char);
+Xv_public void xv_real_baseline_when_using_pf(Xv_opaque font, int ch,
+								int *x_x, int *x_y, int pr_x, int pr_y);
+Pkg_private XID xv_load_x_font(Display *display, char *name,
+				Xv_opaque *font_opaque, int *default_x, int *default_y,
+				int *max_char, int *min_char);
+Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale,
+									char **fs_list);
+Xv_public struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
 
 #endif
