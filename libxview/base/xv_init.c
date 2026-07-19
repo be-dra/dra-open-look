@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.5 2025/10/31 20:59:47 dra Exp $";
+static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.6 2026/07/18 19:37:04 dra Exp $";
 #endif
 #endif
 
@@ -40,10 +40,6 @@ static int      xv_init_called;	/* = FALSE */
 Xv_private void xv_init_x_pr(void);
 static int xv_handle_xio_errors(Display *display);
 static char *xv_base_name(char *fullname);
-
-#ifdef OW_I18N
-Xv_private_data wchar_t *xv_app_name_wcs;
-#endif /* OW_I18N */
 
 Xv_private_data char *xv_app_name;
 Xv_private_data char 	*xv_instance_app_name = NULL;
@@ -173,18 +169,8 @@ Xv_public Xv_object xv_init(Attr_attribute attr1, ...)
 					xv_free(xv_app_name);
 				}
 
-#ifdef OW_I18N
-				if (xv_app_name_wcs) {
-					xv_free(xv_app_name_wcs);
-				}
-#endif /* OW_I18N */
-
 				if (argv[0]) {
 					xv_app_name = xv_base_name(argv[0]);
-
-#ifdef OW_I18N
-					xv_app_name_wcs = _xv_mbstowcsdup(xv_app_name);
-#endif /* OW_I18N */
 				}
 				break;
 
@@ -197,18 +183,8 @@ Xv_public Xv_object xv_init(Attr_attribute attr1, ...)
 					xv_free(xv_app_name);
 				}
 
-#ifdef OW_I18N
-				if (xv_app_name_wcs) {
-					xv_free(xv_app_name_wcs);
-				}
-#endif /* OW_I18N */
-
 				if (argv[0]) {
 					xv_app_name = xv_base_name(argv[0]);
-
-#ifdef OW_I18N
-					xv_app_name_wcs = _xv_mbstowcsdup(xv_app_name);
-#endif /* OW_I18N */
 				}
 				break;
 
@@ -312,11 +288,6 @@ Xv_public Xv_object xv_init(Attr_attribute attr1, ...)
 			case XV_LC_NUMERIC:
 			case XV_LC_TIME_FORMAT:
 			case XV_LOCALE_DIR:
-
-#if defined(OW_I18N) && defined(FULL_R5)
-			case XV_IM_PREEDIT_STYLE:
-			case XV_IM_STATUS_STYLE:
-#endif
 
 				break;
 
