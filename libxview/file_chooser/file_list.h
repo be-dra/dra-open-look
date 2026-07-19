@@ -1,4 +1,4 @@
-/*      @(#)file_list.h 1.9 93/06/28 SMI  DRA: RCS $Id: file_list.h,v 4.2 2025/03/08 13:24:37 dra Exp $      */
+/*      @(#)file_list.h 1.9 93/06/28 SMI  DRA: RCS $Id: file_list.h,v 4.4 2026/07/18 20:46:57 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -38,17 +38,6 @@ typedef enum {
     FILE_LIST_CHANGE_DIR_FUNC	= FILE_LIST_ATTR(ATTR_FUNCTION_PTR,	13),
     FILE_LIST_COMPARE_FUNC	= FILE_LIST_ATTR(ATTR_FUNCTION_PTR,	14),
     FILE_LIST_ROW_TYPE		= FILE_LIST_ATTR(ATTR_INT,		15)
-
-#ifdef OW_I18N
-	,
-    /*
-     * Wide Char Interface
-     */
-    FILE_LIST_DIRECTORY_WCS 		= FILE_LIST_ATTR(ATTR_WSTRING,		16),
-    FILE_LIST_FILTER_STRING_WCS		= FILE_LIST_ATTR(ATTR_WSTRING,		17),
-    FILE_LIST_DOTDOT_STRING_WCS		= FILE_LIST_ATTR(ATTR_WSTRING,		18),
-    FILE_LIST_WCHAR_NOTIFY		= FILE_LIST_ATTR(ATTR_BOOLEAN,		19)
-#endif /* OW_I18N */    
 } File_list_attr;
 
 
@@ -109,18 +98,6 @@ typedef struct {
     char *			xfrm;		/* returned by strxfrm() */
     Xv_opaque			reserved; 	/* reserved for future use */
 } File_list_row;
-
-#ifdef OW_I18N
-typedef struct {
-    File_list			file_list;
-    Panel_list_row_values_wcs	vals;
-    struct stat			stats;
-    File_list_op		matched;
-    char *			xfrm;		/* returned by strxfrm() */
-    Xv_opaque			reserved; 	/* reserved for future use */
-} File_list_row_wcs;
-#endif
-
 
 /*
  * Built-in comparison functions
