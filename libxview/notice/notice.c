@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.17 2026/01/24 07:59:48 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.18 2026/07/18 17:07:19 dra Exp $ ";
 #endif
 #endif
 
@@ -18,6 +18,7 @@ static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c
 #include <xview_private/draw_impl.h>
 #include <xview_private/win_info.h>
 #include <xview_private/svr_impl.h>
+#include <xview_private/font_impl.h>
 #include <xview_private/sel_impl.h>
 #include <xview_private/pw_impl.h>
 #include <xview_private/wmgr_decor.h>
@@ -231,12 +232,6 @@ Xv_private Defaults_pairs xv_kbd_cmds_value_pairs[4];
  * --------------------------- Cursor Stuff -------------------------
  */
 
-
-#ifdef OW_I18N
-extern struct pr_size xv_pf_textwidth_wc();
-#else
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-#endif
 
 #define NOTICE_INVERT_BUTTON	1
 #define NOTICE_NORMAL_BUTTON	0
@@ -932,11 +927,7 @@ static int notice_text_width(Xv_Font font, CHAR *str)
 {
     struct pr_size  size;
 
-#ifdef OW_I18N
-    size = xv_pf_textwidth_wc(STRLEN(str), font, str);
-#else
     size = xv_pf_textwidth((int)STRLEN(str), font, str);
-#endif
 
     return (size.x);
 }
@@ -3377,12 +3368,6 @@ static void notice_subframe_layout(Notice_info	*notice, Bool do_msg, Bool do_but
 
 	notice->need_layout = 0;
 }
-
-#ifdef OW_I18N
-extern struct pr_size xv_pf_textwidth_wc();
-#else
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-#endif
 
 #ifdef  OW_I18N
 static wchar_t notice_default_button_str[8] = {
