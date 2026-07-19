@@ -1,4 +1,4 @@
-/*      @(#)hist_impl.h 1.7 93/06/28 SMI  DRA: RCS $Id: hist_impl.h,v 4.2 2024/05/22 18:17:52 dra Exp $      */
+/*      @(#)hist_impl.h 1.7 93/06/28 SMI  DRA: RCS $Id: hist_impl.h,v 4.3 2026/07/18 20:29:00 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -56,10 +56,6 @@ struct hist_entry {
     char *		value;	/* string interpreted */
     struct hist_entry *	next;
     struct hist_entry *	prev;
-#ifdef OW_I18N
-    wchar_t *		label_wcs;
-    wchar_t *		value_wcs;
-#endif	/* OW_I18N */
 };
 
 
@@ -75,9 +71,6 @@ typedef struct {
     History_list	list;
     Menu		menu;
     void		(* notify_proc)(History_menu, char *,char *);
-#ifdef OW_I18N
-    void		(* notify_proc_wcs)();
-#endif
 } History_menu_private;
 
 
