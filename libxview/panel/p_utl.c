@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.15 2026/01/24 12:00:34 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.17 2026/07/18 17:16:13 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -21,6 +21,7 @@ char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.15 2026
 #include <xview/sun.h>
 #include <xview/xv_xrect.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/font_impl.h>
 #include <xview_private/scrn_impl.h>
 #include <xview_private/pw_impl.h>
 
@@ -28,9 +29,7 @@ Xv_private void xv_draw_rectangle(Xv_opaque pw,
     int x, int y, int w, int h,	/* left, top, width and height of rectangle */
     int linestyle,	/* LineSolid or LineDoubleDash */
     int op);
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
 #ifdef OW_I18N
-extern struct pr_size    xv_pf_textwidth_wc();
 extern wchar_t          _xv_null_string_wc[];
 #endif /* OW_I18N */
 
@@ -199,13 +198,8 @@ Pkg_private struct pr_size panel_make_image( Xv_Font font, Panel_image *dest,
 				if (i == length || str[i] == '\n') {
 					if (length)
 
-#ifdef OW_I18N
-						size = xv_pf_textwidth_wc(i - line_start, font,
-								&str[line_start]);
-#else
 						size = xv_pf_textwidth(i - line_start, font,
 								&str[line_start]);
-#endif /* OW_I18N */
 
 					line_start = i + 1;
 					max_width = MAX(max_width, size.x);
@@ -551,14 +545,6 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 						if (newline_found)
 							str[i] = 0;
 
-#ifdef OW_I18N
-						size = xv_pf_textwidth_wc(i - line_start,
-								image_font(image), &str[line_start]);
-						baseline_x = rect->r_left + rect->r_width - size.x;
-						panel_paint_text(pw, fontset_id, color_index,
-								baseline_x, baseline_y,
-								(wchar_t *)&str[line_start]);
-#else
 						size = xv_pf_textwidth(i - line_start,
 								image_font(image), &str[line_start]);
 
@@ -566,7 +552,6 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 						baseline_x = rect->r_left + rect->r_width - size.x;
 						panel_paint_text(pw, font_xid, color_index,
 								baseline_x, baseline_y, &str[line_start]);
-#endif /* OW_I18N */
 
 						if (newline_found)
 							str[i] = '\n';
