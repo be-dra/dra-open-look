@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.12 2026/07/16 13:56:27 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.14 2026/07/18 18:02:49 dra Exp $ ";
 #endif
 #endif
 
@@ -1607,15 +1607,17 @@ static char *font_determine_font_name(Font_return_attrs my_attrs)
 						(my_attrs->setwidthname ? my_attrs->setwidthname : "*"),
 						(my_attrs->addstylename ? my_attrs->addstylename : "*"),
 						sizestr,
-						(my_attrs->registry ? my_attrs->registry : "*"),
-						(my_attrs->encoding ? my_attrs->encoding : "*"));
-
+						(my_attrs->registry ? my_attrs->registry
+								: (_xv_is_multibyte ? "iso10646" : "*")),
+						(my_attrs->encoding ? my_attrs->encoding
+								: (_xv_is_multibyte ? "1" : "*")));
 	/*
 	 * Save and return the font name constructed
 	 */
 	my_attrs->name = xv_strsave(name);
 	my_attrs->free_name = 1;
 
+	SERVERTRACE((777, "%s: %s\n", __FUNCTION__, name));
 	return (char *)my_attrs->name;
 }
 
@@ -1758,10 +1760,8 @@ static char *font_rescale_from_font(Font_info *font, int scale,
 
 	/* Dynamische Unterscheidung der Font-Art */
 	if (_xv_is_multibyte && linfo && (font->type == FONT_TYPE_TEXT)) {
-		/* ------------------ MULTIBYTE PFAD (Fontset-Format) ------------------ */
 		fs = 1;
 	}
-	/* ------------------ KLASSISCHER 8-BIT XLFD PFAD ------------------ */
 	if (font->foundry) {
 		attrs->foundry = xv_strsave(font->foundry);
 		attrs->free_foundry = 1;
@@ -1838,7 +1838,13 @@ static char *font_rescale_from_font(Font_info *font, int scale,
 	/* String-Generierung anhand des berechneten Formats */
 	if (fs) {
 		/* Format: family-style-size */
-		sprintf(new_name, "%s-%d", name, desired_scale);
+/* orig:		sprintf(new_name, "%s-%d", name, desired_scale); */
+		sprintf(new_name, "%s-*-%d-*-*-*-*-%s-%s", name,
+					(10 * desired_scale),
+					(attrs->registry ? attrs->registry
+							: (_xv_is_multibyte ? "iso10646" : "*")),
+					(attrs->encoding ? attrs->encoding
+							: (_xv_is_multibyte ? "1" : "*")));
 	}
 	else {
 		if (_xv_is_multibyte) {
@@ -3428,20 +3434,18 @@ font_attrs_name:
 	    else
 		style = font_attrs->style;
 
-	    if (font_attrs->size == FONT_NO_SIZE)
-		size = linfo->default_size;
-	    else
-		size = font_attrs->size;
+	    if (font_attrs->size == FONT_NO_SIZE) size = linfo->default_size;
+	    else size = font_attrs->size;
 
-            sprintf(key, "%s-%s-%d", family, style, size);
+		sprintf(key, "%s-%s-%d", family, style, size);
 
-            str = get_font_set_list(linfo->db, key);
-            if (str != NULL) {
-                font_attrs->names = construct_font_set_list(str);
-                font_attrs->free_names = TRUE;
-                font_attrs->specifier = strdup(key);
-            }
-        }
+		str = get_font_set_list(linfo->db, key);
+		if (str != NULL) {
+			font_attrs->names = construct_font_set_list(str);
+			font_attrs->free_names = TRUE;
+			font_attrs->specifier = strdup(key);
+		}
+	}
 
 	if ((font_attrs->names == NULL) ) {
 	    /* Construct name using the family/style/size attributes */
