@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.6 2026/07/16 14:00:31 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.7 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 #endif
 
@@ -28,56 +28,10 @@ static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display
 
 Pkg_private void frame_display_label(Frame_class_info *frame)
 {
-#ifdef OW_I18N
-    Xv_Drawable_info *info;
-    wchar_t		*wp;
-    XICCEncodingStyle	 style;
-    XTextProperty	 text_prop;
-
-    DRAWABLE_INFO_MACRO(FRAME_PUBLIC(frame), info);
-
-    /*
-     * DEPEND_ON_BUG_1100305: We should able to use XStdICCTextStyle
-     * which should elminate to test ASCII or not.
-     */
-    if (frame->label.pswcs.value) {
-        for (wp = frame->label.pswcs.value; *wp; wp++)
-        {
-            if (! iswascii(*wp))
-            {
-                /*
-	         * There are non ASCII characters, so, we have to send it
-	         * as Compound Text Atom.
-	         */
-                style = XCompoundTextStyle;
-	        goto send;
-
-            }
-        }
- 
-        /*
-         * There are only ASCII characters, we can send it as STRING atom.
-         */
-        style = XStringStyle;
-
-send:
-        if (_xv_XwcTextListToTextProperty(FRAME_PUBLIC(frame), FRAME,
-				          xv_display(info),
-				          &frame->label.pswcs.value, 1, style,
-				          &text_prop) >= 0) {
-	    XSetTextProperty(xv_display(info), xv_xid(info),
-			     &text_prop, XA_WM_NAME);
-	    XFree(text_prop.value);
-        }
-    }
-
-    return;
-#else
     Xv_Drawable_info *info;
 
     DRAWABLE_INFO_MACRO(FRAME_PUBLIC(frame), info);
     XStoreName(xv_display(info), xv_xid(info), frame->label);
-#endif
 }
 
 /* Originally, this function was only what the name says: display.
@@ -203,21 +157,6 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 		if (clear_first)
 			XClearWindow(xv_display(info), xv_xid(info));
 
-	#ifdef OW_I18N
-		if (frame->left_footer.pswcs.value != NULL) {
-			olgx_draw_text(frame->ginfo, xv_xid(info),
-					frame->left_footer.pswcs.value, margin, baseline,
-					max_left_width,
-					OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
-		}
-		if (frame->right_footer.pswcs.value != NULL) {
-			olgx_draw_text(frame->ginfo, xv_xid(info),
-					frame->right_footer.pswcs.value,
-					footer_width + margin - max_right_width, baseline,
-					max_right_width,
-					OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
-		}
-	#else
 		if (frame->left_footer) {
 			/* siehe auch die folgenden olgx_draw_text */
 			frame->left_x = margin;
@@ -242,7 +181,6 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 					footer_width + margin - max_right_width, baseline,
 					max_right_width, OLGX_NORMAL | OLGX_MORE_ARROW);
 		}
-	#endif
 
 		XFlush(xv_display(info));
 	}
@@ -261,131 +199,6 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 				save_black, OLGX_SPECIAL);
 	}
 }
-
-#ifdef OW_I18N
-Pkg_private void
-frame_display_IMstatus(frame_public, clear_first)
-    Frame frame_public;
-    int clear_first;
-{
-    Frame_class_info	*frame = FRAME_PRIVATE(frame_public);
-    Xv_Drawable_info	*info;
-    Xv_Drawable_info	*frame_info;
-    Cms			frame_cms;
-    int 		left_width, right_width;
-    int 		max_left_width, max_right_width;
-    int 		margin;
-    int 		gap;
-    int 		baseline;
-    int 		footer_width;     
-    int 		footer_height;
-    int 		quarter_width;
-    int			save_black;	/* saved value for OLGX_BLACK */
-    int			new_black;	/* new value for OLGX_BLACK */
-    short 		change_black;	/* flag to check if 
-					 * save_black != new_black 
-					 */
-    Frame_rescale_state scale;
-    
-    DRAWABLE_INFO_MACRO(frame_public, frame_info);
-    DRAWABLE_INFO_MACRO(frame->imstatus, info);
-    frame_cms = xv_cms(frame_info);
-    
-    /*
-     * Make sure imstatus text gets drawn in same color as fg color of frame.
-     *
-     * The original value for OLGX_BLACK is saved in 'save_black'. It will
-     * be restored at the end of this function.
-     * 'new_black' is the desired value for OLGX_BLACK. It is the fg 
-     * color of the imstatus. At this point in time, this should be the same
-     * as the fg color of the frame, unless the frame does not have a control 
-     * cms.
-     * 
-     * The OLGX_BLACK value of the ginfo is changed (and restored later) only 
-     * if 'save_black' != 'new_black'.
-     */
-    save_black = olgx_get_single_color(frame->ginfo, OLGX_BLACK);
-    new_black = xv_get(frame_cms, CMS_PIXEL, 
-			xv_get(frame->imstatus, WIN_FOREGROUND_COLOR)); 
-
-    change_black = (save_black != new_black);
-
-    if (change_black)  {
-        olgx_set_single_color(frame->ginfo, OLGX_BLACK, new_black, OLGX_SPECIAL);
-    }
-
-    scale = xv_get(xv_get(frame_public, XV_FONT), FONT_SCALE);
-
-    if (frame->left_IMstatus.pswcs.value == NULL) 
-      left_width = 0;
-    else 
-      left_width = XwcTextEscapement(TextFont_Set(frame->ginfo),
-			      frame->left_IMstatus.pswcs.value, 
-			      wslen(frame->left_IMstatus.pswcs.value));
-    if (frame->right_IMstatus.pswcs.value == NULL)
-      right_width = 0;
-    else
-      right_width = XwcTextEscapement(TextFont_Set(frame->ginfo), 
-			       frame->right_IMstatus.pswcs.value, 
-			       wslen(frame->right_IMstatus.pswcs.value));
-    
-    margin = frame_footer_margin(scale);
-    gap = frame_inter_footer_gap(scale);  
-    footer_width = (int)xv_get(frame_public, XV_WIDTH) - 2 * margin;
-    footer_height = (int)xv_get(frame->imstatus, XV_HEIGHT);
-    quarter_width = footer_width / 4;
-    baseline = footer_height - frame_footer_baseline(scale);
-
-    if ((left_width + gap + right_width) <= footer_width) {
-	/* They both fit, no clipping */
-	max_left_width = left_width;
-	max_right_width = right_width;
-    } else if (right_width < quarter_width) {
-	/* right footer takes less than 1/4 of the footer */
-	max_left_width = footer_width - gap - right_width;
-	max_right_width = right_width;
-    } else if (left_width < (footer_width - quarter_width - gap)) {
-	/* left footer takes less than 3/4 of the footer */
-	max_left_width = left_width;
-	max_right_width = footer_width - max_left_width - gap;
-    } else {
-	/* must truncate both */
-	max_left_width = footer_width - quarter_width - gap;
-	max_right_width = quarter_width;
-    }    
-
-    if (clear_first)
-      XClearWindow(xv_display(info), xv_xid(info));
-    if (frame->left_IMstatus.pswcs.value != NULL) {
-	olgx_draw_text(frame->ginfo, xv_xid(info),
-		       frame->left_IMstatus.pswcs.value, 
-		       margin, baseline, max_left_width, 
-		       OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
-	if (status_get(frame, inactive_imstatus)) 
-	   olgx_stipple_rect(frame->ginfo, xv_xid(info),
-			margin, 0, max_left_width, footer_height);
-    }
-    if (frame->right_IMstatus.pswcs.value != NULL) {
-	olgx_draw_text(frame->ginfo, xv_xid(info),
-		       frame->right_IMstatus.pswcs.value,
-		       footer_width + margin - max_right_width, baseline,
-		       max_right_width,
-		       OLGX_NORMAL | OLGX_MORE_ARROW | OLGX_LABEL_IS_WCS);
-	if (status_get(frame, inactive_imstatus)) 
-	   olgx_stipple_rect(frame->ginfo, xv_xid(info),
-			footer_width + margin - max_right_width, baseline, 
-			max_right_width, footer_height);
-    }
-    XFlush(xv_display(info));
-
-    /*
-     * Restore OLGX_BLACK in ginfo only if it was changed before
-     */
-    if (change_black)  {
-        olgx_set_single_color(frame->ginfo, OLGX_BLACK, save_black, OLGX_SPECIAL);
-    }
-}
-#endif /* OW_I18N */
 
 /*
  * Function to make sure the footer/imstatus region inherits the frame's
