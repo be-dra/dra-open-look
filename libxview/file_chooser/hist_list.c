@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)hist_list.c 1.10 93/06/28  DRA: RCS $Id: hist_list.c,v 4.4 2025/03/08 13:24:37 dra Exp $ ";
+static char     sccsid[] = "@(#)hist_list.c 1.10 93/06/28  DRA: RCS $Id: hist_list.c,v 4.5 2026/07/18 20:28:30 dra Exp $ ";
 #endif
 #endif
 
@@ -88,21 +88,9 @@ static Xv_opaque hist_list_set(History_list public, Attr_avlist avlist)
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch ((int)attrs[0]) {
 
-#ifdef OW_I18N
-			case HISTORY_ADD_ROLLING_ENTRY_WCS:
-#endif
-
 			case HISTORY_ADD_ROLLING_ENTRY:{
 					char *label = (char *)attrs[1];
 					char *value = (char *)attrs[2];
-
-#ifdef OW_I18N
-					if ((Attr_attribute) attrs[0] ==
-							HISTORY_ADD_ROLLING_ENTRY_WCS) {
-						label = _xv_wcstombsdup((wchar_t *)attrs[1]);
-						value = _xv_wcstombsdup((wchar_t *)attrs[2]);
-					}
-#endif /* OW_I18N */
 
 					ATTR_CONSUME(attrs[0]);
 
@@ -125,14 +113,6 @@ static Xv_opaque hist_list_set(History_list public, Attr_avlist avlist)
 
 					add_rolling_entry(private, label, value);
 
-#ifdef OW_I18N
-					if ((Attr_attribute) attrs[0] ==
-							HISTORY_ADD_ROLLING_ENTRY_WCS) {
-						xv_free_ref(label);
-						xv_free_ref(value);
-					}
-#endif /* OW_I18N */
-
 					if (private->roll_count < private->roll_max)
 						private->roll_count++;
 					else
@@ -141,31 +121,11 @@ static Xv_opaque hist_list_set(History_list public, Attr_avlist avlist)
 				}
 
 
-#ifdef OW_I18N
-			case HISTORY_ADD_FIXED_ENTRY_WCS:
-#endif
-
 			case HISTORY_ADD_FIXED_ENTRY:{
 					char *label = (char *)attrs[1];
 					char *value = (char *)attrs[2];
 
-#ifdef OW_I18N
-					if ((Attr_attribute) attrs[0] ==
-							HISTORY_ADD_FIXED_ENTRY_WCS) {
-						label = _xv_wcstombsdup((wchar_t *)attrs[1]);
-						value = _xv_wcstombsdup((wchar_t *)attrs[2]);
-					}
-#endif /* OW_I18N */
-
 					add_fixed_entry(private, label, value);
-
-#ifdef OW_I18N
-					if ((Attr_attribute) attrs[0] ==
-							HISTORY_ADD_FIXED_ENTRY_WCS) {
-						xv_free_ref(label);
-						xv_free_ref(value);
-					}
-#endif /* OW_I18N */
 
 					private->fixed_count++;
 					ATTR_CONSUME(attrs[0]);
@@ -303,50 +263,6 @@ static Xv_opaque hist_list_get(History_list public, int *status, Attr_attribute 
 	    return xv_get(entry->mi, MENU_INACTIVE);
 	break;
     }
-
-#ifdef OW_I18N
-    case HISTORY_LABEL_WCS:
-    case HISTORY_VALUE_WCS: {
-	struct hist_entry *entry;
-	History_space space = va_arg(args, History_space);
-	int row = va_arg(args, int);
-	int ii;
-
-	if ( space == HISTORY_FIXED ) {
-	    entry = private->fixed_first;
-	    if ( row >= private->fixed_count )
-		return XV_NULL;
-	} else {
-	    entry = private->roll_first;
-	    if ( row >= private->roll_count )
-		return XV_NULL;
-	}
-
-	/* find the row */
-	for ( ii=0; ii<row; ++ii )
-	    entry = entry->next;
-
-	if ( attr == HISTORY_LABEL_WCS ) {
-	    xv_free_ref( entry->label_wcs );
-
-	    if ( entry->label )
-		entry->label_wcs = _xv_mbstowcsdup( entry->label );
-	    else
-		entry->label_wcs = _xv_mbstowcsdup( "" );
-	    return (Xv_opaque) entry->label_wcs;
-	} else if ( attr == HISTORY_VALUE_WCS ) {
-	    xv_free_ref( entry->value_wcs );
-
-	    if ( entry->value )
-		entry->value_wcs = _xv_mbstowcsdup( entry->value );
-	    else
-		entry->value_wcs = _xv_mbstowcsdup( "" );
-	    return (Xv_opaque) entry->value_wcs;
-	}
-	break;
-    }
-#endif	/* OW_I18N */
-
 
     case HISTORY_VALUE_FROM_MENUITEM:  { 	/* private attr */
 	struct hist_entry *entry;
@@ -617,13 +533,6 @@ static void remove_last_entry(struct hist_entry **last)
 	xv_free( node->label );
     if ( node->value )
 	xv_free( node->value );
-
-#ifdef OW_I18N
-    if ( node->label_wcs )
-	xv_free( node->label_wcs );
-    if ( node->value_wcs )
-	xv_free( node->value_wcs );
-#endif
 
     if ( node->mi )
 	xv_destroy( node->mi );
