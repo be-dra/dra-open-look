@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_geom.c 20.31 93/06/28 DRA: $Id: fm_geom.c,v 4.2 2025/03/11 17:27:57 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_geom.c 20.31 93/06/28 DRA: $Id: fm_geom.c,v 4.3 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 #endif
 
@@ -162,32 +162,6 @@ Pkg_private int frame_footer_height(Frame_rescale_state scale)
     }
     return(height);
 }
-
-#ifdef OW_I18N
-Pkg_private int frame_IMstatus_height(Frame_rescale_state scale)
-{
-    int height;
-    
-    switch (scale) {
-      case WIN_SCALE_SMALL:
-	height = FRAME_FOOTER_SMALL_HEIGHT;
-	break;
-      case WIN_SCALE_MEDIUM:
-	height = FRAME_FOOTER_MEDIUM_HEIGHT;
-	break;
-      case WIN_SCALE_LARGE:
-	height = FRAME_FOOTER_LARGE_HEIGHT;
-	break;
-      case WIN_SCALE_EXTRALARGE:
-	height = FRAME_FOOTER_EXTRALARGE_HEIGHT;
-	break;
-      default:
-	height = FRAME_FOOTER_MEDIUM_HEIGHT;
-	break;
-    }
-    return(height);
-}
-#endif
 
 /*
  * frame_footer_baseline - return the distance from the bottom 
