@@ -1,4 +1,4 @@
-/*      @(#)path_impl.h 1.7 93/06/28 SMI  DRA: RCS $Id: path_impl.h,v 4.2 2024/05/22 18:17:49 dra Exp $      */
+/*      @(#)path_impl.h 1.7 93/06/28 SMI  DRA: RCS $Id: path_impl.h,v 4.3 2026/07/18 20:29:00 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -23,11 +23,6 @@ typedef struct {
     unsigned		is_directory : 1; 	/* allow file or dir names */
     unsigned		use_frame : 1;		/* put messages in frame */
     unsigned		new_file : 1;		/* allow new file name */
-
-#ifdef OW_I18N
-    wchar_t *		valid_path_wcs;
-    wchar_t *		relative_wcs;
-#endif /* OW_I18N */
 } Path_private;
 
 #define PATH_PUBLIC(item)	XV_PUBLIC(item)
