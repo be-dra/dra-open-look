@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.12 2026/06/30 11:35:24 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.13 2026/07/18 19:46:29 dra Exp $ ";
 #endif
 #endif
 
@@ -24,16 +24,6 @@ static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.
 #include <xview/help.h>
 #include <xview/win_notify.h>
 
-#ifdef	OW_I18N
-#include <xview/font.h>
-#include <xview/frame.h>
-#include <xview/panel.h>
-#include <xview_private/i18n_impl.h>  
-
-
-Xv_private_data Attr_attribute  canvas_pew_key;
-#endif /*OW_I18N*/
-
 #define	CANVAS_PRIVATE(c)	XV_PRIVATE(Canvas_info, Xv_canvas, c)
 #define	CANVAS_PUBLIC(canvas)	XV_PUBLIC(canvas)
 
@@ -42,21 +32,6 @@ Xv_private_data Attr_attribute  canvas_pew_key;
 
 
 #define	BIT_FIELD(field)	unsigned field : 1
-
-
-#ifdef OW_I18N
-/*
- * pew (PreEdit Window) data structure, this will be hanging off on
- * the parent frame using XV_KEY_DATA.
- */
-typedef struct {
-    Frame	frame;
-    Panel	panel;
-    Panel_item	ptxt;
-    int		reference_count;
-    int		active_count;
-} Canvas_pew;
-#endif /* OW_I18N */
 
 typedef struct {
     Canvas	public_self;	/* back pointer to public self */
@@ -79,31 +54,12 @@ typedef struct {
 	BIT_FIELD(x_canvas);		/* treat canvas as an X drawing surface */
 	BIT_FIELD(no_clipping);		/* ignore clip rects on repaint */
 	BIT_FIELD(cms_repaint);         /* generate repaint on cms changes */
-#ifdef OW_I18N
-	BIT_FIELD(preedit_exist);       /* keep track of preedit status */
-#endif
 	BIT_FIELD(panning);
     } status_bits;
 
 	Xv_opaque pan_cursor;
 	int pan_x, pan_y;
 	Scrollbar panhsb, panvsb;
-
-#ifdef OW_I18N
-    /*
-     * pe_cache is used to cache the current preedit string for each canvas.
-     * Since all canvasses in a frame share the preedit window, but
-     * we show the string for the canvas that has the focus, we need to
-     * cache for each canvas.
-     */
-    XIC		ic;			/* cache the ic */
-    XIMPreeditDrawCallbackStruct *pe_cache; /* cache current preedit string */
-    Canvas_pew	*pew;			/* handle to preedit window (Frame) */
-    Canvas_paint_window	focus_pwin;	/* Last paint win which had a focus */
-#ifdef FULL_R5
-    XIMStyle	     xim_style;
-#endif /*FULL_R5*/
-#endif /*OW_I18N*/
 } Canvas_info;
 
 typedef struct {
@@ -707,13 +663,6 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 	Xv_Window view;
 	int view_nbr;
 
-#ifdef OW_I18N
-	XIC ic;
-	XID xid;
-	XPointer client_data;
-	Xv_object paint_public;
-#endif /*OW_I18N */
-
 	canvas = (Canvas_info *) xv_get(pw, XV_KEY_DATA, canvas_context_key);
 	canv_p = CANVAS_PUBLIC(canvas);
 
@@ -741,22 +690,6 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 
 	result = notify_next_event_func(pw, event, arg, type);
 
-#ifdef OW_I18N
-	ic = (XIC) xv_get(pw, WIN_IC);
-	if (ic && (XGetICValues(ic, XNFocusWindow, &xid, NULL) == NULL)
-			&& xid) {
-		paint_public = (Canvas) win_data(XDisplayOfIM(XIMOfIC(ic)), xid);
-		canvas = (Canvas_info *) xv_get(paint_public, XV_KEY_DATA,
-				canvas_context_key);
-		canv_p = CANVAS_PUBLIC(canvas);
-	}
-	else {
-		canvas = (Canvas_info *) xv_get(pw, XV_KEY_DATA, canvas_context_key);
-/* ISSUE: client_data is not initialized */
-		canv_p = (Canvas) client_data;
-	}
-#endif /*OW_I18N */
-
 	switch (event_action(ev)) {
 		case WIN_REPAINT:
 		case WIN_GRAPHICS_EXPOSE:
@@ -779,18 +712,6 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 		case ACTION_TEXT_HELP:
 		case ACTION_MORE_TEXT_HELP:
 		case ACTION_INPUT_FOCUS_HELP:
-
-#ifdef OW_I18N1
-			if (event_is_down(ev)) {
-				if ((Attr_pkg) xv_get(pw, WIN_TYPE) == CANVAS_TYPE) {
-					help_data = (char *)xv_get(pw, XV_HELP_DATA);
-					if (help_data)
-						xv_help_show(pw, help_data, ev);
-				}
-			}
-			break;
-
-#else
 			if (event_is_down(ev)) {
 				if ((Attr_pkg) xv_get(canv_p, WIN_TYPE) == CANVAS_TYPE) {
 					help_data = (char *)xv_get(canv_p, XV_HELP_DATA);
@@ -799,7 +720,6 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 				}
 			}
 			break;
-#endif /* OW_I18N */
 
 		case ACTION_NEXT_PANE:
 			if (event_is_down(ev)) {
@@ -947,40 +867,6 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 			}
 			break;
 
-#ifdef OW_I18N
-		case KBD_USE:{
-				if (canvas->ic) {
-					if (canvas->focus_pwin != pw) {
-						/* 
-						 * Set XNFocusWindow and cache the value.
-						 */
-						window_set_ic_focus_win(pw, canvas->ic,
-								xv_get(pw, XV_XID));
-						canvas->focus_pwin = pw;
-					}
-
-					/*
-					 * Update the preedit display.
-					 */
-					panel_preedit_display(
-							((Xv_panel_or_item *) canvas->pew->ptxt)->
-							private_data, canvas->pe_cache, TRUE);
-				}
-				(void)frame_kbd_use(xv_get(canv_p, WIN_FRAME), canv_p, canv_p);
-				break;
-			}
-
-		case KBD_DONE:{
-				Xv_panel_or_item *pi;
-
-				if (canvas->ic) {
-					pi = (Xv_panel_or_item *) canvas->pew->ptxt;
-					canvas->pe_cache = panel_get_preedit(pi->private_data);
-				}
-				(void)frame_kbd_done(xv_get(canv_p, WIN_FRAME), canv_p);
-				break;
-			}
-#else
 		case KBD_USE:
 			(void)frame_kbd_use(xv_get(canv_p, WIN_FRAME), canv_p, canv_p);
 			break;
@@ -988,7 +874,6 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 		case KBD_DONE:
 			(void)frame_kbd_done(xv_get(canv_p, WIN_FRAME), canv_p);
 			break;
-#endif /*OW_I18N */
 
 		default:
 			break;
@@ -997,434 +882,6 @@ static Notify_value canvas_paint_event(Xv_Window pw, Notify_event event,
 	return (result);
 }
 
-#ifdef OW_I18N
-/*
- *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
- *	pending in the U.S. and foreign countries. See LEGAL_NOTICE 
- *	file for terms of the license.
- */
-
-/* #include <X11/Xatom.h> */
-/* #include <xview_private/cnvs_impl.h> */
-/* #include <xview_private/draw_impl.h> */
-/* #include <xview/frame.h> */
-/* #include <xview/panel.h> */
-/* #include <xview/font.h> */
-#include <xview/notice.h>
-
-#define MAX_PREEDIT_CHAR         512	/* characters */
-#define PANEL_TEXT_RIM             6	/* pixel */
-#define INPUT_WINDOW_WIDTH        50	/* columns */
-
-
-Xv_private void			cache_text_state();
-
-static Notify_value	canvas_pew_pi_event_proc();
-
-
-static void canvas_preedit_start(XIC ic, XPointer	client_data, XPointer	callback_data)
-{
-    Canvas_info	*canvas;
-    Canvas_pew	*pew;
-    
-
-    canvas = CANVAS_PRIVATE((Canvas) client_data);
-    pew = canvas->pew;
-
-    /*
-     * Display the pew (PreEdit display Window).  And update the
-     * status and counters.
-     */
-    xv_set(pew->frame, XV_SHOW, TRUE, NULL);
-    pew->active_count++;
-    status_set(canvas, preedit_exist);
-    
-    /*
-     * start preediting with the input panel
-     */
-    panel_text_start(ic, pew->panel, NULL);
-}
-
-
-static void canvas_preedit_draw(ic, client_data, callback_data)
-    XIC		ic;
-    XPointer	client_data;
-    XPointer	callback_data;
-{
-    Canvas_info 			*canvas;
-    XIMPreeditDrawCallbackStruct 	*preedit;
-
-    canvas = CANVAS_PRIVATE((Canvas) client_data);
-    preedit = (XIMPreeditDrawCallbackStruct *) callback_data;
-
-    /*
-     * Can't use PANEL_PRIVATE macro here, can't include panel_impl.h
-     * due to name clash between status element of panel_info and
-     * canvas's status macro.
-     */
-    panel_preedit_display(
-	((Xv_panel_or_item *) canvas->pew->ptxt)->private_data,
-	preedit, FALSE);
-}
-
-
-Xv_private void 
-cache_text_state(pre_edit, pe_cache)
-XIMPreeditDrawCallbackStruct *pre_edit, *pe_cache;
-{
-
-    /*
-     * length = length of updated text
-     * chg_first = position in the cache where changes begin 
-     * chg_length = number of chars in the cache effected
-     * chg_last = last position in cache effected
-     * tlength = length of new text
-     *
-     * we want to take all text from pe_cache up to chg_first, 
-     * followed by the changed text, followed by any text
-     * after chg_last in pe_cache and assemble them inorder in a buffer,
-     * then replace the cache with the buffer.
-     *
-     * Whether the preedit text changes come in multibyte or
-     * wide character form, this function will always return
-     * the result in wide characters.  Since XView process
-     * only wide characters internally so we are assuming
-     * the cached preedit text is ALWAYS in wide characters.
-     */
-
-    XIMFeedback *feedback;	/* new structure for preedit screen feedback,
-					will replace existing cache */
-    int 	 i, idx;	/* Indices */
-    wchar_t 	*text;		/* new structure for preedit data, will
-					replace existing cache */
-    unsigned short length = 0;
-    unsigned short length_after = 0;
-    int 	 tlength = 0;
-    int 	 chg_first = pre_edit->chg_first;
-    int 	 chg_length = pre_edit->chg_length;
-    int 	 chg_last = chg_first + chg_length;
-
-/*  For insertion or change case */
-
-    if (pre_edit->text && (pre_edit->text->length > 0 )) {
-	tlength = (int) pre_edit->text->length;
-	length_after = pe_cache->text->length -  chg_last;
-	length = chg_first + tlength + length_after;
-
-	feedback = (XIMFeedback *) xv_alloc_n(XIMFeedback, length);
-	text = (wchar_t *) xv_alloc_n(wchar_t, length+1);
-
-	/* First copy the cached string up to changed area */
-	for (i = 0; i < chg_first; i++) {
-	    feedback[i] = pe_cache->text->feedback[i];
-	    text[i] = pe_cache->text->string.wide_char[i];
-	}
-		    
-	if (pre_edit->text->encoding_is_wchar) {
-	    /* Now copy the new text */
-	    for (idx = 0; idx < tlength; idx++) {
-		feedback[i] = pre_edit->text->feedback[idx];
-		text[i++] = pre_edit->text->string.wide_char[idx];
-	    }
-	} else {
-	    wchar_t *tmp_str_wc;
-	    /*  Convert the incoming preedit text from
-	     *  multibyte to wide character.
-	     */
-		   
-	    tmp_str_wc = _xv_mbstowcsdup (pre_edit->text->string.multi_byte);
-	    for (idx = 0; idx < tlength; idx++) {
-		feedback[i] = pre_edit->text->feedback[idx];
-		text[i++] = tmp_str_wc[idx];
-	    }
-	    xv_free(tmp_str_wc);
-	}
-	/* finally, copy any cached text after the changed region */
-	for (idx = chg_last; idx < (int) pe_cache->text->length; idx++) {
-	    feedback[i] = pe_cache->text->feedback[idx];
-	    text[i++] = pe_cache->text->string.wide_char[idx];
-	}
-
-	/* null-terminate the text array */
-	text[length] = NULL;
-
-	pe_cache->caret = pre_edit->caret;
-	pe_cache->chg_first = 0;
-	pe_cache->text->length = (unsigned short) length;
-	pe_cache->chg_length = pe_cache->text->length;
-	pe_cache->text->encoding_is_wchar = 1;
-	if (pe_cache->text->string.wide_char)
-	    xv_free(pe_cache->text->string.wide_char);
-	pe_cache->text->string.wide_char = text;
-	if (pe_cache->text->feedback)
-	    xv_free(pe_cache->text->feedback);
-	pe_cache->text->feedback = feedback;
-    } else {
-    /*  For the case of deletion or no change */
-	if (chg_length > 0) {
-	/* First copy the cached string up to changed area */
-	    length = (pe_cache->chg_length >= chg_length) ? 
-			pe_cache->chg_length - chg_length : 0;
-
-	    feedback = (XIMFeedback *) xv_alloc_n(XIMFeedback, 
-		length ? length : 1);
-	    text = (wchar_t *) xv_alloc_n(wchar_t, length+1);
-	    for (i = 0; i < chg_first; i++) {
-		feedback[i] = pe_cache->text->feedback[i];
-		text[i] = pe_cache->text->string.wide_char[i];
-	    }
-	    /* finally, copy any cached text after the changed region */
-	    for (idx = chg_last; idx < (int) pe_cache->text->length; idx++) {
-		feedback[i] = pe_cache->text->feedback[idx];
-		text[i++] = pe_cache->text->string.wide_char[idx];
-	    }
-
-	    /* null-terminate the text array */
-
-	    text[length] = NULL,
-
-	    pe_cache->caret = pre_edit->caret;
-	    pe_cache->chg_first = 0;
-	    pe_cache->text->length = length;
-	    pe_cache->chg_length = pe_cache->text->length;
-	    pe_cache->text->encoding_is_wchar = 1;
-	    if (pe_cache->text->string.wide_char)
-		xv_free(pe_cache->text->string.wide_char);
-	    pe_cache->text->string.wide_char = text;
-	    if (pe_cache->text->feedback)
-		xv_free(pe_cache->text->feedback);
-	    pe_cache->text->feedback = feedback;
-	}
-    }
-}
-
-
-static void canvas_preedit_done(XIC ic, XPointer	client_data, XPointer	callback_data)
-
-{
-    Canvas_info		*canvas;
-    Canvas_pew		*pew;
-
-	
-    canvas = CANVAS_PRIVATE((Canvas) client_data);
-    pew = canvas->pew;
-    if ((--canvas->pew->active_count) <= 0) {
-	/*
-	 * No other canvas's preedit is active, let's take down the
-	 * preedit window if pin is out.
-	 */
-	if (xv_get(pew->frame, FRAME_CMD_PIN_STATE) == FRAME_CMD_PIN_OUT) {
-	    xv_set(pew->frame, XV_SHOW, FALSE, NULL);
-	}
-    }
-    status_reset(canvas, preedit_exist);
-
-    panel_text_done(ic, pew->panel, NULL);
-}
-
-
-/* The following function is a stub. This will be implemented later */
-static void canvas_preedit_caret(XIC ic, XPointer	client_data, XPointer	callback_data)
-{
-    /*
-    interprete direction and calculate row and col;
-    set cursor position
-    */
-}
-
-
-/*
- * canvas_pew_done: Make sure, we will not unmap the pew while there
- * are still active preedit session.
- */
-static void canvas_pew_done(Frame	frame) /* frame for preedit window */
-{
-    Canvas_pew		*pew;
-
-    pew = (Canvas_pew *) xv_get(xv_get(frame, XV_OWNER),
-				XV_KEY_DATA, canvas_pew_key);
-    if (pew->active_count > 0) {
-
-        notice_prompt(pew->frame, NULL,
-		NOTICE_MESSAGE_STRING,	XV_MSG("\
-The Preedit Display popup window cannot be\n\
-dismissed while input method conversion is\n\
-still on in one of the canvas windows."),
-		NOTICE_BUTTON_YES,	XV_MSG("Continue"),
-		NULL);
-    } else
-	xv_set(pew->frame, XV_SHOW, FALSE, NULL);
-}
-
-/*
- * canvas_pew_destory: Catch the destory of the preedit window, make
- * sure canvas will no longer reference to it.
- */
-static Notify_value canvas_pew_destory(Notify_client client,
-							Destroy_status	status)
-{
-    if (status == DESTROY_CLEANUP) {
-	Frame		 frame_public;
-	Canvas_pew	*pew;
-
-	frame_public =  (Frame) xv_get(client, XV_OWNER);
-	if ((pew = (Canvas_pew *) xv_get(frame_public, XV_KEY_DATA,
-						canvas_pew_key)) != NULL) {
-	    xv_set(frame_public,
-		   XV_KEY_DATA,	canvas_pew_key, NULL,
-		   NULL);
-	    xv_free(pew);
-	}
-    }
-    return notify_next_destroy_func(client, status);
-}
-
-/*
- * canvas_create_pew: Create the PreEdit Window and register itself to
- * the parent frame as XV_KEY_DATA.
- */
-static Canvas_pew *canvas_create_pew(Frame frame)
-{
-	Canvas_pew *pew;
-	Xv_font font;
-#ifndef PEW_DOES_NOTICE_ON_KBD_USE
-	Xv_Drawable_info *info;
-	Atom prop_array[1];
-#endif
-
-	pew = xv_alloc(Canvas_pew);
-	font = (Xv_Font) xv_get(frame, XV_FONT);
-
-	pew->frame = (Frame) xv_create(frame, FRAME_CMD,
-			XV_LABEL, XV_MSG("Preedit Display"),
-			WIN_USE_IM, FALSE,
-			FRAME_CMD_POINTER_WARP, FALSE,
-			FRAME_SHOW_RESIZE_CORNER, TRUE,
-			FRAME_DONE_PROC, canvas_pew_done,
-			WIN_WIDTH, INPUT_WINDOW_WIDTH,
-			NULL);
-
-#ifndef PEW_DOES_NOTICE_ON_KBD_USE
-	/*
-	 * Following code can eliminate to have focus event completely.
-	 */
-	DRAWABLE_INFO_MACRO(pew->frame, info);
-	prop_array[0] = (Atom) xv_get(xv_server(info), SERVER_WM_DELETE_WINDOW);
-	win_change_property(pew->frame, SERVER_WM_PROTOCOLS, XA_ATOM, 32,
-			prop_array, 1);
-#endif /* PEW_DOES_NOTICE_ON_KBD_USE */
-
-	pew->panel = xv_get(pew->frame, FRAME_CMD_PANEL);
-
-	xv_set(pew->panel,
-		WIN_ROWS, 1,
-		WIN_COLUMNS, INPUT_WINDOW_WIDTH,
-		WIN_IGNORE_X_EVENT_MASK, KeyPress|KeyRelease|ButtonPress|ButtonRelease,
-		XV_FONT, font,
-		NULL);
-
-	notify_interpose_event_func(pew->panel, canvas_pew_pi_event_proc,
-			NOTIFY_SAFE);
-	notify_interpose_destroy_func(pew->frame, canvas_pew_destory);
-
-	pew->ptxt = (Panel_item) xv_create(pew->panel, PANEL_TEXT,
-			PANEL_VALUE_DISPLAY_WIDTH, INPUT_WINDOW_WIDTH - PANEL_TEXT_RIM,
-			PANEL_VALUE_STORED_LENGTH_WCS, MAX_PREEDIT_CHAR,
-			PANEL_VALUE_FONT, font,
-			NULL);
-
-	xv_set(frame, XV_KEY_DATA, canvas_pew_key, pew, NULL);
-
-	xv_set(pew->frame, WIN_FIT_HEIGHT, 0, WIN_FIT_WIDTH, 0, NULL);
-
-	return pew;
-}
-
-
-/*
- * canvas_pew_event_proc((Window)pew_win, (Event)event, arg) handles
- * the resizing of the canvas pew.  It changes the display length of
- * the text item.
- */
-static Notify_value canvas_pew_pi_event_proc(Notify_client	panel, Event *event,
-						Notify_arg arg, Notify_event_type	type)
-{
-    Notify_value	ret;
-    Panel_item		ip;
-    int			width;
-	
-
-    switch ((Notify_event) event_action(event)) {
-      case WIN_RESIZE:
-      case WIN_REPAINT:
-	ret = notify_next_event_func(panel, (Notify_event) event, arg, type);
-
-	ip = (Panel_item) xv_get(panel, PANEL_FIRST_ITEM);
-
-	width = (int) xv_get(panel, WIN_WIDTH) - PANEL_TEXT_RIM;
-	xv_set(ip, PANEL_VALUE_DISPLAY_WIDTH, width, NULL);
-
-	return ret;
-
-#ifdef PEW_DOES_NOTICE_ON_KBD_USE
-      /*
-       * Bringup notice is desirable behavior, however this can not
-       * done with current notice_prompt or notice pkg.  Because once
-       * user hit "OK" button, notice will give input focus back to
-       * the pew, and pew will see the KBD_USE event again, again, and
-       * again....
-       */
-      case KBD_USE:
-
-	notice_prompt(xv_get(panel, XV_OWNER), NULL,
-			NOTICE_MESSAGE_STRING,	XV_MSG("\
-You can not type in to the Preedit Display popup window,\n\
-this is display only window, you should type in to the\n\
-canvas window itself instead."),
-                        NOTICE_BUTTON_YES, XV_MSG("OK"),
-                        0);
-	/*FALLTHROUGH*/
-
-      case KBD_DONE:
-	return NOTIFY_DONE;
-#endif /* PEW_DOES_NOTICE_ON_KBD_USE */
-    }
-
-    return notify_next_event_func(panel, (Notify_event) event, arg, type);
-}
-
-
-/*
- * canvas_pew_event_proc: event interpose proc for the pew (in case of
- * the parent is FRAME_CMD).  Sync up pew with frame_cmd in case for
- * the open/close event.
- */
-static Notify_value canvas_pew_event_proc(Window parent_win, Event *event,
-						Notify_arg arg, Notify_event_type	type)
-{
-	Canvas_pew *pew;
-
-	switch (event_action(event)) {
-		case ACTION_OPEN:
-		case ACTION_CLOSE:
-			pew = (Canvas_pew *) xv_get(parent_win, XV_KEY_DATA,canvas_pew_key);
-
-			if ((Notify_event) event_action(event) == ACTION_CLOSE) {
-				xv_set(pew->frame, XV_SHOW, FALSE, NULL);
-			}
-			else {
-				if (pew->active_count > 0
-						|| xv_get(pew->frame,
-								FRAME_CMD_PIN_STATE) == FRAME_CMD_PIN_IN)
-					xv_set(pew->frame, XV_SHOW, TRUE, NULL);
-			}
-			break;
-	}
-	return notify_next_event_func((Notify_client) parent_win,
-			(Notify_event) event, arg, type);
-}
-
-#endif /*OW_I18N*/
 /*
  * translate a canvas paint window-space event to a canvas subwindow-space
  * event.
@@ -1476,16 +933,8 @@ static int canvas_init(Xv_Window parent, Canvas self, Attr_attribute avlist[],
     Xv_canvas          *canvas_object = (Xv_canvas *) self;
     Canvas_info        *canvas;
 
-#ifdef OW_I18N
-    Frame	        frame_public;
-    const Xv_pkg              *frame_type;
-#endif /*OW_I18N*/
-
     if (canvas_context_key == (Attr_attribute) 0) {
 		canvas_context_key = xv_unique_key();
-#ifdef OW_I18N
-		canvas_pew_key = xv_unique_key();
-#endif /*OW_I18N*/
     }
     canvas = xv_alloc(Canvas_info);
 
@@ -1510,11 +959,6 @@ static int canvas_init(Xv_Window parent, Canvas self, Attr_attribute avlist[],
     xv_set(self,
         WIN_INHERIT_COLORS, TRUE,
         XV_FOCUS_RANK, XV_FOCUS_PRIMARY,
-#ifdef OW_I18N
-	WIN_IM_PREEDIT_START,	canvas_preedit_start, self,
-	WIN_IM_PREEDIT_DRAW,	canvas_preedit_draw, self,
-	WIN_IM_PREEDIT_DONE,	canvas_preedit_done, self,
-#endif
         NULL);
 
     return XV_OK;
@@ -1762,12 +1206,6 @@ static Xv_opaque canvas_set_avlist(Canvas canvas_public, Attr_avlist avlist)
 				}
 				break;
 
-#ifdef OW_I18N
-			case WIN_IC:
-				canvas->ic = (XIC) avlist[1];
-				break;
-#endif /*OW_I18N */
-
 			case XV_END_CREATE:
 
 				/* adjust paint window here rather then view end */
@@ -1897,14 +1335,6 @@ static Xv_opaque canvas_get_attr(Canvas canvas_public, int *stat,
 		case CANVAS_MIN_PAINT_HEIGHT:
 			return (Xv_opaque) canvas->min_paint_height;
 
-#ifdef OW_I18N
-		case CANVAS_IM_PREEDIT_FRAME:
-			if (canvas->pew)
-				return (Xv_opaque) canvas->pew->frame;
-			else
-				return (Xv_opaque) NULL;
-#endif
-
 		case WIN_TYPE:	/* SunView1.X compatibility */
 			return (Xv_opaque) CANVAS_TYPE;
 
@@ -1926,80 +1356,12 @@ static int canvas_destroy(Canvas canvas_public, Destroy_status stat)
 	Canvas_info *canvas = CANVAS_PRIVATE(canvas_public);
 
 	if (stat == DESTROY_CLEANUP) {
-#ifdef OW_I18N
-		/*
-		 * All the canvases under one frame share the preedit window.
-		 * Only when all the canvases have been destroyed, can we
-		 * destroy the preedit window. So, we need to keep count of
-		 * the canvases.
-		 */
-		Canvas_pew *pew;
-		Frame frame;
-
-		if (canvas->ic) {
-			/*
-			 * Get the pew from frame to make sure, pew is still exist
-			 * or not (when entire frame get destroy, pew may get
-			 * destory first) instead of accessing the private data.
-			 */
-			frame = xv_get(canvas_public, WIN_FRAME);
-			pew = (Canvas_pew *) xv_get(frame, XV_KEY_DATA, canvas_pew_key);
-
-			if (pew != NULL) {
-				/*
-				 * If the preedit window is still up and not pinned,
-				 * make sure it is unmapped.
-				 */
-				if (status(canvas, preedit_exist) && (--pew->active_count) <= 0)
-				{
-					if (xv_get(pew->frame, FRAME_CMD_PIN_STATE)
-							== FRAME_CMD_PIN_OUT) {
-						xv_set(pew->frame, XV_SHOW, FALSE, NULL);
-					}
-				}
-
-				/*
-				 * If this is last canvas uses pew, and pew is not
-				 * destroyed yet, let's destroy it.
-				 */
-				if ((--pew->reference_count) <= 0) {
-					xv_destroy(pew->frame);
-					/*
-					 * freeing pew itself and setting null to the pew
-					 * will be done in the destroy interpose routine.
-					 */
-				}
-			}
-
-			/*
-			 * Free the all preedit text cache information.
-			 */
-			if (canvas->pe_cache) {
-				if (canvas->pe_cache->text->feedback) {
-					xv_free(canvas->pe_cache->text->feedback);
-				}
-				if (canvas->pe_cache->text->string.wide_char) {
-					xv_free(canvas->pe_cache->text->string.wide_char);
-				}
-				xv_free(canvas->pe_cache);
-			}
-		}
-#endif /*OW_I18N */
-
 		if (canvas->pan_cursor)
 			xv_destroy(canvas->pan_cursor);
 		xv_free((char *)canvas);
 	}
 	return XV_OK;
 }
-
-#ifdef  OW_I18N
-#include <xview_private/draw_impl.h>
-#include <xview/font.h>
-
-extern wchar_t	_xv_null_string_wc[];
-
-#endif /*OW_I18N*/
 
 static int canvas_view_init(Canvas parent, Canvas_view view_public,
 						Attr_attribute avlist[], int *u)
@@ -2060,12 +1422,6 @@ static Xv_opaque canvas_view_get(Canvas_view view_public, int *stat, Attr_attrib
 		case CANVAS_VIEW_CANVAS_WINDOW:
 			return ((Xv_opaque) CANVAS_PUBLIC(view->private_canvas));
 
-#ifdef OW_I18N
-		case WIN_IC:
-			ATTR_CONSUME(attr);
-			return (Xv_opaque) view->private_canvas->ic;
-#endif /*OW_I18N */
-
 		default:
 			xv_check_bad_attr(CANVAS_VIEW, attr);
 			*stat = XV_ERROR;
@@ -2092,14 +1448,6 @@ static Xv_opaque canvas_paint_get(Canvas_paint_window paint_public, int *stat,
 					XV_KEY_DATA, canvas_view_context_key);
 			return (Xv_opaque) CANVAS_VIEW_PUBLIC(view);
 
-#ifdef OW_I18N
-		case WIN_IC:
-			ATTR_CONSUME(attr);
-			canvas = (Canvas_info *) xv_get(paint_public,
-					XV_KEY_DATA, canvas_context_key);
-			return (Xv_opaque) canvas->ic;
-#endif /*OW_I18N */
-
 		default:
 			xv_check_bad_attr(CANVAS_PAINT_WINDOW, attr);
 			*stat = XV_ERROR;
@@ -2112,39 +1460,6 @@ static int canvas_view_destroy(Canvas_view view_public, Destroy_status stat)
     Canvas_view_info *view = CANVAS_VIEW_PRIVATE(view_public);
 
     if ((stat == DESTROY_CLEANUP) || (stat == DESTROY_PROCESS_DEATH)) {
-#ifdef OW_I18N
-	Canvas_info		*canvas = view->private_canvas;
-	Xv_Drawable_info	*info;
-
-
-	/*
-	 * Make sure that XNFocusWindow does not pointing to the
-	 * window which being destroyed.
-	 */
-	if (canvas->ic) {
-	    if (view->paint_window == canvas->focus_pwin) {
-		/*
-		 * Current XNFocusWindow is the one which we are
-		 * destroying right now.  Try to find other paint
-		 * window (if we are destroying the last view/paint,
-		 * then we do not need worry about this).
-		 */
-	        Xv_Window	pw;
-
-		CANVAS_EACH_PAINT_WINDOW(CANVAS_PUBLIC(canvas), pw)
-		    if (pw != view->paint_window) {
-			DRAWABLE_INFO_MACRO(pw, info);
-			/* 
-			 * Cache the XNFocusWindow whenever it is set 
-			 */
-			window_set_ic_focus_win(view_public, canvas->ic, 
-						xv_xid(info));
-			break;
-		    }
-		CANVAS_END_EACH
-	    }
-	}
-#endif /* OW_I18N */
 	if (xv_destroy_status(view->paint_window, stat) != XV_OK) {
 	    return XV_ERROR;
 	}
@@ -2281,21 +1596,13 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public,
 	Attr_attribute attr;
 	Xv_opaque result = XV_OK;
 
-#ifdef OW_I18N
-	Canvas_info *canvas = (Canvas_info *) xv_get(paint_public,
-			XV_KEY_DATA, canvas_context_key);
-#else
 	Canvas_info *canvas;
-#endif /*OW_I18N */
 
 	for (attr = avlist[0]; attr; avlist = attr_next(avlist), attr = avlist[0]) {
 		switch (attr) {
 			case WIN_CMS_CHANGE:
-
-#ifndef OW_I18N
 				canvas = (Canvas_info *) xv_get(paint_public,
 						XV_KEY_DATA, canvas_context_key);
-#endif /*OW_I18N */
 
 				if (status(canvas, cms_repaint)) {
 					Rect rect;
@@ -2313,135 +1620,6 @@ static Xv_opaque canvas_paint_set(Canvas_paint_window paint_public,
 					win_clear_damage(paint_public);
 				}
 				break;
-
-#ifdef OW_I18N
-			case WIN_IC:
-				canvas->ic = (XIC) avlist[1];
-				break;
-
-			case XV_END_CREATE:
-				{
-					Frame frame_public;
-					const Xv_pkg *object_type;
-					const Xv_pkg *frame_type;
-					Canvas canvas_public;
-					Xv_object serverobj;
-
-					if (!xv_get(paint_public, WIN_USE_IM))
-						break;
-					if (canvas->ic)
-						break;
-
-					canvas_public = CANVAS_PUBLIC(canvas);
-
-					object_type = (const Xv_pkg *) xv_get(canvas_public, XV_TYPE);
-					if (object_type->attr_id == (Attr_pkg) ATTR_PKG_PANEL)
-						break;
-
-					/*
-					 * Do we really have an IM ?
-					 */
-					serverobj = XV_SERVER_FROM_WINDOW(canvas_public);
-					if ((XIM) xv_get(serverobj, XV_IM) == NULL)
-						break;
-
-					frame_public = (Frame) xv_get(canvas_public, WIN_FRAME);
-					frame_type = (const Xv_pkg *) xv_get(frame_public, XV_TYPE);
-
-#ifdef notdef
-					/*
-					 * Here is code to create the pew only on the base
-					 * frame.  This is currently #ifdef out to allow popup
-					 * frame to have a own pew.
-					 */
-					if (!strcmp(frame_type->name, "Frame_cmd")) {
-						frame_public = (Frame) xv_get(frame_public, XV_OWNER);
-						frame_type = (const Xv_pkg *) xv_get(frame_public, XV_TYPE);
-					}
-
-					if (strcmp(frame_type->name, "Frame_base"))
-						break;
-#endif
-
-					canvas->pew = (Canvas_pew *) xv_get(frame_public,
-							XV_KEY_DATA, canvas_pew_key);
-					if (canvas->pew == NULL) {
-						/*
-						 * This is the first time creating canvas with IM
-						 * on this paricular frame.
-						 */
-						canvas->pew = canvas_create_pew(frame_public);
-
-						/*
-						 * Get the pe_cache from panel which panel
-						 * created.  We do not have to duplicates.
-						 */
-						canvas->pe_cache = panel_get_preedit(
-								((Xv_panel_or_item *) canvas->pew->ptxt)->
-								private_data);
-
-						/*
-						 * If the frame is popup frame (FRAME_CMD), we
-						 * need to catch the WIN_CLOSE and WIN_OPEN event
-						 * to sync up with base frame operation (ie, if
-						 * this popup frame closes, pew should be close as
-						 * well).  However this does not happen
-						 * automatically, since pew will be child of the
-						 * base frame.
-						 */
-						if (strcmp(frame_type->name, "Frame_cmd") == 0) {
-							notify_interpose_event_func(frame_public,
-									canvas_pew_event_proc, NOTIFY_SAFE);
-						}
-					}
-					else {
-						canvas->pe_cache = (XIMPreeditDrawCallbackStruct *)
-								xv_alloc(XIMPreeditDrawCallbackStruct);
-						canvas->pe_cache->text = (XIMText *) xv_alloc(XIMText);
-						canvas->pe_cache->text->encoding_is_wchar = True;
-						/*
-						 * We have to set some value in string, otherwise
-						 * panel code dumps.
-						 */
-						canvas->pe_cache->text->string.wide_char
-								= wsdup(_xv_null_string_wc);
-					}
-
-					canvas->pew->reference_count++;
-
-					canvas->ic = (XIC) xv_get(canvas_public, WIN_IC);
-					if (canvas->ic == NULL)
-						break;
-
-#ifdef FULL_R5
-					XGetICValues(canvas->ic, XNInputStyle, &canvas->xim_style,
-							NULL);
-#endif /* FULL_R5 */
-
-					/*
-					 * DEPEND_ON_BUG_1102972: This "#ifdef notdef" (else
-					 * part) is a workaround for the bug 1102972.  We have
-					 * to delay the setting of the XNFocusWindow to much
-					 * later (after all event mask was set to paint window.
-					 * Actually in this case will do in the event_proc with
-					 * KBD_USE).
-					 */
-
-#ifdef notdef
-					canvas->focus_pwin = paint_public;
-					/* 
-					 * Cache the XNFocusWindow whenever it is set 
-					 */
-					window_set_ic_focus_win(view_public, canvas->ic,
-							xv_get(paint_public, XV_XID));
-#else
-					canvas->focus_pwin = 0;
-#endif
-
-					break;
-				}
-#endif /*OW_I18N */
-
 
 			default:
 				xv_check_bad_attr(CANVAS_PAINT_WINDOW, attr);
