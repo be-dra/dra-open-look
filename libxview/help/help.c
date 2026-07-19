@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.33 2026/04/26 17:54:35 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.34 2026/07/18 20:31:41 dra Exp $";
 #endif
 
 /*
@@ -454,15 +454,6 @@ static int help_get_arg(Xv_server srv, char *data, char **more_help)
 
 static char *help_get_text(int use_textsw)
 {
-#ifdef OW_I18N
-    char           *ptr;
-
-    while ((ptr = fgets(help_buffer, sizeof(help_buffer), help_file)) &&
-		(*ptr == '#'))
-			;
-
-    return (ptr && *ptr != ':' ? ptr : NULL);
-#else
 	char *s, *t;
     char *ptr = fgets(help_buffer, (unsigned)sizeof(help_buffer), help_file);
 
@@ -501,7 +492,6 @@ static char *help_get_text(int use_textsw)
 	}
 
     return ptr;
-#endif
 }
 
 Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
@@ -573,15 +563,9 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 		}
 	}
 
-#ifdef OW_I18N
-	if ((application_name = (CHAR *) xv_get(server, XV_APP_NAME_WCS)) == NULL) {
-		application_name = wsdup(xv_app_name_wcs);
-	}
-#else
 	if ((application_name = (CHAR *) xv_get(server, XV_APP_NAME)) == NULL) {
 		application_name = xv_strsave(xv_app_name);
 	}
-#endif
 
 	{
 		Xv_opaque fram;
@@ -655,12 +639,6 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 
 	client_name[length] = 0;
 
-#ifdef OW_I18N
-	SPRINTF(client_name, "%ws: Help", client_name);
-#else
-/* 	SPRINTF(client_name, "%s%s", client_name, XV_MSG(": Help")); */
-#endif
-
 	if (!help_info->help_frame) {
 	 	help_info->use_textsw =
 				defaults_get_boolean("openWindows.useTextswForHelp",
@@ -670,12 +648,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 		help_info->help_frame = xv_create(client_frame, FRAME_HELP,
 					WIN_PARENT, root_window,
 					XV_KEY_DATA, help_info_key, help_info,
-#ifdef OW_I18N
-					XV_LABEL_WCS, client_name,
-					WIN_USE_IM, FALSE,
-#else
 					XV_LABEL, client_name,
-#endif /* OW_I18N */
 					FRAME_DONE_PROC, help_done,
 					NULL);
 		help_frame_rect = *(Rect *) xv_get(help_info->help_frame, XV_RECT);
