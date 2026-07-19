@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.4 2026/03/29 14:32:24 dra Exp $ ";
+static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.5 2026/07/18 20:45:36 dra Exp $ ";
 #endif
 #endif
 
@@ -32,9 +32,6 @@ typedef struct {
 	Rect		ic_gfxrect;	/* where the graphic goes */
 	struct pixrect *ic_mpr;		/* the graphic (a memory pixrect) */
 	Rect		ic_textrect;	/* where text goes */
-#ifdef OW_I18N
-        wchar_t        *ic_text_wcs;    /* primary text data */
-#endif
 	char	       *ic_text;	/* the text */
 	int		ic_flags;
 	Xv_opaque	frame;		/* frame Icon is assoc w/ */
@@ -457,14 +454,8 @@ static int DrawNonRectIcon(Display *display, XID xid, Xv_icon_info *icon, Xv_Dra
     return XV_OK;
 }
 
-#ifdef OW_I18N
-static void
-DrawWCString( win, frg_pixel, bkg_pixel, x, y, font_set, str )
-register Xv_Window  win;
-unsigned long       frg_pixel, bkg_pixel;
-register int        x, y;
-XFontSet            font_set;
-wchar_t            *str;
+static void DrawString(Xv_Window win, unsigned long frg_pixel,
+			unsigned long bkg_pixel, int x, int y, Xv_opaque pixfont, char *str)
 {
     register Xv_Drawable_info  *info;
     Display  *display;
@@ -484,52 +475,28 @@ wchar_t            *str;
     val.clip_mask = None;
     val_mask = GCBackground | GCForeground | GCClipMask;
     XChangeGC(display, gc, val_mask, &val );
+	if (_xv_is_multibyte) {
+    	XID font = (XID) xv_get( pixfont, XV_XID );
+    	XSetFont(display, gc, font );
 
-    XwcDrawString( display, xid, font_set, gc, x, y, str, wslen(str) );
+    	XDrawString( display, xid, gc, x, y, str, (int)strlen(str) );
+	}
+	else {
+		XFontSet fs = (XFontSet)xv_get(pixfont, FONT_SET_ID);
+    	XmbDrawString( display, xid, fs, gc, x, y, str, (int)strlen(str) );
+	}
 }
-#else 
-static void DrawString(Xv_Window win, unsigned long frg_pixel,
-			unsigned long bkg_pixel, int x, int y, Xv_opaque pixfont, char *str)
-{
-    register Xv_Drawable_info  *info;
-    Display  *display;
-    XID      xid, font;
-    GC       gc;
-    XGCValues  val;
-    unsigned long  val_mask;
-    
-    DRAWABLE_INFO_MACRO( win, info );
-    display = xv_display( info );
-    xid = (XID) xv_xid(info);
-    font = (XID) xv_get( pixfont, XV_XID );
-
-    gc = xv_find_proper_gc( display, info, PW_TEXT );
-    val.function = GXcopy;
-    val.foreground = frg_pixel;
-    val.background = bkg_pixel;
-    val.clip_mask = None;
-    val_mask = GCBackground | GCForeground | GCClipMask;
-    XChangeGC(display, gc, val_mask, &val );
-    XSetFont(display, gc, font );
-
-    XDrawString( display, xid, gc, x, y, str, (int)strlen(str) );
-}
-#endif
-
 
 static void icon_draw_label(Xv_icon_info *icon, Xv_Window pixwin,
 			Xv_Drawable_info *info, int x, int y, unsigned long wrk_space_pixel)
 {	
     PIXFONT        *font = (PIXFONT *) xv_get(pixwin, XV_FONT);
     int            left, top, line_leading = xv_get((Xv_opaque)font, FONT_DEFAULT_CHAR_HEIGHT);
-#ifdef OW_I18N
     XFontSet       font_set;
     Display        *dpy;
     XRectangle     overall_ink_extents = {0};
     XRectangle     overall_logical_extents = {0};
-#else  
     XFontStruct    *x_font_info;
-#endif
     int            descent = 0;
     int            ascent = 0;
     int            direction = 0;
@@ -567,55 +534,49 @@ static void icon_draw_label(Xv_icon_info *icon, Xv_Window pixwin,
     textrect.r_left += x;
     textrect.r_top += y;
 
-#ifdef OW_I18N
-    font_set = (XFontSet) xv_get((Xv_opaque)font, FONT_SET_ID);
-    dpy = xv_display( info );
+	if (_xv_is_multibyte) {
+    	font_set = (XFontSet) xv_get((Xv_opaque)font, FONT_SET_ID);
+    	dpy = xv_display( info );
  
-    XwcTextExtents(font_set, icon->ic_text_wcs, wslen(icon->ic_text_wcs),
-	&overall_ink_extents, &overall_logical_extents);
-    left = (int)(icon->ic_gfxrect.r_width - overall_logical_extents.width)/2;
-    if (left < 0)
-        left = 0;
-    top = textrect.r_top - overall_logical_extents.y - 3;
-#else /* OW_I18N */
-    x_font_info = (XFontStruct *) xv_get((Xv_opaque)font, FONT_INFO );
+    	XmbTextExtents(font_set, icon->ic_text, strlen(icon->ic_text),
+					&overall_ink_extents, &overall_logical_extents);
+    	left = (int)(icon->ic_gfxrect.r_width - overall_logical_extents.width)/2;
+    	if (left < 0)
+        	left = 0;
+    	top = textrect.r_top - overall_logical_extents.y - 3;
+	}
+	else {
+    	x_font_info = (XFontStruct *) xv_get((Xv_opaque)font, FONT_INFO );
 
-    (void) XTextExtents( x_font_info, icon->ic_text, (int)strlen(icon->ic_text),
-			&direction, &ascent, &descent, &overall_return );
+    	(void) XTextExtents( x_font_info, icon->ic_text, (int)strlen(icon->ic_text),
+				&direction, &ascent, &descent, &overall_return );
 
-    left = (icon->ic_gfxrect.r_width - overall_return.width)/2;
-    if (left < 0)  
-	left = 0;
+    	left = (icon->ic_gfxrect.r_width - overall_return.width)/2;
+    	if (left < 0)  left = 0;
 
-    top = textrect.r_top + x_font_info->ascent -3;
-#endif
+    	top = textrect.r_top + x_font_info->ascent -3;
+	}
 
     if ( (icon->ic_flags & ICON_BKGDTRANS) || icon->ic_mask )
-#ifdef OW_I18N
-	DrawWCString(pixwin,xv_fg(info),wrk_space_pixel,
-		   left,top,font_set,icon->ic_text_wcs);
-#else
         DrawString(pixwin, xv_fg(info), wrk_space_pixel,
 		   left, top, (Xv_opaque)font, icon->ic_text);
-#endif
-    else
-#ifdef OW_I18N
-    {
-        GC              gc;
-        Drawable        d;
- 
-        gc = xv_find_proper_gc(dpy, info, PW_TEXT);
-        d = xv_xid( info );
-        xv_set_gc_op(dpy, info, gc, PIX_SRC,
-                PIX_OPCOLOR(PIX_SRC) ? XV_USE_OP_FG : XV_USE_CMS_FG,
-                XV_DEFAULT_FG_BG);
-        (void) XwcDrawString(dpy, d, font_set, gc,
-                left, top, icon->ic_text_wcs, wslen(icon->ic_text_wcs));
-    }
-#else
-        (void) xv_text(pixwin, left, top, PIX_SRC, (Xv_opaque)font, icon->ic_text);
-#endif
-    
+    else {
+		if (_xv_is_multibyte) {
+			GC              gc;
+			Drawable        d;
+	 
+			gc = xv_find_proper_gc(dpy, info, PW_TEXT);
+			d = xv_xid( info );
+			xv_set_gc_op(dpy, info, gc, PIX_SRC,
+					PIX_OPCOLOR(PIX_SRC) ? XV_USE_OP_FG : XV_USE_CMS_FG,
+					XV_DEFAULT_FG_BG);
+			XmbDrawString(dpy, d, font_set, gc,
+					left, top, icon->ic_text, strlen(icon->ic_text));
+		}
+		else {
+        	xv_text(pixwin, left, top, PIX_SRC, (Xv_opaque)font, icon->ic_text);
+		}
+	}
 }
     
 
@@ -647,12 +608,8 @@ static void icon_display(Icon icon_public, int x, int y)
 		      PIX_SRC, icon->ic_mpr, 0, 0);
 	}
     }
-#ifdef OW_I18N
-    if (icon->ic_text_wcs && (icon->ic_text_wcs[0] != '\0'))
-#else  
     if (icon->ic_text && (icon->ic_text[0] != '\0')) 
-#endif
-	icon_draw_label( icon, pixwin, info, x, y, icon->workspace_pixel );
+		icon_draw_label( icon, pixwin, info, x, y, icon->workspace_pixel );
     icon->ic_flags |= ICON_PAINTED;
 }
 
@@ -867,17 +824,6 @@ static Xv_opaque icon_set_internal(Icon icon_public, Attr_avlist avlist)
 			case XV_LABEL:
 				/* Consume attribute so that generic handler not also invoked.*/
 				*avlist = (Xv_opaque) ATTR_NOP(*avlist);
-#ifdef OW_I18N
-				if (icon->ic_text_wcs)
-					xv_free(icon->ic_text_wcs);
-				if (icon->ic_text) {
-					xv_free(icon->ic_text);
-					icon->ic_text = NULL;
-				}
-				if ((char *)arg1)
-					icon->ic_text_wcs =
-							(wchar_t *)_xv_mbstowcsdup((char *)arg1);
-#else
 				if (icon->ic_text)
 					free(icon->ic_text);
 				if ((char *)arg1) {
@@ -886,29 +832,10 @@ static Xv_opaque icon_set_internal(Icon icon_public, Attr_avlist avlist)
 							(unsigned)strlen((char *)arg1) + 1);
 					strcpy(icon->ic_text, (char *)arg1);
 				}
-#endif
 				label_changed = TRUE;
 				repaint = TRUE;
 				icon->ic_flags &= (~ICON_TRANSLABEL);	/* set the flag to 0 */
 				break;
-
-#ifdef OW_I18N
-			case XV_LABEL_WCS:
-				/* Consume attribute so that generic handler not also invoked. */
-				*avlist = (Xv_opaque) ATTR_NOP(*avlist);
-				if (icon->ic_text_wcs)
-					xv_free(icon->ic_text_wcs);
-				if (icon->ic_text) {
-					free(icon->ic_text);
-					icon->ic_text = NULL;
-				}
-				if ((wchar_t *)arg1)
-					icon->ic_text_wcs = wsdup((wchar_t *)arg1);
-				label_changed = TRUE;
-				repaint = TRUE;
-				icon->ic_flags &= (~ICON_TRANSLABEL);	/* set the flag to 0 */
-				break;
-#endif /* OW_I18N */
 
 			case XV_OWNER:{
 
@@ -941,18 +868,6 @@ static Xv_opaque icon_set_internal(Icon icon_public, Attr_avlist avlist)
 				break;
 
 			case ICON_TRANSPARENT_LABEL:
-
-#ifdef OW_I18N
-				if (icon->ic_text_wcs)
-					xv_free(icon->ic_text_wcs);
-				if (icon->ic_text) {
-					xv_free(icon->ic_text);
-					icon->ic_text = NULL;
-				}
-				if ((char *)arg1)
-					icon->ic_text_wcs =
-							(wchar_t *)_xv_mbstowcsdup((char *)arg1);
-#else
 				if (icon->ic_text)
 					free(icon->ic_text);
 				if ((char *)arg1) {
@@ -961,28 +876,11 @@ static Xv_opaque icon_set_internal(Icon icon_public, Attr_avlist avlist)
 							(unsigned)strlen((char *)arg1) + 1);
 					strcpy(icon->ic_text, (char *)arg1);
 				}
-#endif
 
 				label_changed = TRUE;
 				icon->ic_flags |= ICON_TRANSLABEL;
 				repaint = TRUE;
 				break;
-
-#ifdef OW_I18N
-			case ICON_TRANSPARENT_LABEL_WCS:
-				if (icon->ic_text_wcs)
-					xv_free(icon->ic_text_wcs);
-				if (icon->ic_text) {
-					xv_free(icon->ic_text);
-					icon->ic_text = NULL;
-				}
-				if ((wchar_t *)arg1)
-					icon->ic_text_wcs = wsdup((wchar_t *)arg1);
-				label_changed = TRUE;
-				icon->ic_flags |= ICON_TRANSLABEL;
-				repaint = TRUE;
-				break;
-#endif /* OW_I18N */
 
 			case XV_END_CREATE:
 				/*
@@ -1053,37 +951,13 @@ static Xv_opaque icon_get_internal(Icon icon_public, int *status,
 			return (Xv_opaque) & (icon->ic_textrect);
 
 		case XV_LABEL:
-
-#ifdef OW_I18N
-			if (icon->ic_text == NULL && icon->ic_text_wcs != NULL)
-				icon->ic_text =
-						(char *)_xv_wcstombsdup((wchar_t *)icon->ic_text_wcs);
-#endif
-
 			return (Xv_opaque) icon->ic_text;
-
-#ifdef OW_I18N
-		case XV_LABEL_WCS:
-			return (Xv_opaque) icon->ic_text_wcs;
-#endif
 
 		case XV_OWNER:
 			return (Xv_opaque) icon->frame;
 
 		case ICON_TRANSPARENT_LABEL:
-
-#ifdef OW_I18N
-			if (icon->ic_text == NULL && icon->ic_text_wcs != NULL)
-				icon->ic_text =
-						(char *)_xv_wcstombsdup((wchar_t *)icon->ic_text_wcs);
-#endif
-
 			return (Xv_opaque) icon->ic_text;
-
-#ifdef OW_I18N
-		case ICON_TRANSPARENT_LABEL_WCS:
-			return (Xv_opaque) icon->ic_text_wcs;
-#endif
 
 		case ICON_TRANSPARENT:
 			return (Xv_opaque) (icon->ic_flags & ICON_BKGDTRANS);
