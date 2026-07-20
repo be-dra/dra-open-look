@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.53 2026/07/15 18:28:23 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.54 2026/07/19 16:20:04 dra Exp $";
 #endif
 #endif
 
@@ -880,10 +880,6 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 	/* ACC_XVIEW */
 	static XComposeStatus *compose_status;
 
-#ifdef OW_I18N
-	static KeySym paste_keysym, cut_keysym;
-#endif
-
 	/* XXX: assuming 0 => error, 1 => reply */
 	/* XXX: This is bogus!  When will X return an event type < 1??? */
 	if (event_type > 1) {
@@ -921,7 +917,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 									(caddr_t *) & srv)) {
 
 						*pwindow = XV_NULL;
-						return 1;
+						return TRUE;
 					}
 					/* Update our notion of the modifiers. */
 					server_refresh_modifiers(srv, FALSE);
@@ -933,13 +929,10 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				}
 			}
 			if (!window) {
-
-#ifdef OW_I18N
-				if (XFilterEvent(xevent, NULL) == True) {
+				if (XFilterEvent(xevent, None) == True) {
 					*pwindow = XV_NULL;
-					return (NULL);
+					return FALSE;
 				}
-#endif
 
 				if (xevent->type >= LASTEvent) {
 					if (! srv) {
@@ -951,13 +944,13 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 
 					if (! srv) {
 						*pwindow = XV_NULL;
-						return 1;
+						return TRUE;
 					}
 
 					handle_extension_event(srv, display, xevent, window);
 				}
 				*pwindow = XV_NULL;
-				return 1;
+				return TRUE;
 			}
 		}
 		win = WIN_PRIVATE(window);
@@ -1001,38 +994,14 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 			chord = (unsigned int)xv_get(srv, SERVER_CHORD_MENU);
 			compose_status = (XComposeStatus *) xv_get(srv,
 					SERVER_COMPOSE_STATUS);
-
-#ifdef OW_I18N
-			paste_keysym = (KeySym) xv_get(srv, SERVER_PASTE_KEYSYM);
-			cut_keysym = (KeySym) xv_get(srv, SERVER_CUT_KEYSYM);
-#endif
 		}
 
-#ifdef OW_I18N
-		/* 
-		 * Workaround for XGrabKey*() problem using frontend method
-		 * Skip XFilterEvent() if the client is grabbing the keyboard
-		 */
-		if (WIN_IS_GRAB(win) || WIN_IS_PASSIVE_GRAB(win)) {
-			if (event_type == KeyPress || event_type == KeyRelease) {
-				if (win->active_grab) {
-					goto ContProcess;
-				}
-				if (win->passive_grab) {
-					KeySym ksym = xkctks(display,
-							((XKeyEvent *) xevent)->keycode, 0);
-
-					if (ksym == paste_keysym || ksym == cut_keysym)
-						goto ContProcess;
-				}
+	 	if (_xv_is_multibyte) {
+			if (XFilterEvent(xevent, None)) {
+				*pwindow = XV_NULL;
+				return FALSE;
 			}
 		}
-		if (XFilterEvent(xevent, NULL) == True) {
-			*pwindow = XV_NULL;
-			return (NULL);
-		}
-	  ContProcess:
-#endif
 
 		/*
 		 * Check if window is deaf or is NOT involved in xv_window_loop (when
@@ -1053,14 +1022,14 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				window_x_allow_events(display, buttonEvent->time);
 			}
 			*pwindow = XV_NULL;
-			return 1;
+			return TRUE;
 		}
 
 	}
 	else {
 		fprintf(stderr, "UNEXPECTED event with type %d\n", event_type);
 		*pwindow = XV_NULL;
-		return 1;
+		return TRUE;
 	}
 
 
@@ -1084,52 +1053,36 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				unsigned int key_value;
 				int modifiers = 0, acc_modifiers = 0, sem_action, keyboard_key;
 				int status = True, old_chars_matched =
-
-						compose_status->chars_matched;
-
-#ifdef OW_I18N
+											compose_status->chars_matched;
 				Status ret_status;
 				XIC ic = NULL;
-				static char *buffer_backup = buffer;
 
-				if (event_type == KeyPress) {
+				if (_xv_is_multibyte && event_type == KeyPress) {
 					Window_info *win = WIN_PRIVATE(window);
 
 					/*
-					 * Dosen't use xv_get() for the performance reason.
+					 * Doesn't use xv_get() for the performance reason.
 					 * If false, ic value is NULL.
 					 */
-					if (win->win_use_im && win->ic_active)
-						ic = win->xic;
+					if (win->win_use_im) ic = win->xic;
 				}
-#endif
 
 				/*
 				 * Clear buffer before we fill it again.  Only NULL out the
 				 * number of chars that where actually used in the last pass.
 				 */
 
-#ifdef OW_I18N
-				if (buffer_backup != buffer) {	/*last time was overflowed to backup */
-					xv_free(buffer_backup);
-					XV_BZERO(buffer, BUFFERSIZE);	/* may have filled the whole
-													   array last time */
-					buffer_backup = buffer;
-				}
-				else
-#endif
-					XV_BZERO(buffer, (size_t)buf_length);
-
 				if (ek->state & num_lock_modmask) {
 					/* Num Lock is on.  For the keycode, if it has a key pad
 					 * keysym in its row, then send event as keypad key. 
 					 */
-#ifdef OW_I18N
+	 				if (_xv_is_multibyte) {
 						goto DoLookup;
-#else
-					buf_length = XLookupString(ek, buffer, BUFFERSIZE, &ksym,
-								compose_status);
-#endif
+					}
+					else {
+						buf_length = XLookupString(ek, buffer, BUFFERSIZE,
+												&ksym, compose_status);
+					}
 				}
 				else {
 					/*
@@ -1152,42 +1105,33 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 							break;
 						default:
 
-#ifdef OW_I18N
-						  DoLookup:
-							ksym = NoSymbol;
-							if (ic) {	/* then keyPress case */
-								buf_length =
-										XmbLookupString(ic, ek, buffer_backup,
-										BUFFERSIZE, &ksym, &ret_status);
-								if (ret_status == XBufferOverflow) {
-									buffer_backup =
-											(char *)xv_malloc(buf_length + 1);
+	 						if (_xv_is_multibyte) {
+				DoLookup:
+								ksym = NoSymbol;
+								if (ic) {	/* then keyPress case */
 									buf_length =
-											XmbLookupString(ic, ek,
-											buffer_backup, buf_length, &ksym,
-											&ret_status);
+										XmbLookupString(ic, ek, buffer,
+										BUFFERSIZE, &ksym, &ret_status);
+								}
+								else {
+									buf_length =
+										XLookupString(ek, buffer, BUFFERSIZE,
+										&ksym, compose_status);
+									ret_status = (ksym == NoSymbol) ?
+											XLookupNone : ((buf_length > 1) ?
+											XLookupBoth :
+											XLookupKeySym);
+								}
+								if (ret_status == XLookupNone) {
+									*pwindow = XV_NULL;
+									return TRUE;
 								}
 							}
 							else {
 								buf_length =
 										XLookupString(ek, buffer, BUFFERSIZE,
-										&ksym, compose_status);
-								ret_status =
-										(ksym ==
-										NoSymbol) ? XLookupNone : ((buf_length >
-												1) ? XLookupBoth :
-										XLookupKeySym);
+													&ksym, compose_status);
 							}
-							if (ret_status == XLookupNone) {
-								*pwindow = XV_NULL;
-								return 1;
-							}
-#else /* OW_I18N */
-							buf_length =
-									XLookupString(ek, buffer, BUFFERSIZE, &ksym,
-									compose_status);
-#endif /* OW_I18N */
-
 							break;
 					}
 				}
@@ -1214,13 +1158,10 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				 * to some other key than XK_Help !
 				 */
 				if (((xevent->xany.send_event) &&
-
-#ifdef OW_I18N
 							(((XKeyEvent *) xevent)->keycode) &&
-#endif
 							(ksym != help_keysym)) && !defeat_event_security) {
 					*pwindow = XV_NULL;
-					return 1;
+					return TRUE;
 				}
 
 				/*
@@ -1272,11 +1213,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				 * it maps into an XView ie_code.  (eg. KEY_LEFT(5)...)
 				 */
 
-#ifdef OW_I18N
-				key_value = (unsigned char)buffer_backup[0];
-#else
 				key_value = (unsigned char)buffer[0];
-#endif
 
 				if (keyboard_key) {
 					key_value = ((key_map[(int)ksym & 0xFF] == ksym) ||
@@ -1397,17 +1334,24 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						return (TRUE);
 					}
 				}
-				if (!status ||
+	 			if (_xv_is_multibyte) {
+					if (!status ||
 
-#ifdef OW_I18N
-						((ret_status == XLookupNone) && (sem_action == ACTION_NULL_EVENT)))
-#else
-						((ksym == NoSymbol) && (sem_action == ACTION_NULL_EVENT)))
-#endif
-
-				{
-					*pwindow = 0;
-					return (TRUE);
+						((ret_status == XLookupNone) &&
+						(sem_action == ACTION_NULL_EVENT)))
+					{
+						*pwindow = 0;
+						return (TRUE);
+					}
+				}
+				else {
+					if (!status ||
+						((ksym == NoSymbol) &&
+						(sem_action == ACTION_NULL_EVENT)))
+					{
+						*pwindow = 0;
+						return TRUE;
+					}
 				}
 				/*
 				 * Make sure the keystroke is sent to the appropriate window.  In
@@ -1446,7 +1390,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						for (;;) {
 							if (!window) {
 								*pwindow = 0;
-								return (TRUE);
+								return TRUE;
 							}
 							im = (Inputmask *) xv_get(window, WIN_INPUT_MASK);
 							if ((im)
@@ -1478,20 +1422,15 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				 * event_is_string() to check.
 				 */
 
-#ifdef OW_I18N
 				/*
 				 * only when buf_length>1 then put the string in ie_string,
 				 * else ie_code suffices to store it
 				 */
 				if ((buf_length > 1) &&
 						((ret_status == XLookupBoth)
-				|| (ret_status == XLookupChars))) event->ie_string =
-							buffer_backup;
-				else
-					event->ie_string = NULL;
-#else
-				event_set_string(event, (buf_length > 1) ? buffer : NULL);
-#endif
+						|| (ret_status == XLookupChars)))
+					event_set_string(event, buffer);
+				else event_set_string(event, NULL);
 
 				event_set_action(event, sem_action);
 
@@ -1509,13 +1448,13 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					 */
 					if (XGetSelectionOwner(display, XA_SECONDARY) != None) {
 						*pwindow = XV_NULL;
-						return 1;
+						return TRUE;
 					}
 				}
 
 				if (win_check_lang_mode(srv, display, event)) {
 					*pwindow = XV_NULL;
-					return 1;
+					return TRUE;
 				}
 				break;
 			}
@@ -1534,7 +1473,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				 */
 				if (xevent->xany.send_event && !defeat_event_security) {
 					*pwindow = XV_NULL;
-					return 1;
+					return TRUE;
 				}
 
 				server_set_timestamp(srv, &event->ie_time, e->time);
@@ -1636,7 +1575,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 
 					default:
 						*pwindow = XV_NULL;
-						return 1;
+						return TRUE;
 				}
 				SET_SHIFTS(event, temp, meta_modmask, alt_modmask);
 				event_set_id(event, button);
@@ -1824,7 +1763,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				if (win_do_expose_event(display, event, e, &window,
 								win->collapse_exposures)) {
 					*pwindow = 0;
-					return (1);
+					return (TRUE);
 				}
 				if (event_type == Expose)
 					event_set_id(event, WIN_REPAINT);
@@ -1851,7 +1790,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 
 				if (process_clientmessage_events(window, cme, event)) {
 					*pwindow = 0;
-					return (1);
+					return (TRUE);
 				}
 #ifdef NO_XDND
 #else /* NO_XDND */
@@ -1871,7 +1810,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				if (!xv_sel_handle_property_notify(pne)) {
 					if (process_property_events(window, pne, event)) {
 						*pwindow = 0;
-						return (1);
+						return (TRUE);
 					}
 				}
 				break;
@@ -1908,7 +1847,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					 * etc} on the floor.
 					 */
 					*pwindow = 0;
-					return (1);
+					return (TRUE);
 				}
 				break;
 			}
@@ -1932,7 +1871,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				}
 				else {
 					*pwindow = 0;
-					return (1);
+					return (TRUE);
 				}
 				break;
 			}
@@ -2002,11 +1941,11 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 		default:
 			handle_extension_event(srv, display, xevent, window);
 			*pwindow = XV_NULL;
-			return 1;
+			return TRUE;
 	}
 
 	*pwindow = window;
-	return (0);
+	return (FALSE);
 }
 
 /* read the input and post to the proper window */
