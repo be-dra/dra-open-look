@@ -1,4 +1,4 @@
-/*      @(#)window.h 20.99 93/06/28 SMI   DRA $Id: window.h,v 4.3 2025/03/08 12:58:04 dra Exp $      */
+/*      @(#)window.h 20.99 93/06/28 SMI   DRA $Id: window.h,v 4.4 2026/07/19 13:49:15 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -153,21 +153,6 @@ typedef enum {                  /* values for WIN_SCALE_STATE */
 
 #define WIN_NOTIFY_EVENT_PROC		WIN_NOTIFY_SAFE_EVENT_PROC
 
-#ifdef OW_I18N
-#define WIN_IM_PREEDIT_START 		WIN_IC_PREEDIT_START
-#define	WIN_IM_PREEDIT_DRAW  		WIN_IC_PREEDIT_DRAW
-#define	WIN_IM_PREEDIT_CARET  		WIN_IC_PREEDIT_CARET
-#define	WIN_IM_PREEDIT_DONE  		WIN_IC_PREEDIT_DONE
-#define	WIN_IM_STATUS_START  		WIN_IC_STATUS_START
-#define	WIN_IM_STATUS_DRAW   		WIN_IC_STATUS_DRAW
-#define	WIN_IM_STATUS_DONE   		WIN_IC_STATUS_DONE
-#define	WIN_IM_LUC_START     		WIN_IC_LUC_START
-#define	WIN_IM_LUC_DRAW      		WIN_IC_LUC_DRAW
-#define	WIN_IM_LUC_DONE      		WIN_IC_LUC_DONE
-#define	WIN_IM_LUC_PROCESS   		WIN_IC_LUC_PROCESS
-#endif /* OW_I18N */
-
-
 /*
  ***********************************************************************
  *		Typedefs, Enumerations, and Structures
@@ -190,28 +175,9 @@ typedef enum {
 	WIN_COLUMNS		= WIN_ATTR(ATTR_INT,		 12),
 	WIN_COLUMN_GAP		= WIN_ATTR(ATTR_INT,		 16),
 	WIN_COLUMN_WIDTH	= WIN_ATTR(ATTR_INT,		 20),
-#ifdef OW_I18N
-        WIN_IC_PREEDIT_START    = WIN_ATTR(ATTR_INT_PAIR,        21),   /* C-S */
-        WIN_IC_PREEDIT_DRAW     = WIN_ATTR(ATTR_INT_PAIR,        22),   /* C-S */
-        WIN_IC_PREEDIT_DONE     = WIN_ATTR(ATTR_INT_PAIR,        23),   /* C-S */
-#endif /* OW_I18N */
 	WIN_CONSUME_EVENT	= WIN_ATTR(ATTR_ENUM,		 24),	/* --S */
-#ifdef OW_I18N
-        WIN_IC_STATUS_START     = WIN_ATTR(ATTR_INT_PAIR,        25),   /* C-S */
-        WIN_IC_STATUS_DRAW      = WIN_ATTR(ATTR_INT_PAIR,        26),   /* C-S */
-        WIN_IC_STATUS_DONE      = WIN_ATTR(ATTR_INT_PAIR,        27),   /* C-S */
-#endif /* OW_I18N */
 	WIN_CONSUME_EVENTS=WIN_ATTR(ATTR_LIST_INLINE(ATTR_NULL,ATTR_ENUM),28),/* --S */
-#ifdef OW_I18N
-        WIN_IC_LUC_START        = WIN_ATTR(ATTR_INT_PAIR,        29),   /* C-S */
-        WIN_IC_LUC_DRAW         = WIN_ATTR(ATTR_INT_PAIR,        30),   /* C-S */
-        WIN_IC_LUC_DONE         = WIN_ATTR(ATTR_INT_PAIR,        31),   /* C-S */
-#endif /* OW_I18N */
 	WIN_CURSOR		= WIN_ATTR(ATTR_CURSOR_PTR,	 32),
-#ifdef OW_I18N
-        WIN_IC_LUC_PROCESS      = WIN_ATTR(ATTR_INT_PAIR,        33),   /* C-S */
-        WIN_IC_PREEDIT_CARET    = WIN_ATTR(ATTR_INT_PAIR,        34),   /* C-S */
-#endif /* OW_I18N */
 
 	WIN_DEPTH		= WIN_ATTR(ATTR_INT,		102),	/* CG- */
 	/* WIN_DEPTH_V2 is needed to keep backwards compatibility with
@@ -227,9 +193,6 @@ typedef enum {
 	WIN_DESIRED_HEIGHT	= WIN_ATTR(ATTR_INT, 		 40),
 	WIN_DESIRED_WIDTH	= WIN_ATTR(ATTR_INT, 		 44),
 	WIN_ERROR_MSG		= WIN_ATTR(ATTR_STRING,		 48),
-#ifdef  OW_I18N
-        WIN_ERROR_MSG_WCS       = WIN_ATTR(ATTR_WSTRING,          49),
-#endif  /* OW_I18N */
 	WIN_EVENT_PROC		= WIN_ATTR(ATTR_FUNCTION_PTR,	 52),
 	WIN_FIT_HEIGHT		= WIN_ATTR(ATTR_Y,		 60),
 	WIN_FIT_WIDTH		= WIN_ATTR(ATTR_X,		 64),
@@ -237,25 +200,11 @@ typedef enum {
 	WIN_GLYPH_FONT		= WIN_ATTR(ATTR_OPAQUE,		 67),
 	WIN_GRAB_ALL_INPUT	= WIN_ATTR(ATTR_BOOLEAN,	 68),	/* --S */
 	WIN_HORIZONTAL_SCROLLBAR= WIN_ATTR(ATTR_OPAQUE,		 72),
-#ifdef OW_I18N
-#ifdef  FULL_R5
-	WIN_X_IM_STYLE_MASK	= WIN_ATTR(ATTR_LONG,		 73),	/* CG- */
-#endif  /* FULL_R5 */
-        WIN_IC                  = WIN_ATTR(ATTR_OPAQUE,          74),   /* -GS */
-        WIN_USE_IM              = WIN_ATTR(ATTR_BOOLEAN,         75),   /* CG- */
-#endif /* OW_I18N */
+    WIN_IC                  = WIN_ATTR(ATTR_OPAQUE,          74),   /* -GS */
+    WIN_USE_IM              = WIN_ATTR(ATTR_BOOLEAN,         75),   /* CG- */
 	WIN_IGNORE_EVENT	= WIN_ATTR(ATTR_ENUM,		 76),	/* --S */
 	WIN_IGNORE_EVENTS=WIN_ATTR(ATTR_LIST_INLINE(ATTR_NULL,ATTR_ENUM),80),/* --S */
-#ifdef OW_I18N
-	WIN_IC_COMMIT_STRING	= WIN_ATTR(ATTR_STRING,		 81),  /* -G- */
-	WIN_IC_COMMIT_STRING_WCS= WIN_ATTR(ATTR_WSTRING,	 82),  /* -G- */
-	WIN_IC_CONVERSION	= WIN_ATTR(ATTR_BOOLEAN,	 83),  /* -GS */
-#endif /* OW_I18N */
 	WIN_INPUT_MASK		= WIN_ATTR(ATTR_IMASK,		 84),
-#ifdef OW_I18N
-	WIN_IC_RESET		= WIN_ATTR(ATTR_NO_VALUE,	 85),  /* --S */
-	WIN_IC_ACTIVE		= WIN_ATTR(ATTR_BOOLEAN,	 86),  /* CGS */
-#endif /* OW_I18N */
 	WIN_IS_CLIENT_PANE	= WIN_ATTR(ATTR_NO_VALUE,	 88),
 	WIN_MENU		= WIN_ATTR(ATTR_OPAQUE,		 92),
 	WIN_MOUSE_XY		= WIN_ATTR(ATTR_XY,		 96),	/* -GS */
