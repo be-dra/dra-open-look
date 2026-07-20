@@ -1,4 +1,4 @@
-/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.3 2025/03/08 13:01:51 dra Exp $      */
+/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.4 2026/07/19 13:32:56 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -135,13 +135,6 @@ typedef enum {
 	XV_HELP			= GENERIC_ATTR(ATTR_STRING,	 80),
 	XV_HELP_STRING_FILENAME	= GENERIC_ATTR(ATTR_STRING,	 82),
 	XV_SHOW			= GENERIC_ATTR(ATTR_BOOLEAN,	 81),
-#ifdef OW_I18N
-        XV_LABEL_WCS            = GENERIC_ATTR(ATTR_WSTRING,     164),
-        XV_NAME_WCS             = GENERIC_ATTR(ATTR_WSTRING,     161),
-        XV_HELP_WCS             = GENERIC_ATTR(ATTR_WSTRING,     162),
-        XV_HELP_STRING_FILENAME_WCS
-                                = GENERIC_ATTR(ATTR_WSTRING,     163),
-#endif /* OW_I18N */
 	/*
 	 * Required by package implementations, used only by xv_create 
 	 */
@@ -191,9 +184,6 @@ typedef enum {
 	XV_DISPLAY		= XV_ATTR(ATTR_OPAQUE,		110), /* --G */
 	XV_SCREEN		= XV_ATTR(ATTR_OPAQUE,		116), /* --G */
 	XV_APP_NAME		= XV_ATTR(ATTR_STRING,		112), /* -SG */
-#ifdef OW_I18N
-	XV_APP_NAME_WCS		= XV_ATTR(ATTR_STRING,		111), /* CSG */
-#endif
 
 	XV_APP_HELP_FILE         = XV_ATTR(ATTR_STRING,	114), /* CSG */
 	XV_WANT_ROWS_AND_COLUMNS = XV_ATTR(ATTR_BOOLEAN, 109), /* CSG */
@@ -215,12 +205,10 @@ typedef enum {
 	XV_QUARK		= XV_ATTR(ATTR_OPAQUE,		135),
 	XV_USE_INSTANCE_RESOURCES=XV_ATTR(ATTR_OPAQUE,		140),
 
-#ifdef OW_I18N
 	/*
 	 * The I18N Level 4 attribute XV_IM goes here:
 	 */
 	 XV_IM                   = XV_ATTR(ATTR_OPAQUE,          150),
-#endif /* OW_I18N */
 
 	/*
 	 * Added to support locale announcement
@@ -232,13 +220,6 @@ typedef enum {
 	XV_LC_TIME_FORMAT	= XV_ATTR(ATTR_STRING,		175),
  	XV_LOCALE_DIR		= XV_ATTR(ATTR_STRING, 		180),
 	XV_USE_LOCALE		= XV_ATTR(ATTR_BOOLEAN,		185),
-#ifdef OW_I18N
-#ifdef FULL_R5
-	XV_IM_STYLES		= XV_ATTR(ATTR_OPAQUE,		186),
-	XV_IM_PREEDIT_STYLE	= XV_ATTR(ATTR_STRING, 		190),
-	XV_IM_STATUS_STYLE	= XV_ATTR(ATTR_STRING,		195),
-#endif
-#endif /* OW_I18N */
 
 	/*
 	 * PRIVATE now, but ... 
