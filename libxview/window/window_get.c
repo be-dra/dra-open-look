@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.5 2025/11/01 13:02:52 dra Exp $";
+static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.6 2026/07/19 13:49:17 dra Exp $";
 #endif
 #endif
 
@@ -22,13 +22,6 @@ static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_ge
 #include <xview/rectlist.h>
 #include <xview/xv_xrect.h>
 #include <xview/cms.h>
-#ifdef OW_I18N
-#ifdef FULL_R5
-#include <xview/frame.h>
-#include <xview_private/fm_impl.h>
-#include <xview_private/svr_impl.h>
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 /*
  * Private
@@ -37,15 +30,15 @@ static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_ge
 static int get_mask_bit(Inputmask *mask, Window_input_event code, Xv_Window win_public);
 static Xv_opaque  window_empty_event_proc(void);
 static struct timeval alarmdata;
-#ifdef OW_I18N
-static XIC xv_window_create_ic();
-#ifdef FULL_R5
-#define XV_SUPPORTED_STYLE_COUNT               12
-#else /*FULL_R5 */
-#define XV_SUPPORTED_STYLE_COUNT               15
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
+static XIC xv_window_create_ic(Xv_Window win_public, XIM im, Window xid)
+{
+	return XCreateIC(im,
+			XNClientWindow, xid,
+			XNFocusWindow, xid,
+			XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+			NULL);
+}
 
 /* VARARGS2 */
 Xv_public       Xv_opaque
@@ -72,7 +65,7 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 {
 	register Window_info *win = WIN_PRIVATE(win_public);
 	register Xv_Drawable_info *info;
-	register Xv_opaque v = 0;
+	Xv_opaque v = XV_NULL;
 	int vp;
 
 	DRAWABLE_INFO_MACRO(win_public, info);
@@ -539,179 +532,28 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 				break;
 			}
 
-#ifdef OW_I18N
-		case WIN_IC:{
+		case WIN_IC:
 				if (win->win_use_im && !win->xic) {
-
 					XIM im;
-					XIMStyles *style = NULL;
-					XIMStyle supported_styles[XV_SUPPORTED_STYLE_COUNT];
-					int i, j;
-					Xv_Drawable_info *info;
-					Window window;
+					Window window = xv_get(win_public, XV_XID);
 					Xv_Server server;
-
-#ifdef FULL_R5
-					Server_info *server_private;
-#endif
 
 					server = XV_SERVER_FROM_WINDOW(win_public);
 
 					/* Get the im from server in order to pass to XCreateIC */
 					im = (XIM) xv_get(server, XV_IM);
-					if (!im)
-						break;
+					if (!im) break;
 
-#ifdef FULL_R5
-					/*
-					 *  Determine IM style is based on:
-					 *  1. User specified input style
-					 *     a. command line option
-					 *     b. ~/.Xdefaults
-					 *     c. System Xdefaults
-					 *  2. Default supported locale-specific input style
-					 *  3. Default supported input style
-					 *
-					 *       Currently the im style is associated on a
-					 *   per server basis.  This should be changed
-					 *   into a private attribute, but for now
-					 *   we are grabbing server_private->determined_style
-					 *   directly.
-					 *
-					 */
-					server_private = SERVER_PRIVATE(server);
+					win->xic = xv_window_create_ic(win_public, im, window);
 
-					DRAWABLE_INFO_MACRO(xv_get(win_public, WIN_FRAME), info);
-					window = xv_xid(info);
-
-					/* Create the IC with the determined style */
-					if (win->x_im_style_mask == NULL)
-						win->x_im_style_mask =
-								server_private->determined_im_style;
-					win->xic =
-							xv_window_create_ic(win_public, im, window,
-							win->x_im_style_mask);
-
-					if (win->xic)
-						win->ic_created = TRUE;
-#else /* FULL_R5 */
-					XGetIMValues(im, XNQueryInputStyle, &style, NULL);
-
-					if (style) {
-						/*  Make a list of the styles we currently support */
-						supported_styles[0] =
-								(XIMPreeditCallbacks | XIMStatusCallbacks
-/* 								| XIMLookupCallbacks */
-/* 								| XIMAuxCallbacks */
-								);
-						supported_styles[1] =
-								(XIMPreeditCallbacks | XIMStatusCallbacks
-/* 								| XIMLookupCallbacks */
-								);
-						supported_styles[2] =
-								(XIMPreeditCallbacks | XIMStatusCallbacks
-/* 								| XIMAuxCallbacks */
-								);
-						supported_styles[3] =
-								(XIMPreeditCallbacks | XIMStatusCallbacks);
-						supported_styles[4] =
-								(XIMPreeditCallbacks | XIMStatusArea);
-						supported_styles[5] =
-								(XIMPreeditCallbacks | XIMStatusNothing);
-
-						supported_styles[6] =
-								(XIMPreeditPosition | XIMStatusArea);
-						supported_styles[7] =
-								(XIMPreeditPosition | XIMStatusNothing);
-
-						supported_styles[8] = (XIMPreeditArea | XIMStatusArea);
-						supported_styles[9] =
-								(XIMPreeditArea | XIMStatusNothing);
-
-						supported_styles[10] =
-								(XIMPreeditNothing | XIMStatusArea);
-						supported_styles[11] =
-								(XIMPreeditNothing | XIMStatusNothing);
-
-						supported_styles[12] =
-								(XIMPreeditCallbacks | XIMStatusNone);
-						supported_styles[13] =
-								(XIMPreeditPosition | XIMStatusNone);
-						supported_styles[14] = (XIMPreeditArea | XIMStatusNone);
-
-						/* Find the matching style */
-						for (j = 0; j < XV_SUPPORTED_STYLE_COUNT; j++) {
-							for (i = 0; i < (int)style->count_styles; i++)
-								if (style->supported_styles[i] ==
-										supported_styles[j])
-									goto Found_style;
-						}
-					  Found_style:
-
-						DRAWABLE_INFO_MACRO(xv_get(win_public, WIN_FRAME),
-								info);
-						window = xv_xid(info);
-
-						/* Create the IC and register the callbacks */
-						win->xic = xv_window_create_ic(win_public, im, window,
-								style->supported_styles[i]);
-
-						if (win->xic)
-							win->ic_created = TRUE;
-
-						if (style)
-							XFree(style);
-					}
-#endif /* FULL_R5 */
+					if (win->xic) win->ic_created = TRUE;
 				}
 				v = (Xv_opaque) win->xic;
 				break;
-			}
-
-		case WIN_IC_CONVERSION:
-			if (win->win_use_im && win->xic) {
-
-				int conv_on;
-
-				if (!XGetICValues(win->xic, XNExtXimp_Conversion, &conv_on,
-								NULL)) {
-					/* This IM supports Sun Extensions */
-					if (conv_on == XIMEnable)
-						win->ic_conversion = TRUE;
-					else
-						win->ic_conversion = FALSE;
-				}
-			}
-			v = (Xv_opaque) win->ic_conversion;
-			break;
-
-		case WIN_IC_COMMIT_STRING:
-			v = (Xv_opaque) win->win_ic_committed;
-			break;
-
-		case WIN_IC_COMMIT_STRING_WCS:
-			v = (Xv_opaque) win->win_ic_committed_wcs;
-			break;
 
 		case WIN_USE_IM:
 			v = (Xv_opaque) win->win_use_im;
 			break;
-
-		case WIN_IC_ACTIVE:
-			v = (Xv_opaque) win->ic_active;
-			break;
-
-#ifdef FULL_R5
-		case WIN_X_IM_STYLE_MASK:
-			v = (Xv_opaque) win->x_im_style_mask;
-			break;
-
-		case XV_IM_STYLES:
-			v = (Xv_opaque) xv_get((Xv_opaque)
-					XV_SERVER_FROM_WINDOW(win_public), XV_IM_STYLES);
-			break;
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 		case XV_LC_BASIC_LOCALE:
 			return (Xv_opaque) xv_get((Xv_opaque)
@@ -829,163 +671,3 @@ static Xv_opaque window_empty_event_proc(void)
 	short dummy = 0;
 	return ((Xv_opaque) dummy);
 }
-
-#ifdef OW_I18N
-static XIC
-xv_window_create_ic(win_public, im, xid, style)
-    Xv_Window           win_public;
-    XIM                 im;
-    Window              xid;
-    XIMStyle            style;
-{
-    Window_info         *win = WIN_PRIVATE(win_public);
-    XIC                 xic;
-    XVaNestedList       preedit_list, status_list;
-#ifdef FULL_R5
-    XRectangle          area;
-    XPoint              spot_location;
-    XFontSet		fontset;
-    Cms			cms;
-    Colormap            cmap;
-    unsigned long       fg, bg;
-    Pixmap              bg_pixmap;
-    Frame		frame_public;
-    Frame_class_info    *frame;
-#endif
-
-    preedit_list = status_list = NULL;
-
-#ifdef FULL_R5
-    if (style & XIMPreeditCallbacks || style & XIMPreeditPosition ||
-	style & XIMPreeditArea || style & XIMStatusArea ) {
-
-	fontset = (XFontSet)xv_get(win->font, FONT_SET_ID);
-
-	frame_public = xv_get(win_public, WIN_FRAME);
-        frame = FRAME_PRIVATE(frame_public);
-    }
-    if (style & XIMPreeditCallbacks || style & XIMPreeditPosition ||
-	style & XIMPreeditArea ) {
-    	spot_location.x = 0;
-    	spot_location.y = xv_get(win->font, FONT_DEFAULT_CHAR_HEIGHT);
-    }
-#endif /* FULL_R5 */
-    /*
-     *  Create Preedit list based on selected style.
-     */
-    if (style & XIMPreeditCallbacks) {
-	 /* On-the-spot input style requested */
-         preedit_list = XVaCreateNestedList(NULL,
-		       /* Must be specified for on-the-spot */
-                       XNPreeditStartCallback, &win->start_pecb_struct,
-                       XNPreeditDrawCallback,  &win->draw_pecb_struct,
-                       XNPreeditCaretCallback, &win->caret_pecb_struct,
-                       XNPreeditDoneCallback,  &win->done_pecb_struct,
-#ifdef FULL_R5
-		       /* Specify for luc but may be ignored by im-server */
-		       XNSpotLocation,         &spot_location,
-                       XNFontSet,              fontset,
-#endif
-                       NULL);
-    } else if (style & XIMPreeditPosition) {
-	/* Over-the-spot input style requested */
-#ifdef FULL_R5
-	cms = xv_get(win_public, WIN_CMS);
-	cmap = (Colormap)xv_get(cms, XV_XID);
-	fg = (unsigned long)xv_get(cms, CMS_FOREGROUND_PIXEL);
-	bg = (unsigned long)xv_get(cms, CMS_BACKGROUND_PIXEL);
-	bg_pixmap = (Pixmap)xv_get(win_public, WIN_BACKGROUND_PIXMAP);
-#endif /* FULL_R5 */
-
-        preedit_list = XVaCreateNestedList(NULL,
-#ifdef FULL_R5
-		       /* Must be specified for over-the-spot */
-                       XNSpotLocation,  &spot_location,
-                       XNFontSet,       fontset,
-		       XNColormap,	cmap,
-		       XNForeground,	fg,
-		       XNBackground,	bg,
-		       XNBackgroundPixmap,  bg_pixmap,
-#endif
-                       NULL);
-    } else if (style & XIMPreeditArea) {
-	/* Off-the-spot input style requested */
-        preedit_list = XVaCreateNestedList(NULL,
-#ifdef FULL_R5
-		       /* Must be specified for off-the-spot */
-                       XNFontSet,       fontset,
-		       /* Specify for luc but may be ignored by im-server */
-		       XNSpotLocation,  &spot_location,
-		       /* XNArea,	&area,*/
-#endif
-                       NULL);
-    } else if (style & XIMPreeditNothing) {
-	/* Root-window input style requested */
-        preedit_list = XVaCreateNestedList(NULL,
-                       NULL);
-    } else if (style & XIMPreeditNone) {
-	/* No preedit style requested */
-	/* How should we handle this?? */
-    }
-
-    /*
-     *  Create Status list based on selected style.
-     */
-    if (style & XIMStatusCallbacks) {
-	 /* On-the-spot input style requested */
-         status_list = XVaCreateNestedList(NULL,
-                       XNStatusStartCallback, &win->start_stcb_struct,
-                       XNStatusDrawCallback,  &win->draw_stcb_struct,
-                       XNStatusDoneCallback,  &win->done_stcb_struct,
-                       NULL);
-    } else if (style & XIMStatusArea) {
-	/* Over-the-spot input style requested */
-#ifdef FULL_R5
-	Rect 	*status_rect;
-
-	status_rect = (Rect *)xv_get(frame_public, FRAME_IMSTATUS_RECT);
-	area.x = status_rect->r_left;
-	area.y = status_rect->r_top;
-	area.width = status_rect->r_width;
-	area.height = status_rect->r_height;
-
-	cms = xv_get(frame->imstatus, WIN_CMS);
-	cmap = (Colormap)xv_get(cms, XV_XID);
-	fg = (unsigned long)xv_get(cms, CMS_FOREGROUND_PIXEL);
-	bg = (unsigned long)xv_get(cms, CMS_BACKGROUND_PIXEL);
-	bg_pixmap = (Pixmap)xv_get(frame->imstatus, WIN_BACKGROUND_PIXMAP);
-#endif
-        status_list = XVaCreateNestedList(NULL,
-#ifdef FULL_R5
-                       XNFontSet,     fontset,
-		       XNArea,	      &area,
-		       XNColormap,    cmap,
-		       XNForeground,  fg,
-		       XNBackground,  bg,
-		       XNBackgroundPixmap,  bg_pixmap,
-#endif
-                       NULL);
-    } else if (style & XIMStatusNothing) {
-        status_list = XVaCreateNestedList(NULL,
-                       NULL);
-    } else if (style & XIMStatusNone) {
-	/* No status style requested */
-	/* How should we handle this?? */
-    }
-
-    /*  Currently support only preedit and status callback style. */
-    xic = (XIC)XCreateIC(im,
-                        XNClientWindow, xid,
-                        XNInputStyle, style,
-                        XNPreeditAttributes, preedit_list,
-                        XNStatusAttributes, status_list,
-                        NULL);
-
-    if (preedit_list);
-        XFree(preedit_list);
-    if (status_list);
-        XFree(status_list);
-
-    return(xic);
-}
-#endif  /* OW_I18N */
