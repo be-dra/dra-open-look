@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.42 2026/07/15 18:34:12 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.43 2026/07/19 21:58:05 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -368,19 +368,7 @@ Pkg_private Notify_value panel_default_event(Panel p_public, Event *event,
 			event_action(event) == ACTION_MORE_TEXT_HELP ||
 			event_action(event) == ACTION_INPUT_FOCUS_HELP) {
 
-#ifdef OW_I18N
-		/*  For some reason the down event is not passed
-		 *  back to panel, so for now we're looking for
-		 *  the up event.  When the down event is passed
-		 *  to panel again we should remove this code.
-		 *  As they say, a hack for now.
-		 */
-		if (event_is_up(event))
-#else
-		if (event_is_down(event))
-#endif /* OW_I18N */
-
-		{
+		if (event_is_down(event)) {
 			char *panel_help = (char *)xv_get(panel_public, XV_HELP_DATA);
 			char *item_help = 0;
 			char helpbuf[200];
