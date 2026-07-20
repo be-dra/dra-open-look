@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_cms.c 20.57 93/06/28 DRA: $Id: window_cms.c,v 4.1 2024/03/28 19:30:48 dra Exp $";
+static char     sccsid[] = "@(#)window_cms.c 20.57 93/06/28 DRA: $Id: window_cms.c,v 4.2 2026/07/19 13:49:18 dra Exp $";
 #endif
 #endif
 
@@ -181,59 +181,12 @@ Pkg_private void window_set_cms(Xv_Window win_public, Cms cms, int cms_bg, int c
             window_set_cmap_property(win_public);
 	    attrs.colormap = new_cmap;
 	    val_mask |= CWColormap;
-#ifdef OW_I18N
-#ifdef FULL_R5
-            /*
-             * Need to set XNColormap when colormap updated or WIN_CMS set.
-             */
-            if (win->win_use_im && win->xic) {
-                XVaNestedList       list;
-
-                list = XVaCreateNestedList(NULL,
-                        XNColormap, new_cmap,
-                        NULL);
-                /* FIX_ME: Should check input style here before setting */
-                XSetICValues(win->xic,
-                        XNPreeditAttributes, list,
-                        NULL);
-                XSetICValues(win->xic,
-                        XNStatusAttributes, list,
-                        NULL);
-		if (list)
-			XFree(list);
-            }
-		
-#endif
-#endif /* OW_I18N */
     }
 
     xv_cms_fg(info) = cms_fg;
     if (old_fg != new_fg) {
 	    attrs.border_pixel = xv_fg(info) = new_fg;
 	    val_mask |= CWBorderPixel;
-#ifdef OW_I18N
-#ifdef FULL_R5
-            /*
-             * Need to set XNForeground when WIN_FOREGROUND_COLOR is set.
-             */
-            if (win->win_use_im && win->xic) {
-                XVaNestedList       list;
-
-                list = XVaCreateNestedList(NULL,
-                        XNForeground, new_fg,
-                        NULL);
-                /* FIX_ME: Should check input style here before setting */
-                XSetICValues(win->xic,
-                        XNPreeditAttributes, list,
-                        NULL);
-                XSetICValues(win->xic,
-                        XNStatusAttributes, list,
-                        NULL);
-		if (list)
-			XFree(list);
-            }
-#endif 
-#endif /* OW_I18N */
     }
     xv_cms_bg(info) = cms_bg;
     if (old_bg != new_bg) {
@@ -242,28 +195,6 @@ Pkg_private void window_set_cms(Xv_Window win_public, Cms cms, int cms_bg, int c
 	if (!win->transparent) {
 	    attrs.background_pixel = new_bg;
 	    val_mask |= CWBackPixel;
-#ifdef OW_I18N
-#ifdef FULL_R5
-            /*
-             * Need to set XNBackground when WIN_BACKGROUND_COLOR is set.
-             */
-            if (win->win_use_im && win->xic) {
-                XVaNestedList       list;
-
-                list = XVaCreateNestedList(NULL,
-                        XNBackground, new_bg,
-                        NULL);
-                /* FIX_ME: Should check input style here before setting */
-                XSetICValues(win->xic,
-                        XNPreeditAttributes, list,
-                        NULL);
-                XSetICValues(win->xic,
-                        XNStatusAttributes, list,
-                        NULL);
-		XFree(list);
-            }
-#endif 
-#endif /* OW_I18N */
 	}
     }
     if (val_mask) {
