@@ -1,4 +1,4 @@
-/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.8 2025/03/16 13:50:31 dra Exp $	*/
+/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.9 2026/07/19 21:58:25 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -65,10 +65,6 @@
  */
 #define	panel_get_value(ip) 		xv_get((ip), PANEL_VALUE)
 #define	panel_set_value(ip, val)	xv_set((ip), PANEL_VALUE, (val), NULL)
-#ifdef OW_I18N
-#define panel_get_value_wcs(ip)    xv_get((ip), PANEL_VALUE_WCS)
-#define panel_set_value_wcs(ip, val) xv_set((ip), PANEL_VALUE_WCS, (val), NULL)
-#endif  /* OW_I18N */
 
 /* Note: In PANEL_EACH_ITEM, we need "_next" since the current item
  * (ip) may be destroyed from within the for loop.
@@ -414,32 +410,6 @@ typedef enum {
 	PANEL_NUM_TXT		= PANEL_ATTR(ATTR_OPAQUE,		 205),
 	PANEL_TEXT_CURSOR	= PANEL_ATTR(ATTR_OPAQUE,		 206)
 	, PANEL_ITEM_LABEL_BASELINE = PANEL_ATTR(ATTR_INT, 228)  /* DRA, --G */
-
-#ifdef OW_I18N
-    ,
-	/****************************************
-	 * Internationalization Public Attributes
-	 ****************************************/
-
-	PANEL_LABEL_STRING_WCS		= PANEL_ATTR(ATTR_WSTRING,                 75),
-	PANEL_NOTIFY_PROC_WCS		= PANEL_ATTR(ATTR_FUNCTION_PTR,          155),
-	PANEL_CHOICE_STRING_WCS		= PANEL_ATTR(PANEL_INDEX_STRING,          23),
-	PANEL_CHOICE_STRINGS_WCS	= PANEL_ATTR_LIST(ATTR_NULL, ATTR_WSTRING, 24),
-	PANEL_VALUE_WCS			= PANEL_ATTR(ATTR_INT,                   181),
-	PANEL_LIST_INSERT_STRINGS_WCS	= PANEL_ATTR(ATTR_OPAQUE_PAIR,		 165),
-	PANEL_LIST_STRING_WCS		= PANEL_ATTR(PANEL_INDEX_STRING,         115),
-	PANEL_LIST_STRINGS_WCS	= PANEL_ATTR_LIST(ATTR_NULL, ATTR_WSTRING, 118),
-	PANEL_LIST_TITLE_WCS		= PANEL_ATTR(ATTR_WSTRING,		 163),
-	PANEL_MASK_CHAR_WC		= PANEL_ATTR(ATTR_WCHAR,		 161),
-	PANEL_NOTIFY_STRING_WCS		= PANEL_ATTR(ATTR_WSTRING,                159),
-	PANEL_MAX_TICK_STRING_WCS	= PANEL_ATTR(ATTR_WSTRING,		 141),
-	PANEL_MIN_TICK_STRING_WCS	= PANEL_ATTR(ATTR_WSTRING,		 149),
-	PANEL_MAX_VALUE_STRING_WCS	= PANEL_ATTR(ATTR_WSTRING,		 151),
-	PANEL_MIN_VALUE_STRING_WCS	= PANEL_ATTR(ATTR_WSTRING,		 153),
-	PANEL_ITEM_IC_ACTIVE		= PANEL_ATTR(ATTR_INT,			 167),
-	PANEL_VALUE_STORED_LENGTH_WCS	= PANEL_ATTR(ATTR_INT,			 168),
-	PANEL_LIST_ROW_VALUES_WCS 	= PANEL_ATTR(ATTR_OPAQUE_TRIPLE,	 215)
-#endif /* OW_I18N */
 } Panel_attr;
 
 #define PANEL_PARENT_PANEL	XV_OWNER
@@ -578,20 +548,6 @@ typedef struct {
     unsigned		selected : 1;
     Xv_opaque		reserved;	/* reserved for future use */
 } Panel_list_row_values;
-
-#ifdef OW_I18N
-typedef struct {
-    wchar_t *		string_wcs;
-    Server_image	glyph;
-    Server_image	mask_glyph;
-    Xv_font		font;
-    Xv_opaque		client_data;
-    Xv_opaque		extension_data;
-    unsigned		inactive : 1;
-    unsigned		selected : 1;
-    Xv_opaque		reserved;	/* reserved for future use */
-} Panel_list_row_values_wcs;
-#endif
 
 typedef enum {  /* DRA */
 	PANEL_ROLE_NONE,
