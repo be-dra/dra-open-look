@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_global.c 20.39 93/06/28 DRA: $Id: win_global.c,v 4.1 2024/03/28 19:28:19 dra Exp $";
+static char     sccsid[] = "@(#)win_global.c 20.39 93/06/28 DRA: $Id: win_global.c,v 4.2 2026/07/19 16:19:50 dra Exp $";
 #endif
 #endif
 
@@ -80,65 +80,57 @@ void win_unlockdata(Xv_object window)
  */
 Xv_private int xv_win_grab(Xv_object window, Inputmask *im, Xv_object cursor_window, Xv_object cursor, int grab_pointer, int grab_kbd, int grab_server, int grap_pointer_pointer_async, int	grab_pointer_keyboard_async, int	grap_kbd_pointer_async, int	grab_kbd_keyboard_async, int owner_events, int *status)
 {
-    Xv_Drawable_info *info;
-    Display        *display;
-    int		    return_code = GrabSuccess;
-    unsigned int    xevent_mask = win_im_to_xmask(window, im);
+	Xv_Drawable_info *info;
+	Display *display;
+	int return_code = GrabSuccess;
+	unsigned int xevent_mask = win_im_to_xmask(window, im);
 	Xv_server srv;
 
-    if (status)
-        *status = 1; /* initialize to be OK */
-    if (win_grabiodebug)
-	return 0;
-    DRAWABLE_INFO_MACRO(window, info);
-    display = xv_display(info);
+	if (status)
+		*status = 1;	/* initialize to be OK */
+	if (win_grabiodebug)
+		return 0;
+	DRAWABLE_INFO_MACRO(window, info);
+	display = xv_display(info);
 	srv = xv_server(info);
 
-    if (xv_get(xv_server(info), SERVER_JOURNALLING))
-	xv_set(xv_server(info), SERVER_JOURNAL_SYNC_EVENT, 1, NULL);
-    if (grab_server)
-    	XGrabServer(display);
-    if (grab_pointer)
-        if ((return_code = XGrabPointer(display, xv_xid(info),
-                   owner_events, (unsigned int)(xevent_mask & POINTERMASK),
-		           grap_pointer_pointer_async ? GrabModeAsync : GrabModeSync,
-		           grab_pointer_keyboard_async ? GrabModeAsync : GrabModeSync,
-		           cursor_window ? (Window)xv_get(cursor_window, XV_XID) : None,
-		           cursor ? (Cursor)xv_get(cursor, XV_XID) : None,
-		           server_get_timestamp(srv))) != GrabSuccess) {
-	    if (status)
-	        *status = 0;
-	    if (grab_server)
-		XUngrabServer(display);
-	    return (return_code);
+	if (xv_get(xv_server(info), SERVER_JOURNALLING))
+		xv_set(xv_server(info), SERVER_JOURNAL_SYNC_EVENT, 1, NULL);
+	if (grab_server)
+		XGrabServer(display);
+	if (grab_pointer)
+		if ((return_code = XGrabPointer(display, xv_xid(info), owner_events,
+						(unsigned int)(xevent_mask & POINTERMASK),
+								grap_pointer_pointer_async ? GrabModeAsync :
+															GrabModeSync,
+						grab_pointer_keyboard_async ?
+											GrabModeAsync : GrabModeSync,
+						cursor_window ? (Window) xv_get(cursor_window, XV_XID)
+														: None,
+						cursor ? (Cursor) xv_get(cursor, XV_XID) : None,
+						server_get_timestamp(srv))) != GrabSuccess)
+		{
+			if (status) *status = 0;
+			if (grab_server) XUngrabServer(display);
+			return (return_code);
+		}
+	if (grab_kbd) {
+		if ((return_code = XGrabKeyboard(display, xv_xid(info), owner_events,
+								grap_kbd_pointer_async ?
+								GrabModeAsync : GrabModeSync,
+								grab_kbd_keyboard_async ?
+								GrabModeAsync : GrabModeSync,
+								server_get_timestamp(srv))) != GrabSuccess) {
+			if (grab_pointer)
+				XUngrabPointer(display, server_get_timestamp(srv));
+			if (grab_server)
+				XUngrabServer(display);
+			if (status)
+				*status = 0;
+			return (return_code);
+		}
 	}
-    if (grab_kbd) {
-#ifdef OW_I18N
-    	if (return_code = window_set_xgrabkeyboard(window, display,
-    		                        xv_xid(info), owner_events,
-		                        grap_kbd_pointer_async ? 
-		                        	GrabModeAsync : GrabModeSync,
-		                        grab_kbd_keyboard_async ? 
-		                        	GrabModeAsync : GrabModeSync,
-		                        server_get_timestamp(srv)) != GrabSuccess) {
-#else
-    	if ((return_code = XGrabKeyboard(display, xv_xid(info), owner_events,
-		                        grap_kbd_pointer_async ? 
-		                        	GrabModeAsync : GrabModeSync,
-		                        grab_kbd_keyboard_async ? 
-		                        	GrabModeAsync : GrabModeSync,
-		                        server_get_timestamp(srv))) != GrabSuccess) {
-#endif /* OW_I18N */
-	    if (grab_pointer)
-	        XUngrabPointer(display, server_get_timestamp(srv));
-	    if (grab_server)
-		XUngrabServer(display);
-	    if (status)
-	        *status = 0;
-	    return (return_code);
-	}
-    }
-    return (GrabSuccess);
+	return (GrabSuccess);
 }
 
 Xv_private int xv_win_ungrab(Xv_object window, int ungrab_pointer, int ungrab_kbd, int ungrab_server)
@@ -156,13 +148,8 @@ Xv_private int xv_win_ungrab(Xv_object window, int ungrab_pointer, int ungrab_kb
 	if (ungrab_server)
 		XUngrabServer(display);
 
-#ifdef OW_I18N
-	if (ungrab_kbd)
-		window_set_xungrabkeyboard(window, display, server_get_timestamp(srv));
-#else
 	if (ungrab_kbd)
 		XUngrabKeyboard(display, server_get_timestamp(srv));
-#endif
 
 	if (ungrab_pointer)
 		XUngrabPointer(display, server_get_timestamp(srv));
@@ -203,21 +190,12 @@ Xv_private int win_xgrabio_sync(Xv_object window, Inputmask *im, Xv_object curso
 		     cursor ? (Cursor) xv_get(cursor, XV_XID) : None,
 		     server_get_timestamp(srv)) != GrabSuccess)
 	return (0);
-#ifdef OW_I18N
-    if (window_set_xgrabkeyboard(window, display,
-    		      xv_xid(info),
-    		      FALSE,
-		      GrabModeAsync, 
-		      GrabModeSync, 
-		      server_get_timestamp(srv)) != GrabSuccess) {
-#else
     if (XGrabKeyboard(display,
     		      xv_xid(info),
     		      FALSE,
 		      GrabModeAsync, 
 		      GrabModeSync, 
 		      server_get_timestamp(srv)) != GrabSuccess) {
-#endif
 	XUngrabPointer(display, server_get_timestamp(srv));
 	return(0);
     }
@@ -250,21 +228,12 @@ Xv_private int win_xgrabio_async(Xv_object window, Inputmask *im, Xv_object curs
 		     cursor ? (Cursor) xv_get(cursor, XV_XID) : None,
 		     server_get_timestamp(srv)) != GrabSuccess)
 	return (0);
-#ifdef OW_I18N
-    if (window_set_xgrabkeyboard(window, display,
-    		      xv_xid(info),
-    		      FALSE,
-		      GrabModeAsync,
-		      GrabModeAsync,
-		      server_get_timestamp(srv)) != GrabSuccess) {
-#else
     if (XGrabKeyboard(display,
     		      xv_xid(info),
     		      FALSE,
 		      GrabModeAsync,
 		      GrabModeAsync,
 		      server_get_timestamp(srv)) != GrabSuccess) {
-#endif
 	XUngrabPointer(display, server_get_timestamp(srv));
 	return(0);
     }
@@ -297,11 +266,7 @@ Xv_private void win_releaseio(Xv_object window)
 	srv = xv_server(info);
 
     XUngrabServer(display);
-#ifdef OW_I18N
-    window_set_xungrabkeyboard(window, display, server_get_timestamp(srv));
-#else
     XUngrabKeyboard(display, server_get_timestamp(srv));
-#endif
     XUngrabPointer(display, server_get_timestamp(srv));
     if (xv_get(xv_server(info), SERVER_JOURNALLING))
 	xv_set(xv_server(info), SERVER_JOURNAL_SYNC_EVENT, 1, NULL);
