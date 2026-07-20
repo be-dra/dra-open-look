@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.20 2026/03/15 08:14:15 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.21 2026/07/19 13:49:13 dra Exp $";
 #endif
 #endif
 /*
@@ -132,25 +132,8 @@ Pkg_private Notify_value window_default_event_func(Xv_Window win_public, Event *
 			break;
 		case KBD_USE:
 		case KBD_DONE:{
-
-#ifdef OW_I18N
-				if (event_action(event) == KBD_DONE) {
-					if (win->win_use_im && win->xic)
-						XUnsetICFocus(win->xic);
-					win_check_lang_mode(NULL, NULL, NULL);
-				}
-				else {
-					if (win->win_use_im && win->xic) {
-						if (win->ic_active)
-							XSetICFocus(win->xic);
-						else
-							XUnsetICFocus(win->xic);
-					}
-				}
-#else
 				if (event_action(event) == KBD_DONE)
 					win_check_lang_mode(XV_NULL, NULL, NULL);
-#endif /* OW_I18N */
 
 				if (win->softkey_flag) {
 					unsigned long ldata[2];
@@ -914,19 +897,6 @@ Xv_private void win_grab_quick_sel_keys(Xv_Window window)
     if (keycode)
 	XGrabKey(xv_display(info), keycode, 0, xv_xid(info), False,
 		 GrabModeAsync, GrabModeAsync);
-#ifdef OW_I18N
-    {
-	/*
-	 * Should actually create a table of all the keys which have
-	 * a passive grab. But for now let's just set a flag, and
-	 * assume we know all cases.
-	 */
-	Window_info 	*win;
-
-	win = WIN_PRIVATE(window);
-	WIN_SET_PASSIVE_GRAB(win, TRUE);
-    }
-#endif
 }
 
 
@@ -953,20 +923,6 @@ Xv_private void win_ungrab_quick_sel_keys(Xv_Window	window)
 			xv_get(xv_server(info), SERVER_PASTE_KEYSYM));
 	if (keycode)
 		XUngrabKey(xv_display(info), keycode, 0, xv_xid(info));
-
-#ifdef OW_I18N
-	{
-		/*
-		 * Should actually create a table of all the keys which have
-		 * a passive grab. But for now let's just set a flag, and
-		 * assume we know all cases.
-		 */
-		Window_info *win;
-
-		win = WIN_PRIVATE(window);
-		WIN_SET_PASSIVE_GRAB(win, FALSE);
-	}
-#endif
 }
 
 
@@ -1379,103 +1335,3 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 
 	return XV_OK;
 }
-
-#ifdef OW_I18N
-/*
- * Current implementation of XUnsetICFocus() does not disable the IC
- * completely, so we need to set the focus window temporarily to a
- * dummy window.
- *
- * Whenever setting XNFocusWindow make sure to cache the real focus
- * window, so that we can reset it properly upon calling XSetICFocus()
- */
-Xv_private int
-window_set_ic_focus_win(window, ic, focus_win)
-    Xv_window	window;
-    XIC		ic;
-    XID		focus_win;
-{
-    Window_info		*win;
-    XID                 current_focus;
-
-    if (!window)  {
-        return(XV_OK);
-    }
-
-    win = WIN_PRIVATE(window);
-
-    win->ic_focus_win = focus_win;
-
-    /*
-     * Query current focus window to see if it really needs to be set.
-     * This is the safe way of checking, but for better performance we
-     * could actually trigger off of the win->ic_active value:
-     *
-     * 	WIN_IC_ACTIVE TRUE  => XNFocusWindow set to win->ic_focus_win.
-     *  WIN_IC_ACTIVE FALSE => XNFocusWindow set to win->tmp_ic_focus_win
-     *
-     * This has been added to help alleviate the tool hang problem (1110677).
-     * This will reduce number of times XNFocusWindow is being set
-     * in panel (1111354) and in ttysw (1111352).
-     */
-    XGetICValues(ic, XNFocusWindow, &current_focus, NULL);
-
-    if (win->ic_active) {
-	if (focus_win && (focus_win != current_focus))
-            XSetICValues(ic, XNFocusWindow, focus_win, NULL);
-    } else  {
-	if (win->tmp_ic_focus_win && (win->tmp_ic_focus_win != current_focus))
-            XSetICValues(ic, XNFocusWindow, win->tmp_ic_focus_win, NULL);
-    }
-
-    return(XV_OK);
-}
-
-Xv_private int
-window_set_xungrabkeyboard(window, display, time)
-    Xv_window   window;
-    Display     *display;
-    Time        time;
-{
-    Window_info         *win;
-
-    if (!window)  {
-        return(XV_OK);
-    }
-
-    win = WIN_PRIVATE(window);
-
-    XUngrabKeyboard(display, time);
-    WIN_SET_GRAB(win, FALSE);
-
-}
-
-Xv_private int
-window_set_xgrabkeyboard(window, dpy, grab_window, owner_events,
-                     ptr_mode, kbd_mode, time)
-    Xv_window   window;
-    Display     *dpy;
-    Bool        owner_events;
-    int         ptr_mode;
-    int         kbd_mode;
-    Time        time;
-{
-    Window_info         *win;
-    int                 grab_status;
-
-    if (!window)  {
-        return(XV_OK);
-    }
-
-    win = WIN_PRIVATE(window);
-
-    grab_status =  XGrabKeyboard(dpy, grab_window, owner_events,
-ptr_mode,
-                                 kbd_mode, time);
-    if (grab_status == GrabSuccess)
-        WIN_SET_GRAB(win, TRUE);
-
-    return(grab_status);
-
-}
-#endif /* OW_I18N */
