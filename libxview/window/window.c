@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.9 2026/01/26 21:50:58 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.10 2026/07/19 13:49:11 dra Exp $";
 #endif
 #endif
 
@@ -34,9 +34,6 @@ static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.
 #include <xview/cms.h>
 #include <xview_private/draw_impl.h>
 #include <xview_private/win_info.h>
-#ifdef OW_I18N
-#include <xview/frame.h>
-#endif /* OW_I18N */
 
 /*
  * Private
@@ -86,22 +83,12 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	Xv_Cursor default_cursor;
 	register Xv_Drawable_info *info;
 	register Xv_Drawable_info *parent_info = NULL;
-
-#ifdef OW_I18N
-	int is_wcs_error_msg = FALSE;
 	int win_use_im = TRUE;
-	int win_ic_active = TRUE;
-	Xv_private void _xv_status_start(), _xv_status_done(), _xv_status_draw();
-
-#ifdef FULL_R5
-	XIMStyle win_im_style_mask = NULL;
-#endif
 
 	/* Inherit WIN_USE_IM from parent */
 	if (parent_public && xv_get(parent_public, XV_IS_SUBTYPE_OF, WINDOW)) {
 		win_use_im = xv_get(parent_public, WIN_USE_IM);
 	}
-#endif /* OW_I18N */
 
 	/*
 	 * Initialize flags that control whether passive grabs are done
@@ -184,30 +171,10 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 				ATTR_CONSUME(attrs[0]);
 				break;
 
-#ifdef OW_I18N
 			case WIN_USE_IM:
 				win_use_im = (int)attrs[1];
 				ATTR_CONSUME(attrs[0]);
 				break;
-
-			case WIN_IC_ACTIVE:
-				win_ic_active = (int)attrs[1];
-				ATTR_CONSUME(attrs[0]);
-				break;
-
-			case WIN_ERROR_MSG_WCS:
-				error_msg = (char *)_xv_wcstombsdup((wchar_t *) attrs[1]);
-				is_wcs_error_msg = TRUE;
-				ATTR_CONSUME(attrs[0]);
-				break;
-
-#ifdef FULL_R5
-			case WIN_X_IM_STYLE_MASK:
-				win_im_style_mask = (XIMStyle) attrs[1];
-				ATTR_CONSUME(attrs[0]);
-				break;
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 			case WIN_ERROR_MSG:
 				error_msg = (char *)attrs[1];
@@ -328,55 +295,15 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	win->parent = parent_public;
 	win->cmdline = (char *)NULL;
 
-#ifdef OW_I18N
 	/** FIX ME! this needs to be generalized beyond the C locale
      **  since many locales may not use an IM */
 	/* if input lang is C, cannot have an IM */
 	if (strcmp((char *)xv_get(server, XV_LC_INPUT_LANG), "C") == 0)
 		win_use_im = FALSE;
 	win->win_use_im = win_use_im;
-	win->ic_active = win_ic_active;
-	win->ic_conversion = FALSE;
 	win->ic_created = FALSE;
 	win->xic = (XIC) NULL;
 	win->win_ic_committed = (char *)NULL;
-	win->win_ic_committed_wcs = (wchar_t *) NULL;
-	win->active_grab = FALSE;
-	win->passive_grab = FALSE;
-
-	if (win->win_use_im) {
-		Frame frame_public;
-		Xv_Drawable_info *info;
-
-		frame_public = (Frame) xv_get(win_public, WIN_FRAME);
-		DRAWABLE_INFO_MACRO(frame_public, info);
-
-		/* Initialize callback structs */
-		win->start_pecb_struct.callback = (XIMProc) NULL;
-		win->start_pecb_struct.client_data = (XPointer) NULL;
-		win->draw_pecb_struct.callback = (XIMProc) NULL;
-		win->draw_pecb_struct.client_data = (XPointer) NULL;
-		win->caret_pecb_struct.callback = (XIMProc) NULL;
-		win->caret_pecb_struct.client_data = (XPointer) NULL;
-		win->done_pecb_struct.callback = (XIMProc) NULL;
-		win->done_pecb_struct.client_data = (XPointer) NULL;
-
-		/* Set default status callbacks */
-		win->start_stcb_struct.callback = (XIMProc) _xv_status_start;
-		win->draw_stcb_struct.callback = (XIMProc) _xv_status_draw;
-		win->done_stcb_struct.callback = (XIMProc) _xv_status_done;
-		win->start_stcb_struct.client_data =
-				win->draw_stcb_struct.client_data =
-				win->done_stcb_struct.client_data = (XPointer) frame_public;
-
-		win->ic_focus_win = NULL;
-		win->tmp_ic_focus_win = xv_xid(info);
-
-#ifdef FULL_R5
-		win->x_im_style_mask = (XIMStyle) win_im_style_mask;
-#endif /* FULL_R5 */
-	}
-#endif /* OW_I18N */
 
 	if (!is_root) {
 		Rect default_rect;
@@ -526,11 +453,6 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	/* for compatibility */
 	if (convert_cu)
 		window_scan_and_convert_to_pixels(win_public, avlist);
-
-#ifdef OW_I18N
-	if (is_wcs_error_msg && error_msg)
-		xv_free(error_msg);
-#endif
 
 	return XV_OK;
 }
@@ -710,17 +632,6 @@ static int window_destroy_win_struct(Xv_Window win_public, Destroy_status status
 				if (win->cmdline && ((int)((long)win->cmdline) != -1)) {
 					free(win->cmdline);
 				}
-
-#ifdef OW_I18N
-				if (win->win_ic_committed)
-					xv_free(win->win_ic_committed);
-				if (win->win_ic_committed_wcs)
-					xv_free(win->win_ic_committed_wcs);
-				if (win->ic_created && win->xic && win->win_use_im) {
-					XDestroyIC(win->xic);
-					win->xic = (XIC) NULL;
-				}
-#endif /* OW_I18N */
 
 				/* AQT (= Avoid Query Tree) : */
 				{
