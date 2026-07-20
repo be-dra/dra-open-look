@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.9 2026/01/26 21:54:02 dra Exp $";
+static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.10 2026/07/19 13:49:09 dra Exp $";
 #endif
 #endif
 
@@ -100,27 +100,6 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					(void)xv_set(win->cursor, XV_INCREMENT_REF_COUNT, NULL);
 					win_attrs_mask |= CWCursor;
 					win_attrs.cursor = (Cursor) xv_get(win->cursor, XV_XID);
-
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-					/*
-					 * Need to set XNCursor when WIN_CURSOR is set.
-					 */
-					if (win->win_use_im && win->xic) {
-						XVaNestedList list;
-
-						list = XVaCreateNestedList(NULL,
-								XNCursor, win_attrs.cursor, NULL);
-						/* FIX_ME: Should check input style here before setting */
-						XSetICValues(win->xic, XNPreeditAttributes, list, NULL);
-						XSetICValues(win->xic, XNStatusAttributes, list, NULL);
-
-						if (list)
-							XFree(list);
-					}
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 					ADONE;
 
@@ -490,30 +469,6 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 						(void)xv_set(win->font, XV_DECREMENT_REF_COUNT, NULL);
 						win->font = (Xv_font) attrs[1];
 						(void)xv_set(win->font, XV_INCREMENT_REF_COUNT, NULL);
-
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-						/*
-						 * Set XNFontSet when XV_FONT is set.
-						 */
-						if (win->win_use_im && win->xic) {
-							XVaNestedList list;
-
-							list = XVaCreateNestedList(NULL,
-									XNFontSet, (XFontSet) xv_get(win->font,
-											FONT_SET_ID), NULL);
-							/* FIX_ME: Should check input style here before setting */
-							XSetICValues(win->xic,
-									XNPreeditAttributes, list, NULL);
-							XSetICValues(win->xic,
-									XNStatusAttributes, list, NULL);
-
-							if (list)
-								XFree(list);
-						}
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 					}
 					/* if we change this to "ADONE", cmdtool font is not
 					 * what we want...
@@ -564,67 +519,6 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 					 * colormap segment.
 					 */
 					ADONE;
-
-#ifdef OW_I18N
-				case WIN_IC_CONVERSION:
-					if (win->win_use_im && win->xic) {
-						int status;
-
-						if (!XGetICValues(win->xic, XNExtXimp_Conversion,
-										&status, NULL)) {
-							win->ic_conversion = (Bool) attrs[1];
-							/*
-							 * This IM supports Sun Extensions
-							 */
-							if (win->ic_conversion)
-								XSetICValues(win->xic, XNExtXimp_Conversion,
-										XIMEnable, NULL);
-							else
-								XSetICValues(win->xic, XNExtXimp_Conversion,
-										XIMDisable, NULL);
-						}
-					}
-					ADONE;
-
-				case WIN_IC_ACTIVE:
-					/*
-					 * Check if WIN_IC_ACTIVE is being set repetitively to
-					 * help alleviate problem with panel setting WIN_IC_ACTIVE
-					 * unnecessarily (1111169).
-					 */
-					if (win->ic_active != (int)attrs[1]) {
-						win->ic_active = (int)attrs[1];
-
-						/*  Enabling WIN_IC_ACTIVE will also set IC focus
-						 *  iff we have kbd focus; otherwise just cache the
-						 *   WIN_IC_ACTIVE value, set the XNFocusWindow, and
-						 *  call XSetICFocus() later when KBD_USE event comes in.
-						 */
-						if (win->win_use_im && win->xic) {
-							if (win->ic_active) {
-								/*
-								 * Set IC focus window to a valid window.
-								 */
-								if (win->ic_focus_win)
-									XSetICValues(win->xic, XNFocusWindow,
-											win->ic_focus_win, NULL);
-								if (win->has_kbd || xv_has_focus(info))
-									XSetICFocus(win->xic);
-							}
-							else {
-								/*
-								 * Set IC focus window to a tmp window.
-								 */
-								if (win->tmp_ic_focus_win)
-									XSetICValues(win->xic, XNFocusWindow,
-											win->tmp_ic_focus_win, NULL);
-								if (win->has_kbd || xv_has_focus(info))
-									XUnsetICFocus(win->xic);
-							}
-						}
-					}
-					ADONE;
-#endif
 
 				case WIN_ADD_DROP_ITEM:
 					win_add_drop_item(win, (Xv_opaque) attrs[1]);
@@ -677,41 +571,6 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 	register Window_info *win = WIN_PRIVATE(win_public);
 
 	switch (attrs[0]) {
-
-#ifdef OW_I18N
-		case WIN_IC_RESET:
-			if (win->xic) {
-				int status;
-
-				if (!XGetICValues(win->xic, XNExtXimp_Conversion, &status,
-								NULL)) {
-					if (win->win_ic_committed) {
-						xv_free(win->win_ic_committed);
-						win->win_ic_committed = (char *)NULL;
-					}
-					if (win->win_ic_committed_wcs) {
-						xv_free(win->win_ic_committed_wcs);
-						win->win_ic_committed_wcs = (wchar_t *)NULL;
-					}
-					/*
-					 * This IM supports Sun Extensions
-					 */
-					win->win_ic_committed = (char *)XmbResetIC(win->xic);
-					win->win_ic_committed_wcs =
-							(wchar_t *)_xv_mbstowcsdup(win->win_ic_committed);
-					win->ic_conversion = FALSE;
-				}
-			}
-			else {
-				if (win->win_use_im) {
-					xv_error(NULL, ERROR_STRING,
-							XV_MSG("Invalid IC: Unable to reset IC. "),
-							ERROR_PKG, WINDOW, NULL);
-				}
-				error = (Xv_opaque) XV_ERROR;
-			}
-			ADONE;
-#endif /* OW_I18N */
 
 		case WIN_SAVE_UNDER:
 			*win_attrs_mask |= CWSaveUnder;
@@ -834,100 +693,6 @@ static Xv_opaque window_set_avlist_tier2(Xv_Window win_public, Attr_avlist attrs
 					error = (Xv_opaque) XV_ERROR;
 			}
 			ADONE;
-
-#ifdef OW_I18N
-		case WIN_IC_PREEDIT_START:
-			win->start_pecb_struct.callback = (XIMProc) attrs[1];
-			win->start_pecb_struct.client_data = (XPointer) attrs[2];
-			if (win->win_use_im && win->xic) {
-				XVaNestedList preedit_list;
-
-				preedit_list = XVaCreateNestedList(NULL,
-						XNPreeditStartCallback, &win->start_pecb_struct, NULL);
-				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
-			}
-			ADONE;
-
-		case WIN_IC_PREEDIT_DRAW:
-			win->draw_pecb_struct.callback = (XIMProc) attrs[1];
-			win->draw_pecb_struct.client_data = (XPointer) attrs[2];
-			if (win->win_use_im && win->xic) {
-				XVaNestedList preedit_list;
-
-				preedit_list = XVaCreateNestedList(NULL,
-						XNPreeditDrawCallback, &win->draw_pecb_struct, NULL);
-				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
-			}
-			ADONE;
-
-		case WIN_IC_PREEDIT_CARET:
-			win->caret_pecb_struct.callback = (XIMProc) attrs[1];
-			win->caret_pecb_struct.client_data = (XPointer) attrs[2];
-			if (win->win_use_im && win->xic) {
-				XVaNestedList preedit_list;
-
-				preedit_list = XVaCreateNestedList(NULL,
-						XNPreeditCaretCallback, &win->caret_pecb_struct, NULL);
-				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
-			}
-			ADONE;
-
-		case WIN_IC_PREEDIT_DONE:
-			win->done_pecb_struct.callback = (XIMProc) attrs[1];
-			win->done_pecb_struct.client_data = (XPointer) attrs[2];
-			if (win->win_use_im && win->xic) {
-				XVaNestedList preedit_list;
-
-				preedit_list = XVaCreateNestedList(NULL,
-						XNPreeditDoneCallback, &win->done_pecb_struct, NULL);
-				XSetICValues(win->xic, XNPreeditAttributes, preedit_list, NULL);
-			}
-			ADONE;
-
-		case WIN_IC_STATUS_START:
-			win->start_stcb_struct.callback = (XIMProc) attrs[1];
-			win->start_stcb_struct.client_data = (XPointer) attrs[2];
-			if (win->win_use_im && win->xic) {
-				XVaNestedList status_list;
-
-				status_list = XVaCreateNestedList(NULL,
-						XNStatusStartCallback, &win->start_stcb_struct, NULL);
-				XSetICValues(win->xic, XNStatusAttributes, status_list, NULL);
-			}
-			ADONE;
-
-		case WIN_IC_STATUS_DRAW:
-			win->draw_stcb_struct.callback = (XIMProc) attrs[1];
-			win->draw_stcb_struct.client_data = (XPointer) attrs[2];
-			if (win->win_use_im && win->xic) {
-				XVaNestedList status_list;
-
-				status_list = XVaCreateNestedList(NULL,
-						XNStatusDrawCallback, &win->draw_stcb_struct, NULL);
-				XSetICValues(win->xic, XNStatusAttributes, status_list, NULL);
-			}
-			ADONE;
-
-		case WIN_IC_STATUS_DONE:
-			win->done_stcb_struct.callback = (XIMProc) attrs[1];
-			win->done_stcb_struct.client_data = (XPointer) attrs[2];
-			if (win->win_use_im && win->xic) {
-				XVaNestedList status_list;
-
-				status_list = XVaCreateNestedList(NULL,
-						XNStatusDoneCallback, &win->done_stcb_struct, NULL);
-				XSetICValues(win->xic, XNStatusAttributes, status_list, NULL);
-			}
-			ADONE;
-
-		case WIN_IC:
-			/* if this window was created with WIN_USE_IM false
-			 * then WIN_IC should not be set
-			 */
-			if (win->win_use_im)
-				win->xic = (XIC) attrs[1];
-			ADONE;
-#endif /* OW_I18N */
 
 		case WIN_COLLAPSE_EXPOSURES:
 			win->collapse_exposures = (int)attrs[1];
