@@ -1,4 +1,4 @@
-/*	@(#)item_impl.h 20.53 92/06/01 SMI  DRA: $Id: item_impl.h,v 4.5 2024/10/05 13:00:21 dra Exp $	*/
+/*	@(#)item_impl.h 20.53 92/06/01 SMI  DRA: $Id: item_impl.h,v 4.6 2026/07/19 21:58:39 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -44,10 +44,7 @@
 #define WANTS_ISO	0x00800000  /* item wants all ISO characters */
 #define UPDATE_SCROLL   0x01000000  /* need to update scroll size */
 #define POST_EVENTS	0x02000000  /* send events through the notifier */
-#ifdef OW_I18N
 #define WCHAR_NOTIFY	0x04000000  /* wide char version of notify proc */
-#define IC_ACTIVE	0x08000000  /* indicate if item should ignore IM */
-#endif /* OW_I18N */
 
 #define hidden(ip)	((ip)->flags & HIDDEN ? TRUE : FALSE)
 #define busy(ip)	((ip)->flags & BUSY ? TRUE : FALSE)
@@ -69,10 +66,6 @@
 #define previewing(object)	((object)->flags & PREVIEWING ? TRUE : FALSE)
 #define update_scroll(object)	((object)->flags & UPDATE_SCROLL ? TRUE : FALSE)
 #define post_events(object)	((object)->flags & POST_EVENTS ? TRUE : FALSE)
-#ifdef OW_I18N
-#define wchar_notify(object)	((object)->flags & WCHAR_NOTIFY ? TRUE : FALSE)
-#define ic_active(object)	((object)->flags & IC_ACTIVE ? TRUE : FALSE)
-#endif /* OW_I18N */
 
 /* 			miscellaneous constants                          */
 
@@ -96,9 +89,6 @@ typedef struct panel_image {
    union {
      struct {
 	 char           *text;
-#ifdef  OW_I18N
-         CHAR        *text_wc;
-#endif  /* OW_I18N */
 	 Xv_font	 font;
 	 short 		 bold;	/* TRUE if text should be bold */
 	 Graphics_info	*ginfo;
@@ -114,9 +104,6 @@ typedef struct panel_image {
 #define is_string(image)	(image_type(image) == PIT_STRING)
 #define is_svrim(image)		(image_type(image) == PIT_SVRIM)
 #define image_string(image)  	((image)->im_value.t.text)
-#ifdef  OW_I18N
-#define image_string_wc(image)  ((image)->im_value.t.text_wc)
-#endif  /* OW_I18N */
 #define image_font(image)    	((image)->im_value.t.font)
 #define image_bold(image)    	((image)->im_value.t.bold)
 #define image_ginfo(image)	((image)->im_value.t.ginfo)
@@ -125,9 +112,6 @@ typedef struct panel_image {
 
 #define image_set_type(image, type)	  (image_type(image)    = type)
 #define image_set_string(image, string)	  (image_string(image)	= (string))
-#ifdef OW_I18N
-#define image_set_string_wc(image, string) (image_string_wc(image) = (string))
-#endif /* OW_I18N */
 #define image_set_svrim(image, svrim)     (image_svrim(image)   = (svrim))
 #define image_set_bold(image, bold)  	(image_bold(image)	= (bold) != 0)
 #define image_set_inverted(image, inverted) (image_inverted(image) = (inverted) != 0)
@@ -177,12 +161,8 @@ typedef struct item_info {
    Rect			rect;		/* enclosing item rect */
    Panel_setting        repaint;	/* item's repaint behavior */
    Xv_Font		value_font;	/* = panel->std_font by default */
-#ifdef OW_I18N
-   XFontSet		value_fontset_id; /* = panel->std_fontset_id by
-					       default */
-#else
    XID			value_font_xid; /* = panel->std_font_xid by default */
-#endif /* OW_I18N */
+   XFontSet		value_fontset_id;
    Graphics_info       *value_ginfo;	/* OLGX graphics information */
    Rect			value_rect;	/* enclosing value rect */
    int			x_gap;		/* horizontal space to previous item
@@ -191,9 +171,6 @@ typedef struct item_info {
 					 * (-1 = use panel->item_y_offset) */
 	Panel_item_role layout_role;
 	item_layout_t layout_proc;
-#ifdef OW_I18N
-   int                  (*notify_wc)(); /* wide char version of notify proc */
-#endif /* OW_I18N */
 } Item_info;
 
 
