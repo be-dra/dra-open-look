@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.3 2026/07/18 16:39:12 dra Exp $ ";
+static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.4 2026/07/19 09:03:52 dra Exp $ ";
 #endif
 #endif
 
@@ -18,6 +18,7 @@ static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v
 #include <xview/font.h>		/* for FONT_INFO */
 #include <xview_private/font_impl.h>
 #include <xview_private/pw_impl.h>
+#include <xview_private/svr_impl.h>
 #include <locale.h>
 #include <string.h>
 
@@ -75,7 +76,8 @@ Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale, char **fs_lis
         *temp_list++ = ',';
         *temp_list = '\0';
     }
-   font_set = XCreateFontSet(dpy, font_name_list, &miss_list, &missing_charset_count, &def_string);
+	SERVERTRACE((777, "%s: %s\n", __FUNCTION__, font_name_list));
+	font_set = XCreateFontSet(dpy, font_name_list, &miss_list, &missing_charset_count, &def_string);
 
    if ((font_name_list) && (font_name_list != temp_name_buf))
        free(font_name_list);
