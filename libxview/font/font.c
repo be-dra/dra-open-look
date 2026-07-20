@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.14 2026/07/18 18:02:49 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.15 2026/07/19 09:03:52 dra Exp $ ";
 #endif
 #endif
 
@@ -779,7 +779,8 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 	 */
 	my_attrs.linfo = linfo;
 	font_init_create_attrs(&my_attrs);
-	SERVERTRACE((777, "%s: %ld: type=%d, mb=%d\n", __FUNCTION__,selfpub, my_attrs.type, _xv_is_multibyte));
+	SERVERTRACE((777, "%s: %ld: type=%d, multibyte=%d\n", __FUNCTION__,selfpub,
+								my_attrs.type, _xv_is_multibyte));
 
 	/*
 	 * Get the optional creation arguments
@@ -813,6 +814,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, my_attrs.names[0]));
 		font_set = xv_load_font_set(display, active_loc, my_attrs.names);
 		SERVERTRACE((777, "%s: %ld: font_set=%p\n", __FUNCTION__,selfpub, font_set));
+		SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, my_attrs.names[0]));
 
 		if ((font_set == NULL) &&
 			(my_attrs.specifier ||
@@ -835,6 +837,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 				font_free_font_return_attr_strings(&my_attrs);
 				return (error_code);
 			}
+			SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, my_attrs.names[0]));
 			font_set = xv_load_font_set(display, my_attrs.locale,
 								my_attrs.names);
 		}
@@ -908,6 +911,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		SERVERTRACE((777, "%s: %ld: font_structs[0]=%p\n", __FUNCTION__,selfpub, font->font_structs[0]));
 		SERVERTRACE((777, "%s: %ld: names=%p\n", __FUNCTION__,selfpub, font->names));
 		SERVERTRACE((777, "%s: %ld: names[0]=%p\n", __FUNCTION__,selfpub, font->names[0]));
+		SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, font->names[0]));
 		font_set_extents = XExtentsOfFontSet(font_set);
 		font->def_char_width = font_set_extents->max_logical_extent.width;
 		font->def_char_height = font_set_extents->max_logical_extent.height;
@@ -1064,16 +1068,19 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 	}
 
 
+	SERVERTRACE((777, "%s: %ld name: %s\n", __FUNCTION__,selfpub, font->name));
 	if (my_attrs.type == FONT_TYPE_TEXT) {
 		if (my_attrs.specifier)
 			font->specifier = strdup(my_attrs.specifier);
 
 		if (_xv_is_multibyte) font->name = font->names[0];
+		SERVERTRACE((777, "%s: %ld name: %s\n", __FUNCTION__,selfpub, font->name));
 	}
 	else {
 		if (my_attrs.name)
 			font->name = (my_attrs.free_name) ? my_attrs.name :
 								xv_strsave(my_attrs.name);
+		SERVERTRACE((777, "%s: %ld name: %s\n", __FUNCTION__,selfpub, font->name));
 	}
 
 
