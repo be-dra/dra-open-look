@@ -1,4 +1,4 @@
-char p_event_sccsid[] = "@(#)p_event.c 20.62 93/06/28 DRA: $Id: p_event.c,v 4.4 2025/06/17 16:02:15 dra Exp $";
+char p_event_sccsid[] = "@(#)p_event.c 20.62 93/06/28 DRA: $Id: p_event.c,v 4.5 2026/07/19 21:58:44 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -57,23 +57,6 @@ Pkg_private Notify_value panel_notify_event(Xv_Window paint_window,
 			break;
 
 		case KBD_USE:
-
-#ifdef  OW_I18N
-			/* This probably should not be set here, because
-			 * the XNFocusWindow does not change with the
-			 * keyboard focus.  Unless splitting views
-			 * in the scrollable panel makes a difference.
-			 * Possibly this should be set in panel_init,
-			 * when ic is being created/cached
-			 */
-			if ((xv_get(PANEL_PUBLIC(panel), WIN_USE_IM)) && panel->ic) {
-				Xv_Drawable_info *info;
-
-				DRAWABLE_INFO_MACRO(paint_window, info);
-				window_set_ic_focus_win(paint_window, panel->ic, xv_xid(info));
-			}
-#endif /* OW_I18N */
-
 			frame_kbd_use(xv_get(PANEL_PUBLIC(panel), WIN_FRAME),
 					PANEL_PUBLIC(panel), PANEL_PUBLIC(panel));
 			panel->focus_pw = paint_window;
@@ -193,41 +176,6 @@ Pkg_private Notify_value panel_notify_event(Xv_Window paint_window,
 				if (!ip->owner && ip->ops.panel_op_resize)
 					(*ip->ops.panel_op_resize) (ITEM_PUBLIC(ip));
 			}
-
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-			if (panel->ic) {
-				XRectangle x_rect;
-				XVaNestedList preedit_nested_list;
-
-				preedit_nested_list = NULL;
-
-				if (panel->xim_style & (XIMPreeditPosition | XIMPreeditArea)) {
-					if ((panel->kbd_focus_item)
-							&& (panel->kbd_focus_item->item_type ==
-									PANEL_TEXT_ITEM)) {
-						x_rect.x = panel->kbd_focus_item->value_rect.r_left;
-						x_rect.y = panel->kbd_focus_item->value_rect.r_top;
-						x_rect.width =
-								panel->kbd_focus_item->value_rect.r_width;
-						x_rect.height =
-								panel->kbd_focus_item->value_rect.r_height;
-
-						preedit_nested_list = XVaCreateNestedList(NULL,
-								XNArea, &x_rect, NULL);
-					}
-				}
-
-				if (preedit_nested_list) {
-					XSetICValues(panel->ic, XNPreeditAttributes,
-							preedit_nested_list, NULL);
-					XFree(preedit_nested_list);
-				}
-			}
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
-
 			break;
 
 			/* Ignore graphics expose events */
