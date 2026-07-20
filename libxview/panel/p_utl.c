@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.17 2026/07/18 17:16:13 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.18 2026/07/19 21:58:18 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -29,9 +29,6 @@ Xv_private void xv_draw_rectangle(Xv_opaque pw,
     int x, int y, int w, int h,	/* left, top, width and height of rectangle */
     int linestyle,	/* LineSolid or LineDoubleDash */
     int op);
-#ifdef OW_I18N
-extern wchar_t          _xv_null_string_wc[];
-#endif /* OW_I18N */
 
 static short qmark_cursor_data [] = {
 #include <images/qmark.cursor>
@@ -82,11 +79,10 @@ Pkg_private void panel_update_extent(Panel_info *panel, Rect rect)
 
 Pkg_private int panel_col_to_x(Xv_Font font, int col)
 {
-#ifdef OW_I18N
-	int chrwth = xv_get(font, FONT_COLUMN_WIDTH);
-#else
-	int chrwth = xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
-#endif /* OW_I18N */
+	int chrwth;
+
+	if (_xv_is_multibyte) chrwth = xv_get(font, FONT_COLUMN_WIDTH);
+	else chrwth = xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
 
 	return (col * chrwth);
 }
@@ -101,11 +97,9 @@ Pkg_private int panel_row_to_y(Xv_Font font, int line)
 
 Pkg_private int panel_x_to_col(Xv_Font font, int x)
 {
-#ifdef OW_I18N
-    int		chrwth = xv_get(font, FONT_COLUMN_WIDTH);
-#else
-    int		chrwth = xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
-#endif /* OW_I18N */
+    int		chrwth ;
+	if (_xv_is_multibyte) chrwth = xv_get(font, FONT_COLUMN_WIDTH);
+	else chrwth = xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
     return (x / chrwth);
 }
 
@@ -135,18 +129,11 @@ Pkg_private struct pr_size panel_make_image( Xv_Font font, Panel_image *dest,
 	CHAR *str;
 	CHAR *value_str;
 
-#ifdef OW_I18N
-	if (is_string(dest)) {
-		if (image_string_wc(dest))
-			xv_free(image_string_wc(dest));
-	}
-#else
 	/* REF (hklesbrfhklbserf) */
 	if (is_string(dest)) {
 		if (image_string(dest))
 			xv_free(image_string(dest));
 	}
-#endif
 
 	size.x = size.y = 0;
 	dest->im_type = type_code;
@@ -156,16 +143,6 @@ Pkg_private struct pr_size panel_make_image( Xv_Font font, Panel_image *dest,
 			if (value)
 				value_str = (CHAR *) value;
 			else
-
-#ifdef OW_I18N
-				value_str = panel_strsave_wc(_xv_null_string_wc);
-			/*  No need to copy the string in panel_make_image() because the 
-			 *  widechar copy has already been made.
-			 */
-			if (!(str = (wchar_t *) value_str))
-				return (size);
-			image_set_string_wc(dest, str);
-#else
 				value_str = "";
 			if (!(str = (char *)panel_strsave(value_str)))
 				return (size);
@@ -185,7 +162,6 @@ Pkg_private struct pr_size panel_make_image( Xv_Font font, Panel_image *dest,
 #endif /* __linux_NO_LONGER_NEEDED */
 
 			image_set_string(dest, str);
-#endif /* OW_I18N */
 
 			panel_image_set_font(dest, font);
 			image_set_bold(dest, bold_desired);
@@ -472,12 +448,8 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 	int chrht;	/* default character height */
 	int i;
 	Xv_Drawable_info *info;
-
-#ifdef OW_I18N
 	XFontSet fontset_id;
-#else
 	XID font_xid;
-#endif /* OW_I18N */
 
 	int length;
 	int line_start;
@@ -494,11 +466,7 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 			switch (image->im_type) {
 		case PIT_STRING:
 
-#ifdef OW_I18N
-			str = image_string_wc(image);
-#else
 			str = image_string(image);
-#endif /* OW_I18N */
 
 			length = STRLEN(str);
 			lines = 1;
@@ -507,34 +475,30 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 					lines++;
 			baseline_y = rect->r_top + panel_fonthome(image_font(image));
 
-#ifdef OW_I18N
+			if (_xv_is_multibyte) {
 			if (image_font(image))
 				fontset_id = (XFontSet) xv_get(image_font(image), FONT_SET_ID);
 			else if (image_bold(image))
 				fontset_id = panel->bold_fontset_id;
 			else
 				fontset_id = panel->std_fontset_id;
-#else
+			}
+			else {
 			if (image_font(image))
 				font_xid = (XID) xv_get(image_font(image), XV_XID);
 			else if (image_bold(image))
 				font_xid = panel->bold_font_xid;
 			else
 				font_xid = panel->std_font_xid;
-#endif /* OW_I18N */
+			}
 
 			if (lines == 1) {
 				/* Center single line within label rect */
 				baseline_y += (rect->r_height - chrht) / 2;
 
-#ifdef OW_I18N
-				panel_paint_text(pw, fontset_id, color_index,
+				panel_paint_text(pw, fontset_id, font_xid, color_index,
 						rect->r_left, baseline_y,
-						(wchar_t *)image_string_wc(image));
-#else
-				panel_paint_text(pw, font_xid, color_index,
-						rect->r_left, baseline_y, image_string(image));
-#endif /* OW_I18N */
+						image_string(image));
 			}
 			else {
 				/* Paint multiple lines starting from top of label rect */
@@ -550,7 +514,7 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 
 						/* multiline messages seem to be ALWAYS right aligned */
 						baseline_x = rect->r_left + rect->r_width - size.x;
-						panel_paint_text(pw, font_xid, color_index,
+						panel_paint_text(pw, fontset_id, font_xid, color_index,
 								baseline_x, baseline_y, &str[line_start]);
 
 						if (newline_found)
@@ -657,28 +621,6 @@ Pkg_private char * panel_strsave(char *source)
     return dest;
 }
 
-#ifdef OW_I18N
-
-/****************************************************************************/
-/* panel_strsave_wc                                                         */
-/****************************************************************************/
-
-Pkg_private wchar_t *
-panel_strsave_wc(source)
-    wchar_t      *source;
-{
-    wchar_t      *dest;
-
-    dest = (wchar_t *) xv_alloc_n(wchar_t, (wslen(source) + 1));
-    if (!dest)
-	return NULL;
-
-    (void) wscpy(dest, source);
-    return dest;
-}
-
-#endif /* OW_I18N */
-
 /****************************************************************************/
 /* miscellaneous utilities                                                  */
 /****************************************************************************/
@@ -687,41 +629,32 @@ panel_strsave_wc(source)
  * Return max baseline offset for specified string.  This should be the same
  * value returned by XTextExtents in overall_return.descent.
  */
-#ifdef OW_I18N
 
 Pkg_private int panel_fonthome(Xv_Font font)
 {
     register int    max_home = 0;
-    XFontSet        font_set;
-    XFontSetExtents *font_set_extents;
     int			pc_home_y;
 
+	if (_xv_is_multibyte) {
+    	XFontSet        font_set;
+    	XFontSetExtents *font_set_extents;
 
-    font_set = (XFontSet)xv_get(font, FONT_SET_ID);
-    font_set_extents = XExtentsOfFontSet(font_set);
-    pc_home_y = font_set_extents->max_logical_extent.y;
 
-    if (pc_home_y < max_home)
-        max_home = pc_home_y;
-    return -(max_home);
+    	font_set = (XFontSet)xv_get(font, FONT_SET_ID);
+    	font_set_extents = XExtentsOfFontSet(font_set);
+    	pc_home_y = font_set_extents->max_logical_extent.y;
+	}
+	else {
+    	XFontStruct		*x_font_info;
+
+    	x_font_info = (XFontStruct *)xv_get(font, FONT_INFO);
+    	pc_home_y = -x_font_info->ascent;
+	}
+
+	if (pc_home_y < max_home)
+		max_home = pc_home_y;
+	return -(max_home);
 }
-
-#else
-
-Pkg_private int panel_fonthome(Xv_Font font)
-{
-    register int    max_home = 0;
-    XFontStruct		*x_font_info;
-    int			pc_home_y;
-
-    x_font_info = (XFontStruct *)xv_get(font, FONT_INFO);
-    pc_home_y = -x_font_info->ascent;
-    if (pc_home_y < max_home)
-        max_home = pc_home_y;
-    return -(max_home);
-}
-
-#endif /* OW_I18N */
 
 /*VARARGS*/
 int panel_nullproc(Panel_item it, Event *ev)
@@ -748,12 +681,7 @@ Pkg_private void panel_free_choices(Panel_image *choices, int first, int last)
 Pkg_private void panel_free_image(Panel_image *image)
 {
     if (is_string(image)) {
-#ifdef OW_I18N
         if (image_string(image)) xv_free(image_string(image));
-        if (image_string_wc(image)) xv_free(image_string_wc(image));
-#else
-		free(image_string(image));
-#endif /* OW_I18N */
     }
 	/* this leads to problems from panel_free_choices
 	 * if (is_svrim(image)) {
@@ -769,57 +697,53 @@ Pkg_private void panel_set_bold_label_font(Item_info *ip)
 }
 
 
-Pkg_private void panel_paint_text(
-    Xv_opaque	pw,
-#ifdef OW_I18N
-    XFontSet	font_xid,
-#else
-    Font	font_xid,
-#endif /* OW_I18N */
+Pkg_private void panel_paint_text(Xv_opaque	pw, XFontSet fs, Font	font_xid,
     int		color_index,
     int		x, int y,	/* baseline starting position */
-    CHAR        *str)
+    char    *str)
 {
-    Display	*display;
-    XGCValues	gc_value;
-    Xv_Drawable_info *info;
-    Drawable	xid;
-    Xv_Screen      screen;
-    GC             *gc_list;
+	Display *display;
+	XGCValues gc_value;
+	Xv_Drawable_info *info;
+	Drawable xid;
+	Xv_Screen screen;
+	GC *gc_list;
 
-    DRAWABLE_INFO_MACRO(pw, info);
-    display = xv_display(info);
-    xid = xv_xid(info);
+	DRAWABLE_INFO_MACRO(pw, info);
+	display = xv_display(info);
+	xid = xv_xid(info);
 
-    screen = xv_screen(info);
-    gc_list = (GC *)xv_get(screen, SCREEN_OLGC_LIST, pw);
-    if (color_index >= 0)
-	gc_value.foreground = xv_get(xv_cms(info), CMS_PIXEL, color_index);
-    else
-	gc_value.foreground = xv_fg(info);
-    gc_value.background = xv_bg(info);
-    gc_value.function = GXcopy;
-    gc_value.plane_mask = xv_plane_mask(info);
-    gc_value.fill_style = FillSolid;
-#ifdef OW_I18N
-    XChangeGC(display, gc_list[OPENWIN_NONSTD_GC],
-        GCForeground | GCBackground | GCFunction | GCPlaneMask |
-        GCFillStyle, &gc_value);
-    /* 1091366 - vmh */
-    /* The question is, whether XwcDrawString shouldn't test itself
-     * for a NULL string, not us
-     */
-    if (STRLEN(str) > 0)
-      XwcDrawString(display, xid, font_xid, gc_list[OPENWIN_NONSTD_GC],
-              x, y, str, wslen(str));
-#else
-    gc_value.font = font_xid;
-    XChangeGC(display, gc_list[SCREEN_NONSTD_GC],
-	      GCForeground | GCBackground | GCFunction | GCPlaneMask |
-	      GCFillStyle | GCFont, &gc_value);
-    XDrawString(display, xid, gc_list[SCREEN_NONSTD_GC], x, y, str,
-		(int)strlen(str));
-#endif /* OW_I18N */
+	screen = xv_screen(info);
+	gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
+	if (color_index >= 0)
+		gc_value.foreground = xv_get(xv_cms(info), CMS_PIXEL, color_index);
+	else
+		gc_value.foreground = xv_fg(info);
+	gc_value.background = xv_bg(info);
+	gc_value.function = GXcopy;
+	gc_value.plane_mask = xv_plane_mask(info);
+	gc_value.fill_style = FillSolid;
+
+	if (_xv_is_multibyte) {
+		XChangeGC(display, gc_list[OPENWIN_NONSTD_GC],
+				GCForeground | GCBackground | GCFunction | GCPlaneMask |
+				GCFillStyle, &gc_value);
+		/* 1091366 - vmh */
+		/* The question is, whether XwcDrawString shouldn't test itself
+		 * for a NULL string, not us
+		 */
+		if (strlen(str) > 0)
+			XmbDrawString(display, xid, fs, gc_list[OPENWIN_NONSTD_GC],
+				x, y, str, strlen(str));
+	}
+	else {
+		gc_value.font = font_xid;
+		XChangeGC(display, gc_list[SCREEN_NONSTD_GC],
+				GCForeground | GCBackground | GCFunction | GCPlaneMask |
+				GCFillStyle | GCFont, &gc_value);
+		XDrawString(display, xid, gc_list[SCREEN_NONSTD_GC], x, y, str,
+				(int)strlen(str));
+	}
 }
 
 
