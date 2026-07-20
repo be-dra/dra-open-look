@@ -1,4 +1,4 @@
-char panel_c_sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.19 2025/11/01 14:55:10 dra Exp $";
+char panel_c_sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.20 2026/07/19 21:58:14 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -15,10 +15,6 @@ char panel_c_sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.19 202
 #include <xview/defaults.h>
 #include <xview/notify.h>
 #include <xview/server.h>
-
-#ifdef OW_I18N
-Xv_private void _xv_status_start(), _xv_status_done(), _xv_status_draw();
-#endif /* OW_I18N */
 
 Xv_private Defaults_pairs xv_kbd_cmds_value_pairs[4];
 
@@ -79,10 +75,6 @@ static int panel_init(Xv_Window parent, Xv_window panel_public, Attr_avlist     
 	int scal = (int)xv_get(xv_get(parent, XV_FONT), FONT_SCALE);
 	screen_ui_style_t ui_style;
 
-#ifdef OW_I18N
-    Frame	    frame;
-#endif /* OW_I18N */
-
     DRAWABLE_INFO_MACRO(panel_public, info);
     server = XV_SERVER_FROM_WINDOW(panel_public);
 
@@ -96,12 +88,10 @@ static int panel_init(Xv_Window parent, Xv_window panel_public, Attr_avlist     
     panel_object->private_data = (Xv_opaque) panel;
     panel->public_self = panel_public;
 
-#ifdef OW_I18N
     panel->atom.compound_text =
 	    (Atom) xv_get(server, SERVER_ATOM, "COMPOUND_TEXT");
     panel->atom.length_chars =
 	    (Atom) xv_get(server, SERVER_ATOM, "LENGTH_CHARS");
-#endif /*OW_I18N*/
     panel->atom.clipboard = (Atom) xv_get(server, SERVER_ATOM, "CLIPBOARD");
     panel->atom.delete = (Atom) xv_get(server, SERVER_ATOM, "DELETE");
     panel->atom.length = (Atom) xv_get(server, SERVER_ATOM, "LENGTH");
@@ -171,43 +161,6 @@ static int panel_init(Xv_Window parent, Xv_window panel_public, Attr_avlist     
     } else
 	panel_view_init(panel_public, XV_NULL, 0, NULL);
 
-#ifdef OW_I18N
-
-    frame = xv_get(panel_public, WIN_FRAME);
-
-    /* Initialize the panel preedit callback structs */
-    xv_set(panel_public, 
-	   WIN_IC_PREEDIT_START, (XIMProc)panel_text_start, 
-		(XPointer)panel_public,
-	   WIN_IC_PREEDIT_DRAW, (XIMProc)panel_text_draw, 
-		(XPointer)panel_public,
-	   WIN_IC_PREEDIT_DONE, (XIMProc)panel_text_done, 
-		(XPointer)panel_public, 
-	   WIN_IC_STATUS_START, (XIMProc)_xv_status_start,
-		(XPointer)frame,
-	   WIN_IC_STATUS_DRAW, (XIMProc)_xv_status_draw,
-		(XPointer)frame,
-	   WIN_IC_STATUS_DONE, (XIMProc)_xv_status_done,
-		(XPointer)frame, NULL);
-
-    /* allocate and initialize space for caching
-     * preedit information
-     */
-    panel->preedit = (XIMPreeditDrawCallbackStruct *) 
-		xv_alloc(XIMPreeditDrawCallbackStruct);
-    panel->preedit->text = (XIMText *) xv_alloc(XIMText);
-    panel->preedit->text->encoding_is_wchar = 1;
-    panel->preedit->text->string.wide_char = (wchar_t *) 
-		xv_alloc(wchar_t);
-    panel->preedit->text->string.wide_char[0] = NULL;
-
-    /* Need to allocate feedback array??
-
-    panel->preedit->text->feedback = (XIMFeedback *)
-		xv_alloc(XIMFeedback);
-     */
-#endif /* OW_I18N */
-
     return XV_OK;
 }
 
@@ -245,10 +198,8 @@ static int panel_destroy(Panel panel_public, Destroy_status  status)
 		/* Free storage used for selections */
 		for (rank = 0; rank < PANEL_SEL_DND; rank++) {
 
-#ifndef OW_I18N
 			if (panel->sel_item[rank])
 				xv_destroy(panel->sel_item[rank]);
-#endif
 
 			if (panel->sel_owner[rank])
 				xv_destroy(panel->sel_owner[rank]);
@@ -256,36 +207,12 @@ static int panel_destroy(Panel panel_public, Destroy_status  status)
 		if (panel->sel_req)
 			xv_destroy(panel->sel_req);
 
-#ifdef OW_I18N
-		if (panel->clipboard.storage != NULL)
-			xv_free(panel->clipboard.storage);
-#endif
-
 		/* Free storage for each paint window */
 		while (panel->paint_window != NULL) {
 			pw = panel->paint_window->next;
 			xv_free(panel->paint_window);
 			panel->paint_window = pw;
 		}
-
-#ifdef OW_I18N
-		/*  Free storage used for preedit
-		 *  and preedit callbacks
-		 */
-
-		if (panel->preedit_own_by_others != TRUE && panel->preedit) {
-			if (panel->preedit->text->string.wide_char)
-				xv_free(panel->preedit->text->string.wide_char);
-			if (panel->preedit->text)
-				xv_free(panel->preedit->text);
-			/* Need to free feedback array if allocated??
-			   if (panel->preedit->text->feedback)
-			   xv_free(panel->preedit->text->feedback);
-			 */
-
-			xv_free(panel->preedit);
-		}
-#endif /* OW_I18N */
 
     	/* revpin_ginfo is created when needed in
 		 * p_btn.c`create_revpin_ginfo
