@@ -1,4 +1,4 @@
-/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.3 2026/01/25 16:04:13 dra Exp $      */
+/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.4 2026/07/19 15:16:59 dra Exp $      */
 
 /***********************************************************************/
 /*	                      window_impl.h			       */
@@ -34,10 +34,6 @@
 #include <xview_private/xv_list.h>
 #include <xview_private/portable.h>
 #include <xview/dragdrop.h>
-
-#ifdef OW_I18N
-#include <xview_private/i18n_impl.h>
-#endif
 
 #define window_attr_next(attr) (Window_attribute *)attr_next((caddr_t *)attr)
 
@@ -77,14 +73,6 @@
 
 #define WIN_SET_LOOP(_win_info, flag) (_win_info->window_loop = flag)
 #define WIN_IS_LOOP(_win_info) (_win_info->window_loop)
-
-#ifdef OW_I18N
-#define WIN_SET_GRAB(_win_info, flag) (_win_info->active_grab = flag)
-#define WIN_IS_GRAB(_win_info) (_win_info->active_grab)
-
-#define WIN_SET_PASSIVE_GRAB(_win_info, flag) (_win_info->passive_grab = flag)
-#define WIN_IS_PASSIVE_GRAB(_win_info) (_win_info->passive_grab)
-#endif /* OW_I18N */
 
 /* windows are in charge of their own borders */
 
@@ -171,32 +159,10 @@ typedef struct window_info {
     unsigned		 deaf:1;                  	   /* is window deaf? */
     unsigned		 window_loop:1;          /* is window in window_loop? */
     unsigned		 softkey_flag:1;          /* is soft key labels set? */
-#ifdef OW_I18N
     unsigned		 win_use_im:1; 	 /* does window need an input method? */
-    unsigned		 ic_conversion:1;              /* is IC conversion on */
     unsigned		 ic_created:1;                       /* is IC created */
-    unsigned		 ic_active:1;     /*is IC active? for read-only modes */
-    unsigned             active_grab:1;           /* is window in active grab */    
-    unsigned             passive_grab:1;           /* is window in passive grab
-*/
-
-    /* input method data */
     XIC			 xic;			      /* X Input Context (IC) */
-    XID			 ic_focus_win;    	           /* IC focus window */
-    XID			 tmp_ic_focus_win;    	      /* temp IC focus window */
-    char		 *win_ic_committed;   /* mbyte implicit commit string */
-    wchar_t		 *win_ic_committed_wcs;/*widec implicit commit string */
-    XIMCallback          start_pecb_struct;	    /* preedit start callback */
-    XIMCallback          draw_pecb_struct;	     /* preedit draw callback */
-    XIMCallback          caret_pecb_struct;	    /* preedit caret callback */
-    XIMCallback          done_pecb_struct;	     /* preedit done callback */
-    XIMCallback          start_stcb_struct;	     /* status start callback */
-    XIMCallback          draw_stcb_struct;	      /* status draw callback */
-    XIMCallback          done_stcb_struct;	      /* status done callback */
-#ifdef FULL_R5
-    unsigned long	 x_im_style_mask;	 /* X input method style mask */
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
+	char             *win_ic_committed;/* Optional: Falls Pufferung nötig */
 
 #ifdef NO_XDND
 #else /* NO_XDND */
@@ -231,29 +197,19 @@ typedef struct window_info {
     (win->row_height ? win->row_height : \
 				xv_get(win->font, FONT_DEFAULT_CHAR_HEIGHT))
 
-#ifdef OW_I18N
-#define	actual_column_width(win)	     \
-    (win->column_width ? win->column_width : \
-				 xv_get(win->font, FONT_COLUMN_WIDTH))
-#else /* OW_I18N */
-#define	actual_column_width(win)	     \
-    (win->column_width ? win->column_width : \
-				 xv_get(win->font, FONT_DEFAULT_CHAR_WIDTH))
-#endif /* OW_I18N */
-
 #define	actual_rescale_row_height(par,win) \
     (win->row_height ? win->row_height :   \
 				xv_get(par->font, FONT_DEFAULT_CHAR_HEIGHT))
 
-#ifdef OW_I18N
-#define	actual_rescale_column_width(par,win) \
-    (win->column_width ? win->column_width : \
-				xv_get(par->font, FONT_COLUMN_WIDTH))
-#else /* OW_I18N */
-#define	actual_rescale_column_width(par,win) \
-    (win->column_width ? win->column_width : \
-				xv_get(par->font, FONT_DEFAULT_CHAR_WIDTH))
-#endif /* OW_I18N */ 
+#define actual_column_width(win)                  \
+    (win->column_width ? win->column_width :      \
+	(_xv_is_multibyte ? xv_get(win->font, FONT_COLUMN_WIDTH) : \
+	xv_get(win->font, FONT_DEFAULT_CHAR_WIDTH)))
+
+#define actual_rescale_column_width(par,win)      \
+	(win->column_width ? win->column_width :      \
+	(_xv_is_multibyte ? xv_get(par->font, FONT_COLUMN_WIDTH) : \
+	xv_get(par->font, FONT_DEFAULT_CHAR_WIDTH)))
 
 /* window.c */
 Pkg_private Notify_value window_default_event_func(Xv_Window win_public, Event *event, Notify_arg arg, Notify_event_type type);
