@@ -1,4 +1,4 @@
-/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.14 2025/03/08 13:08:26 dra Exp $	*/
+/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.15 2026/07/19 21:58:22 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -20,9 +20,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/portable.h>
 #include <olgx/olgx.h>
-#ifdef OW_I18N
 #include <xview/xv_i18n.h>
-#endif /* OW_I18N */
 #include <xview/pkg.h>
 #include <xview/attrol.h>
 #include <xview/font.h>
@@ -89,17 +87,12 @@ typedef struct panel_info {
 		Atom		null;
 		Atom		selection_end;
 		Atom		seln_yield;
-#ifdef OW_I18N
 		Atom		compound_text;
 		Atom		length_chars;
-#endif /*OW_I18N*/
     } atom;
     Xv_Font		bold_font;
-#ifdef OW_I18N
     XFontSet		bold_fontset_id;
-#else
     Font		bold_font_xid;
-#endif /* OW_I18N */
     int			caret;		/* current caret character index */
     int			caret_ascent;	/* # of pixels above baseline */
     Pixmap		caret_bg_pixmap; /* used to restore the pixels
@@ -156,42 +149,16 @@ typedef struct panel_info {
     int	(*repaint_proc)(Panel , Xv_Window, Rectlist *);
     int			rightmost_right; /* rightmost right of any item */
     Item_info		*sel_holder[NBR_PANEL_SELECTIONS];
-#ifdef OW_I18N
-    _xv_pswcs_t         clipboard;	  /* none sel_item version of clipb */
-#else
     Selection_item	sel_item[NBR_PANEL_SELECTIONS];
-#endif
     Selection_owner	sel_owner[NBR_PANEL_SELECTIONS];
     Atom		sel_rank[NBR_PANEL_SELECTIONS];
     Selection_requestor	sel_req;
     Panel_status	status;
     Xv_Font		std_font;	/* standard font */
-#ifdef OW_I18N
     XFontSet		std_fontset_id;
-#else
     Font		std_font_xid;
-#endif /* OW_I18N */
     struct itimerval	timer_full;	/* initial secs & usecs */
     int			v_margin;	/* vertical margin */
-#ifdef OW_I18N
-    XIC                  ic;
-    Item_info		 *preedit_item; /* panel item with the keyboard focus */
-    XIMPreeditDrawCallbackStruct  *preedit; /*Save full preedit information*/
-    Bool		 preedit_own_by_others;
-		/*
-		 * When panel text being used by canvas for preedit
-		 * rendering, preedit data structure is owned by the
-		 * canvas, not panel. So that, panel should not free
-		 * the data structure upon destory (note, however,
-		 * panel still create the preedit data structure once
-		 * created, first canvas in the given frame will use
-		 * that data structure, see cnvs_view.c,
-		 * canvas_paint_set, XV_END_CREATE).
-		 */
-#ifdef FULL_R5
-    XIMStyle		xim_style;
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
     int			show_border;
     unsigned short	old_width;
     unsigned short	old_height;
@@ -257,13 +224,8 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
     Rect *rect, int  inactive_item, int  color_index);
 Pkg_private void panel_paint_svrim(Xv_Window pw, Pixrect *pr, int x, int y,
     int color_index, Pixrect *mask_pr);
-Pkg_private void panel_paint_text(Xv_opaque	pw,
-#ifdef OW_I18N
-    XFontSet	font_xid,
-#else
-    Font	font_xid,
-#endif /* OW_I18N */
-    int		color_index, int x, int y, CHAR *str);
+Pkg_private void panel_paint_text(Xv_opaque	pw, XFontSet fs, Font font_xid,
+    				int	color_index, int x, int y, CHAR *str);
 Pkg_private Item_info *panel_previous_kbd_focus(Panel_info	*panel, int	wrap);
 Pkg_private int panel_printable_char(int code);
 Pkg_private void panel_pw_invert(Xv_Window pw, Rect *rect, int color_index);
@@ -295,16 +257,6 @@ Pkg_private void panel_yield_kbd_focus(Panel_info *panel);
 Pkg_private void panel_autoscroll_start_itimer(Panel_item item, Notify_timer_func autoscroll_itimer_func);
 Pkg_private void panel_autoscroll_stop_itimer(Panel_item item);
 Pkg_private void panel_paint_border(Panel panel_public, Panel_info *panel, Xv_Window pw);
-#ifdef OW_I18N
-Xv_private  void		ml_panel_display_interm();
-Pkg_private void 		ml_panel_saved_caret();
-Pkg_private void 		panel_implicit_commit();
-Pkg_private wchar_t	       *panel_strsave_wc();
-Xv_private void	        	panel_preedit_display();
-Xv_private void	        	panel_text_start();
-Xv_private void	        	panel_text_draw();
-Xv_private void	        	panel_text_done();
-#endif /* OW_I18N */
 
 Pkg_private int panel_item_x_start(Panel_info *panel);
 Pkg_private int panel_item_y_start(Panel_info *panel);
