@@ -1,4 +1,4 @@
-char p_set_sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.11 2025/11/01 14:55:10 dra Exp $";
+char p_set_sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.12 2026/07/19 21:58:20 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -367,25 +367,6 @@ Pkg_private Xv_opaque panel_set_avlist(Panel panel_public, Attr_avlist avlist)
 			xv_set(panel_public,
 					WIN_ROW_HEIGHT, panel->ginfo->button_height, NULL);
 
-#ifdef OW_I18N
-			DRAWABLE_INFO_MACRO(panel->focus_pw, info);
-			if (xv_get(xv_server(info), XV_IM) != NULL &&
-					xv_get(panel_public, WIN_USE_IM) == TRUE) {
-				/* Create ic on paint window, store ic in panel info */
-				panel->ic = (XIC) xv_get(panel_public, WIN_IC);
-				if (panel->ic) {
-
-#ifdef FULL_R5
-					XGetICValues(panel->ic, XNInputStyle, &panel->xim_style,
-							NULL);
-#endif /* FULL_R5 */
-
-					(void)xv_set(panel->paint_window->pw, WIN_IC, panel->ic,
-							NULL);
-				}
-			}
-#endif /* OW_I18N */
-
 			break;
 
 		default:
@@ -426,12 +407,12 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 	char *bold_name;
 	char *save_bold_name;
 
-#ifdef OW_I18N
-	panel->std_fontset_id = (XFontSet)
-			xv_get(panel->std_font, FONT_SET_ID);
-#else
-	panel->std_font_xid = (Font) xv_get(panel->std_font, XV_XID);
-#endif /* OW_I18N */
+	if (_xv_is_multibyte) {
+		panel->std_fontset_id = (XFontSet)xv_get(panel->std_font, FONT_SET_ID);
+	}
+	else {
+		panel->std_font_xid = (Font) xv_get(panel->std_font, XV_XID);
+	}
 
 	font_size = (int)xv_get(panel->std_font, FONT_SIZE);
 
@@ -455,10 +436,8 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 	if (font_size == FONT_NO_SIZE)
 		font_size = (int)xv_get(glyph_font, FONT_SIZE);
 
-#ifdef OW_I18N
 	/* locale information font.name.<locale> */
 	defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
-#endif
 
 	/* 
 	 * When creating a font via FONT_NAME, all other attributes are
@@ -489,15 +468,16 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 
 		if (bold_name && !xv_font_regular_cmdline()) {
 
-#ifdef OW_I18N
-			panel->bold_font = xv_find(panel_public, FONT,
-					FONT_SET_SPECIFIER, bold_name,
-					NULL);
-#else
-			panel->bold_font = xv_find(panel_public, FONT,
-					FONT_NAME, bold_name,
-					NULL);
-#endif
+			if (_xv_is_multibyte) {
+				panel->bold_font = xv_find(panel_public, FONT,
+							FONT_SET_SPECIFIER, bold_name,
+							NULL);
+			}
+			else {
+				panel->bold_font = xv_find(panel_public, FONT,
+							FONT_NAME, bold_name,
+							NULL);
+			}
 		}
 		else {
 			panel->bold_font = xv_find(panel_public, FONT,
@@ -524,9 +504,7 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 				NULL);
 	}
 
-#ifdef OW_I18N
 	defaults_set_locale(NULL, (Xv_generic_attr)0);
-#endif
 
 	if (panel->bold_font == XV_NULL) {
 		xv_error(XV_NULL,
@@ -537,12 +515,13 @@ static void panel_set_fonts(Panel panel_public, Panel_info *panel)
 		panel->bold_font = panel->std_font;
 	}
 
-#ifdef OW_I18N
-	panel->bold_fontset_id = (XFontSet)
-			xv_get(panel->bold_font, FONT_SET_ID);
-#else
-	panel->bold_font_xid = (Font) xv_get(panel->bold_font, XV_XID);
-#endif /* OW_I18N */
+	if (_xv_is_multibyte) {
+		panel->bold_fontset_id = (XFontSet)xv_get(panel->bold_font,
+									FONT_SET_ID);
+	}
+	else {
+		panel->bold_font_xid = (Font) xv_get(panel->bold_font, XV_XID);
+	}
 
 	font_info = (XFontStruct *) xv_get(glyph_font, FONT_INFO);
 	if (font_info->per_char) {
@@ -672,13 +651,6 @@ Pkg_private void panel_refont(Panel_info *panel, int arg)
 			char *label_to_be_freed;
 
 			label_bold = (int)xv_get(item, PANEL_LABEL_BOLD);
-#ifdef OW_I18N
-			xv_set(item,
-					PANEL_PAINT, PANEL_NONE,
-					PANEL_LABEL_FONT, panel_font,
-					PANEL_LABEL_STRING_WCS, image_string_wc(label),
-					NULL);
-#else
 			/* REF (hklesbrfhklbserf) */
 			label_to_be_freed = panel_strsave(image_string(label));
 			xv_set(item,
@@ -687,27 +659,12 @@ Pkg_private void panel_refont(Panel_info *panel, int arg)
 					PANEL_LABEL_STRING, label_to_be_freed,
 					NULL);
 			xv_free(label_to_be_freed);
-#endif /* OW_I18N */
-
 		}
 		switch (ip->item_type) {
 
 			case PANEL_MESSAGE_ITEM:
 				break;
 
-#ifdef OW_I18N
-			case PANEL_BUTTON_ITEM:{
-					wchar_t *label = (wchar_t *)xv_get(item,
-							PANEL_LABEL_STRING_WCS);
-
-					if (label)	/* don't scale image buttons */
-						xv_set(item,
-								PANEL_PAINT, PANEL_NONE,
-								PANEL_LABEL_STRING_WCS, label,
-								NULL);
-					break;
-				}
-#else
 			case PANEL_BUTTON_ITEM:
 				{
 					char *label_to_be_freed;
@@ -724,7 +681,6 @@ Pkg_private void panel_refont(Panel_info *panel, int arg)
 					}
 				}
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_TOGGLE_ITEM:
 				xv_set(item,
