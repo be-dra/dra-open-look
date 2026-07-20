@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.18 2026/07/18 17:07:19 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.19 2026/07/19 16:33:37 dra Exp $ ";
 #endif
 #endif
 
@@ -1387,24 +1387,21 @@ static void notice_prepare_for_shadow(Notice_info *notice, notice_prep_t *p)
 
 static int notice_offset_from_baseline(Xv_Font	font)
 {
-#ifdef  OW_I18N
     XFontSet            font_set;
     XFontSetExtents     *font_set_extents;
-#else
     XFontStruct		*x_font_info;
-#endif /* OW_I18N */
 
-    if (font == XV_NULL)
-	return (0);
+    if (font == XV_NULL) return (0);
 
-#ifdef OW_I18N
-    font_set = (XFontSet)xv_get(font, FONT_SET_ID);
-    font_set_extents = XExtentsOfFontSet(font_set);
-    return(font_set_extents->max_ink_extent.y);
-#else
-    x_font_info = (XFontStruct *)xv_get(font, FONT_INFO);
-    return (x_font_info->ascent);
-#endif /* OW_I18N */
+	if (_xv_is_multibyte) {
+    	font_set = (XFontSet)xv_get(font, FONT_SET_ID);
+    	font_set_extents = XExtentsOfFontSet(font_set);
+    	return(font_set_extents->max_ink_extent.y);
+	}
+	else {
+    	x_font_info = (XFontStruct *)xv_get(font, FONT_INFO);
+    	return (x_font_info->ascent);
+	}
 }
 
 static void notice_paint_button(Xv_Window pw, notice_buttons_handle button,
@@ -1421,12 +1418,7 @@ static void notice_paint_button(Xv_Window pw, notice_buttons_handle button,
 		state |= OLGX_DEFAULT;
 	olgx_draw_button(ginfo, xv_xid(info), button->button_rect.r_left,
 			button->button_rect.r_top, button->button_rect.r_width, 0,
-
-#ifdef OW_I18N
-			button->string, state | OLGX_LABEL_IS_WCS);
-#else
 			button->string, state);
-#endif
 }
 
 static void notice_build_button(Xv_Window pw, int x,int y,
@@ -1525,9 +1517,7 @@ static void notice_layout(notice_handle notice, struct rect *rect, int totalButW
     GC				gc;
     int				chrht;
     int				ascent = notice_offset_from_baseline(this_font);
-#ifdef  OW_I18N
-    XFontSet        font_set;
-#endif /* OW_I18N */
+    XFontSet        font_set = NULL;
     /*
      * Set information needed by Xlib calls
      */
@@ -1543,50 +1533,48 @@ static void notice_layout(notice_handle notice, struct rect *rect, int totalButW
     y = rect->r_top + VERT_MSG_MARGIN(notice->scale);
 
     if (notice->msg_info) {
-        XID             font;
-
 		/*
 		 * Set GC needed by XDrawImageString()
 		 */
 		/* this gc will be overwritten: */
 /*         gc = (GC)xv_find_proper_gc(display, info, PW_TEXT); */
 
-#ifdef OW_I18N
-        font_set = (XFontSet)xv_get( this_font , FONT_SET_ID );
-#endif /* OW_I18N */
-		font = xv_get(this_font, XV_XID);
+		if (_xv_is_multibyte) {
+        	font_set = (XFontSet)xv_get( this_font , FONT_SET_ID );
+		}
 
         gc = (GC)xv_find_proper_gc(display, info, PW_VECTOR);
         val.background = xv_bg(info);
         val.foreground = xv_fg(info);
-        val.font = font;
-        value_mask = GCForeground | GCBackground | GCFont;
+		if (_xv_is_multibyte) {
+        	value_mask = GCForeground | GCBackground;
+		}
+		else {
+        	val.font = xv_get(this_font, XV_XID);
+        	value_mask = GCForeground | GCBackground | GCFont;
+		}
         XChangeGC(display, gc, value_mask, &val);
     }
 
     curMsg = notice->msg_info;
-    while(curMsg) {
+    while (curMsg) {
         int	str_width, len;
-	CHAR	*str;
+		char *str;
 
         str = curMsg->string;
 
-        if ((len = STRLEN(str))) {
-            str_width = notice_text_width(this_font, (CHAR *)str);
+        if ((len = strlen(str))) {
+            str_width = notice_text_width(this_font, str);
 
             x = (rect->r_left + (paneWidth - str_width)/2);
 
-#ifdef OW_I18N
-            XwcDrawImageString(display, d, font_set, gc,
-                        x,
-                        y + ascent,
-                        str, len);
-#else
-            XDrawImageString(display, d, gc,
-                        x,
-                        y + ascent,
-                        str, len);
-#endif /* OW_I18N */
+			if (_xv_is_multibyte) {
+            	XmbDrawImageString(display, d, font_set, gc,
+                        x, y + ascent, str, len);
+			}
+			else {
+            	XDrawImageString(display, d, gc, x, y + ascent, str, len);
+			}
         }
 
 	/*
@@ -2438,36 +2426,6 @@ static int notice_block_popup(Notice_info *notice)
  * on the ability of the server to rescale fonts, or on the
  * presence of fonts in the sizes/scales we want.
  */
-#ifdef  OW_I18N
-
-static int notice_determine_font(Xv_Window client_window, notice_handle notice)
-{
-    Xv_Font     font = NULL;
-
-    if (client_window)
-        font = xv_get(client_window, XV_FONT);
-
-    if (font == NULL)
-        font = (Xv_Font) xv_find(NULL, FONT,
-                                FONT_FAMILY, FONT_FAMILY_DEFAULT,
-                                FONT_STYLE, FONT_STYLE_DEFAULT,
-                                FONT_SCALE, FONT_SCALE_DEFAULT,
-                                NULL);
-
-    if (font == NULL) {
-        xv_error(NULL,
-            ERROR_STRING,
-                XV_MSG("Unable to find \"fixed\" font. (Notice package)"),
-        NULL);
-        return(XV_ERROR);
-    }
-
-    notice->notice_font = font;
-    return(XV_OK);
-}
-
-#else /*OW_I18N*/
-
 static int notice_determine_font(Xv_Window client_window, notice_handle notice)
 {
 	Xv_Font client_font = (Xv_Font) NULL;
@@ -2535,8 +2493,6 @@ static int notice_determine_font(Xv_Window client_window, notice_handle notice)
 
 	return XV_OK;
 }
-
-#endif  /* OW_I18N */
 
 /*
  * Function to return value of the default button on notice
@@ -2809,9 +2765,7 @@ static int notice_create_base(Notice_info	*notice)
 					ExposureMask | KeyPressMask | FocusChangeMask,
 				WIN_EVENT_PROC, subframe_event_proc,
 				WIN_FRONT,
-#ifdef OW_I18N
 				WIN_USE_IM, FALSE,
-#endif
 				XV_KEY_DATA, notice_context_key, notice,
 				XV_HELP_DATA, "xview:notice",
 				NULL);
@@ -2865,11 +2819,7 @@ static int notice_create_base(Notice_info	*notice)
 	if (!notice->panel) {
 		notice->panel = xv_create(notice->sub_frame, PANEL,
 				XV_FONT, notice->notice_font,
-
-#ifdef OW_I18N
 				WIN_USE_IM, FALSE,
-#endif
-
 				XV_HELP_DATA, "xview:notice",
 				NULL);
 	}
@@ -3099,20 +3049,12 @@ static void notice_position_items(Notice_info *notice, Bool do_msg, Bool do_butt
 		if (do_msg) {
 			if (curMsg->panel_item) {
 				xv_set(curMsg->panel_item,
-#ifdef OW_I18N
-						PANEL_LABEL_STRING_WCS, curMsg->string,
-#else
 						PANEL_LABEL_STRING, curMsg->string,
-#endif /* OW_I18N */
 						NULL);
 			}
 			else {
 				curMsg->panel_item = xv_create(notice->panel, PANEL_MESSAGE,
-#ifdef OW_I18N
-						PANEL_LABEL_STRING_WCS, curMsg->string,
-#else
 						PANEL_LABEL_STRING, curMsg->string,
-#endif /* OW_I18N */
 						XV_HELP_DATA, "xview:notice",
 						NULL);
 			}
@@ -3153,22 +3095,14 @@ static void notice_position_items(Notice_info *notice, Bool do_msg, Bool do_butt
 		if (do_butt) {
 			if (curButton->panel_item) {
 				xv_set(curButton->panel_item,
-#ifdef OW_I18N
-						PANEL_LABEL_STRING_WCS, curButton->string,
-#else
 						PANEL_LABEL_STRING, curButton->string,
-#endif /* OW_I18N */
 						PANEL_NOTIFY_PROC, notice_button_panel_proc,
 						XV_KEY_DATA, notice_context_key, notice,
 						NULL);
 			}
 			else {
 				curButton->panel_item = xv_create(notice->panel, PANEL_BUTTON,
-#ifdef OW_I18N
-						PANEL_LABEL_STRING_WCS, curButton->string,
-#else
 						PANEL_LABEL_STRING, curButton->string,
-#endif /* OW_I18N */
 						PANEL_NOTIFY_PROC, notice_button_panel_proc,
 						XV_KEY_DATA, notice_context_key, notice,
 						XV_HELP_DATA, "xview:notice",
@@ -3369,20 +3303,7 @@ static void notice_subframe_layout(Notice_info	*notice, Bool do_msg, Bool do_but
 	notice->need_layout = 0;
 }
 
-#ifdef  OW_I18N
-static wchar_t notice_default_button_str[8] = {
-                        (wchar_t)'C' ,
-                        (wchar_t)'o' ,
-                        (wchar_t)'n' ,
-                        (wchar_t)'f' ,
-                        (wchar_t)'i' ,
-                        (wchar_t)'r' ,
-                        (wchar_t)'m' ,
-                        (wchar_t) NULL };
-
-#else
 static char *notice_default_button_str = "Confirm";
-#endif
 
 
 /*
@@ -3694,10 +3615,6 @@ static void make_busy(Notice_info *notice, Frame *frames, int busy)
 }
 
 
-#ifdef  OW_I18N
-static CHAR     **notice_string_set();
-#endif
-
 /*
  * notice_do_show(notice)
  * Pops up the notice. Handles both the screen locking and non 
@@ -3940,10 +3857,6 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 	CHAR **new_msg = NULL;
 	CHAR *one_msg[2];
 
-#ifdef OW_I18N
-	CHAR **wc_msg;
-#endif
-
 	Bool butt_changed = FALSE;
 	Bool show_seen = FALSE;
 	Bool bad_attr;
@@ -3972,199 +3885,6 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 				}
 				ADONE;
 
-#ifdef OW_I18N
-			case NOTICE_MESSAGE_STRINGS_ARRAY_PTR:
-				/* Convert mbs to wchar before passing to new_msg */
-				{
-					int str_count, i;
-					char **pptr = NULL;
-					char *str;
-
-					pptr = (char **)value;
-					for (str_count = 0, i = 0, str = pptr[i]; str;
-							str = pptr[++i]) {
-						str_count++;
-					}
-					wc_msg = xv_calloc(str_count + 1, sizeof(CHAR *));
-					pptr = (char **)value;
-					for (i = 0; i < str_count; i++) {
-						wc_msg[i] = _xv_mbstowcsdup(pptr[i]);
-					}
-					wc_msg[str_count] = (CHAR *) NULL;
-					new_msg = (CHAR **) wc_msg;
-				}
-				ADONE;
-
-			case NOTICE_MESSAGE_STRINGS_ARRAY_PTR_WCS:
-				new_msg = (CHAR **) value;
-				ADONE;
-
-			case NOTICE_MESSAGE_STRINGS:
-				/* Convert mbs to wchar before passing to new_msg */
-				{
-					int str_count, i;
-					char **pptr = NULL;
-					char *str;
-
-					pptr = (char **)&avlist[1];
-					for (str_count = 0, i = 0, str = pptr[i]; str;
-							str = pptr[++i]) {
-						str_count++;
-					}
-					wc_msg = xv_calloc(str_count + 1, sizeof(CHAR *));
-					pptr = (char **)&avlist[1];
-					for (i = 0; i < str_count; i++) {
-						wc_msg[i] = _xv_mbstowcsdup(pptr[i]);
-					}
-					wc_msg[str_count] = (CHAR *) NULL;
-					new_msg = (CHAR **) wc_msg;
-				}
-				ADONE;
-
-			case NOTICE_MESSAGE_STRINGS_WCS:
-				new_msg = (CHAR **) & avlist[1];
-				ADONE;
-
-			case NOTICE_MESSAGE_STRING:
-				one_msg[0] = (wchar_t *)_xv_mbstowcsdup((char *)avlist[1]);
-				one_msg[1] = (CHAR *) NULL;
-				new_msg = (CHAR **) one_msg;
-				ADONE;
-
-			case NOTICE_MESSAGE_STRING_WCS:
-				one_msg[0] = (CHAR *) avlist[1];
-				one_msg[1] = (CHAR *) NULL;
-				new_msg = (CHAR **) one_msg;
-				ADONE;
-
-			case NOTICE_BUTTON_YES:
-			case NOTICE_BUTTON_YES_WCS:{
-					notice_buttons_handle button;
-
-					if (!yes_button_seen) {
-						yes_button_seen = TRUE;
-					}
-					else {
-						(void)xv_error(NULL,
-								ERROR_STRING,
-								XV_MSG
-								("Only one NOTICE_BUTTON_YES attr allowed. Attr ignored."),
-								ERROR_PKG, NOTICE, NULL);
-						break;
-					}
-
-					/*   
-					 * Button structs are reused for notices
-					 * If there were no buttons to start off with, they
-					 * are allocated
-					 */
-					if (reuse_buttons) {
-						last_button = button = reuse_buttons;
-						reuse_buttons = reuse_buttons->next;
-						if (button->string) {
-							free(button->string);
-							button->string = (CHAR *) NULL;
-						}
-					}
-					else {
-						button = (notice_buttons_handle)
-								notice_create_button_struct();
-						button->panel_item = (Panel_item) NULL;
-						button->next = (notice_buttons_handle) NULL;
-						(void)notice_add_button_to_list(notice, button);
-					}
-
-					if (avlist[0] == NOTICE_BUTTON_YES)
-						button->string =
-								(wchar_t *)_xv_mbstowcsdup((char *)avlist[1]);
-					else
-						button->string = XV_STRSAVE((CHAR *) avlist[1]);
-					button->is_yes = TRUE;
-					button->value = NOTICE_YES;
-					notice->yes_button_exists = TRUE;
-					num_butt++;
-					butt_changed = TRUE;
-					ADONE;
-				}
-
-			case NOTICE_BUTTON_NO:
-			case NOTICE_BUTTON_NO_WCS:{
-					notice_buttons_handle button;
-
-					if (!no_button_seen) {
-						no_button_seen = TRUE;
-					}
-					else {
-						xv_error(NULL,
-								ERROR_STRING,
-								XV_MSG
-								("Only one NOTICE_BUTTON_NO attr allowed. Attr ignored."),
-								ERROR_PKG, NOTICE, NULL);
-						break;
-					}
-
-					if (reuse_buttons) {
-						last_button = button = reuse_buttons;
-						reuse_buttons = reuse_buttons->next;
-						if (button->string) {
-							free(button->string);
-							button->string = (CHAR *) NULL;
-						}
-					}
-					else {
-						button = (notice_buttons_handle)
-								notice_create_button_struct();
-						button->panel_item = (Panel_item) NULL;
-						button->next = (notice_buttons_handle) NULL;
-						(void)notice_add_button_to_list(notice, button);
-					}
-
-					if (avlist[0] == NOTICE_BUTTON_NO)
-						button->string =
-								(wchar_t *)_xv_mbstowcsdup((char *)avlist[1]);
-					else
-						button->string = XV_STRSAVE((CHAR *) avlist[1]);
-					button->is_no = TRUE;
-					button->value = NOTICE_NO;
-					notice->no_button_exists = TRUE;
-					num_butt++;
-					butt_changed = TRUE;
-
-					ADONE;
-				}
-
-			case NOTICE_BUTTON:
-			case NOTICE_BUTTON_WCS:{
-					notice_buttons_handle button;
-
-					if (reuse_buttons) {
-						last_button = button = reuse_buttons;
-						reuse_buttons = reuse_buttons->next;
-						if (button->string) {
-							free(button->string);
-							button->string = (CHAR *) NULL;
-						}
-					}
-					else {
-						button = (notice_buttons_handle)
-								notice_create_button_struct();
-						button->panel_item = (Panel_item) NULL;
-						button->next = (notice_buttons_handle) NULL;
-						(void)notice_add_button_to_list(notice, button);
-					}
-
-					if (avlist[0] == NOTICE_BUTTON)
-						button->string =
-								(wchar_t *)_xv_mbstowcsdup((char *)avlist[1]);
-					else
-						button->string = XV_STRSAVE((CHAR *) avlist[1]);
-					button->value = (int)avlist[2];
-					num_butt++;
-					butt_changed = TRUE;
-
-					ADONE;
-				}
-#else
 			case NOTICE_MESSAGE_STRINGS_ARRAY_PTR:
 				new_msg = (char **)value;
 				ADONE;
@@ -4303,7 +4023,6 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 
 					ADONE;
 				}
-#endif
 
 			case NOTICE_FONT:
 				/*
@@ -4483,11 +4202,7 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 		notice_msgs_handle msg, cur_msg;
 		int i;
 
-#ifdef OW_I18N
-		wchar_t ret = (wchar_t)'\n';
-#else
 		char ret = '\n';
-#endif
 
 		CHAR *curStr;
 		CHAR **cur_str_ptr;
@@ -4613,28 +4328,13 @@ static Xv_opaque notice_set_avlist(Xv_Notice notice_public, Attr_attribute *avli
 					 * copy string
 					 */
 
-#ifdef OW_I18N
-					STRNCPY(tmp, curStr, len - 1);
-
-#else
-
-#ifdef SVR4
-					memmove(tmp, curStr, len - 1);
-#else
 					bcopy(curStr, tmp, (unsigned long)len - 1);
-#endif /* SVR4 */
-#endif /* OW_I18N */
 
 					/*
 					 * Pad with terminating null character
 					 */
 
-#ifdef OW_I18N
-					tmp[len - 1] = (wchar_t)'\0';
-#else
 					tmp[len - 1] = '\0';
-#endif
-
 					cur_msg->string = tmp;
 
 					/*
