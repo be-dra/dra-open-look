@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_get.c 20.51 93/06/28 DRA: $Id: om_get.c,v 4.2 2024/12/08 09:24:52 dra Exp $";
+static char     sccsid[] = "@(#)om_get.c 20.51 93/06/28 DRA: $Id: om_get.c,v 4.3 2026/07/21 07:44:19 dra Exp $";
 #endif
 #endif
 
@@ -254,34 +254,16 @@ Pkg_private Xv_opaque menu_item_gets(Menu_item menu_item_public, int *status, At
       case MENU_SELECTED:
 	v = (Xv_opaque) mi->selected;
 	break;
-#ifdef OW_I18N
-      case MENU_STRING:
-        v = (Xv_opaque) _xv_get_mbs_attr_nodup(&mi->image.string);
-        break;
-
-      case MENU_STRING_WCS:
-        v = (Xv_opaque) _xv_get_wcs_attr_nodup(&mi->image.string);
-        break;
-#else
       case MENU_STRING:
 	v = (Xv_opaque) mi->image.string;
 	break;
-#endif /* OW_I18N */
       /* ACC_XVIEW */
       case MENU_ACC_KEY:
-#ifdef OW_I18N
-        v = (Xv_opaque) _xv_get_mbs_attr_nodup(&mi->key_image.string);
-#else
 	v = (Xv_opaque) mi->key_image.string;
-#endif /* OW_I18N */
 	break;
 
       case MENU_ACC_QUAL:
-#ifdef OW_I18N
-        v = (Xv_opaque) _xv_get_mbs_attr_nodup(&mi->qual_image.string);
-#else
 	v = (Xv_opaque) mi->qual_image.string;
-#endif /* OW_I18N */
 	break;
       /* ACC_XVIEW */
 
@@ -302,18 +284,9 @@ Pkg_private Xv_opaque menu_item_gets(Menu_item menu_item_public, int *status, At
 	break;
  
       /* ACC_XVIEW */
-#ifdef OW_I18N
-      case MENU_ACCELERATOR_WCS:
-        v = (Xv_opaque) _xv_get_wcs_attr_dup(&mi->menu_acc);
-	break;
-      case MENU_ACCELERATOR:
-        v = (Xv_opaque) _xv_get_mbs_attr_dup(&mi->menu_acc);
-	break;
-#else
       case MENU_ACCELERATOR:
 	v = (Xv_opaque) mi->menu_acc;
 	break;
-#endif
       /* ACC_XVIEW */
 
       default:
