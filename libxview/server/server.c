@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.42 2026/06/02 08:32:27 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.45 2026/07/21 06:29:10 dra Exp $";
 #endif
 #endif
 
@@ -86,21 +86,12 @@ Xv_private char	*xv_strtok(char *, char *);
 
 Xv_private void 	 xv_do_enqueued_input(char *, char *quatsch);
 Xv_private void	xv_merge_cmdline(XrmDatabase *);
-#ifdef OS_HAS_LOCALE
 static void server_set_locale(Server_info  *server);
 static void server_setlocale_to_c(Ollc_item *ollc);
 static void server_warning(char *msg);
 static void server_setlocale_to_default(Server_info	*server);
-#ifdef OW_I18N
 static void server_effect_locale(Server_info *server, char	*character_set);
-#ifdef FULL_R5
-Xv_private XIMStyle	 xv_determine_im_style();
-#define XV_SUPPORTED_STYLE_COUNT 12
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
-#endif /* OS_HAS_LOCALE */
 
-/* extern char	    	*setlocale(); */
 static Notify_scheduler_func default_scheduler;
 extern XrmDatabase  	 defaults_rdb;
 extern char				*xv_app_name;
@@ -135,19 +126,14 @@ typedef struct ollc_const_t {
 	const int		 posix;
 	const char		*env;
 } Ollc_const_t;
-static const Ollc_const_t	Ollc_const[] = {
-{ XV_LC_BASIC_LOCALE,
-	"basicLocale",	"BasicLocale",	LC_CTYPE,	"LC_CTYPE"},
-{ XV_LC_DISPLAY_LANG,
-	"displayLang",	"DisplayLang",	LC_MESSAGES,	"LC_MESSAGES"},
-{ XV_LC_INPUT_LANG,
-	"inputLang",	"InputLang",	-1,		NULL},
-{ XV_LC_NUMERIC,
-	"numericFormat","NumericFormat",LC_NUMERIC,	"LC_NUMERIC"},
-{ XV_LC_TIME_FORMAT,
-	"timeFormat",	"TimeFormat",	LC_TIME,	"LC_TIME"},
-{ 0,
-	NULL,		NULL,		-1,		NULL}};
+static const Ollc_const_t Ollc_const[] = {
+	{XV_LC_BASIC_LOCALE, "basicLocale", "BasicLocale", LC_CTYPE, "LC_CTYPE"},
+	{XV_LC_DISPLAY_LANG,"displayLang","DisplayLang",LC_MESSAGES,"LC_MESSAGES"},
+	{XV_LC_INPUT_LANG, "inputLang", "InputLang", -1, NULL},
+	{XV_LC_NUMERIC, "numericFormat", "NumericFormat", LC_NUMERIC, "LC_NUMERIC"},
+	{XV_LC_TIME_FORMAT, "timeFormat", "TimeFormat", LC_TIME, "LC_TIME"},
+	{0, NULL, NULL, -1, NULL}
+};
 
 Xv_private int server_sem_map_index(KeySym ks)
 {
@@ -1285,8 +1271,8 @@ static void server_init_atoms(Xv_Server server_public)
 		 */
 	}
 	else {
-		/* Aaaaah, anscheinend haben sie aufgehoert, XInitThreads
-		 * aufzurufen - das soll der Drahota mitkriegen:
+		/* Aaaaah, obviously they have stopped calling XInitThreads
+		 * let's notify Drahota :
 		 */
 		fprintf(stderr, "pid %d: %s-%d: x_init_threads_called == 0!!!\n",
 				getpid(), __FILE__, __LINE__);
@@ -4605,17 +4591,10 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	XrmDatabase new_db;
 	int first_server = FALSE;
 	int mopc, fev, fer;
-
-#ifdef OW_I18N
-	Bool need_im;
-	char *character_set;
-
-#ifdef FULL_R5
-	char *value;
-#endif
-#endif
+/* 	char *character_set; */
 	extern int _xv_use_locale;
 	char **argv = NULL;
+	int need_im = FALSE;
 
 	char *xdefaults;
 	char *env = getenv("XVIEW_TELL_XINITTHREADS");
@@ -4774,31 +4753,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 
 	server->localedir = NULL;
 
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-	server->supported_im_styles = NULL;
-	server->determined_im_style = NULL;
-
-	/* 
-	 * Command line options for preedit and status style have 
-	 * precedence over X resource settings
-	 */
-
-	value = defaults_get_string("openWindows.imPreeditStyle.cmdline",
-			"OpenWindows.ImPreeditStyle.cmdline", NULL);
-	server->preedit_style = (value) ? strdup(value) : NULL;
-	value = defaults_get_string("openWindows.imStatusStyle.cmdline",
-			"OpenWindows.ImStatusStyle.cmdline", NULL);
-	server->status_style = (value) ? strdup(value) : NULL;
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
-
-#ifdef OS_HAS_LOCALE
 	if (_xv_use_locale) {
-
-#ifdef OW_I18N
-#endif /* OW_I18N */
 
 		/*
 		 *  First look for the attributes to set locale.
@@ -4814,29 +4769,6 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 						server->localedir = strdup((char *)attrs[1]);
 					}
 					break;
-
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-				case XV_IM_PREEDIT_STYLE:
-					if (attrs[1]) {
-						if (server->preedit_style) {
-							xv_free(server->preedit_style);
-						}
-						server->preedit_style = strdup((char *)attrs[1]);
-					}
-					break;
-
-				case XV_IM_STATUS_STYLE:
-					if (attrs[1]) {
-						if (server->status_style) {
-							xv_free(server->status_style);
-						}
-						server->status_style = strdup((char *)attrs[1]);
-					}
-					break;
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 				default:{
 						int i;
@@ -4863,6 +4795,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 
 		/*
 		 * Now sets all locale categories.
+		 * This initializes _xv_is_multibyte.
 		 */
 		server_set_locale(server);
 
@@ -4955,7 +4888,6 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 			}
 		}
 
-#ifdef OW_I18N
 		/*
 		 * Now that we know the locale, get the local specific
 		 * resource files, merge with server->db
@@ -4963,7 +4895,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 		if ((home = getenv("OPENWINHOME")) != NULL) {
 			(void)sprintf(filename, "%s/%s/%s/xview/defaults",
 					home, LIB_LOCALE, server->ollc[OLLC_BASICLOCALE].locale);
-			if (new_db = XrmGetFileDatabase(filename)) {
+			if ((new_db = XrmGetFileDatabase(filename))) {
 				/*
 				 * Precedence order of this new_db is lowest!
 				 */
@@ -4978,45 +4910,22 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 		 */
 		defaults_set_locale(server->ollc[OLLC_BASICLOCALE].locale, 
 							(Xv_generic_attr)0);
-		need_im = defaults_get_boolean("xview.needIm", "Xview.NeedIm", False);
-		character_set = defaults_get_string("xview.characterSet",
-				"Xview.CharacterSet", ISO8859_1);
+		need_im = defaults_get_boolean("xview.needIm", "Xview.NeedIm", 
+											_xv_is_multibyte);
+/* 		character_set = defaults_get_string("xview.characterSet", */
+/* 				"Xview.CharacterSet", ISO8859_1); */
 
-#ifdef FULL_R5
-		if (server->preedit_style == NULL)
-			server->preedit_style =
-					strdup(defaults_get_string("openWindows.imPreeditStyle",
-							"OpenWindows.ImPreeditStyle", "onTheSpot"));
-		if (server->status_style == NULL)
-			server->status_style =
-					strdup(defaults_get_string("openWindows.imStatusStyle",
-							"OpenWindows.ImStatusStyle", "clientDisplays"));
-#endif
-
-		defaults_set_locale(NULL, NULL);
+		defaults_set_locale(NULL, 0);
 
 
 		/*
 		 * Taking effect the locale setting to the system.
 		 */
-		server_effect_locale(server, character_set);
-#endif /* OW_I18N */
-
+/* 		server_effect_locale(server, character_set); */
 	}
 	else {	/* if (_xv_use_locale) */
 		server_setlocale_to_default(server);
-
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-		server->supported_im_styles = NULL;
-		server->preedit_style = strdup("onTheSpot");
-		server->status_style = strdup("clientDisplays");
-		server->determined_im_style = XIMPreeditCallbacks | XIMStatusCallbacks;
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 	}
-#endif /* OS_HAS_LOCALE */
 
 	/*
 	 * End of Sundae buyback code replacement for 
@@ -5059,7 +4968,8 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	default_screen_num = svr_parse_display(server->display_name);
 
 	server->screens[default_screen_num] = xv_create(server_public, SCREEN,
-			SCREEN_NUMBER, default_screen_num, NULL);
+						SCREEN_NUMBER, default_screen_num,
+						NULL);
 
 	if (!server->screens[default_screen_num]) {
 		goto Error_Return;
@@ -5136,7 +5046,6 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	server->composestatus->compose_ptr = (char *)NULL;
 	server->composestatus->chars_matched = 0;
 
-#ifdef OW_I18N
 	/*
 	 * Make sure, everything is valid, and then fire up the xim.
 	 */
@@ -5156,94 +5065,10 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 			/*
 			 * Make connection with IM server.
 			 */
-			server->xim =
-					(XIM) XOpenIM(server->xdisplay, server->db,
-					"openwindows", "OpenWindows");
-
-#ifdef FULL_R5
-			/* 
-			 * Query IM styles available from the IM connection 
-			 */
-			if (server->xim) {
-
-				XIMStyles *imserver_styles = NULL;
-
-				if (!XGetIMValues(server->xim, XNQueryInputStyle,
-								&imserver_styles, NULL)) {
-
-					/* Determine supported styles based on intersection
-					 * of what is supported by im-server and toolkit.
-					 */
-					if (imserver_styles) {
-
-						XIMStyle toolkit_style[XV_SUPPORTED_STYLE_COUNT];
-						short i, j, k;
-
-						/*  Make a list of toolkit supported styles. */
-						toolkit_style[0] =
-								(XIMPreeditCallbacks | XIMStatusCallbacks);
-						toolkit_style[1] =
-								(XIMPreeditCallbacks | XIMStatusArea);
-						toolkit_style[2] =
-								(XIMPreeditCallbacks | XIMStatusNothing);
-						toolkit_style[3] =
-								(XIMPreeditCallbacks | XIMStatusNone);
-						toolkit_style[4] =
-								(XIMPreeditPosition | XIMStatusCallbacks);
-						toolkit_style[5] = (XIMPreeditPosition | XIMStatusArea);
-						toolkit_style[6] =
-								(XIMPreeditPosition | XIMStatusNothing);
-						toolkit_style[7] = (XIMPreeditPosition | XIMStatusNone);
-						toolkit_style[8] =
-								(XIMPreeditNothing | XIMStatusCallbacks);
-						toolkit_style[9] = (XIMPreeditNothing | XIMStatusArea);
-						toolkit_style[10] =
-								(XIMPreeditNothing | XIMStatusNothing);
-						toolkit_style[11] = (XIMPreeditNothing | XIMStatusNone);
-
-						server->supported_im_styles =
-								(XIMStyles *) xv_alloc(XIMStyles);
-						server->supported_im_styles->supported_styles =
-								xv_calloc(XV_SUPPORTED_STYLE_COUNT,
-								sizeof(XIMStyle));
-
-						/* Find the matching style */
-						for (i = 0, k = 0;
-								i < (int)imserver_styles->count_styles; i++)
-							for (j = 0; j < XV_SUPPORTED_STYLE_COUNT; j++) {
-								if (imserver_styles->supported_styles[i] ==
-										toolkit_style[j])
-									server->supported_im_styles->
-											supported_styles[k++] =
-											toolkit_style[j];
-							}
-						server->supported_im_styles->count_styles = k;
-
-						/* Determine the input style based on:
-						 *  Supported styles &  Requested styles:
-						 *        Locale specific resources
-						 *        User specified resources
-						 *        User specified commandline options
-						 *        Application specified attributes
-						 */
-						server->determined_im_style =
-								xv_determine_im_style(server->xim,
-								server->supported_im_styles,
-								server->preedit_style, server->status_style);
-					}
-					else {
-						/*
-						 * IM server does not support any styles!
-						 */
-						server->supported_im_styles = NULL;
-					}
-					XFree(imserver_styles);
-				}
-			}
-#endif /* FULL_R5 */
+			server->xim = XOpenIM(server->xdisplay, server->db,
+									"openwindows", "OpenWindows");
 		}
 	}
-#endif /* OW_I18N */
 
 	return XV_OK;
 
@@ -5258,7 +5083,6 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 }
 
 
-#ifdef OS_HAS_LOCALE
 /*
  * server_get_locale_from_str: Get the translated version of the
  * Ollc_from.  Table driven will not work with xgettext(1) command,
@@ -5301,7 +5125,8 @@ static char *server_get_locale_from_str(Ollc_from	from)
 static void server_set_locale(Server_info  *server)
 {
 	int i;
-	char *locale;
+	char *locale, *act_locale;
+	char actloc[100];
 	Ollc_item *oi;
 	char *type;
 	XrmValue xrm_value;
@@ -5311,15 +5136,43 @@ static void server_set_locale(Server_info  *server)
 	 * Set all locale categories that exist in the environment in a
 	 * POSIX compliant fashion prior to query it.
 	 */
-	(void)setlocale(LC_ALL, "");
+	act_locale = setlocale(LC_ALL, "");
+	if (act_locale) strcpy(actloc, act_locale);
+	else strcpy(actloc, "C");
+
+	/* plan is to replace "#ifdef O W _ I 1 8 N" by "if (_xv_is_multibyte)" */
+    if (XSupportsLocale()) {
+		XSetLocaleModifiers("");
+
+		if (strcasestr(actloc,"utf-8")!=NULL || strcasestr(actloc,"utf8")!=NULL)
+		{
+			_xv_is_multibyte = TRUE;
+		}
+		else {
+			_xv_is_multibyte = (strncmp(nl_langinfo(CODESET), "UTF", 3L) == 0);
+		}
+	}
+	else {
+		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
+			if (oi->locale != NULL)
+				continue;
+
+			if (Ollc_const[i].posix >= 0) {
+				setlocale(Ollc_const[i].posix, "C");
+			}
+		}
+		_xv_is_multibyte = FALSE;
+	}
+
+	fprintf(stderr, "%s-%d: _xv_is_multibyte = %d\n", __FUNCTION__, __LINE__,
+					_xv_is_multibyte);
 
 	/*
 	 * Traverse all the categories and fillin the data according to
 	 * the priority, if data has not being set yet.
 	 */
 	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-		if (oi->locale != NULL)
-			continue;
+		if (oi->locale != NULL) continue;
 
 		/*
 		 * Try Resources (defaults) firsts.
@@ -5327,21 +5180,47 @@ static void server_set_locale(Server_info  *server)
 		xrm_value.size = 0;
 		xrm_value.addr = NULL;
 
-		(void)sprintf(inst, "openWindows.%s", Ollc_const[i].inst);
-		(void)sprintf(class, "OpenWindows.%s", Ollc_const[i].class);
+		sprintf(inst, "openWindows.%s", Ollc_const[i].inst);
+		sprintf(class, "OpenWindows.%s", Ollc_const[i].class);
 		if (XrmGetResource(server->db, inst, class, &type, &xrm_value)) {
+			char *result;
+
+			fprintf(stderr, "%s-%d: %d: inst = %s -> %s\n", __FUNCTION__,__LINE__,
+						i, inst, (char *)xrm_value.addr);
 			oi->locale = strdup((char *)xrm_value.addr);
 			oi->from = OLLC_FROM_RESOURCE;
 
-			/* das war, als ich auf das ECHTE dgettext, und das ECHTE msgfmt
-			 * umgestiegen bin
+			/* this was built in when I switched to the REAL dgettext and
+			 * the REAL msgfmt:
 			 */
 			if (Ollc_const[i].posix >= 0) {
-				char *result = setlocale(Ollc_const[i].posix, oi->locale);
+				if (_xv_is_multibyte && strcmp(oi->locale, "C") == 0) {
+					/* ignoring C-locale for category ... because of UTF-8 */
+					xv_free(oi->locale);
+					oi->locale = strdup(actloc);
+					fprintf(stderr, "%s-%d: ignore, set to %s\n", __FUNCTION__,__LINE__, oi->locale);
+				}
 
+				result = setlocale(Ollc_const[i].posix, oi->locale);
+
+				fprintf(stderr, "%s-%d: setlocale(%d, '%s') = '%s'\n",
+						__FUNCTION__, __LINE__,Ollc_const[i].posix, oi->locale,
+						result);
 				if (!result) {
 					fprintf(stderr, "unsuccessfully tried to set %s to %s\n", 
 									Ollc_const[i].env , oi->locale);
+				}
+			}
+			else {
+				if (_xv_is_multibyte) {
+					fprintf(stderr, "%s-%d: not posix, is %s\n", __FUNCTION__,__LINE__, oi->locale);
+					if (strcmp(oi->locale, "C") == 0) {
+						/* ignoring C-locale for category ... because of UTF-8 */
+						xv_free(oi->locale);
+						oi->locale = strdup(actloc);
+						fprintf(stderr, "%s-%d: ignore, set to %s\n", __FUNCTION__,__LINE__, oi->locale);
+						setlocale(Ollc_const[i].posix, oi->locale);
+					}
 				}
 			}
 			continue;
@@ -5357,6 +5236,13 @@ static void server_set_locale(Server_info  *server)
 			old_resource_value =
 					strdup(defaults_get_string("numeric", "Numeric", NULL));
 			if (old_resource_value) {
+				if (_xv_is_multibyte && strcmp(old_resource_value, "C") == 0) {
+					/* ignoring C-locale for category ... because of UTF-8 */
+					xv_free(old_resource_value);
+					old_resource_value = strdup(actloc);
+					setlocale(LC_NUMERIC, actloc);
+					fprintf(stderr, "%s-%d: %d: ignore, set to %s\n", __FUNCTION__,__LINE__, i, actloc);
+				}
 				server->ollc[OLLC_NUMERIC].locale = old_resource_value;
 				server->ollc[OLLC_NUMERIC].from = OLLC_FROM_RESOURCE;
 				continue;
@@ -5366,8 +5252,12 @@ static void server_set_locale(Server_info  *server)
 		/*
 		 * fallback to setlocale(3).
 		 */
+fprintf(stderr, "%s-%d: %d: setlocale(%d) = '%s'\n", __FUNCTION__, __LINE__, i,
+						Ollc_const[i].posix, setlocale(Ollc_const[i].posix, NULL));
 		if (Ollc_const[i].posix >= 0
 				&& (locale = setlocale(Ollc_const[i].posix, NULL)) != NULL) {
+fprintf(stderr, "%s-%d: setlocale(%d) = '%s'\n", __FUNCTION__, __LINE__,
+						Ollc_const[i].posix, locale);
 			oi->locale = strdup(locale);
 			oi->from = OLLC_FROM_POSIX;
 			continue;
@@ -5391,33 +5281,20 @@ static void server_set_locale(Server_info  *server)
 		oi->from = server->ollc[OLLC_BASICLOCALE].from;
 	}
 
-	/* the plan is to replace "#ifdef OW_I18N" by "if (_xv_is_multibyte)" */
-    if (XSupportsLocale()) {
-		_xv_is_multibyte = (strncmp(nl_langinfo(CODESET), "UTF", 3L) == 0);
-	}
-	else {
-		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-			if (oi->locale != NULL)
-				continue;
-
-			if (Ollc_const[i].posix >= 0) {
-				setlocale(Ollc_const[i].posix, "C");
-			}
-		}
-		_xv_is_multibyte = FALSE;
-	}
-
 	if (_xv_is_multibyte) {
 		fprintf(stderr, "in server_set_locale:\n");
 		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
 			fprintf(stderr, "\t%d. locale = '%s', set from %s\n",
 					i, oi->locale, server_get_locale_from_str(oi->from));
 		}
+		fprintf(stderr, "%s-%d: LC_CTYPE =%s\n",__FUNCTION__,__LINE__, setlocale( LC_CTYPE, NULL));
+		fprintf(stderr, "%s-%d: LC_MESSAGES =%s\n",__FUNCTION__,__LINE__, setlocale( LC_MESSAGES, NULL));
+		fprintf(stderr, "%s-%d: LC_NUMERIC =%s\n",__FUNCTION__,__LINE__, setlocale( LC_NUMERIC, NULL));
+		fprintf(stderr, "%s-%d: LC_TIME =%s\n",__FUNCTION__,__LINE__, setlocale( LC_TIME, NULL));
 	}
 }
 
 
-#ifdef OW_I18N
 /*
  * server_get_locale_name_str: Get the translated version of the
  * locale category name.  Table driven will not work with xgettext(1)
@@ -5461,129 +5338,118 @@ static char *server_get_locale_name_str(int	id)
 
 static void server_effect_locale(Server_info *server, char	*character_set)
 {
-    int			 i;
-    Ollc_item		*oi;
-    char		*lc_all;
-    Bool		 is_8859_1_locale;
-    Bool		 is_c_locale;
-    char		 msg[200];
+	int i;
+	Ollc_item *oi;
+	char *lc_all;
+	Bool is_8859_1_locale;
+	Bool is_c_locale;
+	char msg[200];
 
-
-    /*
-     * Sets LC_ALL, so that we can cover the none OPEN LOOK locale
-     * categories (such as LC_MONETARY).
-     */
-    oi = &server->ollc[OLLC_BASICLOCALE];
-    if (oi->from != OLLC_FROM_POSIX
-     && setlocale(LC_ALL, oi->locale) == NULL) {
 
 	/*
-	 * STRING_EXTRACTION - First %s is name of the locale, and
-	 * second %s is for where the locale setting was came from
-	 * (later in this file has a series of the message for second
-	 * %s.  Translater could use printf mechanism to switch the
-	 * order of the %s in SunOS 5.x, such as "%2$s" to specify the
-	 * second %s (see printf(3S) for more detail).
+	 * Sets LC_ALL, so that we can cover the none OPEN LOOK locale
+	 * categories (such as LC_MONETARY).
 	 */
-	(void) sprintf(msg,
-		       XV_MSG("Error when setting all locale categories to \"%s\" (set via %s)"),
-		       oi->locale, server_get_locale_from_str(oi->from));
-	server_warning(msg);
-	lc_all = ""; /* need to set by indivisual category */
-    } else
-	lc_all = oi->locale;
-
-    is_8859_1_locale = strcmp(character_set, ISO8859_1) == 0;
-    is_c_locale = strcmp(server->ollc[OLLC_BASICLOCALE].locale, "C") == 0;
-
-    for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-
-	/*
-	 * DEPEND_ON_EUC: Apply restriction for non latin1 locale (if
-	 * it non latin1 locale, all locale categories are should be
-	 * same as basic locale or "C").
-	 */
-	if ((oi != &server->ollc[OLLC_BASICLOCALE] && ! is_8859_1_locale
-	   && strcmp(oi->locale, server->ollc[OLLC_BASICLOCALE].locale) != 0
-	   && strcmp(oi->locale, "C") != 0)
-	  || (is_c_locale && strcmp(oi->locale, "C") != 0)) {
-	    /*
-	     * STRING_EXTRACTION - first %s is name of the locale,
-	     * second %s is name of the locale category, third %s is
-	     * where the this locale setting was came from, fourth %s
-	     * is translated "Basic Locale", and fifth %s is name of
-	     * locale for basic locale.  Again, translater can change
-	     * the order of those %s by using "%4$s" nortion of printf
-	     * (3S) format in SunOS 5.x.
-	     */
-	    (void) sprintf(msg, XV_MSG("Can not use \"%s\" as locale category %s (set via %s) while %s is \"%s\" - Defaulting to \"C\""),
-				oi->locale,
-				server_get_locale_name_str(i),
-			        server_get_locale_from_str(oi->from),
-				server_get_locale_name_str(OLLC_BASICLOCALE),
-				server->ollc[OLLC_BASICLOCALE].locale);
-	    server_warning(msg);
-	    xv_free(oi->locale);
-	    oi->locale = strdup("C");
-	    oi->from = OLLC_FROM_C;
-	}
-
-	/*
-	 * Try not to set unless it is really necessary.
-	 */
-	if (Ollc_const[i].posix >= 0
-	 && oi->from != OLLC_FROM_POSIX
-	 && strcmp(oi->locale, lc_all) != 0
-         && strcmp(oi->locale, setlocale(Ollc_const[i].posix, NULL)) != 0
-	 && setlocale (Ollc_const[i].posix, oi->locale) == NULL) {
-
-	    /*
-	     * STRING_EXTRACTION - First %s name of the locale
-	     * category, second %s is troubled locale name, and third
-	     * %s is where this locale name was sets.
-	     */
-	    (void) sprintf(msg,
-			   XV_MSG("Error when setting locale category (%s) to \"%s\" (set via %s"),
-			   server_get_locale_name_str(i),
-			   oi->locale,
-			   server_get_locale_from_str(oi->from));
-	    server_warning(msg);
-	    xv_free(oi->locale);
-	    oi->locale = strdup(setlocale(Ollc_const[i].posix, NULL));
-	}
-    }
-
-    
-    /*
-     * Make sure, the supplied locale is supported, otherwise default
-     * to C and continue.
-     */
-    if (!XSupportsLocale()) {
 	oi = &server->ollc[OLLC_BASICLOCALE];
-	(void) sprintf(msg, 
-		       XV_MSG("Supplied locale \"%s\" (set via %s) is not supported by Xlib - Defaulting to \"C\""),
-		       oi->locale,
-		       server_get_locale_from_str(oi->from));
-	server_warning(msg);
-        setlocale(LC_ALL, "C");
-	server_setlocale_to_c(server->ollc);
-    }
+	if (oi->from != OLLC_FROM_POSIX && setlocale(LC_ALL, oi->locale) == NULL) {
 
-    if(! XSetLocaleModifiers(""))
-	server_warning(XV_MSG("Error in setting Xlib locale Modifiers"));
+		/*
+		 * STRING_EXTRACTION - First %s is name of the locale, and
+		 * second %s is for where the locale setting was came from
+		 * (later in this file has a series of the message for second
+		 * %s.  Translater could use printf mechanism to switch the
+		 * order of the %s in SunOS 5.x, such as "%2$s" to specify the
+		 * second %s (see printf(3S) for more detail).
+		 */
+		(void)sprintf(msg,
+				XV_MSG
+				("Error when setting all locale categories to \"%s\" (set via %s)"),
+				oi->locale, server_get_locale_from_str(oi->from));
+		server_warning(msg);
+		lc_all = "";	/* need to set by indivisual category */
+	}
+	else
+		lc_all = oi->locale;
+
+	is_8859_1_locale = strcmp(character_set, ISO8859_1) == 0;
+	is_c_locale = strcmp(server->ollc[OLLC_BASICLOCALE].locale, "C") == 0;
+
+	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
+
+		/*
+		 * DEPEND_ON_EUC: Apply restriction for non latin1 locale (if
+		 * it non latin1 locale, all locale categories are should be
+		 * same as basic locale or "C").
+		 */
+		if ((oi != &server->ollc[OLLC_BASICLOCALE] && !is_8859_1_locale
+						&& strcmp(oi->locale,
+								server->ollc[OLLC_BASICLOCALE].locale) != 0
+						&& strcmp(oi->locale, "C") != 0)
+				|| (is_c_locale && strcmp(oi->locale, "C") != 0)) {
+			/*
+			 * STRING_EXTRACTION - first %s is name of the locale,
+			 * second %s is name of the locale category, third %s is
+			 * where the this locale setting was came from, fourth %s
+			 * is translated "Basic Locale", and fifth %s is name of
+			 * locale for basic locale.  Again, translater can change
+			 * the order of those %s by using "%4$s" nortion of printf
+			 * (3S) format in SunOS 5.x.
+			 */
+			(void)sprintf(msg,
+					XV_MSG("Can not use \"%s\" as locale category %s (set via %s) while %s is \"%s\" - Defaulting to \"C\""),
+					oi->locale, server_get_locale_name_str(i),
+					server_get_locale_from_str(oi->from),
+					server_get_locale_name_str(OLLC_BASICLOCALE),
+					server->ollc[OLLC_BASICLOCALE].locale);
+			server_warning(msg);
+			xv_free(oi->locale);
+			oi->locale = strdup("C");
+			oi->from = OLLC_FROM_C;
+		}
+
+		/*
+		 * Try not to set unless it is really necessary.
+		 */
+		if (Ollc_const[i].posix >= 0
+				&& oi->from != OLLC_FROM_POSIX
+				&& strcmp(oi->locale, lc_all) != 0
+				&& strcmp(oi->locale, setlocale(Ollc_const[i].posix, NULL)) != 0
+				&& setlocale(Ollc_const[i].posix, oi->locale) == NULL) {
+
+			/*
+			 * STRING_EXTRACTION - First %s name of the locale
+			 * category, second %s is troubled locale name, and third
+			 * %s is where this locale name was sets.
+			 */
+			(void)sprintf(msg,
+					XV_MSG
+					("Error when setting locale category (%s) to \"%s\" (set via %s"),
+					server_get_locale_name_str(i), oi->locale,
+					server_get_locale_from_str(oi->from));
+			server_warning(msg);
+			xv_free(oi->locale);
+			oi->locale = strdup(setlocale(Ollc_const[i].posix, NULL));
+		}
+	}
 
 
-    /*
-     * DEPEND_ON_OS: Should change when OS supplies word selection
-     * functionality.  Bind locale specific word selection routines.
-     */
-    _wckind_init();
+	/*
+	 * Make sure, the supplied locale is supported, otherwise default
+	 * to C and continue.
+	 */
+	if (!XSupportsLocale()) {
+		oi = &server->ollc[OLLC_BASICLOCALE];
+		(void)sprintf(msg,
+				XV_MSG("Supplied locale \"%s\" (set via %s) is not supported by Xlib - Defaulting to \"C\""),
+				oi->locale, server_get_locale_from_str(oi->from));
+		server_warning(msg);
+		setlocale(LC_ALL, "C");
+		server_setlocale_to_c(server->ollc);
+	}
 
+	if (!XSetLocaleModifiers(""))
+		server_warning(XV_MSG("Error in setting Xlib locale Modifiers"));
 }
-#endif /* OW_I18N */
-
-
-
 
 static void server_setlocale_to_c(Ollc_item *ollc)
 {
@@ -5619,7 +5485,6 @@ static void server_setlocale_to_default(Server_info	*server)
 	server->ollc[OLLC_BASICLOCALE].locale = strdup(def_locale);
 	(void)setlocale(LC_CTYPE, def_locale);
 
-#ifdef OW_I18N
 	if (!XSupportsLocale()) {
 		char msg[256];
 		(void)sprintf(msg,
@@ -5631,9 +5496,7 @@ static void server_setlocale_to_default(Server_info	*server)
 		server->ollc[OLLC_BASICLOCALE].locale = strdup("C");
 		(void)setlocale(LC_CTYPE, "C");
 	}
-#endif
 }
-#endif /* OS_HAS_LOCALE */
 
 
 static int server_destroy(Xv_Server server_public, Destroy_status status)
@@ -5713,25 +5576,10 @@ static int server_destroy(Xv_Server server_public, Destroy_status status)
 	if (server->localedir)  {
 	    xv_free(server->localedir);
 	}
-#ifdef OW_I18N
-#ifdef FULL_R5
-	if (server->preedit_style) {
-	   xv_free(server->preedit_style);
-	}
-	if (server->status_style) {
-	   xv_free(server->status_style);
-	}
-	if (server->supported_im_styles) {
-	   if (server->supported_im_styles->supported_styles)
-	      xv_free(server->supported_im_styles->supported_styles);
-	   xv_free(server->supported_im_styles);
-	}
-#endif /* FULL_R5 */
 	if (server->xim) {
             XCloseIM(server->xim);
             server->xim = NULL;
 	}
-#endif /* OW_I18N */
 
 	XCloseDisplay(server->xdisplay);
 	xv_free(server);
@@ -5943,9 +5791,7 @@ const static Server_atom2type Server_atom2type_tbl[] = {
 	{"_SUN_DRAGDROP_PREVIEW",	SERVER_WM_DRAGDROP_PREVIEW_TYPE},
 	{"_SUN_DRAGDROP_ACK",		SERVER_WM_DRAGDROP_ACK_TYPE},
 	{"_SUN_DRAGDROP_DONE",		SERVER_WM_DRAGDROP_DONE_TYPE},
-#ifdef OW_I18N
 	{"COMPOUND_TEXT",		SERVER_COMPOUND_TEXT_TYPE},
-#endif /* OW_I18N */
 	{NULL,				0}
 };
 
@@ -6635,21 +6481,10 @@ static Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 				ATTR_CONSUME(*attrs);
 				break;
 
-#ifdef OW_I18N
-			case XV_APP_NAME:
-				_xv_set_mbs_attr_dup(&server->app_name_string,
-						(char *)attrs[1]);
-				break;
-			case XV_APP_NAME_WCS:
-				_xv_set_wcs_attr_dup(&server->app_name_string,
-						(wchar_t *) attrs[1]);
-				break;
-#else
 			case XV_APP_NAME:
 				server->app_name_string = xv_strsave((char *)attrs[1]);
 				ATTR_CONSUME(*attrs);
 				break;
-#endif /*OW_I18N */
 
 				/* ACC_XVIEW */
 			case SERVER_ADD_ACCELERATOR_MAP:{
@@ -6984,19 +6819,11 @@ static Xv_opaque server_get_attr_tier2(Xv_Server server_public, int *status, Att
 		case XV_NAME:
 			return ((Xv_opaque) server->display_name);
 
-#ifdef OW_I18N
 		case SERVER_COMPOUND_TEXT:
 			return server_intern_atom(server, "COMPOUND_TEXT", 0L);
 
-		case XV_APP_NAME_WCS:
-			return ((Xv_opaque) _xv_get_wcs_attr_dup(&server->app_name_string));
-
-		case XV_APP_NAME:
-			return ((Xv_opaque) _xv_get_mbs_attr_dup(&server->app_name_string));
-#else
 		case XV_APP_NAME:
 			return ((Xv_opaque) server->app_name_string);
-#endif
 
 		case SERVER_DND_ACK_KEY:
 			return ((Xv_opaque) server->dnd_ack_key);
@@ -7090,10 +6917,8 @@ static Xv_opaque server_get_attr(Xv_Server server_public, int *status, Attr_attr
 		case XV_DISPLAY:
 			return (Xv_opaque) (server->xdisplay);
 
-#ifdef OW_I18N
 		case XV_IM:
 			return (Xv_opaque) (server->xim);
-#endif /* OW_I18N */
 
 		case SERVER_WM_ADD_DECOR:
 			return server_intern_atom(server, "_OL_DECOR_ADD", 0L);
@@ -7151,20 +6976,6 @@ static Xv_opaque server_get_attr(Xv_Server server_public, int *status, Attr_attr
 			/*
 			 * End of Sundae buyback
 			 */
-
-#ifdef OW_I18N
-
-#ifdef FULL_R5
-		case XV_IM_PREEDIT_STYLE:
-			return (Xv_opaque) server->preedit_style;
-
-		case XV_IM_STATUS_STYLE:
-			return (Xv_opaque) server->status_style;
-
-		case XV_IM_STYLES:
-			return (Xv_opaque) server->supported_im_styles;
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 		case SERVER_XV_MAP:
 			return ((Xv_opaque) server->xv_map);
@@ -7311,13 +7122,8 @@ static Xv_opaque server_get_attr(Xv_Server server_public, int *status, Attr_attr
 		case SERVER_EXTENSION_PROC:
 		case XV_NAME:
 
-#ifdef OW_I18N
 		case SERVER_COMPOUND_TEXT:
-		case XV_APP_NAME_WCS:
 		case XV_APP_NAME:
-#else
-		case XV_APP_NAME:
-#endif
 
 		case SERVER_DND_ACK_KEY:
 		case SERVER_ATOM_DATA:
@@ -7479,28 +7285,6 @@ typedef struct {
 	AVModif modif;
 } AVKeyword;
 
-#ifdef OW_I18N
-
-/*
- * Macro to define Process code string/character literal
- * e.g. widechar string literals should look like:
- *	L"foo"
- * multibyte strings look like:
- *	"foo"
- */
-#define XV_PROC_CODE(s)          L ## s
-
-/*
- * General macros that should be moved to misc/i18n_impl.h
- */
-#define STRSPN		wsspn
-#define SSCANF		wsscanf
-#define ISPUNCT		iswpunct
-#define ISSPACE		iswspace
-#define ISALNUM		iswalnum
-
-#else /* OW_I18N */
-
 #define XV_PROC_CODE(s)         s
 
 /*
@@ -7511,8 +7295,6 @@ typedef struct {
 #define ISPUNCT		ispunct
 #define ISSPACE		isspace
 #define ISALNUM		isalnum
-
-#endif /* OW_I18N */
 
 AVKeyword keywordTbl[] = {
 { XV_PROC_CODE("Meta"), modifMeta },
@@ -7572,11 +7354,7 @@ static void avAddModif(AcceleratorValue 	*avp, AVModif			modif);
 
 
 /* ACC_XVIEW */
-#ifdef OW_I18N
-Xv_private int		xv_wsncasecmp();
-#else
 Xv_private int		xv_strncasecmp(char *, char *, unsigned);
-#endif /* OW_I18N */
 /* ACC_XVIEW */
 
 extern XrmDatabase defaults_rdb;/* merged defaults database */
@@ -7588,12 +7366,7 @@ static AcceleratorValue getAcceleratorValue(CHAR *resourceString, XrmDatabase	db
 	AcceleratorValue av;
 
 	/* if its starts with 'coreset', look for coreset resource */
-#ifdef OW_I18N
-	if( !xv_wsncasecmp
-#else
-	if( !xv_strncasecmp
-#endif /* OW_I18N */
-	( resourceString, XV_PROC_CODE("coreset"), (unsigned)STRLEN(XV_PROC_CODE("coreset"))) ) {
+	if( !xv_strncasecmp(resourceString, XV_PROC_CODE("coreset"), (unsigned)STRLEN(XV_PROC_CODE("coreset"))) ) {
 
 	char funcname[100], resname[200];
 	XrmValue value;
@@ -7609,19 +7382,7 @@ static AcceleratorValue getAcceleratorValue(CHAR *resourceString, XrmDatabase	db
 	if( False == XrmGetResource( db, resname, "*", &strtype, &value ) )
 		av.error = 1;
 	else  {
-#ifdef OW_I18N
-		_xv_pswcs_t     pswcs = {0, NULL, NULL};
-
-		/*
-		 * Convert back to widechar before call parsing engine recursively
-		 */
-		_xv_pswcs_mbsdup(&pswcs, (char *)value.addr);
-		av = getAcceleratorValue( pswcs.value, db );
-		if (pswcs.storage != NULL)
-			xv_free(pswcs.storage);
-#else
 		av = getAcceleratorValue( value.addr, db );
-#endif /* OW_I18N */
 	}
 	return av;
 	}
@@ -7809,11 +7570,7 @@ static void avAddModif(AcceleratorValue 	*avp, AVModif			modif)
 
 static CHAR *avAddKey(AcceleratorValue	*avp, CHAR			*pos)
 {
-	CHAR *sp, *dp, strbuf[100];
-
-#ifdef OW_I18N
-	char strbuf_mb[100];
-#endif /* OW_I18N */
+	char *sp, *dp, strbuf[100];
 
 	/* if keysym already set, that's an error */
 	if (avp->keysym) {
@@ -7832,16 +7589,7 @@ static CHAR *avAddKey(AcceleratorValue	*avp, CHAR			*pos)
 						|| *sp == XV_PROC_CODE('_')); *dp++ = *sp++);
 		*dp = XV_PROC_CODE('\0');
 
-#ifdef OW_I18N
-		/*
-		 * Convert to multibyte to pass to XStringToKeysym()
-		 */
-		sprintf(strbuf_mb, "%ws", strbuf);
-		if (avp->keysym = XStringToKeysym(strbuf_mb))
-#else
 		if ((avp->keysym = XStringToKeysym(strbuf)))
-#endif /* OW_I18N */
-
 			pos = sp;
 		else
 			avp->error = 1;	/* nothing parses as a key */
@@ -7878,10 +7626,6 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 	CHAR *tmp_str = NULL;
 	AcceleratorValue av;
 
-#ifdef OW_I18N
-	_xv_pswcs_t pswcs = { 0, NULL, NULL };
-#endif /* OW_I18N */
-
 	if (!server_public || !keystr || !keysym || !code || !modifiers) {
 		return (XV_ERROR);
 	}
@@ -7902,12 +7646,7 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 	 * Make duplicate of keystr - our actions here will modify strings
 	 */
 
-#ifdef OW_I18N
-	_xv_pswcs_wcsdup(&pswcs, keystr);
-	tmp_str = pswcs.value;
-#else
 	tmp_str = xv_strsave(keystr);
-#endif /* OW_I18N */
 
 	/*
 	 * Parse string
@@ -7916,13 +7655,7 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 
 	if (av.error) {
 		if (tmp_str) {
-
-#ifdef OW_I18N
-			if (pswcs.storage != NULL)
-				xv_free(pswcs.storage);
-#else
 			xv_free(tmp_str);
-#endif /* OW_I18N */
 		}
 		return (XV_ERROR);
 	}
@@ -8070,81 +7803,13 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 	}
 
 	if (tmp_str) {
-
-#ifdef OW_I18N
-		if (pswcs.storage != NULL)
-			xv_free(pswcs.storage);
-#else
 		xv_free(tmp_str);
-#endif /* OW_I18N */
 	}
 
 	return (ret_val);
 }
 
 /* ACC_XVIEW */
-
-#ifdef OW_I18N
-#ifdef FULL_R5
-static XIMStyle
-xv_determine_im_style(im, avail_styles, req_preedit_style, req_status_style)
-        XIM             im;
-        XIMStyles       *avail_styles;     /* styles supported by IM server & toolkit*/
-        char            *req_preedit_style;  /* requested input style         */
-        char            *req_status_style; /* requested status style        */
-{
- 
-        XIMStyle        style = NULL;
-        XIMStyle        supported_styles[XV_SUPPORTED_STYLE_COUNT];
-        int             i,j;
- 
-        /* 
-         * Determine requested IM style
-	 */
-	if (req_preedit_style) {
-           if (!strcmp(req_preedit_style, "onTheSpot"))
-                style = XIMPreeditCallbacks;
-           else if (!strcmp(req_preedit_style,"overTheSpot"))
-                style = XIMPreeditPosition;
-           else if (!strcmp(req_preedit_style,"offTheSpot"))
-                style = XIMPreeditArea;
-           else if (!strcmp(req_preedit_style,"rootWindow"))
-                style = XIMPreeditNothing;
-           else if (!strcmp(req_preedit_style,"none"))
-                style = XIMPreeditNone;
-	}
- 
-	if (req_status_style) {
-           if (!strcmp(req_status_style,"clientDisplays"))
-                style |= XIMStatusCallbacks;
-           else if (!strcmp(req_status_style,"imDisplaysInClient"))
-                style |= XIMStatusArea;
-           else if (!strcmp(req_status_style,"imDisplaysInRoot"))
-                style |= XIMStatusNothing;
-           else if (!strcmp(req_status_style,"none"))
-                style |= XIMStatusNone;
-	}
-         
-        /* 
-	 * Find matching requested and supported style. 
-	 */
-        for (i=0; i < (int)avail_styles->count_styles; i++) 
-           if (style == avail_styles->supported_styles[i])
-              return((XIMStyle)style);
- 
-        /* Requested style is not supported, default to 
-	 * XIMPreeditNothing and XIMStatusNothing if it's available.
-         */
-	server_warning(XV_MSG("Requested input method style not supported."));
-	if (style != (XIMPreeditNothing | XIMStatusNothing)) {
-            for (i=0; i < (int)avail_styles->count_styles; i++) 
-                 if ((XIMPreeditNothing | XIMStatusNothing) == avail_styles->supported_styles[i])
-                     return((XIMStyle)(XIMPreeditNothing | XIMStatusNothing));
-	} else return (NULL);
-}
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
-
 
 static void server_warning(char *msg)
 {
@@ -8185,6 +7850,8 @@ Xv_private void server_trace_set_file_line(const char *file, int line)
 
 Xv_private void server_trace(int level, const char *format, ...)
 {
+	char *INIT_TRACE;
+
 	Xv_server srv = xv_default_server; /* das sollte fuer alle Zwecke reichen */
 
 	if (srv) {
@@ -8199,6 +7866,21 @@ Xv_private void server_trace(int level, const char *format, ...)
 			va_end(pvar);
 			(server->trace_proc)(srv, level, stackptr->cur_file,
 									stackptr->cur_line, buf);
+			--stackptr;
+			return;
+		}
+	}
+	INIT_TRACE = getenv("XV_INIT_TRACE");
+	if (INIT_TRACE && *INIT_TRACE) {
+		int tl = atoi(INIT_TRACE);
+
+		if (tl == level) {
+			va_list pvar;
+
+			fprintf(stderr, "%s-%d: ", stackptr->cur_file, stackptr->cur_line);
+			va_start(pvar, format);
+			vfprintf(stderr, format, pvar);
+			va_end(pvar);
 		}
 	}
 	--stackptr;
