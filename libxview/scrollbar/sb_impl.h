@@ -1,4 +1,4 @@
-/*      @(#)sb_impl.h 1.49 93/06/28 RCS: $Id: sb_impl.h,v 4.6 2025/01/15 20:54:33 dra Exp $ */
+/*      @(#)sb_impl.h 1.49 93/06/28 RCS: $Id: sb_impl.h,v 4.7 2026/07/21 06:22:51 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -9,7 +9,7 @@
 #ifndef	__scrollbar_impl_h
 #define	__scrollbar_impl_h
 
-/* $Id: sb_impl.h,v 4.6 2025/01/15 20:54:33 dra Exp $ */
+/* $Id: sb_impl.h,v 4.7 2026/07/21 06:22:51 dra Exp $ */
 /*
  * Module:	scrollbar_impl.h
  *
@@ -23,9 +23,6 @@
  * Include files: <only those required by THIS file>
  */
 #include <xview_private/i18n_impl.h>
-#ifdef OW_I18N
-#include <xview/xv_i18n.h>
-#endif /* OW_I18N */
 #include <xview/scrollbar.h>
 
 
