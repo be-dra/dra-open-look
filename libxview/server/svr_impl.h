@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.17 2026/03/07 19:57:16 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.18 2026/07/20 22:23:38 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -19,9 +19,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
-#ifdef OW_I18N
 #include <xview_private/i18n_impl.h> 
-#endif /* OW_I18N */
 #include <xview_private/svr_atom.h>
 
 /* maximum # of screens per server (arbitrary) */
@@ -156,32 +154,13 @@ typedef struct {
 					      * ttysw.  Pass them through to
 					      * the pty.
 					      */
-#ifdef OW_I18N
     XIM                  xim;		     /* handle to IM server */
-#ifdef FULL_R5
-    XIMStyles		*supported_im_styles;/* IM styles supported by both
-					      * im-server and toolkit 
-					      */
-    char		*preedit_style;	     /* preedit style requested */
-    char		*status_style;       /* status style requested */
-    					     /* Store as string so that we can
-					      * support a preference list 
-					      */
-    XIMStyle		 determined_im_style;/* Negotiated IM style based on
-					      * what is supported and requested.
-					      */
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
     Server_proc_list	*idproclist;
     Server_xid_list	*xidlist;
     XContext		 svr_dpy_context;    /* Context used in XSaveContext to
 					      * store svr obj from dpy struct.
 					      */
-#ifdef OW_I18N
-        _xv_string_attr_dup_t		app_name_string;
-#else
     char		*app_name_string;
-#endif
 	server_ui_registration_proc_t ui_reg_proc;
 	server_trace_proc_t trace_proc;
 	char *app_help_file;
