@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.4 2026/07/19 09:03:52 dra Exp $ ";
+static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.5 2026/07/20 22:22:11 dra Exp $ ";
 #endif
 #endif
 
@@ -32,7 +32,8 @@ static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v
  /* static int      gp_height, gp_width; */	/* = 0 for -A-R */
  /* static Pixrect *glyph_pr; */
 
-Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale, char **fs_list)
+Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale,
+										char **fs_list)
 {
 #define		TEMP_NAME_BUF_SIZE	1024
     char                save_locale[125];
@@ -76,21 +77,25 @@ Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale, char **fs_lis
         *temp_list++ = ',';
         *temp_list = '\0';
     }
-	SERVERTRACE((777, "%s: %s\n", __FUNCTION__, font_name_list));
-	font_set = XCreateFontSet(dpy, font_name_list, &miss_list, &missing_charset_count, &def_string);
+	SERVERTRACE((777, "%s: '%s', locale=%s\n", __FUNCTION__, font_name_list,
+								locale));
+	font_set = XCreateFontSet(dpy, font_name_list, &miss_list,
+						&missing_charset_count, &def_string);
 
-   if ((font_name_list) && (font_name_list != temp_name_buf))
+   	if ((font_name_list) && (font_name_list != temp_name_buf))
        free(font_name_list);
 
     setlocale(LC_CTYPE, (char *)save_locale);
 
-    if (miss_list && (missing_charset_count > 0))
+    if (miss_list && (missing_charset_count > 0)) {
+		int i;
+		SERVERTRACE((777, "  Fehlende Charsets: %d\n", missing_charset_count));
+		for (i = 0; i < missing_charset_count; i++) {
+			SERVERTRACE((777, "    - %s\n", miss_list[i]));
+		}
         XFreeStringList(miss_list);
+	}
 
-    if ((missing_charset_count > 0) && font_set) {
-        XFreeFontSet(dpy, font_set);
-        font_set = NULL;
-    }
 #undef	TEMP_NAME_BUF_SIZE
     return(font_set);
 }
