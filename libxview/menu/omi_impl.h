@@ -1,4 +1,4 @@
-/*	@(#)omi_impl.h 20.36 93/06/28 DRA: $Id: omi_impl.h,v 4.1 2024/03/28 17:36:33 dra Exp $ 		*/
+/*	@(#)omi_impl.h 20.36 93/06/28 DRA: $Id: omi_impl.h,v 4.2 2026/07/21 07:44:19 dra Exp $ 		*/
 
 /***********************************************************************/
 /*	                omi_impl.h			      	       */
@@ -20,9 +20,6 @@
 #endif  /* pixrect_DEFINED */
 #include <xview/font.h>
 #include <xview/svrimage.h>
-#ifdef OW_I18N
-#include <xview/xv_i18n.h>
-#endif /* OW_I18N */
 #include <xview_private/i18n_impl.h>
 
 #ifndef TRUE
@@ -52,12 +49,7 @@ struct image {
     int			*ops; /* Should be ops vector or unique id */
     Font		 font;
     Font		 bold_font;	/* bold version of "font" */
-#ifdef OW_I18N
-    _xv_string_attr_nodup_t
-			 string;
-#else
     char 		*string;
-#endif /* OW_I18N */
     Server_image	 svr_im;
     struct pr_pos	 left_pos;	/* position of left image
 					 * (usually pushpin) */
