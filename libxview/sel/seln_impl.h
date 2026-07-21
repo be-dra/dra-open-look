@@ -1,4 +1,4 @@
-/*	@(#)seln_impl.h 20.38 93/06/28		DRA: $Id: seln_impl.h,v 4.5 2025/01/26 22:08:57 dra Exp $ */
+/*	@(#)seln_impl.h 20.38 93/06/28		DRA: $Id: seln_impl.h,v 4.6 2026/07/21 06:25:19 dra Exp $ */
 
 #ifndef	suntool_selection_impl_DEFINED
 #define	suntool_selection_impl_DEFINED
@@ -65,22 +65,6 @@ typedef struct client_node    {
 
 #define HIST_SIZE	50
 
-#ifdef OW_I18N
-typedef struct {
-    unsigned char       first_time;
-    unsigned char       event_sent;
-    XID                 requestor;
-    Atom                property;
-    Atom                selection;
-    Atom                target;
-    Display             *display;
-    int                 chars_remaining;
-    Time                timestamp;
-    unsigned char       format;
-    CHAR                *buffer;
-    int                 offset;
-} Seln_agent_context;
-#else
 typedef struct {
     unsigned char     	first_time;
     unsigned char	event_sent;
@@ -93,7 +77,6 @@ typedef struct {
     Time		timestamp;
     unsigned char	format;
 } Seln_agent_context;
-#endif  /* OW_I18N */
 
 typedef struct {
     long		offset;
@@ -129,18 +112,8 @@ typedef union {
     Atom	object_content;
     Atom	object_size;
     Atom	sel_end;
-#ifdef OW_I18N
-    Atom        length_chars;
-    Atom	first_wc;
-    Atom	last_wc;
-    Atom        compound_text;
-#endif
 	} s;
-#ifdef OW_I18N
-	Atom a[30];
-#else
 	Atom a[26];
-#endif
 } Seln_target_atoms;
 #define SELN_PROPERTY	31
 
