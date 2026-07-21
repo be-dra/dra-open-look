@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svrim_ops.c 20.44 93/06/28 DRA: RCS $Id: svrim_ops.c,v 2.1 2020/07/26 07:31:18 dra Exp $ ";
+static char     sccsid[] = "@(#)svrim_ops.c 20.44 93/06/28 DRA: RCS $Id: svrim_ops.c,v 2.2 2026/07/21 06:49:07 dra Exp $ ";
 #endif
 #endif
 
@@ -18,10 +18,6 @@ static char     sccsid[] = "@(#)svrim_ops.c 20.44 93/06/28 DRA: RCS $Id: svrim_o
 #include <pixrect/pixrect.h>
 #include <pixrect/pixfont.h>
 #include <pixrect/memvar.h>
-
-#ifdef OW_I18N
-#include <xview/font.h>
-#endif /* OW_I18N */
 
 Xv_public int server_image_rop(Xv_opaque dest, int dx,	int dy, int dw, int dh, unsigned long op, Xv_opaque src, int sx, int sy)
 {
@@ -374,31 +370,3 @@ Xv_public int server_image_pf_text(struct pr_prpos rpr, int op, Pixfont *font, c
 							(int)strlen(string));
 	return 0;
 }
-
-
-#ifdef OW_I18N
-Xv_public int
-server_image_pf_text_wc(rpr, op, font, string)
-    struct pr_prpos rpr;
-    int             op;
-    Pixfont        *font;
-    CHAR           *string;
-{
-    Xv_Drawable_info *info;
-    Display        *display;
-    XID             xid;
-    GC              gc;
-
-    DRAWABLE_INFO_MACRO((Xv_opaque) rpr.pr, info);
-    display = xv_display(info);
-    xid = xv_xid(info);
-    gc = xv_find_proper_gc(display, info, PW_TEXT);
-
-    xv_set_gc_op(display, info, gc, op,
-		 PIX_OPCOLOR(op) ? XV_USE_OP_FG : XV_USE_CMS_FG,
-		 XV_DEFAULT_FG_BG);
-    XwcDrawImageString(display, xid,
-		       (XFontSet)xv_get((Xv_opaque)font, FONT_SET_ID),
-		       gc, rpr.pos.x, rpr.pos.y, string, STRLEN(string));
-}
-#endif /* OW_I18N */
