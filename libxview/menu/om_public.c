@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.10 2026/02/03 19:53:35 dra Exp $";
+static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.11 2026/07/21 07:44:19 dra Exp $";
 #endif
 #endif
 
@@ -234,14 +234,7 @@ va_dcl		/*** WARNING: menu_show does not support ATTR_LIST. ***/
 		goto menu_show_error;
 	}
 
-#ifdef OW_I18N
-	menu->ic_was_active = FALSE;
-	if (xv_get(win, WIN_USE_IM) == TRUE
-			&& (menu->ic_was_active = xv_get(win, WIN_IC_ACTIVE)) == TRUE) {
-		(void)xv_set(win, WIN_IC_ACTIVE, FALSE, NULL);
-		menu->client_window = win;
-	}
-#endif
+	menu->client_window = win;
 
 	menu->state = MENU_STATE_INIT;
 	initialize_keys();
@@ -262,11 +255,6 @@ va_dcl		/*** WARNING: menu_show does not support ATTR_LIST. ***/
 					NULL);
 			XUngrabPointer(display, server_get_timestamp(server));
 			XUngrabKeyboard(display, server_get_timestamp(server));
-
-#ifdef OW_I18N
-			if (menu->ic_was_active == TRUE)
-				xv_set(win, WIN_IC_ACTIVE, TRUE, NULL);
-#endif
 
 			goto menu_show_error;
 		}
@@ -335,11 +323,6 @@ Pkg_private void menu_done(Xv_menu_info *m)
 
 	XUngrabPointer(display, server_get_timestamp(server));
 	XUngrabKeyboard(display, server_get_timestamp(server));
-
-#ifdef OW_I18N
-	if (m->ic_was_active == TRUE)
-		xv_set(m->group_info->client_window, WIN_IC_ACTIVE, TRUE, NULL);
-#endif
 
 	if (m->status == MENU_STATUS_PIN)
 		(m->group_info->pinned_menu->pin_proc) (MENU_PUBLIC(m->group_info->
@@ -922,32 +905,10 @@ static Xv_opaque menu_pkg_find(Menu menu_public, const Xv_pkg *pkg,
 							&& mi->value == (Xv_opaque) attrs[1];
 					break;
 
-#ifdef OW_I18N
-				case MENU_STRING:
-					if (!_xv_is_string_attr_exist_nodup(&mi->image.string)) {
-						correct = 0;
-						break;
-					}
-					_xv_use_psmbs_value_nodup(&mi->image.string);
-					correct = strcmp(mi->image.string.psmbs.value,
-							(char *)attrs[1]) == 0;
-					break;
-
-				case MENU_STRING_WCS:
-					if (!_xv_is_string_attr_exist_nodup(&mi->image.string)) {
-						correct = 0;
-						break;
-					}
-					_xv_use_pswcs_value_nodup(&mi->image.string);
-					correct = wscmp(mi->image.string.pswcs.value,
-							(wchar_t *) attrs[1]) == 0;
-					break;
-#else
 				case MENU_STRING:
 					correct = mi->image.string && strcmp(mi->image.string,
 							(char *)attrs[1]) == 0;
 					break;
-#endif /* OW_I18N */
 
 				case MENU_VALUE:
 					correct = mi->value == (Xv_opaque) attrs[1];
@@ -1061,17 +1022,9 @@ Xv_public void menu_default_pin_proc(Menu menu_public, int x,int y)
 	Xv_menu_item_info *mi;
 	Panel panel;
 
-#ifdef OW_I18N
-	if (!menu->pin_window) {
-		_xv_use_pswcs_value_nodup(&menu->pin_window_header);
-		menu_create_pin_window(menu_public, menu->pin_parent_frame,
-				menu->pin_window_header.pswcs.value);
-	}
-#else
 	if (!menu->pin_window)
 		menu_create_pin_window(menu_public, menu->pin_parent_frame,
 				menu->pin_window_header);
-#endif
 
 	/* Call any Pullright Generate procedures */
 	for (i = 0; i < menu->nitems; i++) {
@@ -1099,11 +1052,6 @@ Xv_public void menu_default_pin_proc(Menu menu_public, int x,int y)
 	if (xv_get(menu->pin_window, KEY_SHOW) != TRUE) {
 		frame_rect->r_left = x;
 		frame_rect->r_top = y;
-
-#ifdef  OW_I18N
-		menu->pin_window_rect.r_left = x;
-		menu->pin_window_rect.r_top = y;
-#endif /* OW_I18N */
 	}
 	else {
 		frame_rect->r_left = menu->pin_window_rect.r_left;
@@ -1268,13 +1216,19 @@ Pkg_private void menu_create_pin_panel_items(Panel panel, Xv_menu_info *menu)
 	else ygap = menu->default_image.margin;
 
 	if (menu->default_image.font) {
-		xv_set(panel,
-#ifdef OW_I18N
-				XV_FONT, menu->default_image.font,
-#endif /* OW_I18N */
-				PANEL_LAYOUT, PANEL_VERTICAL,
-				PANEL_ITEM_Y_GAP, ygap,
-				NULL);
+		if (_xv_is_multibyte) {
+			xv_set(panel,
+					XV_FONT, menu->default_image.font,
+					PANEL_LAYOUT, PANEL_VERTICAL,
+					PANEL_ITEM_Y_GAP, ygap,
+					NULL);
+		}
+		else {
+			xv_set(panel,
+					PANEL_LAYOUT, PANEL_VERTICAL,
+					PANEL_ITEM_Y_GAP, ygap,
+					NULL);
+		}
 	}
 	else {
 		xv_set(panel,
@@ -1430,26 +1384,15 @@ Pkg_private void menu_create_pin_panel_items(Panel panel, Xv_menu_info *menu)
 			if (choice_item) {
 				xv_set(choice_item,
 						PANEL_CHOICE_IMAGE, choice_nbr, mi->image.svr_im,
-						PANEL_CHOICE_COLOR, choice_nbr, mi->color_index, NULL);
+						PANEL_CHOICE_COLOR, choice_nbr, mi->color_index,
+						NULL);
 				choice_nbr++;
 			}
 			else
 				xv_set(mi->panel_item_handle,
-						PANEL_LABEL_IMAGE, mi->image.svr_im, NULL);
-
-#ifdef  OW_I18N
-		}
-		else if (_xv_is_string_attr_exist_nodup(&mi->image.string)) {
-			_xv_use_pswcs_value_nodup(&mi->image.string);
-			if (choice_item)
-				xv_set(choice_item,
-						PANEL_CHOICE_STRING_WCS, choice_nbr++,
-						mi->image.string.pswcs.value, NULL);
-			else
-				xv_set(mi->panel_item_handle,
-						PANEL_LABEL_STRING_WCS, mi->image.string.pswcs.value,
+						PANEL_LABEL_IMAGE, mi->image.svr_im,
 						NULL);
-#else
+
 		}
 		else if (mi->image.string) {
 			if (choice_item)
@@ -1482,7 +1425,6 @@ Pkg_private void menu_create_pin_panel_items(Panel panel, Xv_menu_info *menu)
 			else
 				xv_set(mi->panel_item_handle,
 						PANEL_LABEL_STRING, mi->image.string, NULL);
-#endif /* OW_I18N */
 		}
 		else
 			xv_error(XV_NULL,
@@ -1577,13 +1519,8 @@ static void menu_create_pin_window(Menu menu_public, Frame parent_frame,
 	 */
 	if (menu->group_info) {
 		cmd_frame = xv_create(parent_frame, FRAME_CMD,
-
-#ifdef  OW_I18N
-				WIN_USE_IM, FALSE, FRAME_LABEL_WCS, frame_label,
-#else
+				WIN_USE_IM, FALSE,
 				FRAME_LABEL, frame_label,
-#endif /* OW_I18N */
-
 				FRAME_CMD_PANEL_BORDERED, FALSE,
 				XV_SHOW, FALSE,
 				WIN_PARENT, xv_get(parent_frame, XV_ROOT),
@@ -1592,13 +1529,8 @@ static void menu_create_pin_window(Menu menu_public, Frame parent_frame,
 	}
 	else {
 		cmd_frame = xv_create(parent_frame, FRAME_CMD,
-
-#ifdef  OW_I18N
-				WIN_USE_IM, FALSE, FRAME_LABEL_WCS, frame_label,
-#else
+				WIN_USE_IM, FALSE,
 				FRAME_LABEL, frame_label,
-#endif /* OW_I18N */
-
 				FRAME_CMD_PANEL_BORDERED, FALSE,
 				XV_SHOW, FALSE,
 				WIN_PARENT, xv_get(parent_frame, XV_ROOT),
