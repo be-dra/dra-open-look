@@ -1,4 +1,4 @@
-/*	@(#)sel_attrs.h 20.22 93/06/28	DRA: $Id: sel_attrs.h,v 4.1 2024/03/28 18:30:35 dra Exp $ */
+/*	@(#)sel_attrs.h 20.22 93/06/28	DRA: $Id: sel_attrs.h,v 4.2 2026/07/21 06:25:16 dra Exp $ */
 
 #ifndef	xview_selection_attributes_DEFINED
 #define	xview_selection_attributes_DEFINED
@@ -60,13 +60,6 @@ typedef enum	{
 				= SELN_ATTR(ATTR_NO_VALUE,	         65),
 	SELN_REQ_CONTENTS_ASCII	= SELN_ATTR_LIST(ATTR_NULL, ATTR_CHAR,  2),
 
-#ifdef OW_I18N
-	SELN_REQ_CONTENTS_WCS   = SELN_ATTR_LIST(ATTR_NULL, ATTR_WCHAR, 202),
-        SELN_REQ_CHARSIZE       = SELN_ATTR(ATTR_INT,                   204),
-	SELN_REQ_FIRST_WC	= SELN_ATTR(ATTR_INT,		        205),
-	SELN_REQ_LAST_WC	= SELN_ATTR(ATTR_INT,		        206),
-#endif /*OW_I18N*/
-
 	SELN_REQ_CONTENTS_PIECES= SELN_ATTR_LIST(ATTR_NULL, ATTR_CHAR,  3),
 	SELN_REQ_DELETE		= SELN_ATTR(ATTR_NO_VALUE,	        66),
 	SELN_REQ_END_REQUEST	= SELN_ATTR(ATTR_NO_VALUE,	        253),
@@ -85,10 +78,6 @@ typedef enum	{
 	/*
 	 * Private Attributes 
 	 */
-#ifdef OW_I18N
-        SELN_REQ_CONTENTS_CT    = SELN_ATTR_LIST(ATTR_NULL, ATTR_CHAR,  203),
-#endif /*OW_I18N*/
-
 	SELN_AGENT_INFO		= SELN_ATTR(ATTR_OPAQUE,                100),
 	SELN_REQ_FUNC_KEY_STATE	= SELN_ATTR(ATTR_INT,		 	101),
 	SELN_REQ_SELECTED_WINDOWS= SELN_ATTR_LIST(ATTR_NULL, ATTR_INT, 	102),
