@@ -1,4 +1,4 @@
-/*	@(#)svr_atom.h 1.25 93/06/28 SMI   DRA: $Id: svr_atom.h,v 4.1 2024/03/28 18:37:42 dra Exp $	*/
+/*	@(#)svr_atom.h 1.25 93/06/28 SMI   DRA: $Id: svr_atom.h,v 4.2 2026/07/20 22:23:38 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -12,11 +12,7 @@
 #include <xview/server.h>
 
 /* Maximum number of atom types */
-#ifdef OW_I18N
 #define MAX_NUM_ATOMS		46
-#else
-#define MAX_NUM_ATOMS		45
-#endif /* OW_I18N */
 
 typedef enum {		/* values for server_atom_type */
     SERVER_WM_WIN_ATTR_TYPE,
@@ -72,12 +68,8 @@ typedef enum {		/* values for server_atom_type */
     SERVER_WM_DRAGDROP_TRIGGER_TYPE,
     SERVER_WM_DRAGDROP_ACK_TYPE,
     SERVER_WM_DRAGDROP_DONE_TYPE,
-    SERVER_WM_UNKNOWN_TYPE
-
-#ifdef OW_I18N
-	,
+    SERVER_WM_UNKNOWN_TYPE ,
     SERVER_COMPOUND_TEXT_TYPE
-#endif /* OW_I18N */
 
 } Server_atom_type;
 
