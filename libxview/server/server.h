@@ -1,4 +1,4 @@
-/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.11 2025/12/30 14:30:58 dra Exp $      */
+/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.12 2026/07/20 22:23:38 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -128,9 +128,7 @@ typedef enum {
 	SERVER_REMOVE_ACCELERATOR_MAP	= SERVER_ATTR(ATTR_OPAQUE_PAIR, 106),
         /* ACC_XVIEW */
 	SERVER_DISPLAY_CONTEXT		= SERVER_ATTR(ATTR_INT,		111),
-#ifdef OW_I18N
 	SERVER_COMPOUND_TEXT            = SERVER_ATTR(ATTR_OPAQUE, 	249),
-#endif /* OW_I18N */
 
 	/* Private attributes that may be deleted in future revisions */
 	SERVER_WM_RESCALE		= SERVER_ATTR(ATTR_OPAQUE,	25),
