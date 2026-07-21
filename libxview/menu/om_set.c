@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_set.c 20.96 93/06/28 DRA: $Id: om_set.c,v 4.5 2025/07/27 19:41:29 dra Exp $";
+static char     sccsid[] = "@(#)om_set.c 20.96 93/06/28 DRA: $Id: om_set.c,v 4.6 2026/07/21 07:44:19 dra Exp $";
 #endif
 #endif
 
@@ -31,23 +31,13 @@ static char     sccsid[] = "@(#)om_set.c 20.96 93/06/28 DRA: $Id: om_set.c,v 4.5
  */
 /* None */
 
-#ifdef OW_I18N
-#define XV_CORESET_STR		L"coreset"
-#else
-#define XV_CORESET_STR		"coreset"
-#endif /* OW_I18N */
-
 extern int panel_item_destroy_flag;
 
 /*
  * XView Private
  */
 static void menu_set_key_qual(Menu menu, Menu_item	item, int set, KeySym keysym, unsigned int	modifiers, unsigned int	diamond_modmask, char *qual_str);
-#ifdef OW_I18N
-Xv_private int	xv_wsncasecmp();
-#else
 Xv_private int xv_strncasecmp(char *str1, char *str2, int n);
-#endif /* OW_I18N */
 
 /*
  * Private
@@ -97,15 +87,6 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 			case MENU_PULLRIGHT_IMAGE:
 			case MENU_PULLRIGHT_ITEM:
 			case MENU_STRING_ITEM:
-
-#ifdef OW_I18N
-			case MENU_ACTION_ITEM_WCS:
-			case MENU_GEN_PULLRIGHT_ITEM_WCS:
-			case MENU_GEN_PROC_ITEM_WCS:
-			case MENU_PULLRIGHT_ITEM_WCS:
-			case MENU_STRING_ITEM_WCS:
-#endif /* OW_I18N */
-
 				if (m->nitems < m->max_nitems || extend_item_list(m)) {
 					m->item_list[m->nitems++] =
 							MENU_ITEM_PRIVATE(xv_create(XV_NULL, MENUITEM,
@@ -116,10 +97,6 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 
 				/* ACC_XVIEW */
 			case MENU_ACTION_ACCELERATOR:
-
-#ifdef OW_I18N
-			case MENU_ACTION_ACCELERATOR_WCS:
-#endif /* OW_I18N */
 
 				if (m->nitems < m->max_nitems || extend_item_list(m)) {
 					m->item_list[m->nitems++] =
@@ -306,28 +283,12 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 				m->default_image.width = m->default_image.height = 0;
 				break;
 
-#ifdef  OW_I18N
-			case MENU_GEN_PIN_WINDOW:
-				_xv_set_mbs_attr_nodup(&m->pin_window_header, (char *)attrs[2]);
-				goto menu_gen_pin_window;
-
-			case MENU_GEN_PIN_WINDOW_WCS:
-				_xv_set_wcs_attr_nodup(&m->pin_window_header,
-						(wchar_t *)attrs[2]);
-			  menu_gen_pin_window:
-				m->pin_parent_frame = (Xv_opaque) attrs[1];
-				if (!m->pin)
-					menu_add_pin(m);
-				break;
-
-#else
 			case MENU_GEN_PIN_WINDOW:
 				m->pin_parent_frame = (Xv_opaque) attrs[1];
 				m->pin_window_header = (char *)attrs[2];
 				if (!m->pin)
 					menu_add_pin(m);
 				break;
-#endif /* OW_I18N */
 
 			case MENU_GEN_PROC:
 				m->gen_proc = (Menu_gen_proc_t) attrs[1];
@@ -449,13 +410,7 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 				else if (m->pin) {
 					m->pin = FALSE;
 
-#ifdef OW_I18N
-					if (_xv_is_string_attr_exist_nodup(&m->item_list[0]->image.
-									string) ||
-#else
 					if (m->item_list[0]->image.string ||
-#endif
-
 							m->item_list[0]->image.svr_im) {
 						/* Force recomputation of item size in menu_compute_max_item_size */
 						m->item_list[0]->image.width = 0;
@@ -563,53 +518,6 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 				}
 				break;
 
-#ifdef  OW_I18N
-			case MENU_STRINGS_WCS:
-			case MENU_STRINGS:
-				{
-					char **a = (char **)&attrs[1];
-
-					while (*a) {
-						if (m->nitems < m->max_nitems || extend_item_list(m)) {
-							m->item_list[m->nitems] =
-									MENU_ITEM_PRIVATE(xv_create(XV_NULL,
-											MENUITEM, MENU_RELEASE,
-											(attrs[0] ==
-													MENU_STRINGS) ?
-											MENU_STRING_ITEM :
-											MENU_STRING_ITEM_WCS, *a++,
-											m->nitems + 1, NULL));
-						}
-						m->nitems++;
-					}
-				}
-				repin = TRUE;
-				break;
-
-			case MENU_STRINGS_AND_ACCELERATORS_WCS:
-			case MENU_STRINGS_AND_ACCELERATORS:
-				{
-					char **a = (char **)&attrs[1];
-
-					while (*a) {
-						if (m->nitems < m->max_nitems || extend_item_list(m)) {
-							m->item_list[m->nitems] =
-									MENU_ITEM_PRIVATE(xv_create(XV_NULL,
-											MENUITEM, XV_INSTANCE_NAME, *a,
-											MENU_RELEASE,
-											(attrs[0] ==
-													MENU_STRINGS_AND_ACCELERATORS)
-											? MENU_STRING_AND_ACCELERATOR :
-											MENU_STRING_AND_ACCELERATOR_WCS,
-											*a++, *a++, NULL));
-						}
-						m->nitems++;
-					}
-				}
-				repin = TRUE;
-				break;
-
-#else
 			case MENU_STRINGS:
 				{
 					char **a = (char **)&attrs[1];
@@ -652,26 +560,7 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 				repin = TRUE;
 				break;
 				/* ACC_XVIEW */
-#endif /* OW_I18N */
 
-
-#ifdef  OW_I18N
-			case MENU_TITLE_ITEM:
-			case MENU_TITLE_ITEM_WCS:
-				if (!m->item_list[0] || !m->item_list[0]->title)
-					menu_create_title(m,
-							MENU_TITLE_ITEM == (Menu_attribute) attrs[0] ?
-							MENU_STRING :
-							MENU_TITLE_ITEM_WCS == (Menu_attribute) attrs[0] ?
-							MENU_STRING_WCS : MENU_IMAGE, attrs[1]);
-				else
-					xv_set(MENU_ITEM_PUBLIC(m->item_list[0]),
-							MENU_TITLE_ITEM == (Menu_attribute) attrs[0] ?
-							MENU_STRING :
-							MENU_TITLE_ITEM_WCS == (Menu_attribute) attrs[0] ?
-							MENU_STRING_WCS : MENU_IMAGE, attrs[1], NULL);
-				break;
-#else
 			case MENU_TITLE_ITEM:
 				if (!m->item_list[0] || !m->item_list[0]->title)
 					menu_create_title(m,
@@ -680,9 +569,9 @@ Pkg_private Xv_opaque menu_sets(Menu menu_public, Attr_attribute *attrs)
 				else
 					xv_set(MENU_ITEM_PUBLIC(m->item_list[0]),
 							MENU_TITLE_ITEM == (Menu_attribute) attrs[0] ?
-							MENU_STRING : MENU_IMAGE, attrs[1], NULL);
+							MENU_STRING : MENU_IMAGE, attrs[1],
+							NULL);
 				break;
-#endif /* OW_I18N */
 
 			case MENU_VALID_RESULT:
 				m->valid_result = (int)attrs[1];
@@ -761,70 +650,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				}
 				break;
 
-#ifdef  OW_I18N
-			case MENU_ACTION_ITEM:
-			case MENU_ACTION_ITEM_WCS:
-				if (mi->image.free_string)
-					_xv_free_string_attr_nodup(&mi->image.string);
-				if (attrs[0] == MENU_ACTION_ITEM)
-					_xv_set_mbs_attr_nodup(&mi->image.string, (char *)attrs[1]);
-				else
-					_xv_set_wcs_attr_nodup(&mi->image.string,
-							(wchar_t *)attrs[1]);
-				mi->image.width = mi->image.height = 0;
-				mi->notify_proc = (Xv_opaque(*)())attrs[2];
-				if (mi->parent && mi->parent->pin_window
-						&& mi->panel_item_handle) {
-					_xv_use_pswcs_value_nodup(&mi->image.string);
-					xv_set(mi->panel_item_handle,
-							PANEL_LABEL_STRING_WCS,
-							mi->image.string.pswcs.value, XV_KEY_DATA,
-							MENU_NOTIFY_PROC, mi->notify_proc, NULL);
-				}
-				break;
-
-				/* ACC_XVIEW */
-			case MENU_ACTION_ACCELERATOR:
-			case MENU_ACTION_ACCELERATOR_WCS:
-				{
-
-					if (mi->image.free_string)
-						_xv_free_string_attr_nodup(&mi->image.string);
-					if ((char *)attrs[3]) {
-						/*
-						 * free current acc string
-						 */
-						if (_xv_is_string_attr_exist_dup(&mi->menu_acc)) {
-							_xv_free_ps_string_attr_dup(&mi->menu_acc);
-						}
-					}
-
-					if (attrs[0] == MENU_ACTION_ACCELERATOR) {
-						_xv_set_mbs_attr_nodup(&mi->image.string,
-								(char *)attrs[1]);
-						_xv_set_mbs_attr_dup(&mi->menu_acc, (char *)attrs[3]);
-					}
-					else {
-						_xv_set_wcs_attr_nodup(&mi->image.string,
-								(wchar_t *)attrs[1]);
-						_xv_set_wcs_attr_dup(&mi->menu_acc,
-								(wchar_t *)attrs[3]);
-					}
-
-					mi->image.width = mi->image.height = 0;
-
-					mi->notify_proc = (Xv_opaque(*)())attrs[2];
-					if (mi->parent && mi->parent->pin_window
-							&& mi->panel_item_handle) {
-						_xv_use_pswcs_value_nodup(&mi->image.string);
-						xv_set(mi->panel_item_handle,
-								PANEL_LABEL_STRING_WCS,
-								mi->image.string.pswcs.value, XV_KEY_DATA,
-								MENU_NOTIFY_PROC, mi->notify_proc, NULL);
-					}
-					break;
-				}
-#else
 			case MENU_ACTION_ITEM:
 				if (mi->image.free_string && mi->image.string)
 					free(mi->image.string);
@@ -867,101 +692,7 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 					break;
 				}
 				/* ACC_XVIEW */
-#endif /* OW_I18N */
 
-
-
-#ifdef  OW_I18N
-			case MENU_STRING_ITEM:
-			case MENU_STRING_ITEM_WCS:
-				if (mi->image.free_string)
-					_xv_free_string_attr_nodup(&mi->image.string);
-				if (attrs[0] == MENU_STRING_ITEM)
-					_xv_set_mbs_attr_nodup(&mi->image.string, (char *)attrs[1]);
-				else
-					_xv_set_wcs_attr_nodup(&mi->image.string,
-							(wchar_t *)attrs[1]);
-				mi->image.width = mi->image.height = 0;
-				mi->value = (Xv_opaque) attrs[2];
-				if (mi->parent && mi->parent->pin_window
-						&& mi->panel_item_handle) {
-					_xv_use_pswcs_value_nodup(&mi->image.string);
-					xv_set(mi->panel_item_handle,
-							PANEL_LABEL_STRING_WCS,
-							mi->image.string.pswcs.value, NULL);
-				}
-				break;
-
-				/* ACC_XVIEW */
-			case MENU_STRING_AND_ACCELERATOR:
-			case MENU_STRING_AND_ACCELERATOR_WCS:
-				{
-
-					if (mi->image.free_string)
-						_xv_free_string_attr_nodup(&mi->image.string);
-					if ((char *)attrs[2]) {
-						/*
-						 * free current acc string
-						 */
-						if (_xv_is_string_attr_exist_dup(&mi->menu_acc)) {
-							_xv_free_ps_string_attr_dup(&mi->menu_acc);
-						}
-					}
-					if (attrs[0] == MENU_STRING_AND_ACCELERATOR) {
-						_xv_set_mbs_attr_nodup(&mi->image.string,
-								(char *)attrs[1]);
-						_xv_set_mbs_attr_dup(&mi->menu_acc, (char *)attrs[2]);
-					}
-					else {
-						_xv_set_wcs_attr_nodup(&mi->image.string,
-								(wchar_t *)attrs[1]);
-						_xv_set_wcs_attr_dup(&mi->menu_acc,
-								(wchar_t *)attrs[2]);
-					}
-
-					mi->image.width = mi->image.height = 0;
-					mi->value = (Xv_opaque) attrs[3];
-					if (mi->parent && mi->parent->pin_window &&
-							mi->panel_item_handle) {
-						_xv_use_pswcs_value_nodup(&mi->image.string);
-						xv_set(mi->panel_item_handle,
-								PANEL_LABEL_STRING_WCS,
-								mi->image.string.pswcs.value, NULL);
-					}
-					break;
-				}
-
-
-			case MENU_ACCELERATOR:
-			case MENU_ACCELERATOR_WCS:
-				{
-
-					/*
-					 * free current acc string
-					 */
-					if (_xv_is_string_attr_exist_dup(&mi->menu_acc)) {
-						_xv_free_ps_string_attr_dup(&mi->menu_acc);
-					}
-
-					if (attrs[0] == MENU_ACCELERATOR) {
-
-						if ((char *)attrs[1]) {
-							_xv_set_mbs_attr_dup(&mi->menu_acc,
-									(char *)attrs[1]);
-						}
-					}
-					else {
-
-						if ((wchar_t *)attrs[1]) {
-							_xv_set_wcs_attr_dup(&mi->menu_acc,
-									(wchar_t *)attrs[1]);
-						}
-					}
-
-					break;
-				}
-				/* ACC_XVIEW */
-#else
 			case MENU_STRING_ITEM:
 				if (mi->image.free_string && mi->image.string)
 					free(mi->image.string);
@@ -1019,7 +750,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				}
 
 				/* ACC_XVIEW */
-#endif /* OW_I18N */
 
 			case MENU_ACTION_IMAGE:
 				if (mi->image.free_svr_im && mi->image.svr_im)
@@ -1062,32 +792,15 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 
 				/* ACC_XVIEW */
 			case MENU_ACC_KEY:
-
-#ifdef OW_I18N
-				if (mi->key_image.free_string)
-					_xv_free_string_attr_nodup(&mi->key_image.string);
-				_xv_set_mbs_attr_nodup(&mi->key_image.string, (char *)attrs[1]);
-#else
 				if (mi->key_image.free_string && mi->key_image.string)
 					xv_free(mi->key_image.string);
 				mi->key_image.string = (char *)attrs[1];
-#endif /* OW_I18N */
-
 				break;
 
 			case MENU_ACC_QUAL:
-
-#ifdef OW_I18N
-				if (mi->qual_image.free_string)
-					_xv_free_string_attr_nodup(&mi->qual_image.string);
-				_xv_set_mbs_attr_nodup(&mi->qual_image.string,
-						(char *)attrs[1]);
-#else
 				if (mi->qual_image.free_string && mi->qual_image.string)
 					xv_free(mi->qual_image.string);
 				mi->qual_image.string = (char *)attrs[1];
-#endif /* OW_I18N */
-
 				break;
 				/* ACC_XVIEW */
 
@@ -1124,28 +837,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				}
 				break;
 
-#ifdef  OW_I18N
-			case MENU_GEN_PROC_ITEM:
-			case MENU_GEN_PROC_ITEM_WCS:
-				if (mi->image.free_string)
-					_xv_free_string_attr_nodup(&mi->image.string);
-				if (attrs[0] == MENU_GEN_PROC_ITEM)
-					_xv_set_mbs_attr_nodup(&mi->image.string, (char *)attrs[1]);
-				else
-					_xv_set_wcs_attr_nodup(&mi->image.string,
-							(wchar_t *)attrs[1]);
-				mi->image.width = mi->image.height = 0;
-				mi->gen_proc = (Menu_item(*)())attrs[2];
-				if (mi->parent && mi->parent->pin_window
-						&& mi->panel_item_handle) {
-					_xv_use_pswcs_value_nodup(&mi->image.string);
-					xv_set(mi->panel_item_handle,
-							PANEL_LABEL_STRING_WCS,
-							mi->image.string.pswcs.value, NULL);
-				}
-				break;
-
-#else
 			case MENU_GEN_PROC_ITEM:
 				if (mi->image.free_string && mi->image.string)
 					free(mi->image.string);
@@ -1158,7 +849,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 							mi->image.string, NULL);
 				}
 				break;
-#endif /* OW_I18N */
 
 			case MENU_GEN_PULLRIGHT:
 				mi->gen_pullright = (Menu_item_gen_proc_t) attrs[1];
@@ -1182,30 +872,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				mi->mark_type |= OLGX_HORIZ_MENU_MARK;
 				break;
 
-#ifdef  OW_I18N
-			case MENU_GEN_PULLRIGHT_ITEM:
-			case MENU_GEN_PULLRIGHT_ITEM_WCS:
-				if (mi->image.free_string)
-					_xv_free_string_attr_nodup(&mi->image.string);
-				if (attrs[0] == MENU_GEN_PULLRIGHT_ITEM)
-					_xv_set_mbs_attr_nodup(&mi->image.string, (char *)attrs[1]);
-				else
-					_xv_set_wcs_attr_nodup(&mi->image.string,
-							(wchar_t *)attrs[1]);
-				mi->image.width = mi->image.height = 0;
-				mi->gen_pullright = (Menu(*)())attrs[2];
-				mi->pullright = mi->gen_pullright != XV_NULL;
-				mi->value = 0;
-				if (mi->parent && mi->parent->pin_window
-						&& mi->panel_item_handle) {
-					_xv_use_pswcs_value_nodup(&mi->image.string);
-					xv_set(mi->panel_item_handle,
-							PANEL_LABEL_STRING_WCS,
-							mi->image.string.pswcs.value, NULL);
-				}
-				break;
-
-#else
 			case MENU_GEN_PULLRIGHT_ITEM:
 				if (mi->image.free_string && mi->image.string)
 					free(mi->image.string);
@@ -1221,7 +887,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				}
 				mi->mark_type |= OLGX_HORIZ_MENU_MARK;
 				break;
-#endif /* OW_I18N */
 
 			case MENU_IMAGE:
 				if (mi->image.free_svr_im && mi->image.svr_im)
@@ -1278,30 +943,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				mi->mark_type |= OLGX_HORIZ_MENU_MARK;
 				break;
 
-#ifdef  OW_I18N
-			case MENU_PULLRIGHT_ITEM:
-			case MENU_PULLRIGHT_ITEM_WCS:
-				if (mi->image.free_string)
-					_xv_free_string_attr_nodup(&mi->image.string);
-				if (attrs[0] == MENU_PULLRIGHT_ITEM)
-					_xv_set_mbs_attr_nodup(&mi->image.string, (char *)attrs[1]);
-				else
-					_xv_set_wcs_attr_nodup(&mi->image.string,
-							(wchar_t *)attrs[1]);
-				mi->image.width = mi->image.height = 0;
-				mi->value = (Xv_opaque) attrs[2];
-				mi->pullright = mi->value != XV_NULL;
-				if (mi->parent && mi->parent->pin_window
-						&& mi->panel_item_handle) {
-					_xv_use_pswcs_value_nodup(&mi->image.string);
-					xv_set(mi->panel_item_handle,
-							PANEL_LABEL_STRING_WCS,
-							mi->image.string.pswcs.value, PANEL_ITEM_MENU,
-							mi->value, NULL);
-				}
-				break;
-
-#else
 			case MENU_PULLRIGHT_ITEM:
 				if (mi->image.free_string && mi->image.string)
 					free(mi->image.string);
@@ -1316,7 +957,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				}
 				mi->mark_type |= OLGX_HORIZ_MENU_MARK;
 				break;
-#endif /* OW_I18N */
 
 			case MENU_RELEASE:
 				mi->free_item = TRUE;
@@ -1331,27 +971,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 				mi->selected = (int)attrs[1];
 				break;
 
-#ifdef  OW_I18N
-			case MENU_STRING:
-			case MENU_STRING_WCS:
-				if (mi->image.free_string)
-					_xv_free_string_attr_nodup(&mi->image.string);
-				if (attrs[0] == MENU_STRING)
-					_xv_set_mbs_attr_nodup(&mi->image.string, (char *)attrs[1]);
-				else
-					_xv_set_wcs_attr_nodup(&mi->image.string,
-							(wchar_t *)attrs[1]);
-				mi->image.width = mi->image.height = 0;
-				if (mi->parent && mi->parent->pin_window
-						&& mi->panel_item_handle) {
-					_xv_use_pswcs_value_nodup(&mi->image.string);
-					xv_set(mi->panel_item_handle,
-							PANEL_LABEL_STRING_WCS,
-							mi->image.string.pswcs.value, NULL);
-				}
-				break;
-
-#else
 			case MENU_STRING:
 				if (mi->image.free_string && mi->image.string)
 					free(mi->image.string);
@@ -1363,7 +982,6 @@ Pkg_private Xv_opaque menu_item_sets(Menu_item menu_item_public, Attr_attribute 
 							mi->image.string, NULL);
 				}
 				break;
-#endif /* OW_I18N */
 
 			case MENU_TITLE:
 				mi->title = TRUE;
@@ -1500,13 +1118,8 @@ Pkg_private void menu_item_destroys(Xv_menu_item_info *mi, void (*destroy_proc) 
 		return;
 	if (mi->image.free_image) {
 
-#ifdef OW_I18N
-		if (mi->image.free_string)
-			_xv_free_string_attr_nodup(&mi->image.string);
-#else
 		if (mi->image.free_string && mi->image.string)
 			free(mi->image.string);
-#endif
 
 		if (mi->image.free_svr_im && mi->image.svr_im)
 			xv_destroy(mi->image.svr_im);
@@ -1515,22 +1128,12 @@ Pkg_private void menu_item_destroys(Xv_menu_item_info *mi, void (*destroy_proc) 
 	 * free current acc string
 	 */
 
-#ifdef OW_I18N
-	if (_xv_is_string_attr_exist_dup(&mi->menu_acc)) {
-		_xv_free_ps_string_attr_dup(&mi->menu_acc);
-	}
-#else
 	if (mi->menu_acc) {
 		xv_free(mi->menu_acc);
 	}
-#endif /* OW_I18N */
 
 	if (destroy_proc)
 		destroy_proc(MENU_ITEM_PUBLIC(mi), (Attr_attribute) MENU_ITEM);
-
-#ifdef OW_I18N
-	_xv_free_ps_string_attr_nodup(&mi->image.string);
-#endif /* OW_I18N */
 
 	free((char *)mi);
 }
@@ -1767,30 +1370,15 @@ Xv_private void menu_set_acc_on_frame(Frame frame, Menu menu, Menu_item	item, in
 			xv_free(acc_resource_name);
 
 			if (tmp) {
-
-#ifdef OW_I18N
-				if (_xv_is_string_attr_exist_dup(&(MENU_ITEM_PRIVATE(item)->
-										menu_acc))) {
-					_xv_free_ps_string_attr_dup(&(MENU_ITEM_PRIVATE(item)->
-									menu_acc));
-				}
-				_xv_set_mbs_attr_dup(&(MENU_ITEM_PRIVATE(item)->menu_acc), tmp);
-#else
 				if (MENU_ITEM_PRIVATE(item)->menu_acc) {
 					xv_free(MENU_ITEM_PRIVATE(item)->menu_acc);
 				}
 				MENU_ITEM_PRIVATE(item)->menu_acc = xv_strsave(tmp);
-#endif /* OW_I18N */
 			}
 		}
 	}
 
-#ifdef OW_I18N
-	acc_string = _xv_get_wcs_attr_dup(&(MENU_ITEM_PRIVATE(item)->menu_acc));
-#else
 	acc_string = MENU_ITEM_PRIVATE(item)->menu_acc;
-#endif /* OW_I18N */
-
 
 	if (!acc_string) {
 		/*
@@ -1821,12 +1409,7 @@ Xv_private void menu_set_acc_on_frame(Frame frame, Menu menu, Menu_item	item, in
 		if (parse_result == XV_OK) {
 			result = xv_set(frame,
 
-#ifdef OW_I18N
-					FRAME_MENU_ACCELERATOR_WCS, acc_string,
-#else
 					FRAME_MENU_ACCELERATOR, acc_string,
-#endif /* OW_I18N */
-
 					menu_accelerator_notify_proc, accelerator_info, NULL);
 
 			/*
@@ -1882,15 +1465,9 @@ Xv_private void menu_set_acc_on_frame(Frame frame, Menu menu, Menu_item	item, in
 					menu_set_key_qual(menu, item, FALSE, keysym,
 							modifiers, meta_modmask, qual_str);
 
-#ifdef OW_I18N
-					sprintf(i18n_str, "%s %ws\n",
-							XV_MSG("Duplicate menu accelerator specified:"),
-							acc_string ? acc_string : L"NULL");
-#else
 					sprintf(i18n_str, "%s %s\n",
 							XV_MSG("Duplicate menu accelerator specified:"),
 							acc_string ? acc_string : "NULL");
-#endif /* OW_I18N */
 
 					xv_error(XV_NULL, ERROR_STRING, i18n_str, NULL);
 				}
@@ -1908,24 +1485,12 @@ Xv_private void menu_set_acc_on_frame(Frame frame, Menu menu, Menu_item	item, in
 			 * returns 0) don't print out error message.
 			 */
 
-#ifdef OW_I18N
-			if (xv_wsncasecmp
-#else
-			if (xv_strncasecmp
-#endif /* OW_I18N */
-
-					(acc_string, XV_CORESET_STR, (int)STRLEN(XV_CORESET_STR))) {
+			if (xv_strncasecmp(acc_string, "coreset", 7)) {
 				char i18n_str[80];
 
-#ifdef OW_I18N
-				sprintf(i18n_str, "%s %ws\n",
-						XV_MSG("Menu accelerator string has incorrect format:"),
-						acc_string ? acc_string : L"NULL");
-#else
 				sprintf(i18n_str, "%s %s\n",
 						XV_MSG("Menu accelerator string has incorrect format:"),
 						acc_string ? acc_string : "NULL");
-#endif /* OW_I18N */
 
 				xv_error(XV_NULL, ERROR_STRING, i18n_str, NULL);
 			}
@@ -1940,13 +1505,7 @@ Xv_private void menu_set_acc_on_frame(Frame frame, Menu menu, Menu_item	item, in
 	}
 	else {
 		xv_set(frame,
-
-#ifdef OW_I18N
-				FRAME_MENU_REMOVE_ACCELERATOR_WCS, acc_string,
-#else
 				FRAME_MENU_REMOVE_ACCELERATOR, acc_string,
-#endif /* OW_I18N */
-
 				NULL);
 
 		/*
