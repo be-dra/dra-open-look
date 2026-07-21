@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.5 2026/07/18 20:45:36 dra Exp $ ";
+static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.6 2026/07/20 14:02:08 dra Exp $ ";
 #endif
 #endif
 
@@ -475,7 +475,7 @@ static void DrawString(Xv_Window win, unsigned long frg_pixel,
     val.clip_mask = None;
     val_mask = GCBackground | GCForeground | GCClipMask;
     XChangeGC(display, gc, val_mask, &val );
-	if (_xv_is_multibyte) {
+	if (!_xv_is_multibyte) {
     	XID font = (XID) xv_get( pixfont, XV_XID );
     	XSetFont(display, gc, font );
 
@@ -582,35 +582,36 @@ static void icon_draw_label(Xv_icon_info *icon, Xv_Window pixwin,
 
 static void icon_display(Icon icon_public, int x, int y)
 {
-    register Xv_icon_info      *icon = ICON_PRIVATE(icon_public);
-    register Xv_Window         pixwin = icon_public;
-    register Xv_Drawable_info  *info;
-    register Display           *display;
-    register XID               xid;
-    
-    DRAWABLE_INFO_MACRO( pixwin, info );
-    display = xv_display( info );
-    xid = (XID) xv_xid(info);
+	register Xv_icon_info *icon = ICON_PRIVATE(icon_public);
+	register Xv_Window pixwin = icon_public;
+	register Xv_Drawable_info *info;
+	register Display *display;
+	register XID xid;
 
-    if ( icon->ic_mask )  {   /* we have a icon mask to use */
-        FillRect( pixwin, icon->workspace_pixel,
-		 icon->ic_gfxrect.r_left, icon->ic_gfxrect.r_top,
-		 icon->ic_gfxrect.r_width, icon->ic_gfxrect.r_height);	
-	DrawNonRectIcon( display, xid, icon, info, x, y );
-    } else {
-	if (icon->ic_mpr ) {
-	    if ( icon->ic_flags & ICON_BKGDTRANS ) 	
-	        DrawTransparentIcon( icon, pixwin, x, y, icon->workspace_pixel );
-	    else
-	        (void) xv_rop(pixwin,
-		      icon->ic_gfxrect.r_left + x, icon->ic_gfxrect.r_top + y,
-		      icon->ic_gfxrect.r_width, icon->ic_gfxrect.r_height,
-		      PIX_SRC, icon->ic_mpr, 0, 0);
+	DRAWABLE_INFO_MACRO(pixwin, info);
+	display = xv_display(info);
+	xid = (XID) xv_xid(info);
+
+	if (icon->ic_mask) {	/* we have a icon mask to use */
+		FillRect(pixwin, icon->workspace_pixel,
+				icon->ic_gfxrect.r_left, icon->ic_gfxrect.r_top,
+				icon->ic_gfxrect.r_width, icon->ic_gfxrect.r_height);
+		DrawNonRectIcon(display, xid, icon, info, x, y);
 	}
-    }
-    if (icon->ic_text && (icon->ic_text[0] != '\0')) 
-		icon_draw_label( icon, pixwin, info, x, y, icon->workspace_pixel );
-    icon->ic_flags |= ICON_PAINTED;
+	else {
+		if (icon->ic_mpr) {
+			if (icon->ic_flags & ICON_BKGDTRANS)
+				DrawTransparentIcon(icon, pixwin, x, y, icon->workspace_pixel);
+			else
+				(void)xv_rop(pixwin,
+						icon->ic_gfxrect.r_left + x, icon->ic_gfxrect.r_top + y,
+						icon->ic_gfxrect.r_width, icon->ic_gfxrect.r_height,
+						PIX_SRC, icon->ic_mpr, 0, 0);
+		}
+	}
+	if (icon->ic_text && (icon->ic_text[0] != '\0'))
+		icon_draw_label(icon, pixwin, info, x, y, icon->workspace_pixel);
+	icon->ic_flags |= ICON_PAINTED;
 }
 
 
