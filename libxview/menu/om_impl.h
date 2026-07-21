@@ -1,4 +1,4 @@
-/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.6 2026/03/16 16:58:38 dra Exp $	*/
+/*	@(#)om_impl.h 20.67 93/06/28	DRA: $Id: om_impl.h,v 4.7 2026/07/21 07:44:19 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -18,11 +18,6 @@
 #include <xview_private/omi_impl.h>
 #include <olgx/olgx.h>
 #include <X11/Xutil.h>
-
-#ifdef OW_I18N
-#include <X11/Xlib.h>
-#include <X11/Xresource.h>
-#endif  /* OW_I18N */
 
 /***** Definitions *****/
 #ifndef TRUE
@@ -187,17 +182,10 @@ typedef struct menu {
     Xv_opaque	glyph_font;
     Xv_opaque	pin_parent_frame;
     Xv_Window	pin_window;		/* window shown when menu is pinned */
-#ifdef OW_I18N
-    _xv_string_attr_nodup_t
-		pin_window_header;
-#else
     char	*pin_window_header;
-#endif  /* OW_I18N */
     Xv_Window	window;			/* window containing menu items */
     Xv_Window	shadow_window;		/* gray shadow window */
-#ifdef OW_I18N
     Xv_Window   client_window;		/* copy of client window (for ic) */
-#endif
     /* ACC_XVIEW */
     Frame	*frame_list;		/* for menu accelerators */
     int		nframes;		/* number of frames menu will be on */
@@ -225,9 +213,6 @@ typedef struct menu {
     unsigned	select_is_menu:1; /* SELECT button == MENU button */
     unsigned	valid_result:1; /* True if m->value is valid */
     unsigned	v_line:1;	/* Draw vertical line after item */
-#ifdef OW_I18N
-    unsigned    ic_was_active:1;
-#endif
 
     /*
      * SunView1 compatibility entries
@@ -260,11 +245,7 @@ typedef struct menu_item {
     Xv_opaque	panel_item_handle;  /* ... for pinned window */
     Xv_opaque	value;		    /* union: value, menu_ptr */
     /* ACC_XVIEW */
-#ifdef OW_I18N
-    _xv_string_attr_dup_t	menu_acc;
-#else
     char	*menu_acc;
-#endif /* OW_I18N */
     unsigned int	mark_type;
     /* ACC_XVIEW */
 
