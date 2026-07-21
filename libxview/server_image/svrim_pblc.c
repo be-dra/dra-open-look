@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.5 2025/11/01 14:56:22 dra Exp $ ";
+static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.6 2026/07/21 06:49:07 dra Exp $ ";
 #endif
 #endif
 
@@ -32,18 +32,24 @@ static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_
 #include <X11/Xutil.h>
 
 
+/* BEGIN to make compiler silent: */
+typedef int (*svri_pr_rop)(Pixrect *,int,int,int,int,int, Pixrect *,int,int);
+typedef int (*svri_pr_stencil)(void *,int,int,int,int,int,Pixrect *,int,int, Pixrect *,int,int);
+typedef int (*svri_pr_getput)(void);
+typedef Pixrect *(*svri_pr_pr)(void);
+/* END to make compiler silent */
 Xv_private_data struct pixrectops server_image_ops = {
-    server_image_rop,
-    server_image_stencil,
+    (svri_pr_rop)server_image_rop,
+    (svri_pr_stencil)server_image_stencil,
     NULL,                       /* BUG should be batchrop */
     NULL,
     server_image_destroy,
-    server_image_get,
-    server_image_put,
-    server_image_vector,
-    server_image_region,
-    server_image_colormap,
-    server_image_colormap,
+    (svri_pr_getput)server_image_get,
+    (svri_pr_getput)server_image_put,
+    (svri_pr_getput)server_image_vector,
+    (svri_pr_pr)server_image_region,
+    (svri_pr_getput)server_image_colormap,
+    (svri_pr_getput)server_image_colormap,
     NULL,                       /* BUG: pro_putattributes */
     NULL                        /* BUG: pro_getattributes */
 };
@@ -89,44 +95,19 @@ static int server_image_create_internal(Xv_opaque parent,
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch ((int)attrs[0]) {
 
-#ifdef OW_I18N
-			case SERVER_IMAGE_BITMAP_FILE_WCS:
-#endif /* OW_I18N */
-
 			case SERVER_IMAGE_BITMAP_FILE:{
 					Display *display;
 					int x_hot, y_hot, status;
 					Pixmap bitmap;
 
-#ifdef OW_I18N
-					char *ct_file;
-
-					if (attrs[0] == SERVER_IMAGE_BITMAP_FILE_WCS)
-						ct_file = _xv_wcstombsdup((wchar_t *)attrs[1]);
-					else
-						ct_file = (char *)attrs[1];
-#endif /* OW_I18N */
-
-					display =
-							(Display *) xv_get(xv_get(screen, SCREEN_SERVER),
-							XV_DISPLAY);
+					display = (Display *) xv_get(xv_get(screen, SCREEN_SERVER),
+											XV_DISPLAY);
 					status = XReadBitmapFile(display,
 							xv_get(xv_get(screen, XV_ROOT), XV_XID),
-
-#ifdef OW_I18N
-							ct_file,
-#else
 							(char *)attrs[1],
-#endif /* OW_I18N */
-
 							(unsigned *)(&rpr->pr_size.x),
 							(unsigned *)(&rpr->pr_size.y),
 							&bitmap, &x_hot, &y_hot);
-
-#ifdef OW_I18N
-					if (attrs[0] == SERVER_IMAGE_BITMAP_FILE_WCS && ct_file)
-						free(ct_file);
-#endif /* OW_I18N */
 
 					if (status != BitmapSuccess) {
 						xv_error(XV_NULL,
