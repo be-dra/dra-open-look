@@ -1,4 +1,4 @@
-/*    @(#)attr.h 20.44 93/06/28   DRA: $Id: attr.h,v 4.1 2024/03/28 19:32:21 dra Exp $ "*/
+/*    @(#)attr.h 20.44 93/06/28   DRA: $Id: attr.h,v 4.2 2026/07/21 05:56:11 dra Exp $ "*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -277,15 +277,7 @@ typedef enum {
     ATTR_BASE_SHORT		= ATTR_BASE_FIRST + 25,
     ATTR_BASE_ENUM		= ATTR_BASE_FIRST + 9,
     ATTR_BASE_CHAR		= ATTR_BASE_FIRST + 10,
-#ifdef OW_I18N
-    ATTR_BASE_WCHAR		= ATTR_BASE_FIRST + 26,
-#define ATTR_BASE_CHAR_WC	ATTR_BASE_WCHAR
-#endif
     ATTR_BASE_STRING		= ATTR_BASE_FIRST + 11,
-#ifdef OW_I18N
-    ATTR_BASE_WSTRING		= ATTR_BASE_FIRST + 27,
-#define	ATTR_BASE_STRING_WCS	ATTR_BASE_WSTRING
-#endif
     ATTR_BASE_FUNCTION_PTR	= ATTR_BASE_FIRST + 19,
 	/*
 	 * Derivative C types.
@@ -311,11 +303,7 @@ typedef enum {
     ATTR_BASE_ICON_PTR		= ATTR_BASE_FIRST + 20,
     ATTR_BASE_SINGLE_COLOR_PTR	= ATTR_BASE_FIRST + 21,
     ATTR_BASE_CURSOR_PTR	= ATTR_BASE_FIRST + 22,
-#ifdef OW_I18N
-    ATTR_BASE_LAST		= ATTR_BASE_FIRST + 27
-#else
     ATTR_BASE_LAST		= ATTR_BASE_FIRST + 25
-#endif
 } Attr_base_type;
 
 /* Clients of the attribute value package should use
@@ -331,15 +319,7 @@ typedef enum {
     ATTR_SHORT			= ATTR_TYPE(ATTR_BASE_SHORT, 		1),
     ATTR_ENUM			= ATTR_TYPE(ATTR_BASE_ENUM, 		1),
     ATTR_CHAR			= ATTR_TYPE(ATTR_BASE_CHAR, 		1),
-#ifdef OW_I18N
-    ATTR_WCHAR			= ATTR_TYPE(ATTR_BASE_WCHAR, 		1),
-#define ATTR_CHAR_WC		ATTR_WCHAR
-#endif
     ATTR_STRING			= ATTR_TYPE(ATTR_BASE_STRING, 		1),
-#ifdef OW_I18N
-    ATTR_WSTRING		= ATTR_TYPE(ATTR_BASE_WSTRING, 		1),
-#define	ATTR_STRING_WCS		ATTR_WSTRING
-#endif
     ATTR_FUNCTION_PTR		= ATTR_TYPE(ATTR_BASE_FUNCTION_PTR, 	1),
     ATTR_BOOLEAN		= ATTR_TYPE(ATTR_BASE_BOOLEAN, 		1),
     ATTR_OPAQUE			= ATTR_TYPE(ATTR_BASE_OPAQUE, 		1),
