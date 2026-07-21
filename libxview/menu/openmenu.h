@@ -1,4 +1,4 @@
-/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.5 2025/07/27 19:41:29 dra Exp $	*/
+/*	@(#)openmenu.h 20.61 93/06/28		DRA: $Id: openmenu.h,v 4.6 2026/07/21 07:44:19 dra Exp $	*/
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL_NOTICE 
@@ -201,30 +201,6 @@ typedef enum {
 	MENU_ACTION_PROC	= MENU_NOTIFY_PROC,
 	MENU_CLIENT_DATA    	= MENU_ATTR(ATTR_OPAQUE,         	15),
 	MENU_PULLRIGHT_DELTA    = MENU_ATTR(ATTR_INT,           	132)
-
-	/*********************************
-	 * Internationalization Attributes
-	 *********************************/
-#ifdef OW_I18N
-                                                                            ,
-	MENU_ACTION_ITEM_WCS    = MENU_ATTR(ATTR_STRING_FUNCTION_PAIR,    4),
-	MENU_GEN_PIN_WINDOW_WCS = MENU_ATTR(ATTR_INT_PAIR,               40),
-	MENU_GEN_PROC_ITEM_WCS  = MENU_ATTR(ATTR_STRING_FUNCTION_PAIR,   49),
-	MENU_GEN_PULLRIGHT_ITEM_WCS     = MENU_ATTR(ATTR_STRING_FUNCTION_PAIR,
-		58),
-	MENU_PULLRIGHT_ITEM_WCS = MENU_ATTR(ATTR_STRING_MENU_PAIR,      139),
-	MENU_STRING_WCS         = MENU_ATTR(ATTR_WSTRING,                166),
-	MENU_STRINGS_WCS        = MENU_ATTR_LIST(ATTR_NULL, ATTR_WSTRING,169),
-	MENU_STRING_ITEM_WCS    = MENU_ATTR(ATTR_STRING_VALUE_PAIR,     172),
-	MENU_TITLE_ITEM_WCS     = MENU_ATTR(ATTR_WSTRING,                181),
-        /* ACC_XVIEW */
-	MENU_ACTION_ACCELERATOR_WCS = MENU_ATTR(ATTR_OPAQUE_TRIPLE,	247),
-	MENU_STRING_AND_ACCELERATOR_WCS = MENU_ATTR(ATTR_OPAQUE_PAIR,	243),
-	MENU_ACCELERATOR_WCS 	= MENU_ATTR(ATTR_STRING,                245),
-	MENU_STRINGS_AND_ACCELERATORS_WCS = MENU_ATTR_LIST(ATTR_NULL,
-										ATTR_OPAQUE_PAIR,	241)
-        /* ACC_XVIEW */
-#endif /* OW_I18N */
 
 } Menu_attribute;
 
