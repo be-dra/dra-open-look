@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.13 2026/07/18 17:07:03 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.14 2026/07/21 07:44:19 dra Exp $";
 #endif
 #endif
 
@@ -1131,12 +1131,7 @@ static void process_event(register Xv_menu_info *m, Event *event)
 	Xv_Drawable_info *info;
 	int keyboard_event = FALSE;
 	int left_bdry;	/* left boundary of menu button stack */
-
-#ifdef OW_I18N
-	wchar_t match_char;
-#else
 	unsigned char match_char;
-#endif /* OW_I18N */
 
 	int mi_top;	/* menu item top */
 	int newitem = 0;
@@ -1896,12 +1891,7 @@ static int image_compute_size(Xv_menu_info *m, struct image *im,
 		im->button_size.y = pr->pr_height;
 
 	}
-#ifdef OW_I18N
-	else if (_xv_is_string_attr_exist_nodup(&im->string))
-#else
-	else if (im->string)
-#endif
-	{
+	else if (im->string) {
 		if (im->title)
 			font = std_image->bold_font;
 		else
@@ -1920,12 +1910,7 @@ static int image_compute_size(Xv_menu_info *m, struct image *im,
 		return XV_ERROR;
 	}
 
-#ifdef OW_I18N
-	if (im->svr_im || _xv_is_string_attr_exist_nodup(&im->string))
-#else
-	if (im->svr_im || im->string)
-#endif
-	{
+	if (im->svr_im || im->string) {
 		im->width = im->button_size.x;
 		im->height = im->button_size.y;
 
@@ -2015,28 +2000,14 @@ Pkg_private int menu_compute_max_item_size(Xv_menu_info *menu,
 			menu->menu_mark = 1;
 
 		if (std_image->image_type == QUALIFIER) {
-
-#ifdef OW_I18N
-			_xv_use_pswcs_value_nodup(&mi->qual_image.string);
-			if (!mi->qual_image.string.pswcs.value)
-#else
-			if (mi->qual_image.string == (char *)NULL)
-#endif /* OW_I18N */
-			{
+			if (mi->qual_image.string == (char *)NULL) {
 				mi->qual_image.width = 0;
 				continue;
 			}
 			im = &mi->qual_image;
 		}
 		if (std_image->image_type == KEY) {
-
-#ifdef OW_I18N
-			_xv_use_pswcs_value_nodup(&mi->key_image.string);
-			if (!mi->key_image.string.pswcs.value)
-#else
-			if (mi->key_image.string == (char *)NULL)
-#endif /* OW_I18N */
-			{
+			if (mi->key_image.string == (char *)NULL) {
 				mi->key_image.width = 0;
 				continue;
 			}
@@ -2592,22 +2563,9 @@ static void paint_menu_item(Xv_menu_info *m, int n,	/* menu item number */
 	else {
 		height = 0;	/* not used by olgx_draw_button */
 
-#ifdef OW_I18N
-		_xv_use_pswcs_value_nodup(&mi->image.string);
-		label = (Xv_opaque) mi->image.string.pswcs.value;
-
-		_xv_use_pswcs_value_nodup(&mi->qual_image.string);
-		qual = (Xv_opaque) mi->qual_image.string.pswcs.value;
-
-		_xv_use_pswcs_value_nodup(&mi->key_image.string);
-		key = (Xv_opaque) mi->key_image.string.pswcs.value;
-
-		olgx_state |= OLGX_LABEL_IS_WCS;
-#else
 		label = (Xv_opaque) mi->image.string;
 		qual = (Xv_opaque) mi->qual_image.string;
 		key = (Xv_opaque) mi->key_image.string;
-#endif
 	}
 	if (mi->pullright) {
 		olgx_state |= OLGX_HORIZ_MENU_MARK;
@@ -2655,16 +2613,17 @@ static void paint_menu_item(Xv_menu_info *m, int n,	/* menu item number */
 		olgx_set_single_color(m->ginfo, OLGX_BLACK,
 				xv_get(xv_cms(info), CMS_PIXEL, color_index), OLGX_SPECIAL);
 	}
-	if (mi->image.font && mi->image.font != m->default_image.font)
-
-#ifdef OW_I18N
-		olgx_set_text_fontset(m->ginfo,
-				xv_get(mi->image.font, FONT_SET_ID), OLGX_SPECIAL);
-#else
-		olgx_set_text_font(m->ginfo,
-				(XFontStruct *) xv_get(mi->image.font, FONT_INFO),
-				OLGX_SPECIAL);
-#endif
+	if (mi->image.font && mi->image.font != m->default_image.font) {
+		if (_xv_is_multibyte) {
+			olgx_set_text_fontset(m->ginfo,
+				(XFontSet)xv_get(mi->image.font, FONT_SET_ID), OLGX_SPECIAL);
+		}
+		else {
+			olgx_set_text_font(m->ginfo,
+					(XFontStruct *) xv_get(mi->image.font, FONT_INFO),
+					OLGX_SPECIAL);
+		}
+	}
 
 	/* ACC_XVIEW */
 	label_pos = MainLabel_Pos(m->ginfo, rect.r_left);
@@ -2748,16 +2707,19 @@ static void paint_menu_item(Xv_menu_info *m, int n,	/* menu item number */
 
 	if (color_index >= 0)
 		olgx_set_single_color(m->ginfo, OLGX_BLACK, save_black, OLGX_SPECIAL);
-	if (mi->image.font && mi->image.font != m->default_image.font)
+	if (mi->image.font && mi->image.font != m->default_image.font) {
 
-#ifdef OW_I18N
-		olgx_set_text_fontset(m->ginfo,
-				xv_get(m->default_image.font, FONT_SET_ID), OLGX_SPECIAL);
-#else
-		olgx_set_text_font(m->ginfo,
-				(XFontStruct *) xv_get(m->default_image.font, FONT_INFO),
-				OLGX_SPECIAL);
-#endif
+		if (_xv_is_multibyte) {
+			olgx_set_text_fontset(m->ginfo,
+					(XFontSet)xv_get(m->default_image.font, FONT_SET_ID),
+					OLGX_SPECIAL);
+		}
+		else {
+			olgx_set_text_font(m->ginfo,
+					(XFontStruct *) xv_get(m->default_image.font, FONT_INFO),
+					OLGX_SPECIAL);
+		}
+	}
 }
 
 
@@ -2985,16 +2947,10 @@ static void menu_window_paint(Xv_menu_info *m, Xv_Window window)
 	Xv_Drawable_info *info;
 	Menu_feedback feedback_state;
 	Font font;
-
-#ifdef OW_I18N
 	XFontSet font_set;
-	Display *display;
 	XRectangle overall_ink_extents = { 0 };
 	XRectangle overall_logical_extents = { 0 };
-#else
 	XFontStruct *font_info;
-#endif /* OW_I18N */
-
 	Xv_menu_item_info *mi;
 	Rect mi_rect;
 	int mi_top;
@@ -3004,24 +2960,19 @@ static void menu_window_paint(Xv_menu_info *m, Xv_Window window)
 	int text_descent = 0;
 	int text_direction = 0;
 	int text_length;
-
-#ifndef OW_I18N
 	XCharStruct text_overall_return;
-#endif /* OW_I18N */
 
 	int width;
 	int x;
 	Drawable xid;
 	int y;
 
-#ifndef OW_I18N
 	/*
 	 * Initialize text_overall_return to zeros.
 	 * It is not initialized automatically above because the MIT 
 	 * build (using cc), complains about "no automatic aggregate initialization"
 	 */
 	XV_BZERO(&text_overall_return, sizeof(XCharStruct));
-#endif /* OW_I18N */
 
 	if (!m->group_info)	/* catch unexplained race condition */
 		return;
@@ -3029,10 +2980,6 @@ static void menu_window_paint(Xv_menu_info *m, Xv_Window window)
 
 	DRAWABLE_INFO_MACRO(window, info);
 	xid = xv_xid(info);
-
-#ifdef OW_I18N
-	display = xv_display(info);
-#endif /* OW_I18N */
 
 	/*
 	 * If 3D, then draw the (shadow) border
@@ -3062,26 +3009,22 @@ static void menu_window_paint(Xv_menu_info *m, Xv_Window window)
 	for (; i <= m->nitems; i++) {
 		mi = m->item_list[i - 1];
 
-#ifdef  OW_I18N
-		if (_xv_is_string_attr_exist_nodup(&mi->image.string) && mi->title) {
-			compute_menu_item_paint_rect(m, i, &mi_rect, &mi_top);
-			font = m->default_image.bold_font;
-			font_set = (XFontSet) xv_get(font, FONT_SET_ID);
-			_xv_use_pswcs_value_nodup(&mi->image.string);
-			text_length = wslen(mi->image.string.pswcs.value);
-			XwcTextExtents(font_set, mi->image.string.pswcs.value,
-					text_length, &overall_ink_extents,
-					&overall_logical_extents);
-#else
 		if (mi->image.string && mi->title) {
 			compute_menu_item_paint_rect(m, i, &mi_rect, &mi_top);
 			font = m->default_image.bold_font;
-			font_info = (XFontStruct *) xv_get(font, FONT_INFO);
 			text_length = strlen(mi->image.string);
-			XTextExtents(font_info, mi->image.string, text_length,
-					&text_direction, &text_ascent, &text_descent,
-					&text_overall_return);
-#endif /* OW_I18N */
+			if (_xv_is_multibyte) {
+				font_set = (XFontSet) xv_get(font, FONT_SET_ID);
+				XmbTextExtents(font_set, mi->image.string,
+					text_length, &overall_ink_extents,
+					&overall_logical_extents);
+			}
+			else {
+				font_info = (XFontStruct *) xv_get(font, FONT_INFO);
+				XTextExtents(font_info, mi->image.string, text_length,
+						&text_direction, &text_ascent, &text_descent,
+						&text_overall_return);
+			}
 
 			x = MENU_TITLE_MARGIN;
 			width = m->menurect.r_width - 2 * MENU_TITLE_MARGIN;
@@ -3090,29 +3033,33 @@ static void menu_window_paint(Xv_menu_info *m, Xv_Window window)
 				width -= 2 * PushPinOut_Width(m->ginfo);
 			}
 
-#ifdef OW_I18N
-			x += (width - overall_logical_extents.width) / (unsigned)2;
-			y = mi_rect.r_top - overall_logical_extents.y - TEXT_LEDGE_HEIGHT +
-					(mi_rect.r_height -
-					overall_logical_extents.height) / (unsigned)2;
-			olgx_set_text_fontset(m->ginfo, xv_get(font, FONT_SET_ID),
-					OLGX_SPECIAL);
-			olgx_draw_text(m->ginfo, xid, mi->image.string.pswcs.value, x, y, 0,
-					OLGX_NORMAL | OLGX_LABEL_IS_WCS);
-			olgx_set_text_fontset(m->ginfo, xv_get(m->default_image.font,
-							FONT_SET_ID), OLGX_SPECIAL);
-#else
-			x += (width - text_overall_return.width) / 2;
-			y = mi_rect.r_top + text_ascent - TEXT_LEDGE_HEIGHT +
+			if (_xv_is_multibyte) {
+				x += (width - overall_logical_extents.width) / (unsigned)2;
+				y = mi_rect.r_top - overall_logical_extents.y -
+						TEXT_LEDGE_HEIGHT + (mi_rect.r_height -
+						overall_logical_extents.height) / (unsigned)2;
+				olgx_set_text_fontset(m->ginfo,
+						(XFontSet)xv_get(font, FONT_SET_ID),
+						OLGX_SPECIAL);
+				olgx_draw_text(m->ginfo, xid, mi->image.string, x, y, 0,
+								OLGX_NORMAL);
+				olgx_set_text_fontset(m->ginfo,
+						(XFontSet)xv_get(m->default_image.font, FONT_SET_ID),
+						OLGX_SPECIAL);
+			}
+			else {
+				x += (width - text_overall_return.width) / 2;
+				y = mi_rect.r_top + text_ascent - TEXT_LEDGE_HEIGHT +
 					(mi_rect.r_height - (text_ascent + text_descent)) / 2;
-			olgx_set_text_font(m->ginfo, (XFontStruct *) xv_get(font,
-							FONT_INFO), OLGX_SPECIAL);
-			olgx_draw_text(m->ginfo, xid, mi->image.string, x, y, 0,
-					OLGX_NORMAL);
-			olgx_set_text_font(m->ginfo,
-					(XFontStruct *) xv_get(m->default_image.font, FONT_INFO),
-					OLGX_SPECIAL);
-#endif /* OW_I18N */
+				olgx_set_text_font(m->ginfo,
+								(XFontStruct *) xv_get(font, FONT_INFO),
+								OLGX_SPECIAL);
+				olgx_draw_text(m->ginfo, xid, mi->image.string, x, y, 0,
+								OLGX_NORMAL);
+				olgx_set_text_font(m->ginfo,
+						(XFontStruct *)xv_get(m->default_image.font, FONT_INFO),
+						OLGX_SPECIAL);
+			}
 
 			olgx_draw_text_ledge(m->ginfo, xid, MENU_TITLE_MARGIN,
 					rect_bottom(&mi_rect) - TEXT_LEDGE_HEIGHT - 1,
