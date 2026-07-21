@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.6 2026/07/19 13:49:17 dra Exp $";
+static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.7 2026/07/20 14:21:23 dra Exp $";
 #endif
 #endif
 
@@ -30,15 +30,6 @@ static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_ge
 static int get_mask_bit(Inputmask *mask, Window_input_event code, Xv_Window win_public);
 static Xv_opaque  window_empty_event_proc(void);
 static struct timeval alarmdata;
-
-static XIC xv_window_create_ic(Xv_Window win_public, XIM im, Window xid)
-{
-	return XCreateIC(im,
-			XNClientWindow, xid,
-			XNFocusWindow, xid,
-			XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
-			NULL);
-}
 
 /* VARARGS2 */
 Xv_public       Xv_opaque
@@ -544,7 +535,11 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 					im = (XIM) xv_get(server, XV_IM);
 					if (!im) break;
 
-					win->xic = xv_window_create_ic(win_public, im, window);
+					win->xic = XCreateIC(im,
+							XNClientWindow, window,
+							XNFocusWindow, window,
+							XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+							NULL);
 
 					if (win->xic) win->ic_created = TRUE;
 				}
