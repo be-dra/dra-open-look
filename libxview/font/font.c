@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.15 2026/07/19 09:03:52 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.16 2026/07/20 22:21:31 dra Exp $ ";
 #endif
 #endif
 
@@ -816,30 +816,34 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		SERVERTRACE((777, "%s: %ld: font_set=%p\n", __FUNCTION__,selfpub, font_set));
 		SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, my_attrs.names[0]));
 
-		if ((font_set == NULL) &&
-			(my_attrs.specifier ||
-			(my_attrs.name && (my_attrs.specifier != my_attrs.name)))
-							&& (my_attrs.linfo->db == NULL)) {
-			/*
-			 *  Try it again iff last time specifier is used as is and
-			 *  no db was used to expand specifier's alias, or
-			 *  my_attrs.name was used as is.
-			 *  This time font_construct_names() will try to
-			 *  expand specifier or name to xlfd name.
-			 */
-			if (my_attrs.free_names) {
-				free_font_set_list(my_attrs.names);
-				my_attrs.names = (char **)NULL;
-				my_attrs.free_names = FALSE;
+		if (! font_set) {
+			SERVERTRACE((777, "%s: %ld: s=%s, n=%s, db=%p\n", __FUNCTION__,
+					selfpub, my_attrs.specifier, my_attrs.name,
+					my_attrs.linfo->db));
+			if ((my_attrs.specifier ||
+				(my_attrs.name && (my_attrs.specifier != my_attrs.name)))
+				&& my_attrs.linfo->db == NULL) {
+				/*
+				 *  Try it again iff last time specifier is used as is and
+				 *  no db was used to expand specifier's alias, or
+				 *  my_attrs.name was used as is.
+				 *  This time font_construct_names() will try to
+				 *  expand specifier or name to xlfd name.
+				 */
+				if (my_attrs.free_names) {
+					free_font_set_list(my_attrs.names);
+					my_attrs.names = (char **)NULL;
+					my_attrs.free_names = FALSE;
+				}
+				error_code = font_construct_names(display, &my_attrs);
+				if (error_code != XV_OK) {
+					font_free_font_return_attr_strings(&my_attrs);
+					return (error_code);
+				}
+				SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, my_attrs.names[0]));
+				font_set = xv_load_font_set(display, my_attrs.locale,
+									my_attrs.names);
 			}
-			error_code = font_construct_names(display, &my_attrs);
-			if (error_code != XV_OK) {
-				font_free_font_return_attr_strings(&my_attrs);
-				return (error_code);
-			}
-			SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, my_attrs.names[0]));
-			font_set = xv_load_font_set(display, my_attrs.locale,
-								my_attrs.names);
 		}
 		assert(font_set != NULL);
 
