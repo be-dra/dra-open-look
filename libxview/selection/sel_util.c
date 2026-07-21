@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.38 2026/04/06 20:29:57 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.39 2026/07/21 06:27:29 dra Exp $";
 #endif
 #endif
 
@@ -186,10 +186,7 @@ Pkg_private Sel_atom_list *xv_sel_find_atom_list(Display *dpy, Window xid)
 		list->incr = (Atom) xv_get(server, SERVER_ATOM, "INCR");
 		list->integer = XA_INTEGER;
 		list->atom_pair = (Atom) xv_get(server, SERVER_ATOM, "ATOM_PAIR");
-
-#ifdef OW_I18N
 		list->ctext = (Atom) xv_get(server, SERVER_ATOM, "COMPOUND_TEXT");
-#endif /* OW_I18N */
 
 		XSaveContext(dpy, DefaultRootWindow(dpy), targetCtx, (caddr_t)list);
 	}
