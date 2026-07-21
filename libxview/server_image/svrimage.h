@@ -1,4 +1,4 @@
-/*	@(#)svrimage.h 20.30 93/06/28 SMI DRA: RCS $Id: svrimage.h,v 2.4 2025/03/08 14:53:36 dra Exp $ 	*/
+/*	@(#)svrimage.h 20.30 93/06/28 SMI DRA: RCS $Id: svrimage.h,v 2.5 2026/07/21 06:48:43 dra Exp $ 	*/
 
 #ifndef xview_server_image_DEFINED
 #define xview_server_image_DEFINED
@@ -21,14 +21,6 @@
 #include <sys/types.h>				/* needed for pixrect.h */
 #include <pixrect/pixrect.h>
 #include <pixrect/pixfont.h>
-#ifdef OW_I18N
-#ifdef sun
-#  include <widec.h>
-#else
-#  include <wchar.h>
-#endif
-#endif
-
 
 /*
  ***********************************************************************
@@ -76,9 +68,6 @@ typedef enum {
 	SERVER_IMAGE_BITMAP_FILE=       SERVER_IMAGE_ATTR(ATTR_STRING,  5),
 	SERVER_IMAGE_PIXMAP     =       SERVER_IMAGE_ATTR(ATTR_OPAQUE,  6),
 	SERVER_IMAGE_SAVE_PIXMAP=       SERVER_IMAGE_ATTR(ATTR_BOOLEAN, 7),
-#ifdef  OW_I18N
-        SERVER_IMAGE_BITMAP_FILE_WCS=   SERVER_IMAGE_ATTR(ATTR_WSTRING,  8),
-#endif 
 	SERVER_IMAGE_CMS	=	SERVER_IMAGE_ATTR(ATTR_OPAQUE,  9)
 } Server_image_attribute;
 
@@ -112,10 +101,6 @@ EXTERN_FUNCTION (int 	server_image_colormap, (Xv_opaque dest, int index, int cou
 EXTERN_FUNCTION (int server_image_replrop, (Xv_opaque dest, int dx, int dy, int dw, int dh, unsigned long op, Xv_opaque src, int sx, int sy ));
 EXTERN_FUNCTION (int server_image_pf_text, (struct pr_prpos rpr, int
 op, Pixfont *font, char *string ));
-#ifdef OW_I18N
-EXTERN_FUNCTION (int server_image_pf_text_wc, (struct pr_prpos rpr, int
-op, Pixfont *font, wchar_t *string ));
-#endif /* OW_I18N */
 
 _XVFUNCPROTOEND
 
