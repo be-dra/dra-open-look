@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_path.c 50.7 93/06/28 DRA: RCS $Id: xv_path.c,v 2.1 2020/07/26 07:31:25 dra Exp $ ";
+static char     sccsid[] = "@(#)xv_path.c 50.7 93/06/28 DRA: RCS $Id: xv_path.c,v 2.2 2026/07/21 10:21:22 dra Exp $ ";
 #endif
 #endif
 
@@ -11,7 +11,7 @@ static char     sccsid[] = "@(#)xv_path.c 50.7 93/06/28 DRA: RCS $Id: xv_path.c,
  *      file for terms of the license.
  */
 
-#ifdef OW_I18N
+#ifdef UNUSED_OW__I18N
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -84,4 +84,4 @@ in_path(filename, nameof_pathvar)
     }
     return ((char *) NULL);
 }
-#endif /* OW_I18N */
+#endif /* UNUSED_OW__I18N */
