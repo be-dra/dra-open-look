@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_i18n.c 1.15 93/06/28 DRA: RCS $Id: xv_i18n.c,v 2.1 2020/07/26 07:31:25 dra Exp $ ";
+static char     sccsid[] = "@(#)xv_i18n.c 1.15 93/06/28 DRA: RCS $Id: xv_i18n.c,v 2.2 2026/07/21 10:21:22 dra Exp $ ";
 #endif
 #endif
 
@@ -10,7 +10,7 @@ static char     sccsid[] = "@(#)xv_i18n.c 1.15 93/06/28 DRA: RCS $Id: xv_i18n.c,
  *	file for terms of the license.
  */
 
-#ifdef OW_I18N
+#ifdef UNUSED_OW__I18N
 
 #include <xview/xview.h>
 #include <xview_private/i18n_impl.h>
@@ -502,4 +502,4 @@ err:
 
     return state;
 }
-#endif /* OW_I18N */
+#endif /* UNUSED_OW__I18N */
