@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)db_conv.c 50.14 93/06/28 DRA: RCS $Id: db_conv.c,v 4.2 2024/05/03 11:03:37 dra Exp $ ";
+static char     sccsid[] = "@(#)db_conv.c 50.14 93/06/28 DRA: RCS $Id: db_conv.c,v 4.3 2026/07/21 10:21:22 dra Exp $ ";
 #endif
 #endif
 
@@ -12,27 +12,6 @@ static char     sccsid[] = "@(#)db_conv.c 50.14 93/06/28 DRA: RCS $Id: db_conv.c
  *      pending in the U.S. and foreign countries. See LEGAL NOTICE
  *      file for terms of the license.
  */
-
-#ifdef OW_I18N
-Pkg_private int db_cvt_string_to_wcs(char *from_value, Attr_attribute *to_value)
-{
-    static wchar_t *cvtbufptr = NULL;
-    static int	buflen = 0;
-    int		newlen, status;
-
-    if (buflen < (newlen=strlen(from_value)+1)) {
-        if (cvtbufptr != NULL) {
-	    xv_free (cvtbufptr);
-	}
-	cvtbufptr = (wchar_t *)xv_calloc(1, newlen*sizeof(wchar_t));
-	buflen = newlen;
-    }
-
-    status = mbstowcs(cvtbufptr, from_value, newlen);
-    *to_value = (Attr_attribute) cvtbufptr;
-    return ((status == -1) || (status > newlen-1) ? XV_ERROR : XV_OK);
-}
-#endif /* OW_I18N */
 
 Pkg_private int db_cvt_string_to_long(char *,Attr_attribute *);
 
