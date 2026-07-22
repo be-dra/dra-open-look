@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#) quark.c 50.11 93/06/28 DRA: RCS $Id: quark.c,v 4.2 2024/09/15 09:19:47 dra Exp $ ";
+static char     sccsid[] = "@(#) quark.c 50.11 93/06/28 DRA: RCS $Id: quark.c,v 4.3 2026/07/21 10:21:22 dra Exp $ ";
 #endif
 #endif
 
@@ -63,9 +63,6 @@ Xv_private XrmQuarkList db_qlist_from_name(char *name, XrmQuarkList parent_quark
 }
 
 
-#ifdef OW_I18N
-Pkg_private int db_cvt_string_to_wcs(char *, Attr_attribute *);
-#endif
 Pkg_private int db_cvt_string_to_long(char *,Attr_attribute *);
 Pkg_private int db_cvt_string_to_int(char *, Attr_attribute *);
 Pkg_private int db_cvt_string_to_bool(char *,Attr_attribute *);
@@ -98,12 +95,6 @@ static Attr_attribute resource_type_conv(char *str,
 		case ATTR_STRING:
 			to_val = (Xv_opaque) str;
 			return (to_val);
-
-#ifdef OW_I18N
-		case ATTR_WSTRING:
-			db_cvt_string_to_wcs(str, &to_val);
-			return (to_val);
-#endif
 
 		default:
 			return (def_val);
