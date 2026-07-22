@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.14 2026/07/21 07:44:19 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.15 2026/07/21 08:45:32 dra Exp $";
 #endif
 #endif
 
@@ -1131,8 +1131,6 @@ static void process_event(register Xv_menu_info *m, Event *event)
 	Xv_Drawable_info *info;
 	int keyboard_event = FALSE;
 	int left_bdry;	/* left boundary of menu button stack */
-	unsigned char match_char;
-
 	int mi_top;	/* menu item top */
 	int newitem = 0;
 	int newitem_tracks_pointer;
@@ -1226,52 +1224,32 @@ static void process_event(register Xv_menu_info *m, Event *event)
 			break;
 		default:
 
-#ifdef OW_I18N
 			if (event_is_string(event) || event_is_iso(event)) {
-				/* Go to next active menu item that matches the first 
-				 * event->ie_string character, if any.  Cycle through 
-				 * the bottom if necessary.  If no other active
-				 * item matches the character, then ignore the event.
-				 */
-				wchar_t target_char;
+				char typed_char[8] = {0};
+				size_t typed_len = 0;
+				int match;
 
-				newitem = m->curitem;	/* could be 0 */
-				if (event_is_string(event))
-					target_char = *((wchar_t *)event_string(event));
-				else
-					target_char = event_action(event);
-				do {
-					newitem++;
-					if (newitem > m->nitems) {
-						if (m->curitem == 0)
-							return;	/* no other active item found */
-						newitem = 1;
-					}
-					if (newitem == m->curitem)
-						return;	/* no other active item found */
-					mi = m->item_list[newitem - 1];
-					match_char = 0;
-					if (mi->title && m->pin)
-						match_char = 'p';
-					else if (_xv_is_string_attr_exist_nodup(&mi->image.string)) {
-						_xv_use_pswcs_value_nodup(&mi->image.string);
-						match_char = mi->image.string.pswcs.value[0];
-						if (match_char >= 'A' && match_char <= 'Z' ||
-								match_char >= 0xC0 && match_char <= 0xDE)
-							match_char += 0x20;
-					}
-				} while (mi->inactive || (!mi->title && mi->no_feedback) ||
-						(mi->title && !m->pin) || match_char != target_char);
-				keyboard_event = TRUE;
-			}
-#else
-			if (event_is_iso(event)) {
-				/* Go to next active menu item that matches the iso character, if
-				 * any.  Cycle through the bottom if necessary.  If no other active
-				 * item matches the iso character, then ignore the iso event.
+				/* Extract the typed character sequence from the event */
+				if (event_is_string(event) && event_string(event)) {
+					/* Handle multi-byte/UTF-8 string events safely */
+					strncpy(typed_char, event_string(event), 7);
+					typed_len = strlen(typed_char);
+				}
+				else {
+					/* Fallback for classic 1-byte ISO/ASCII events */
+					typed_char[0] = (char)event_action(event);
+					typed_len = 1;
+				}
+
+				/* Go to next active menu item that matches the typed character,
+				 * if any.  Cycle through the bottom if necessary.
+				 * If no other active item matches the character(s),
+				 * then ignore the event.
 				 */
 				newitem = m->curitem;	/* could be 0 */
 				do {
+					char pinbuf[2], *beg;
+
 					newitem++;
 					if (newitem > m->nitems) {
 						if (m->curitem == 0)
@@ -1281,22 +1259,20 @@ static void process_event(register Xv_menu_info *m, Event *event)
 					if (newitem == m->curitem)
 						return;	/* no other active item found */
 					mi = m->item_list[newitem - 1];
-					match_char = 0;
-					if (mi->title && m->pin)
-						match_char = 'p';
+					if (mi->title && m->pin) {
+						strcpy(pinbuf, "p");
+						beg = pinbuf;
+					}
 					else if (mi->image.string) {
-						match_char = (unsigned char)mi->image.string[0];
-						if ((match_char >= 'A' && match_char <= 'Z') ||
-								(match_char >= 0xC0 && match_char <= 0xDE))
-							match_char += 0x20;
+						beg = mi->image.string;
 					}
+					else beg = "\001\002\003"; /* no match wanted */
+
+					match = (strncasecmp(beg, typed_char, typed_len) == 0);
 				} while (mi->inactive || (!mi->title && mi->no_feedback) ||
-						(mi->title && !m->pin) ||
-						match_char != event_action(event));
+						(mi->title && !m->pin) || !match);
 				keyboard_event = TRUE;
 			}
-#endif /* OW_I18N */
-
 			break;
 	}
 	if (rect_includespoint(&m->menurect, event->ie_locx, event->ie_locy) ||
