@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.54 2026/07/19 16:20:04 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.55 2026/07/22 06:06:48 dra Exp $";
 #endif
 #endif
 
@@ -1080,6 +1080,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						goto DoLookup;
 					}
 					else {
+						ksym = NoSymbol;
 						buf_length = XLookupString(ek, buffer, BUFFERSIZE,
 												&ksym, compose_status);
 					}
@@ -1107,8 +1108,9 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 
 	 						if (_xv_is_multibyte) {
 				DoLookup:
-								ksym = NoSymbol;
 								if (ic) {	/* then keyPress case */
+									ksym = NoSymbol;
+									buffer[0] = '\0';
 									buf_length =
 										XmbLookupString(ic, ek, buffer,
 										BUFFERSIZE, &ksym, &ret_status);
@@ -1122,9 +1124,28 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 											XLookupBoth :
 											XLookupKeySym);
 								}
-								if (ret_status == XLookupNone) {
-									*pwindow = XV_NULL;
-									return TRUE;
+								switch (ret_status) {
+									case XBufferOverflow:
+										/* UNEXPECTED: BUFFERSIZE should be
+										 * sufficient...
+										 */
+										sprintf(buffer,
+											"%s-%d: XmbLookupString returns Overflow (%d)",
+											__FILE__, __LINE__, buf_length);
+										xv_error(window,
+												ERROR_STRING, buffer,
+												NULL);
+										*pwindow = XV_NULL;
+										return TRUE;
+
+									case XLookupNone:
+										*pwindow = XV_NULL;
+										return TRUE;
+
+									case XLookupChars:
+									case XLookupKeySym:
+									case XLookupBoth:
+										break;
 								}
 							}
 							else {
@@ -1212,7 +1233,6 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				 * If the keysym is in the keyboard keysym set, check to see if
 				 * it maps into an XView ie_code.  (eg. KEY_LEFT(5)...)
 				 */
-
 				key_value = (unsigned char)buffer[0];
 
 				if (keyboard_key) {
@@ -1220,6 +1240,9 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 							(!key_map[(int)ksym & 0xFF])) ? key_value :
 							key_map[(int)ksym & 0xFF];
 				}
+				/* in case of a (say) german umlaut, this will be
+				 * something like 0xc3 = 195
+				 */
 				event_set_id(event, key_value);
 
 				/*
