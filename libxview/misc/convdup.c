@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)convdup.c 1.19 93/06/28 DRA: RCS $Id: convdup.c,v 2.1 2020/07/26 07:30:57 dra Exp $ ";
+static char     sccsid[] = "@(#)convdup.c 1.19 93/06/28 DRA: RCS $Id: convdup.c,v 2.2 2026/07/21 10:21:22 dra Exp $ ";
 #endif
 #endif
 
@@ -10,7 +10,7 @@ static char     sccsid[] = "@(#)convdup.c 1.19 93/06/28 DRA: RCS $Id: convdup.c,
  *	file for terms of the license.
  */
 
-#ifdef OW_I18N
+#ifdef UNUSED_OW__I18N
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
@@ -95,4 +95,4 @@ _xv_wcstombsdup(wcs)
 
 	return mbs;
 }
-#endif /* OW_I18N */
+#endif /* UNUSED_OW__I18N */
