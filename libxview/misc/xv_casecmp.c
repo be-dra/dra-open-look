@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_casecmp.c 1.4 93/06/28 DRA: RCS $Id: xv_casecmp.c,v 4.2 2024/09/15 09:36:18 dra Exp $ ";
+static char     sccsid[] = "@(#)xv_casecmp.c 1.4 93/06/28 DRA: RCS $Id: xv_casecmp.c,v 4.3 2026/07/21 10:21:22 dra Exp $ ";
 #endif
 #endif
 
@@ -59,48 +59,3 @@ int xv_strncasecmp(char *str1, char *str2, int n)
 
     return ( (n == 0) ? 0 : (low1 - low2) );
 }
-
-#ifdef OW_I18N
-
-int
-xv_wscasecmp( str1, str2 )
-     CHAR *str1;
-     CHAR *str2;
-{
-    CHAR low1, low2;
-
-    if ( str1 == str2 )
-	return 0;
-
-    while ( (low1 = towlower(*str1)) == (low2 = towlower(*str2)) ) {
-	if ( !low1 )
-	    return 0;
-	str1++; str2++;
-    }
-
-    return low1 - low2;
-}
-
-int
-xv_wsncasecmp( str1, str2, n)
-     CHAR *str1;
-     CHAR *str2;
-     int   n;
-{
-    CHAR low1, low2;
-
-    if ( str1 == str2 )
-	return 0;
-
-    n++;
-
-    while ( (--n != 0) && ((low1 = towlower(*str1)) == (low2 = towlower(*str2))) ) {
-	if ( !low1 )
-	    return 0;
-	str1++; str2++;
-    }
-
-    return ( (n == 0) ? 0 : (low1 - low2) );
-}
-
-#endif /* OW_I18N */
