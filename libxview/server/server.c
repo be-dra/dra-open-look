@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.45 2026/07/21 06:29:10 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.47 2026/07/21 20:02:49 dra Exp $";
 #endif
 #endif
 
@@ -5126,7 +5126,7 @@ static void server_set_locale(Server_info  *server)
 {
 	int i;
 	char *locale, *act_locale;
-	char actloc[100];
+	char actloc[500];
 	Ollc_item *oi;
 	char *type;
 	XrmValue xrm_value;
@@ -5164,8 +5164,8 @@ static void server_set_locale(Server_info  *server)
 		_xv_is_multibyte = FALSE;
 	}
 
-	fprintf(stderr, "%s-%d: _xv_is_multibyte = %d\n", __FUNCTION__, __LINE__,
-					_xv_is_multibyte);
+	SERVERTRACE((777, "%s: _xv_is_multibyte = %d\n", __FUNCTION__, 
+					_xv_is_multibyte));
 
 	/*
 	 * Traverse all the categories and fillin the data according to
@@ -5185,8 +5185,8 @@ static void server_set_locale(Server_info  *server)
 		if (XrmGetResource(server->db, inst, class, &type, &xrm_value)) {
 			char *result;
 
-			fprintf(stderr, "%s-%d: %d: inst = %s -> %s\n", __FUNCTION__,__LINE__,
-						i, inst, (char *)xrm_value.addr);
+			SERVERTRACE((777, "%s: %d: inst = %s -> %s\n", __FUNCTION__,
+						i, inst, (char *)xrm_value.addr));
 			oi->locale = strdup((char *)xrm_value.addr);
 			oi->from = OLLC_FROM_RESOURCE;
 
@@ -5198,14 +5198,14 @@ static void server_set_locale(Server_info  *server)
 					/* ignoring C-locale for category ... because of UTF-8 */
 					xv_free(oi->locale);
 					oi->locale = strdup(actloc);
-					fprintf(stderr, "%s-%d: ignore, set to %s\n", __FUNCTION__,__LINE__, oi->locale);
+					SERVERTRACE((777, "%s: ignore, set to %s\n", __FUNCTION__,oi->locale));
 				}
 
 				result = setlocale(Ollc_const[i].posix, oi->locale);
 
-				fprintf(stderr, "%s-%d: setlocale(%d, '%s') = '%s'\n",
-						__FUNCTION__, __LINE__,Ollc_const[i].posix, oi->locale,
-						result);
+				SERVERTRACE((777, "%s: setlocale(%d, '%s') = '%s'\n",
+						__FUNCTION__, Ollc_const[i].posix, oi->locale, result));
+
 				if (!result) {
 					fprintf(stderr, "unsuccessfully tried to set %s to %s\n", 
 									Ollc_const[i].env , oi->locale);
@@ -5213,12 +5213,12 @@ static void server_set_locale(Server_info  *server)
 			}
 			else {
 				if (_xv_is_multibyte) {
-					fprintf(stderr, "%s-%d: not posix, is %s\n", __FUNCTION__,__LINE__, oi->locale);
+					SERVERTRACE((777, "%s: not posix, is %s\n", __FUNCTION__,oi->locale));
 					if (strcmp(oi->locale, "C") == 0) {
 						/* ignoring C-locale for category ... because of UTF-8 */
 						xv_free(oi->locale);
 						oi->locale = strdup(actloc);
-						fprintf(stderr, "%s-%d: ignore, set to %s\n", __FUNCTION__,__LINE__, oi->locale);
+						SERVERTRACE((777, "%s: ignore, set to %s\n", __FUNCTION__,oi->locale));
 						setlocale(Ollc_const[i].posix, oi->locale);
 					}
 				}
@@ -5241,7 +5241,7 @@ static void server_set_locale(Server_info  *server)
 					xv_free(old_resource_value);
 					old_resource_value = strdup(actloc);
 					setlocale(LC_NUMERIC, actloc);
-					fprintf(stderr, "%s-%d: %d: ignore, set to %s\n", __FUNCTION__,__LINE__, i, actloc);
+					SERVERTRACE((777, "%s: %d: ignore, set to %s\n", __FUNCTION__,i, actloc));
 				}
 				server->ollc[OLLC_NUMERIC].locale = old_resource_value;
 				server->ollc[OLLC_NUMERIC].from = OLLC_FROM_RESOURCE;
@@ -5252,12 +5252,12 @@ static void server_set_locale(Server_info  *server)
 		/*
 		 * fallback to setlocale(3).
 		 */
-fprintf(stderr, "%s-%d: %d: setlocale(%d) = '%s'\n", __FUNCTION__, __LINE__, i,
-						Ollc_const[i].posix, setlocale(Ollc_const[i].posix, NULL));
+		SERVERTRACE((777, "%s: %d: setlocale(%d) = '%s'\n", __FUNCTION__, i,
+						Ollc_const[i].posix, setlocale(Ollc_const[i].posix, NULL)));
 		if (Ollc_const[i].posix >= 0
 				&& (locale = setlocale(Ollc_const[i].posix, NULL)) != NULL) {
-fprintf(stderr, "%s-%d: setlocale(%d) = '%s'\n", __FUNCTION__, __LINE__,
-						Ollc_const[i].posix, locale);
+			SERVERTRACE((777, "%s: setlocale(%d) = '%s'\n", __FUNCTION__, 
+						Ollc_const[i].posix, locale));
 			oi->locale = strdup(locale);
 			oi->from = OLLC_FROM_POSIX;
 			continue;
@@ -5282,15 +5282,15 @@ fprintf(stderr, "%s-%d: setlocale(%d) = '%s'\n", __FUNCTION__, __LINE__,
 	}
 
 	if (_xv_is_multibyte) {
-		fprintf(stderr, "in server_set_locale:\n");
+		SERVERTRACE((777, "in server_set_locale:\n"));
 		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-			fprintf(stderr, "\t%d. locale = '%s', set from %s\n",
-					i, oi->locale, server_get_locale_from_str(oi->from));
+			SERVERTRACE((777, "\t%d. locale = '%s', set from %s\n",
+					i, oi->locale, server_get_locale_from_str(oi->from)));
 		}
-		fprintf(stderr, "%s-%d: LC_CTYPE =%s\n",__FUNCTION__,__LINE__, setlocale( LC_CTYPE, NULL));
-		fprintf(stderr, "%s-%d: LC_MESSAGES =%s\n",__FUNCTION__,__LINE__, setlocale( LC_MESSAGES, NULL));
-		fprintf(stderr, "%s-%d: LC_NUMERIC =%s\n",__FUNCTION__,__LINE__, setlocale( LC_NUMERIC, NULL));
-		fprintf(stderr, "%s-%d: LC_TIME =%s\n",__FUNCTION__,__LINE__, setlocale( LC_TIME, NULL));
+		SERVERTRACE((777, "%s: LC_CTYPE =%s\n",__FUNCTION__,setlocale( LC_CTYPE, NULL)));
+		SERVERTRACE((777, "%s: LC_MESSAGES =%s\n",__FUNCTION__,setlocale( LC_MESSAGES, NULL)));
+		SERVERTRACE((777, "%s: LC_NUMERIC =%s\n",__FUNCTION__,setlocale( LC_NUMERIC, NULL)));
+		SERVERTRACE((777, "%s: LC_TIME =%s\n",__FUNCTION__,setlocale( LC_TIME, NULL)));
 	}
 }
 
