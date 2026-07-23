@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.55 2026/04/06 08:01:50 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.56 2026/07/22 19:00:37 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -62,6 +62,7 @@ typedef struct _dir_priv {
 	Menu                hide_menu, sort_menu;
 	GC                  frame_gc, copygc;
 	GC                  normal_gc, bold_gc, bold_inv_gc, normal_inv_gc;
+	XFontSet            normal_fs, bold_fs;
 	char                initialized, matching, auto_rename, is_rename,
 						use_ed_filtering, reverse_sorting, use_icon,
 						dir_writable, update_running, full_keyboard;
@@ -117,7 +118,8 @@ static void cancel_text_mode(Dir_private *priv)
 	xv_set(priv->panel, XV_SHOW, FALSE, NULL);
 }
 
-static void repaint_file_2D(Dir_private *priv, int this, Display *dpy, Window xid, int x, int y)
+static void repaint_file_2D(Dir_private *priv, int this, Display *dpy,
+				Window xid, int x, int y)
 {
 	char *ending, buf[500];
 	int stroffset;
@@ -150,14 +152,28 @@ static void repaint_file_2D(Dir_private *priv, int this, Display *dpy, Window xi
 	}
 
 	if ((int)vis->type<=(int)DIR_DIR_LINK) {
-		XDrawString(dpy, xid,
-			vis->selected ? priv->bold_inv_gc : priv->bold_gc,
-			x + stroffset, y + priv->ascent, buf, (int)strlen(buf));
+		if (_xv_is_multibyte && priv->bold_fs) {
+			XmbDrawString(dpy, xid, priv->bold_fs,
+				vis->selected ? priv->bold_inv_gc : priv->bold_gc,
+				x + stroffset, y + priv->ascent, buf, (int)strlen(buf));
+		}
+		else {
+			XDrawString(dpy, xid,
+				vis->selected ? priv->bold_inv_gc : priv->bold_gc,
+				x + stroffset, y + priv->ascent, buf, (int)strlen(buf));
+		}
 	}
 	else {
-		XDrawString(dpy, xid,
-			vis->selected ? priv->normal_inv_gc : priv->normal_gc,
-			x + stroffset, y + priv->ascent, buf, (int)strlen(buf));
+		if (_xv_is_multibyte && priv->normal_fs) {
+			XmbDrawString(dpy, xid, priv->normal_fs,
+				vis->selected ? priv->normal_inv_gc : priv->normal_gc,
+				x + stroffset, y + priv->ascent, buf, (int)strlen(buf));
+		}
+		else {
+			XDrawString(dpy, xid,
+				vis->selected ? priv->normal_inv_gc : priv->normal_gc,
+				x + stroffset, y + priv->ascent, buf, (int)strlen(buf));
+		}
 	}
 
 	if (priv->use_icon) {
@@ -2189,22 +2205,41 @@ static void dir_make_gcs(Dir_private *priv, Scrollpw pw)
 	gcv.foreground = fg;
 	gcv.background = bg;
 	gcv.function = GXcopy;
-	gcv.font = xv_get(priv->font, XV_XID);
-	priv->normal_gc = XCreateGC(dpy, xid,
-			GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+	if (_xv_is_multibyte) {
+		priv->normal_fs = (XFontSet)xv_get(priv->font, FONT_SET_ID);
+		priv->normal_gc = XCreateGC(dpy, xid,
+				GCFunction | GCForeground | GCBackground, &gcv);
 
-	gcv.font = xv_get(priv->boldfont, XV_XID);
-	priv->bold_gc = XCreateGC(dpy, xid,
-			GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+		priv->bold_fs = (XFontSet)xv_get(priv->boldfont, FONT_SET_ID);
+		priv->bold_gc = XCreateGC(dpy, xid,
+				GCFunction | GCForeground | GCBackground, &gcv);
 
-	gcv.foreground = bg;
-	gcv.background = fg;
-	priv->bold_inv_gc = XCreateGC(dpy, xid,
-			GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+		gcv.foreground = bg;
+		gcv.background = fg;
+		priv->bold_inv_gc = XCreateGC(dpy, xid,
+				GCFunction | GCForeground | GCBackground, &gcv);
 
-	gcv.font = xv_get(priv->font, XV_XID);
-	priv->normal_inv_gc = XCreateGC(dpy, xid,
-			GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+		priv->normal_inv_gc = XCreateGC(dpy, xid,
+				GCFunction | GCForeground | GCBackground, &gcv);
+	}
+	else {
+		gcv.font = xv_get(priv->font, XV_XID);
+		priv->normal_gc = XCreateGC(dpy, xid,
+				GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+
+		gcv.font = xv_get(priv->boldfont, XV_XID);
+		priv->bold_gc = XCreateGC(dpy, xid,
+				GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+
+		gcv.foreground = bg;
+		gcv.background = fg;
+		priv->bold_inv_gc = XCreateGC(dpy, xid,
+				GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+
+		gcv.font = xv_get(priv->font, XV_XID);
+		priv->normal_inv_gc = XCreateGC(dpy, xid,
+				GCFunction | GCFont | GCForeground | GCBackground, &gcv);
+	}
 }
 
 static int sort_dir_first(Dir_entry_t *a, Dir_entry_t *b)
