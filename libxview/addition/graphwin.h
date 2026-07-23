@@ -4,7 +4,7 @@
 #include <xview/xview.h>
 #include <xview/scrollw.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.10 2025/06/03 16:47:39 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.11 2026/07/22 18:42:34 dra Exp $" */
 
 extern const Xv_pkg xv_graphwin_pkg;
 #define GRAPHWIN &xv_graphwin_pkg
@@ -117,6 +117,7 @@ typedef struct {
 	Graphobj_state state;
 	GC gc;
 	GC normal_gc, xor_gc, invers_gc;
+	XFontSet fs;
 	Scrollpw_info *vinfo;
 	Graphpainter painter;
 } Graphobj_repaint_struct;
