@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.7 2026/07/18 19:31:40 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.8 2026/07/22 12:05:08 dra Exp $ ";
 #endif
 #endif
 
@@ -102,7 +102,7 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 		if (_xv_is_multibyte) {
 
 			SERVERTRACE((777, "fs = %p\n", TextFont_Set(frame->ginfo)));
-			left_width = Xutf8TextEscapement(TextFont_Set(frame->ginfo), 
+			left_width = XmbTextEscapement(TextFont_Set(frame->ginfo), 
 					frame->left_footer, (int)strlen(frame->left_footer));
 		}
 		else {
@@ -115,7 +115,7 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 	else {
 		if (_xv_is_multibyte) {
 			SERVERTRACE((777, "fs = %p\n", TextFont_Set(frame->ginfo)));
-			right_width = Xutf8TextEscapement(TextFont_Set(frame->ginfo), 
+			right_width = XmbTextEscapement(TextFont_Set(frame->ginfo), 
 					frame->right_footer, (int)strlen(frame->right_footer));
 		}
 		else {
