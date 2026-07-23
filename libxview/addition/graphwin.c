@@ -5,7 +5,7 @@
 #include <xview/help.h>
 #include <xview/font.h>
 
-char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.35 2025/06/03 16:47:47 dra Exp $";
+char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.36 2026/07/22 18:42:53 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -57,7 +57,7 @@ typedef struct _graphwin {
 	gw_autoscroll_t         auto_scroll_func;
 	unsigned long           features;
 	graphwin_states         state;
-	int                     ascent;
+	int                     ascent, descent;
 	char                    being_destroyed, no_redisplay,
 							auto_scroll_do_x, auto_scroll_do_y;
 } Graphwin_private;
@@ -68,6 +68,7 @@ typedef struct _graphpaint {
 	Graphwin_private       *ownerpriv;
 	int                     state;
 	GC                      current_gc;
+	XFontSet                current_fs;
 } Graphpaint_private;
 
 #define GRAPHPRIV(_x_) XV_PRIVATE(Graphwin_private, Xv_graphwin, _x_)
@@ -101,6 +102,7 @@ static void repaint_obj(Graphwin_private *priv, graphlist it)
 	grs.xor_gc = priv->frame_gc;
 	grs.normal_gc = priv->draw_gc;
 	grs.invers_gc = priv->sel_draw_gc;
+	grs.fs = (XFontSet)xv_get(xv_get(GRAPHPUB(priv), XV_FONT), FONT_SET_ID);
 	grs.vinfo = &vi;
 	grs.painter = GRPAINTPUB(priv->painter);
 	priv->painter->vi = &vi;
@@ -1250,27 +1252,43 @@ static void graphwin_make_gcs(Graphwin_private *priv, Scrollpw pw)
 
 	finfo = (XFontStruct *)xv_get(font, FONT_INFO);
 	priv->ascent = finfo->ascent;
+	priv->descent = finfo->descent;
 
 	gcv.line_width = 0;
 	gcv.font = (Font)xv_get(font, XV_XID);
 	gcv.foreground = back ^ fore;
 	gcv.function = GXxor;
-	priv->frame_gc = XCreateGC(dpy, xid,
-					GCFont | GCFunction | GCForeground | GCLineWidth,
-					&gcv);
+	if (_xv_is_multibyte) {
+		priv->frame_gc = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCLineWidth, &gcv);
+	}
+	else {
+		priv->frame_gc = XCreateGC(dpy, xid,
+					GCFont | GCFunction | GCForeground | GCLineWidth, &gcv);
+	}
 
 	gcv.foreground = fore;
 	gcv.background = back;
 	gcv.function = GXcopy;
-	priv->draw_gc = XCreateGC(dpy, xid,
-					GCFunction | GCForeground | GCBackground | GCFont,
-					&gcv);
+	if (_xv_is_multibyte) {
+		priv->draw_gc = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground, &gcv);
+	}
+	else {
+		priv->draw_gc = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground | GCFont, &gcv);
+	}
 
 	gcv.foreground = back;
 	gcv.background = fore;
-	priv->sel_draw_gc = XCreateGC(dpy, xid,
-					GCFunction | GCForeground | GCBackground | GCFont,
-					&gcv);
+	if (_xv_is_multibyte) {
+		priv->sel_draw_gc = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground, &gcv);
+	}
+	else {
+		priv->sel_draw_gc = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground | GCFont, &gcv);
+	}
 }
 
 static void do_auto_scroll(Graphwin_private *priv,
@@ -1516,21 +1534,27 @@ static void graphobj_draw(Graphobj_private *priv, Graphobj_repaint_struct *grs,
 
 	if (! priv->label || ! *priv->label) return;
 
-	XDrawImageString(vi->dpy, vi->xid, grs->gc,
+	if (_xv_is_multibyte && grs->fs) {
+		XmbDrawImageString(vi->dpy, vi->xid, grs->fs, grs->gc,
 			SCR_WIN_X(vi, grs->rect.r_left + priv->label_rect.r_left),
 			SCR_WIN_Y(vi, grs->rect.r_top + priv->label_rect.r_top +ascent),
 			priv->label,
 			(int)strlen(priv->label));
+	}
+	else {
+		XDrawImageString(vi->dpy, vi->xid, grs->gc,
+			SCR_WIN_X(vi, grs->rect.r_left + priv->label_rect.r_left),
+			SCR_WIN_Y(vi, grs->rect.r_top + priv->label_rect.r_top +ascent),
+			priv->label,
+			(int)strlen(priv->label));
+	}
 }
 
 static void make_label_rect(Graphobj_private *priv)
 {
 	Font_string_dims dims;
 	Xv_font font = xv_get(GRAPHPUB(priv->owner), XV_FONT);
-	XFontStruct *finfo;
 	int scale = (int)xv_get(GRAPHPUB(priv->owner), SCROLLWIN_SCALE_PERCENT);
-
-	finfo = (XFontStruct *)xv_get(font, FONT_INFO);
 
 	if (priv->label) {
 		xv_get(font, FONT_STRING_DIMS, priv->label, &dims);
@@ -1540,7 +1564,7 @@ static void make_label_rect(Graphobj_private *priv)
 		xv_get(font, FONT_STRING_DIMS, "A", &dims);
 		priv->label_rect.r_width = 0;
 	}
-	priv->label_rect.r_height = finfo->ascent + finfo->descent;
+	priv->label_rect.r_height = priv->owner->ascent + priv->owner->descent;
 
 	/* INCOMPLETE, this is only correct as long as
 	 * the font is not rescaled
@@ -1891,8 +1915,14 @@ static void draw_string(Graphpaint_private *priv, int x, int y, char *string,
 	wx = SCR_WIN_X(priv->vi, x);
 	wy = SCR_WIN_Y(priv->vi, y) + priv->ownerpriv->ascent;
 
-	XDrawString(priv->vi->dpy, priv->vi->xid, priv->current_gc, wx, wy,
+	if (_xv_is_multibyte && priv->current_fs) {
+		XmbDrawString(priv->vi->dpy, priv->vi->xid, priv->current_fs,
+							priv->current_gc, wx, wy, string, string_len);
+	}
+	else {
+		XDrawString(priv->vi->dpy, priv->vi->xid, priv->current_gc, wx, wy,
 											string, string_len);
+	}
 }
 
 static void draw_opaque_string(Graphpaint_private *priv, int x, int y,
@@ -1922,8 +1952,14 @@ static void draw_opaque_string(Graphpaint_private *priv, int x, int y,
 	wx = SCR_WIN_X(priv->vi, x);
 	wy = SCR_WIN_Y(priv->vi, y) + priv->ownerpriv->ascent;
 
-	XDrawImageString(priv->vi->dpy, priv->vi->xid, priv->current_gc, wx, wy,
-											string, string_len);
+	if (_xv_is_multibyte && priv->current_fs) {
+		XmbDrawImageString(priv->vi->dpy, priv->vi->xid, priv->current_fs,
+							priv->current_gc, wx, wy, string, string_len);
+	}
+	else {
+		XDrawImageString(priv->vi->dpy, priv->vi->xid, priv->current_gc,
+									wx, wy, string, string_len);
+	}
 }
 
 static void draw_rectangle(Graphpaint_private *priv, int left, int top,
@@ -2189,18 +2225,31 @@ static Xv_opaque graphpaint_set(Xv_opaque self, Attr_avlist avlist)
 		case GRAPH_USE_NORMAL_CONTEXT:
 			priv->state &= (~ST_INVERS);
 
-			if (! (priv->state & ST_XOR))
+			if (! (priv->state & ST_XOR)) {
 				priv->current_gc = priv->ownerpriv->draw_gc;
+				priv->current_fs =
+					(XFontSet)xv_get(xv_get(GRAPHPUB(priv->ownerpriv),XV_FONT),
+											FONT_SET_ID);
+			}
 			ADONE;
 
 		case GRAPH_USE_INVERS_CONTEXT:
 			priv->state |= ST_INVERS;
-			if (! (priv->state & ST_XOR))
+			if (! (priv->state & ST_XOR)) {
 				priv->current_gc = priv->ownerpriv->sel_draw_gc;
+				priv->current_fs = 
+					(XFontSet)xv_get(xv_get(GRAPHPUB(priv->ownerpriv),XV_FONT),
+											FONT_SET_ID);
+			}
 			ADONE;
 
 		case GRAPH_USE_NON_STANDARD_CONTEXT:
-			if (! (priv->state & ST_XOR)) priv->current_gc = (GC)A1;
+			if (! (priv->state & ST_XOR)) {
+				priv->current_gc = (GC)A1;
+				priv->current_fs = 
+					(XFontSet)xv_get(xv_get(GRAPHPUB(priv->ownerpriv),XV_FONT),
+											FONT_SET_ID);
+			}
 			ADONE;
 		case GRAPH_DRAW_POINT:
 			draw_point(priv, (int)A1, (int)A2);
@@ -2248,14 +2297,23 @@ static Xv_opaque graphpaint_set(Xv_opaque self, Attr_avlist avlist)
 		case GRAPH_START_XOR_DRAWING:
 			priv->state |= ST_XOR;
 			priv->current_gc = priv->ownerpriv->frame_gc;
+			priv->current_fs = 
+					(XFontSet)xv_get(xv_get(GRAPHPUB(priv->ownerpriv),XV_FONT),
+											FONT_SET_ID);
 			ADONE;
 		case GRAPH_END_XOR_DRAWING:
 			priv->state &= (~ST_XOR);
 			priv->current_gc = priv->ownerpriv->draw_gc;
+			priv->current_fs = 
+					(XFontSet)xv_get(xv_get(GRAPHPUB(priv->ownerpriv),XV_FONT),
+											FONT_SET_ID);
 			ADONE;
 
 		case XV_END_CREATE:
 			priv->current_gc = priv->ownerpriv->draw_gc;
+			priv->current_fs = 
+					(XFontSet)xv_get(xv_get(GRAPHPUB(priv->ownerpriv),XV_FONT),
+											FONT_SET_ID);
 			break;
 
 		default:
