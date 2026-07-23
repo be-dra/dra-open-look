@@ -28,7 +28,7 @@
 #include <xview/richtext.h>
 #include <xview_private/svr_impl.h>
 
-char richtext_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: richtext.c,v 1.8 2025/03/08 13:37:48 dra Exp $";
+char richtext_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: richtext.c,v 1.9 2026/07/22 19:14:57 dra Exp $";
 
 typedef enum {
 	RT_NORMAL,
@@ -53,6 +53,7 @@ typedef struct {
 
 	GC gcs[__RT_MODE_COUNT];
 	Xv_font fonts[__RT_MODE_COUNT];
+	XFontSet fss[__RT_MODE_COUNT];
 	rt_textmode_t lastmode;
 	int last_fileline;
 	int last_viewline;
@@ -363,9 +364,16 @@ static void repaint_from_expose(Richtext_private *priv,
 	for (b = pl; b; b = b->next) {
 
 		if (rs->reason == SCROLLWIN_REASON_SCROLL) {
-			XDrawString(dpy, xid, priv->gcs[b->mode], b->x - scrx,
+			if (_xv_is_multibyte) {
+				XmbDrawString(dpy, xid, priv->fss[b->mode], priv->gcs[b->mode],
+						b->x - scrx, b->viewline * priv->lineheight - scry,
+										b->text, (int)strlen(b->text));
+			}
+			else {
+				XDrawString(dpy, xid, priv->gcs[b->mode], b->x - scrx,
 										b->viewline * priv->lineheight - scry,
 										b->text, (int)strlen(b->text));
+			}
 		}
 		else {
 			fr.r_top = b->viewline * priv->lineheight - scry;
@@ -373,8 +381,17 @@ static void repaint_from_expose(Richtext_private *priv,
 			fr.r_width = b->width;
 
 			if (rect_intersectsrect(&rs->win_rect, &fr)) {
-				XDrawString(dpy, xid, priv->gcs[b->mode], fr.r_left, fr.r_top,
+				if (_xv_is_multibyte) {
+					XmbDrawString(dpy, xid, priv->fss[b->mode],
+										priv->gcs[b->mode],
+										fr.r_left, fr.r_top,
 										b->text, (int)strlen(b->text));
+				}
+				else {
+					XDrawString(dpy, xid, priv->gcs[b->mode],
+										fr.r_left, fr.r_top,
+										b->text, (int)strlen(b->text));
+				}
 			}
 		}
 	}
@@ -412,10 +429,16 @@ static void supply_fonts_and_gcs(Richtext_private *priv, Richtext self, Xv_font 
 	priv->blank_width = dims.width;
 
 	if (priv->gcs[RT_NORMAL]) XFreeGC(dpy, priv->gcs[RT_NORMAL]);
-	priv->gcs[RT_NORMAL] = XCreateGC(dpy, xid,
-					GCFunction | GCForeground | GCBackground | GCFont,
-					&gcv);
 	priv->fonts[RT_NORMAL] = font;
+	if (_xv_is_multibyte) {
+		priv->gcs[RT_NORMAL] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground, &gcv);
+		priv->fss[RT_NORMAL] = (XFontSet)xv_get(font, FONT_SET_ID);
+	}
+	else {
+		priv->gcs[RT_NORMAL] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground | GCFont, &gcv);
+	}
 
 	f = xv_find(XV_SERVER_FROM_WINDOW(self), FONT,
 					FONT_FAMILY, xv_get(font, FONT_FAMILY),
@@ -429,9 +452,15 @@ static void supply_fonts_and_gcs(Richtext_private *priv, Richtext self, Xv_font 
 		gcv.font = (Font)xv_get(f, XV_XID);
 
 		if (priv->gcs[RT_BOLD]) XFreeGC(dpy, priv->gcs[RT_BOLD]);
-		priv->gcs[RT_BOLD] = XCreateGC(dpy, xid,
-					GCFunction | GCForeground | GCBackground | GCFont,
-					&gcv);
+		if (_xv_is_multibyte) {
+			priv->gcs[RT_BOLD] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground, &gcv);
+			priv->fss[RT_BOLD] = (XFontSet)xv_get(f, FONT_SET_ID);
+		}
+		else {
+			priv->gcs[RT_BOLD] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground | GCFont, &gcv);
+		}
 		priv->fonts[RT_BOLD] = f;
 	}
 
@@ -447,9 +476,15 @@ static void supply_fonts_and_gcs(Richtext_private *priv, Richtext self, Xv_font 
 		gcv.font = (Font)xv_get(f, XV_XID);
 
 		if (priv->gcs[RT_ITALICS]) XFreeGC(dpy, priv->gcs[RT_ITALICS]);
-		priv->gcs[RT_ITALICS] = XCreateGC(dpy, xid,
-						GCFunction | GCForeground | GCBackground | GCFont,
-					&gcv);
+		if (_xv_is_multibyte) {
+			priv->gcs[RT_ITALICS] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground, &gcv);
+			priv->fss[RT_ITALICS] = (XFontSet)xv_get(f, FONT_SET_ID);
+		}
+		else {
+			priv->gcs[RT_ITALICS] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground | GCFont, &gcv);
+		}
 		priv->fonts[RT_ITALICS] = f;
 	}
 
@@ -465,9 +500,15 @@ static void supply_fonts_and_gcs(Richtext_private *priv, Richtext self, Xv_font 
 		gcv.font = (Font)xv_get(f, XV_XID);
 
 		if (priv->gcs[RT_BOLDITALICS]) XFreeGC(dpy, priv->gcs[RT_BOLDITALICS]);
-		priv->gcs[RT_BOLDITALICS] = XCreateGC(dpy, xid,
-						GCFunction | GCForeground | GCBackground | GCFont,
-						&gcv);
+		if (_xv_is_multibyte) {
+			priv->gcs[RT_BOLDITALICS] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground, &gcv);
+			priv->fss[RT_BOLDITALICS] = (XFontSet)xv_get(f, FONT_SET_ID);
+		}
+		else {
+			priv->gcs[RT_BOLDITALICS] = XCreateGC(dpy, xid,
+					GCFunction | GCForeground | GCBackground | GCFont, &gcv);
+		}
 		priv->fonts[RT_BOLDITALICS] = f;
 	}
 
