@@ -5,7 +5,7 @@
 #include <xview/help.h>
 #include <xview/font.h>
 
-char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.36 2026/07/22 18:42:53 dra Exp $";
+char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.37 2026/07/23 20:04:00 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -52,6 +52,7 @@ typedef struct _graphwin {
 							nitems, margin, multiclick_time,
 							vdown_x, vdown_y, vlast_x, vlast_y;
 	GC                      frame_gc, sel_draw_gc, draw_gc;
+	XFontSet                fs;
 	Xv_opaque               client_data;
 	Graphwin_notify_proc_t  notify_proc;
 	gw_autoscroll_t         auto_scroll_func;
@@ -102,7 +103,7 @@ static void repaint_obj(Graphwin_private *priv, graphlist it)
 	grs.xor_gc = priv->frame_gc;
 	grs.normal_gc = priv->draw_gc;
 	grs.invers_gc = priv->sel_draw_gc;
-	grs.fs = (XFontSet)xv_get(xv_get(GRAPHPUB(priv), XV_FONT), FONT_SET_ID);
+	grs.fs = priv->fs;
 	grs.vinfo = &vi;
 	grs.painter = GRPAINTPUB(priv->painter);
 	priv->painter->vi = &vi;
@@ -131,6 +132,7 @@ static void graphwin_repaint_from_expose(Graphwin_private *priv,
 	grs.xor_gc = priv->frame_gc;
 	grs.normal_gc = priv->draw_gc;
 	grs.invers_gc = priv->sel_draw_gc;
+	grs.fs = priv->fs;
 
 	for (it = priv->first; it; it = it->next) {
 		if (! it->no_redisplay && it->state.visible) {
@@ -218,6 +220,7 @@ static void internal_drag_objects(Graphwin_private *priv, Scrollpw_info *vinfo)
 	grs.xor_gc = priv->frame_gc;
 	grs.normal_gc = priv->draw_gc;
 	grs.invers_gc = priv->sel_draw_gc;
+	grs.fs = priv->fs;
 	grs.vinfo = vinfo;
 	if (priv->painter) priv->painter->vi = vinfo;
 	grs.painter = GRPAINTPUB(priv->painter);
@@ -1284,6 +1287,7 @@ static void graphwin_make_gcs(Graphwin_private *priv, Scrollpw pw)
 	if (_xv_is_multibyte) {
 		priv->sel_draw_gc = XCreateGC(dpy, xid,
 					GCFunction | GCForeground | GCBackground, &gcv);
+		priv->fs = (XFontSet)xv_get(font, FONT_SET_ID);
 	}
 	else {
 		priv->sel_draw_gc = XCreateGC(dpy, xid,
