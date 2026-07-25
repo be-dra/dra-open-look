@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.47 2026/07/21 20:02:49 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.48 2026/07/25 05:33:51 dra Exp $";
 #endif
 #endif
 
@@ -3387,7 +3387,13 @@ static void xvwp_connect(Xv_server srv, char *base_inst_name)
 			xv_set(root, XV_FONT, font, NULL);
 
 			/* probably this is too late anyway .... */
-			defaults_set_string(FNRES, fontname);
+			if (fontname) {
+				defaults_set_string(FNRES, fontname);
+			}
+			else {
+				fprintf(stderr, "%s-%d: cannot set %s to NULL\n", __FILE__,
+										__LINE__, FNRES);
+			}
 
 			srvpriv->xvwp->font_for_root_and_frame = font;
 		}
@@ -3415,8 +3421,13 @@ static void xvwp_connect(Xv_server srv, char *base_inst_name)
 		if (font) {
 			char *fontname = (char *)xv_get(font, FONT_NAME);
 
-							
-			defaults_set_string("OpenWindows.BoldFont", fontname);
+			if (fontname) {
+				defaults_set_string("OpenWindows.BoldFont", fontname);
+			}
+			else {
+				fprintf(stderr, "%s-%d: cannot set %s to NULL\n", __FILE__,
+										__LINE__, "OpenWindows.BoldFont");
+			}
 		}
 
 		if (defaults_exists("openwindows.monospacefont",
@@ -3435,7 +3446,14 @@ static void xvwp_connect(Xv_server srv, char *base_inst_name)
 				if (font) {
 					char *fontname = (char *)xv_get(font, FONT_NAME);
 
-					defaults_set_string("OpenWindows.MonospaceFont", fontname);
+					if (fontname) {
+						defaults_set_string("OpenWindows.MonospaceFont",
+												fontname);
+					}
+					else {
+						fprintf(stderr, "%s-%d: cannot set %s to NULL\n",
+								__FILE__, __LINE__, "OpenWindows.MonospaceFont");
+					}
 				}
 			}
 		}
