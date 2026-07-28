@@ -1,5 +1,5 @@
 #ifndef lint
-char     es_mem_c_sccsid[] = "@(#)es_mem.c 20.25 93/06/28 DRA: $Id: es_mem.c,v 4.1 2024/03/28 19:06:00 dra Exp $";
+char     es_mem_c_sccsid[] = "@(#)es_mem.c 20.25 93/06/28 DRA: $Id: es_mem.c,v 4.2 2026/07/27 17:05:23 dra Exp $";
 #endif
 
 /*
@@ -173,19 +173,19 @@ static Es_index es_mem_get_position(Es_handle esh)
 
 static Es_index es_mem_set_position(Es_handle esh, Es_index pos)
 {
-    register Es_mem_data private = ABS_TO_REP(esh);
+	register Es_mem_data private = ABS_TO_REP(esh);
 
-    if (pos > private->length) {
-	pos = private->length;
-    }
-    return (private->position = pos);
+	if (pos > (int)private->length) {
+		pos = private->length;
+	}
+	return (private->position = pos);
 }
 
 static Es_index es_mem_read(Es_handle esh, int len, CHAR *bufp, int *resultp)
 {
 	register Es_mem_data private = ABS_TO_REP(esh);
 
-	if (private->length - private->position < len) {
+	if ((int)private->length - (int)private->position < len) {
 		len = private->length - private->position;
 	}
 	BCOPY(private->value + private->position, bufp, (size_t)len);
@@ -193,61 +193,60 @@ static Es_index es_mem_read(Es_handle esh, int len, CHAR *bufp, int *resultp)
 	return (private->position += len);
 }
 
-static Es_index es_mem_replace(Es_handle esh, Es_index end,int new_len, CHAR *new, int *resultp)
+static Es_index es_mem_replace(Es_handle esh, Es_index end,int new_len,
+				char *new, int *resultp)
 {
-    int             old_len, delta;
-    CHAR           *start, *keep, *restore;
-    register Es_mem_data private = ABS_TO_REP(esh);
+	int old_len, delta;
+	char *start, *keep, *restore;
+	register Es_mem_data private = ABS_TO_REP(esh);
 
-    *resultp = 0;
-    if (new == 0 && new_len != 0) {
-	private->status = ES_INVALID_ARGUMENTS;
-	return ES_CANNOT_SET;
-    }
-    if (end > private->length) {
-	end = private->length;
-    } else if (end < private->position) {
-	int             tmp = end;
-	end = private->position;
-	private->position = tmp;
-    }
-    old_len = end - private->position;
-    delta = new_len - old_len;
+	*resultp = 0;
+	if (new == 0 && new_len != 0) {
+		private->status = ES_INVALID_ARGUMENTS;
+		return ES_CANNOT_SET;
+	}
+	if (end > (Es_index)private->length) {
+		end = private->length;
+	}
+	else if (end < (Es_index)private->position) {
+		int tmp = end;
 
-    if (delta > 0 && private->length + delta > private->max_length) {
-	CHAR           *new_value = (CHAR *) 0;
-	if (private->initial_max_length == ES_INFINITY) {
-#ifdef OW_I18N
-	    new_value = (CHAR *)realloc(private->value,
-		((private->max_length + delta + 10000 + 1) * sizeof(CHAR)));
-#else
-	    new_value = realloc(private->value,
-				(size_t)(private->max_length + delta + 10000 + 1));
-#endif
-	    if (new_value) {
-		private->value = new_value;
-		private->max_length += delta + 10000;
-	    }
+		end = private->position;
+		private->position = tmp;
 	}
-	if (!new_value) {
-	    private->status = ES_SHORT_WRITE;
-	    return ES_CANNOT_SET;
+	old_len = end - private->position;
+	delta = new_len - old_len;
+
+	if (delta > 0 && private->length + delta > private->max_length) {
+		CHAR *new_value = (CHAR *) 0;
+
+		if (private->initial_max_length == ES_INFINITY) {
+			new_value = realloc(private->value,
+					(size_t)(private->max_length + delta + 10000 + 1));
+			if (new_value) {
+				private->value = new_value;
+				private->max_length += delta + 10000;
+			}
+		}
+		if (!new_value) {
+			private->status = ES_SHORT_WRITE;
+			return ES_CANNOT_SET;
+		}
 	}
-    }
-    start = private->value + private->position;
-    keep = private->value + end;
-    restore = start + new_len;
-    if (delta != 0) {
-	BCOPY(keep, restore, (size_t)( private->length - end + 1));
-    }
-    if (new_len > 0) {
-	BCOPY(new, start, (size_t)new_len);
-    }
-    private->position = end + delta;
-    private->length += delta;
-    private->value[private->length] = '\0';
-    *resultp = new_len;
-    return restore - private->value;
+	start = private->value + private->position;
+	keep = private->value + end;
+	restore = start + new_len;
+	if (delta != 0) {
+		BCOPY(keep, restore, (size_t)(private->length - end + 1));
+	}
+	if (new_len > 0) {
+		BCOPY(new, start, (size_t)new_len);
+	}
+	private->position = end + delta;
+	private->length += delta;
+	private->value[private->length] = '\0';
+	*resultp = new_len;
+	return restore - private->value;
 }
 
 #ifdef DEBUG
@@ -256,20 +255,11 @@ es_mem_dump(fd, pdh)
     FILE           *fd;
     Es_mem_data     pdh;
 {
-#ifdef OW_I18N
-    extern CHAR		_xv_null_string_wc[];
-#endif
-
     (void) fprintf(fd, "\n\t\t\t\t\t\tmax length:  %ld", pdh->max_length);
     (void) fprintf(fd, "\n\t\t\t\t\t\tcurrent length:  %ld", pdh->length);
     (void) fprintf(fd, "\n\t\t\t\t\t\tposition:  %ld", pdh->position);
-#ifdef OW_I18N
-    (void) fprintf(fd, "\n\t\t\t\t\t\tvalue (%lx):  \"%ws\"",
-		   pdh->value, (pdh->value ? pdh->value : _xv_null_string_wc));
-#else
     (void) fprintf(fd, "\n\t\t\t\t\t\tvalue (%lx):  \"%s\"",
 		   pdh->value, (pdh->value ? pdh->value : ""));
-#endif /* OW_I18N */
 }
 
 #endif /* DEBUG */
