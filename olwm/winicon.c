@@ -1,5 +1,5 @@
 /* #ident	"@(#)winicon.c	26.42	93/06/28 SMI" */
-char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.10 2026/04/23 19:04:36 dra Exp $";
+char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.11 2026/07/27 20:38:16 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -287,9 +287,9 @@ WinIconFrame *winInfo;
 
 	/* draw icon name */
 	if (cli->wmDecors->flags & WMDecorationIconName)
-		DrawText(dpy,frameWin,IconFont,WinGC(winInfo,ICON_NORMAL_GC),
-			 winInfo->nameX, winInfo->nameY, 
-			 winInfo->fcore.name, winInfo->nameLength);
+		olgx_draw_text(WinGI(winInfo, NORMAL_GINFO), frameWin,
+				winInfo->fcore.name, winInfo->nameX, winInfo->nameY, 
+				winInfo->core.width, OLGX_NORMAL | OLGX_MORE_ARROW);
 
 	/* draw border */
 	drawIconBorder(dpy, winInfo, winInfo->core.client->isSelected);
