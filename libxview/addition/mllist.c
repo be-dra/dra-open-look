@@ -34,7 +34,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.36 2025/04/01 19:55:08 dra Exp $";
+char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.37 2026/07/27 19:27:45 dra Exp $";
 #endif
 
 /*******************************************************************
@@ -870,13 +870,7 @@ static int mllist_init(Panel owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 		priv->three_d = TRUE;
 		priv->color_offset = 1;
 	}
-	{
-        Xv_font savefont = xv_get(owner, XV_FONT);
-
-        xv_set(owner, XV_FONT, font, NULL);
-		priv->ginfo = (Graphics_info *)xv_init_olgx(owner, &priv->three_d,font);
-        xv_set(owner, XV_FONT, savefont, NULL);
-    }
+	priv->ginfo = (Graphics_info *)xv_init_olgx(owner, &priv->three_d,font);
 
 	priv->sbr.r_height = AbbScrollbar_Height(priv->ginfo);
 	priv->sbr.r_width = ScrollbarElevator_Width(priv->ginfo);
