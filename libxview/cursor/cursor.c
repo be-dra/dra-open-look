@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.15 2026/07/19 07:06:09 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.16 2026/07/27 12:30:59 dra Exp $";
 #endif
 #endif
 
@@ -18,6 +18,7 @@ static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,
 #include <X11/Xlib.h>
 #include <xview_private/portable.h>
 #include <xview_private/attr_impl.h>
+#include <xview_private/svr_impl.h>
 #include <xview_private/pw_impl.h>
 #include <xview_private/i18n_impl.h>
 #include <xview/cursor.h>
@@ -258,6 +259,28 @@ static unsigned long cursor_make_x_font(Xv_Drawable_info *root_info,
 					src_char, mask_char, xfg, xbg));
 }
 
+#ifdef CURRENTLY_UNUSED
+static int get_mb_char_count(const char *str)
+{
+	int count = 0, len;
+
+	while (*str != '\0') {
+		len = mblen(str, MB_CUR_MAX);
+		if (len <= 0) {
+			/* Invalid character or end of string, fallback to 1 byte */
+			str++;
+		}
+		else {
+			str += len;
+		}
+		count++;
+	}
+	return count;
+}
+#endif /* CURRENTLY_UNUSED */
+
+#define MAXWC 10
+
 /* returns XV_OK or XV_ERROR */
 static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 {
@@ -276,7 +299,7 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 	int src_char;
 	Display *display;
 	Xv_Font textfont, cursor_font;
-	int length;
+	int bytelength, charlength;
 	int screen_nbr;
 	Pixmap mask_pixmap, src_pixmap;
 	Screen_visual *visual;
@@ -289,11 +312,20 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
     XCharStruct chstr;
 	unsigned pixheight, pixwidth;
 	char buf[2];
+	wchar_t wcstr[MAXWC];
 
 	display = xv_display(info);
 	xid = xv_xid(info);
 
-	length = strlen(cursor->string);
+	bytelength = strlen(cursor->string);
+	if (_xv_is_multibyte) {
+		if ((charlength = mbstowcs(wcstr, cursor->string, MAXWC)) < 0) {
+			charlength = bytelength;
+		}
+	}
+	else {
+		charlength = bytelength;
+	}
 	src_char = cursor_table[cursor->drag_state][cursor->drag_type];
 
     cursor_font = (Xv_Font) xv_find(xv_server(info), FONT,
@@ -374,7 +406,7 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 	if (!textfont)
 		return XV_ERROR;
 
-	if (length <= 5) {
+	if (charlength <= 5) {
 		XSetForeground(display, visual->gc, 0L);
 		/* erase the "more arrow" */
 		XFillRectangle(display, src_pixmap, visual->gc, 51, 21, 6, 12);
@@ -382,20 +414,21 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 	}
 	else {
 		/* need space for the more arrow */
-		length = 4;
+		charlength = 4;
 	}
 
 	/* Draw string into cursor pixmap */
 
 	if (_xv_is_multibyte) {
 		XFontSet fs = (XFontSet)xv_get(textfont, FONT_SET_ID);
-		XmbDrawString(display,src_pixmap, fs, visual->gc, 20, ascent+descent+3,
-									cursor->string, length);
+		SERVERTRACE((577, "%s writing %d chars\n", cursor->string, charlength));
+		XwcDrawString(display,src_pixmap, fs, visual->gc, 20, ascent+descent+3,
+									wcstr, charlength);
 	}
 	else {
 		XSetFont(display, visual->gc, xv_get(textfont, XV_XID));
 		XDrawString(display,src_pixmap,visual->gc, 20, ascent+descent+3,
-									cursor->string, length);
+									cursor->string, charlength);
 	}
 
 	/* Define foreground and background colors */
