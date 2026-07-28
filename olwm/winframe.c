@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.11 2026/06/02 21:02:32 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.12 2026/07/27 20:38:07 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -478,19 +478,6 @@ static void drawHeaderBusy2D(Display *dpy, WinPaneFrame *win, Client *cli,
 	XFillRectangle(dpy, self, WinGC(win,BUSY_GC), armw, armh, 
 		rw, heightTopFrame(win)-armh);
 
-#ifdef OLD_STUFF
-	/* fill in window name in titlebar */
-	DrawText(dpy,self,TitleFont,WinGC(win,FOREGROUND_GC),
-		 win->titlex, win->titley,
-		 win->fcore.name, win->nameLength);
-
-	/* emulate bold font */
-	if (GRV.BoldFontEmulation) {
-		DrawText(dpy,self,TitleFont,WinGC(win,FOREGROUND_GC),
-			 win->titlex + 1, win->titley,
-			 win->fcore.name, win->nameLength);
-	}
-#else /* OLD_STUFF */
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
 		win->titley, rw - win->titleOff,
 		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
@@ -499,7 +486,6 @@ static void drawHeaderBusy2D(Display *dpy, WinPaneFrame *win, Client *cli,
 			win->titley, rw - win->titleOff,
 			OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 	}
-#endif /* OLD_STUFF */
 }
 
 
@@ -642,19 +628,6 @@ static void drawHeaderBar2D(Display *dpy, WinPaneFrame *win, Client *cli,
 		w-widthLeftFrame(win)-widthRightFrame(win), 
 		heightTopFrame(win)-(2*armh)+1);
 
-#ifdef OLD_STUFF
-	/* fill in window name */
-	DrawText(dpy,self,TitleFont,WinGC(win,WINDOW_GC),
-		 win->titlex, win->titley,
-		 win->fcore.name, win->nameLength);
-
-	/* emulate bold font */
-	if (GRV.BoldFontEmulation) {
-		DrawText(dpy,self,TitleFont,WinGC(win,WINDOW_GC),
-			 win->titlex + 1, win->titley,
-			 win->fcore.name, win->nameLength);
-	}
-#else /* OLD_STUFF */
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
 		win->titley, rw - win->titleOff,
 		OLGX_INVOKED | OLGX_MORE_ARROW | TextOLGX);
@@ -663,7 +636,6 @@ static void drawHeaderBar2D(Display *dpy, WinPaneFrame *win, Client *cli,
 			win->titley, rw - win->titleOff,
 			OLGX_INVOKED | OLGX_MORE_ARROW | TextOLGX);
 	}
-#endif /* OLD_STUFF */
 }
 
 
@@ -686,19 +658,6 @@ static void drawHeaderLines2D(Display *dpy, WinPaneFrame *win, Client *cli,
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), armw, armh, 
 		w-2*armw, heightTopFrame(win)-armh);
 
-#ifdef OLD_STUFF
-	/* fill in window name */
-	DrawText(dpy,self,TitleFont,foregroundGC,
-		 win->titlex, win->titley,
-		 win->fcore.name, win->nameLength);
-
-	/* emulate bold font */
-	if (GRV.BoldFontEmulation) {
-		DrawText(dpy,self,TitleFont,foregroundGC,
-			 win->titlex + 1, win->titley,
-			 win->fcore.name, win->nameLength);
-	}
-#else /* OLD_STUFF */
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
 		win->titley, rw - win->titleOff,
 		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
@@ -707,7 +666,6 @@ static void drawHeaderLines2D(Display *dpy, WinPaneFrame *win, Client *cli,
 			win->titley, rw - win->titleOff,
 			OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 	}
-#endif /* OLD_STUFF */
 
 	/* draw 2 pixel tall black focus indicator line above titlebar area 
 	 * (without overwriting the resize corners)
@@ -746,20 +704,6 @@ static void drawHeaderNoFocus2D(Display *dpy, WinPaneFrame *win, Client *cli,
 	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), armw, armh, 
 		rw, heightTopFrame(win)-armh);
 
-#ifdef OLD_STUFF
-	/* fill in window name */
-	DrawText(dpy,self,TitleFont,foregroundGC,
-		 win->titlex, win->titley,
-		 win->fcore.name, win->nameLength);
-
-	/* emulate bold font */
-	if (GRV.BoldFontEmulation) {
-		DrawText(dpy,self,TitleFont,foregroundGC,
-			 win->titlex + 1, win->titley,
-			 win->fcore.name, win->nameLength);
-	}
-#else /* OLD_STUFF */
-
 	olgx_draw_text(gisNormal, self, win->fcore.name, win->titlex, 
 		win->titley, rw - win->titleOff,
 		OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
@@ -768,7 +712,6 @@ static void drawHeaderNoFocus2D(Display *dpy, WinPaneFrame *win, Client *cli,
 			win->titley, rw - win->titleOff,
 			OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 	}
-#endif /* OLD_STUFF */
 }
 
 
@@ -1331,7 +1274,9 @@ static void setTitleText(Display *dpy, WinPaneFrame *w, Window panewin)
 	if (availwidth < w->nameWidth) {
 		/* first see whether there is a dash in the title */
 		if ((ptr = TextChr(w->fcore.name, '-'))) {
-			/* this is probably a base window - we do **not** truncate */
+			/* this is probably a base window -
+			 * we do **not** truncate at the colon
+			 */
 		}
 		else {
 			/* Must truncate the title.
