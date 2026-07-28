@@ -1,5 +1,5 @@
 /* #ident	"@(#)moveresize.c	26.54	93/06/28 SMI" */
-char moveresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: moveresize.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char moveresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: moveresize.c,v 2.2 2026/07/27 20:37:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -152,24 +152,18 @@ createStatusWindow(dpy, scrinfo, proto)
 }
 
 
-static void
-paintStatusWindow(sw, text)
-    StatusWinInfo *sw;
-    Text *text;
+static void paintStatusWindow(StatusWinInfo *sw, char *text)
 {
-    int	textlen;
-
-    if (sw == NULL)
-	return;
+	int textlen;
+    if (sw == NULL) return;
 
     olgx_draw_box(sw->scrinfo->gi[NORMAL_GINFO], sw->win, 0, 0,
 		  sw->width, sw->height, OLGX_NORMAL | OLGX_ERASE, True);
-    
-    textlen = TextLen(text);
 
-    DrawText(sw->dpy, sw->win, sw->font, sw->scrinfo->gc[FOREGROUND_GC], 
-		(sw->width - FontWidth(sw->font, text, textlen)) / 2,
-		sw->ypos, text, textlen);
+    textlen = strlen(text);
+	olgx_draw_text(sw->scrinfo->gi[NORMAL_GINFO], sw->win, text,
+		(sw->width - FontWidth(sw->font, text, textlen)) / 2, sw->ypos, 
+		sw->width, OLGX_NORMAL | OLGX_MORE_ARROW);
 }
 
 
