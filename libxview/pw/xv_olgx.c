@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.6 2026/07/15 18:34:32 dra Exp $";
+static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.7 2026/07/27 19:26:01 dra Exp $";
 #endif
 #endif
 
@@ -180,7 +180,6 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	 */
 
 	if (_xv_is_multibyte) {
-/* 		text_font = (Xv_Font) xv_get(win, XV_FONT); */
 		text_font_set = (XFontSet) xv_get(text_font, FONT_SET_ID);
 	}
 
@@ -190,19 +189,18 @@ Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	screen = xv_screen(info);
 	first = (Ginfo_list *) xv_get(screen, XV_KEY_DATA, screen_ginfo);
 	last = first;
+	match = 0;
 	for (ginfo_list = first; ginfo_list; ginfo_list = ginfo_list->next) {
 		if (ginfo_list->cms == cms && ginfo_list->depth == xv_depth(info)) {
 			if (_xv_is_multibyte && text_font_set) {
-				/* UTF-8 Modus: Wir vergleichen das FontSet und
-				 * den GlyphFontStruct
-				 */
+				/* UTF-8 : compare the FontSet and the GlyphFontStruct */
 				if (TextFont_Set(ginfo_list->ginfo) == text_font_set &&
 					ginfo_list->ginfo->glyphfont == glyph_font_struct) {
 					match = 1;
 				}
 			} 
 			else {
-				/* Klassischer Pfad: Vergleich der XView-Handles */
+				/* single byte: compare the XView-handles of both fonts */
 				if (ginfo_list->glyph_font == glyph_font &&
 					ginfo_list->text_font == text_font) {
 					match = 1;
