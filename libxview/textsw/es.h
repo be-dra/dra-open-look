@@ -1,4 +1,4 @@
-/*	@(#)es.h 20.17 93/06/28 SMI	DRA: $Id: es.h,v 4.1 2024/03/28 19:06:00 dra Exp $ */
+/*	@(#)es.h 20.17 93/06/28 SMI	DRA: $Id: es.h,v 4.2 2026/07/27 17:05:20 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -75,10 +75,8 @@ typedef enum {
 	ES_PS_SCRATCH		= ES_ATTR(ATTR_OPAQUE,		23),
 	ES_SIZE_OF_ENTITY	= ES_ATTR(ATTR_INT,		24),
 	ES_TYPE			= ES_ATTR(ATTR_ENUM,		25)
-#ifdef OW_I18N
 	,
 	ES_SKIPPED		= ES_ATTR(ATTR_INT,		26)
-#endif
 } Es_attribute;
 
 struct es_ops {
@@ -160,9 +158,7 @@ typedef enum {
  */
 #define ES_OPT_APPEND		0x00000001
 #define ES_OPT_OVERWRITE	0x00000002
-#ifdef OW_I18N
 #define ES_OPT_BACKUPFILE	0x00000004
-#endif
 
 Pkg_private Es_handle es_file_create(char *name, int options, Es_status *);
 /*
