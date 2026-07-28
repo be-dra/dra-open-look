@@ -6,8 +6,9 @@
 #include "ollocale.h"
 #include "globals.h"
 #include <X11/Xatom.h>
+#include <olgx/olgx.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.28 2026/04/24 12:42:16 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.29 2026/07/27 20:39:14 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -19,7 +20,7 @@ typedef struct _quick_dupl {
 	char delimtab[256];   /* TRUE= character is a word delimiter */
 	Time last_click_time;
 	int select_click_cnt;
-	XFontStruct *fs;
+	Graphics_info *ginfo;
 	int baseline;
 	int selectIsDownMask;
 	Window windowToClear;
@@ -56,7 +57,7 @@ static quick_data_t *supply_quick_data(Display *dpy, quick_data_t *qd,
 	else {
 		gcv.foreground = (gi->pixvals[OLGX_BLACK] ^ gi->pixvals[OLGX_BG1]);
 	}
-	qd->fs = gi->textfont;
+	qd->ginfo = gi;
 	if (! qd->gc) {
 		gcv.function = GXxor;
 		qd->gc = XCreateGC(dpy, root, GCForeground | GCFunction, &gcv);
@@ -68,12 +69,12 @@ static quick_data_t *supply_quick_data(Display *dpy, quick_data_t *qd,
 	return qd;
 }
 
-static void mouse_to_charpos(quick_data_t *qd, XFontStruct *fs,
+static void mouse_to_charpos(quick_data_t *qd,
 						int mx, char *s, int *sx, int *startindex)
 {
 	int i, len = strlen(s);
 	int outsx = *sx, outstartidx = *startindex;
-		 
+	XFontStruct *fs = TextFont_Struct(qd->ginfo);
 	for (i = 0; i < len; i++) {     
 		qd->xpos[i] = *sx; 
 		if (fs->per_char)  {
@@ -92,11 +93,13 @@ static void mouse_to_charpos(quick_data_t *qd, XFontStruct *fs,
 	*startindex = outstartidx;
 }
 
-static void select_word(quick_data_t *qd, char *s, int sx, XFontStruct *fs)
+static void select_word(quick_data_t *qd, char *s, int sx)
 {
+	XFontStruct *fs;
 	int i;
 	int cwidth;
 
+	fs = TextFont_Struct(qd->ginfo);
 	/* I need a new startindex <= qd->startindex
 	 * and a new startx <= qd->startx
 	 * and an endindex and a endx
@@ -261,7 +264,7 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 			int save_startx = qd->startx, save_endx = qd->endx;
 
 			qd->startx = sx;
-			mouse_to_charpos(qd, qd->fs, event->xbutton.x, s,
+			mouse_to_charpos(qd, event->xbutton.x, s,
 					&qd->startx, &qd->startindex);
 
 			if (is_multiclick) {
@@ -269,7 +272,7 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 				++qd->select_click_cnt;
 				if (qd->select_click_cnt == 2) {
 					/* really sx here ? Or rather qd->startx ???? */
-					select_word(qd, s, sx, qd->fs);
+					select_word(qd, s, sx);
 				}
 				else if (qd->select_click_cnt == 3) {
 					int u;
@@ -283,8 +286,9 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 					qd->startindex = 0;
 					qd->startx = cli->framewin->titlex;
 					qd->endindex = strlen(s) - 1;
-					XTextExtents(qd->fs, frameInfo->fcore.name,
-						strlen(frameInfo->fcore.name), &u, &u, &u, &tit);
+					XTextExtents(TextFont_Struct(qd->ginfo),
+						frameInfo->fcore.name, strlen(frameInfo->fcore.name),
+						&u, &u, &u, &tit);
 					qd->endx = qd->startx + tit.width;
 				}
 
@@ -352,15 +356,15 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 			int save_startx = qd->startx, save_endx = qd->endx;
 
 			qd->startx = sx;
-			mouse_to_charpos(qd, qd->fs, event->xbutton.x, s,
-					&qd->startx, &qd->startindex);
+			mouse_to_charpos(qd, event->xbutton.x, s, &qd->startx,
+									&qd->startindex);
 
 			if (is_multiclick) {
 
 				++qd->select_click_cnt;
 				if (qd->select_click_cnt == 2) {
 					/* really sx here ? Or rather qd->startx ???? */
-					select_word(qd, s, sx, qd->fs);
+					select_word(qd, s, sx);
 				}
 				else if (qd->select_click_cnt == 3) {
 					int u;
@@ -374,7 +378,8 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 					qd->startindex = 0;
 					qd->startx = cli->framewin->titlex;
 					qd->endindex = strlen(s) - 1;
-					XTextExtents(qd->fs, frameInfo->fcore.name,
+					XTextExtents(TextFont_Struct(qd->ginfo),
+								frameInfo->fcore.name,
 						strlen(frameInfo->fcore.name), &u, &u, &u, &tit);
 					qd->endx = qd->startx + tit.width;
 				}
@@ -426,8 +431,7 @@ static void adjust_charwise(quick_data_t *qd, char *s, int sx, XEvent *ev)
 
 	newstartx = sx;
 
-	mouse_to_charpos(qd, qd->fs, ev->xbutton.x, s,
-						&newstartx, &newstartindex);
+	mouse_to_charpos(qd, ev->xbutton.x, s, &newstartx, &newstartindex);
 
 	/* several cases: */
 	if (newstartx < startx) {	/* adjust left of old start */
@@ -480,10 +484,9 @@ static void adjust_wordwise(quick_data_t *qd, char *s, int sx, XEvent *ev)
     int endindex = qd->endindex;
      
     qd->startx = sx;
-    mouse_to_charpos(qd, qd->fs, ev->xbutton.x, s,
-                            &qd->startx, &qd->startindex);
+    mouse_to_charpos(qd, ev->xbutton.x, s, &qd->startx, &qd->startindex);
     /* really sx here ? Or rather qd->startx ???? */
-    select_word(qd, s, sx, qd->fs);
+    select_word(qd, s, sx);
     
     /* several cases: */
     if (qd->startx < startx) { /* adjust left of old start */
