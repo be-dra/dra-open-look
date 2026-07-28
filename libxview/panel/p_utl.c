@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.18 2026/07/19 21:58:18 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.19 2026/07/27 19:28:16 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -463,108 +463,109 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 
 	chrht = xv_get(image_font(image), FONT_DEFAULT_CHAR_HEIGHT);
 	PANEL_EACH_PAINT_WINDOW(panel, pw)
-			switch (image->im_type) {
-		case PIT_STRING:
+		switch (image->im_type) {
+			case PIT_STRING:
 
-			str = image_string(image);
+				str = image_string(image);
 
-			length = STRLEN(str);
-			lines = 1;
-			for (i = 0; i < length; i++)
-				if (str[i] == '\n')
-					lines++;
-			baseline_y = rect->r_top + panel_fonthome(image_font(image));
+				length = STRLEN(str);
+				lines = 1;
+				for (i = 0; i < length; i++)
+					if (str[i] == '\n')
+						lines++;
+				baseline_y = rect->r_top + panel_fonthome(image_font(image));
 
-			if (_xv_is_multibyte) {
-			if (image_font(image))
-				fontset_id = (XFontSet) xv_get(image_font(image), FONT_SET_ID);
-			else if (image_bold(image))
-				fontset_id = panel->bold_fontset_id;
-			else
-				fontset_id = panel->std_fontset_id;
-			}
-			else {
-			if (image_font(image))
-				font_xid = (XID) xv_get(image_font(image), XV_XID);
-			else if (image_bold(image))
-				font_xid = panel->bold_font_xid;
-			else
-				font_xid = panel->std_font_xid;
-			}
+				if (_xv_is_multibyte) {
+					if (image_font(image))
+						fontset_id =
+								(XFontSet) xv_get(image_font(image), FONT_SET_ID);
+					else if (image_bold(image))
+						fontset_id = panel->bold_fontset_id;
+					else
+						fontset_id = panel->std_fontset_id;
+				}
+				else {
+					if (image_font(image))
+						font_xid = (XID) xv_get(image_font(image), XV_XID);
+					else if (image_bold(image))
+						font_xid = panel->bold_font_xid;
+					else
+						font_xid = panel->std_font_xid;
+				}
 
-			if (lines == 1) {
-				/* Center single line within label rect */
-				baseline_y += (rect->r_height - chrht) / 2;
+				if (lines == 1) {
+					/* Center single line within label rect */
+					baseline_y += (rect->r_height - chrht) / 2;
 
-				panel_paint_text(pw, fontset_id, font_xid, color_index,
-						rect->r_left, baseline_y,
-						image_string(image));
-			}
-			else {
-				/* Paint multiple lines starting from top of label rect */
-				line_start = 0;
-				for (i = 0; i <= length; i++) {
-					newline_found = str[i] == '\n';
-					if (i == length || newline_found) {
-						if (newline_found)
-							str[i] = 0;
+					panel_paint_text(pw, fontset_id, font_xid, color_index,
+							rect->r_left, baseline_y, image_string(image));
+				}
+				else {
+					/* Paint multiple lines starting from top of label rect */
+					line_start = 0;
+					for (i = 0; i <= length; i++) {
+						newline_found = str[i] == '\n';
+						if (i == length || newline_found) {
+							if (newline_found)
+								str[i] = 0;
 
-						size = xv_pf_textwidth(i - line_start,
-								image_font(image), &str[line_start]);
+							size = xv_pf_textwidth(i - line_start,
+									image_font(image), &str[line_start]);
 
-						/* multiline messages seem to be ALWAYS right aligned */
-						baseline_x = rect->r_left + rect->r_width - size.x;
-						panel_paint_text(pw, fontset_id, font_xid, color_index,
-								baseline_x, baseline_y, &str[line_start]);
+							/* multiline messages seem to be ALWAYS right aligned */
+							baseline_x = rect->r_left + rect->r_width - size.x;
+							panel_paint_text(pw, fontset_id, font_xid, color_index,
+									baseline_x, baseline_y, &str[line_start]);
 
-						if (newline_found)
-							str[i] = '\n';
-						baseline_y += chrht;
-						line_start = i + 1;
+							if (newline_found)
+								str[i] = '\n';
+							baseline_y += chrht;
+							line_start = i + 1;
+						}
 					}
 				}
-			}
-			break;
+				break;
 
-		case PIT_SVRIM:
-			panel_paint_svrim(pw, (Pixrect *) image_svrim(image), rect->r_left,
-					rect->r_top, color_index, (Pixrect *) NULL);
-			break;
-	}
-
-	if (image_boxed(image)) {
-		if (color_index >= 0) {
-			xv_draw_rectangle(pw, rect->r_left, rect->r_top,
-					rect->r_width - 1, rect->r_height - 1,
-					LineSolid, PIX_SRC | PIX_COLOR(color_index));
+			case PIT_SVRIM:
+				panel_paint_svrim(pw, (Pixrect *) image_svrim(image), rect->r_left,
+						rect->r_top, color_index, (Pixrect *) NULL);
+				break;
 		}
-		else {
+
+		if (image_boxed(image)) {
+			if (color_index >= 0) {
+				xv_draw_rectangle(pw, rect->r_left, rect->r_top,
+						rect->r_width - 1, rect->r_height - 1,
+						LineSolid, PIX_SRC | PIX_COLOR(color_index));
+			}
+			else {
+				DRAWABLE_INFO_MACRO(pw, info);
+				screen = xv_screen(info);
+				gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
+				screen_adjust_gc_color(pw, SCREEN_SET_GC);
+				XDrawRectangle(xv_display(info), xv_xid(info),
+						gc_list[SCREEN_SET_GC],
+						rect->r_left, rect->r_top,
+						(unsigned)(rect->r_width - 1),
+						(unsigned)(rect->r_height - 1));
+			}
+		}
+
+		if (image_inverted(image))
+			panel_pw_invert(pw, rect, color_index);
+
+		if (inactive_item) {
 			DRAWABLE_INFO_MACRO(pw, info);
 			screen = xv_screen(info);
 			gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
-			screen_adjust_gc_color(pw, SCREEN_SET_GC);
-			XDrawRectangle(xv_display(info), xv_xid(info),
-					gc_list[SCREEN_SET_GC],
+			screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
+			XFillRectangle(xv_display(info), xv_xid(info),
+					gc_list[SCREEN_INACTIVE_GC],
 					rect->r_left, rect->r_top,
-					(unsigned)(rect->r_width - 1),
-					(unsigned)(rect->r_height - 1));
+					(unsigned)rect->r_width, (unsigned)rect->r_height);
 		}
-	}
-
-	if (image_inverted(image))
-		panel_pw_invert(pw, rect, color_index);
-
-	if (inactive_item) {
-		DRAWABLE_INFO_MACRO(pw, info);
-		screen = xv_screen(info);
-		gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
-		screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
-		XFillRectangle(xv_display(info), xv_xid(info),
-				gc_list[SCREEN_INACTIVE_GC],
-				rect->r_left, rect->r_top,
-				(unsigned)rect->r_width, (unsigned)rect->r_height);
-	}
-PANEL_END_EACH_PAINT_WINDOW}
+	PANEL_END_EACH_PAINT_WINDOW
+}
 
 
 /****************************************************************************/
