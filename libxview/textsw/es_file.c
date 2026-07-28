@@ -1,5 +1,5 @@
 #ifndef lint
-char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,v 4.5 2025/03/11 17:50:37 dra Exp $ ";
+char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,v 4.7 2026/07/27 17:40:49 dra Exp $ ";
 #endif
 
 /*
@@ -101,11 +101,8 @@ char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,
 #include <xview/attrol.h>
 #include <xview_private/primal.h>
 #include <xview_private/es.h>
-#ifdef OW_I18N
 #include <xview/generic.h>
 #include <xview/server.h>
-/* #include <euc.h> */
-#endif /* OW_I18N */
 #include <xview_private/txt_18impl.h>
 
 extern char *xv_app_name;
@@ -116,8 +113,8 @@ static Es_handle es_file_destroy(Es_handle esh);
 static Es_index es_file_get_length(Es_handle esh);
 static Es_index es_file_get_position( Es_handle esh);
 static Es_index es_file_set_position(Es_handle esh, register Es_index pos);
-static Es_index es_file_read(Es_handle esh, int count, CHAR *buf, int *count_read);
-static Es_index es_file_replace(Es_handle esh, Es_index last_plus_one, int count, CHAR *buf, int *count_used);
+static Es_index es_file_read(Es_handle esh, int count, char *buf, int *count_read);
+static Es_index es_file_replace(Es_handle esh, Es_index last_plus_one, int count, char *buf, int *count_used);
 static int es_file_set(Es_handle esh, Attr_avlist attrs);
 
 Pkg_private int es_copy_status(char *to, int fold, int *from_mode);
@@ -137,20 +134,20 @@ static struct es_ops es_file_ops = {
 typedef struct _es_file_buf {
     Es_index        start;	/* Disk position, valid iff used > 0 */
     unsigned        used;	/* # valid chars in buf */
-    CHAR           *chars;
+    char           *chars;
 } es_file_buf;
 typedef es_file_buf *Es_file_buf;
 #define	BUF_INVALIDATE(_buf)	(_buf)->used = 0
 #define	BUF_LAST_PLUS_ONE(_buf)	((_buf)->start + (_buf)->used)
 #define	BUF_CONTAINS_POS(_buf, _pos)					\
 	((_buf)->used > 0 &&						\
-	(_buf)->start <= (_pos) && (_pos) < BUF_LAST_PLUS_ONE(_buf))
+	(_buf)->start <= (_pos) && (_pos) < (int)BUF_LAST_PLUS_ONE(_buf))
 
 struct private_data {
     Es_status       status;
-    CHAR           *name;
+    char           *name;
 #ifndef BACKUP_AT_HEAD_OF_LINK
-    CHAR           *true_name;	/* Non-null iff name was sym link */
+    char           *true_name;	/* Non-null iff name was sym link */
 #endif
     unsigned        flags, options;
     Xv_opaque       client_data;
@@ -161,11 +158,6 @@ struct private_data {
 #endif
     es_file_buf     read_buf;	/* cache for read's */
     es_file_buf     write_buf;	/* cache for replace's */
-#ifdef OW_I18N
-    int             mb_fd;	/* Original multi-bytes file */
-    int             skipped;
-    char           *wc_filename;	/* Name of the wchar backup file */
-#endif
 };
 typedef struct private_data *Es_file_data;
 
@@ -197,264 +189,201 @@ static char    *file_name_only_msgs[] = {
    the buf.
 */
 
-static void update_read_buf(Es_file_data private, Es_index start, Es_index end, CHAR *buf)
+static void update_read_buf(Es_file_data private, Es_index start, Es_index end,
+							char *buf)
 {
-    if (private->read_buf.used > 0 &&
-	start < BUF_LAST_PLUS_ONE(&private->read_buf) &&
-	end > private->read_buf.start) {
-	/*
-	 * There is overlap: in future, might be better to update
-	 * read_buf, but for now, just discard it.
-	 */
-	BUF_INVALIDATE(&private->read_buf);
-    }
+	if (private->read_buf.used > 0 &&
+			(unsigned)start < BUF_LAST_PLUS_ONE(&private->read_buf) &&
+			end > private->read_buf.start) {
+		/*
+		 * There is overlap: in future, might be better to update
+		 * read_buf, but for now, just discard it.
+		 */
+		BUF_INVALIDATE(&private->read_buf);
+	}
 }
 
-Pkg_private void es_file_append_error(char *error_buf, CHAR *file_name, Es_status status)
+Pkg_private void es_file_append_error(char *error_buf, char *file_name, Es_status status)
 /* Messages appended to error_buf have no trailing newline */
 {
-    register char  *first_free_in_buf;
-    register int    msg_index = 0;
-    static int init_msg = 0;
+	register char *first_free_in_buf;
+	register int msg_index = 0;
+	static int init_msg = 0;
 
-    if (error_buf == 0)
-	return;			/* Caller is fouled up. */
+	if (error_buf == 0)
+		return;	/* Caller is fouled up. */
 
-    if (! init_msg)  {
-#ifdef OW_I18N
-        file_name_only_msgs[0] = XV_MSG("cannot read file '%ws'");
-        file_name_only_msgs[1] = XV_MSG("'%ws' does not exist");
-        file_name_only_msgs[2] = XV_MSG("not permitted to access '%ws'");
-        file_name_only_msgs[3] = XV_MSG("'%ws' is not a file of ASCII text");
-        file_name_only_msgs[4] = XV_MSG("too many symbolic links from '%ws'");
-        file_name_only_msgs[5] = XV_MSG("out of space for file '%ws'");
-#else
-        file_name_only_msgs[0] = XV_MSG("cannot read file '%s'");
-        file_name_only_msgs[1] = XV_MSG("'%s' does not exist");
-        file_name_only_msgs[2] = XV_MSG("not permitted to access '%s'");
-        file_name_only_msgs[3] = XV_MSG("'%s' is not a file of ASCII text");
-        file_name_only_msgs[4] = XV_MSG("too many symbolic links from '%s'");
-        file_name_only_msgs[5] = XV_MSG("out of space for file '%s'");
-#endif	/* OW_I18N */
-	init_msg = 1;
-    }
-
-    first_free_in_buf = error_buf + strlen(error_buf);
-    if (status & ES_CLIENT_STATUS(0)) {
-	(void) sprintf(first_free_in_buf,
-#ifdef OW_I18N
-		       XV_MSG("INTERNAL error for file '%ws', status is %ld"),
-#else
-		       XV_MSG("INTERNAL error for file '%s', status is %ld"),
-#endif
-		       file_name, status);
-	return;
-    }
-    switch (ES_BASE_STATUS(status)) {
-      case ES_SUCCESS:
-	break;			/* Caller is REALLY lazy! */
-      case ES_CHECK_ERRNO:
-	switch (errno) {
-	  case ENOENT:
-	    msg_index = 1;
-	    goto Default;
-	  case EACCES:
-	    msg_index = 2;
-	    goto Default;
-	  case EISDIR:
-	    msg_index = 3;
-	    goto Default;
-#ifndef SVR4
-	  case ELOOP:
-	    msg_index = 4;
-	    goto Default;
-#endif /* SVR4 */
-	  case ENOMEM:
-	    (void) strcat(error_buf, XV_MSG("alloc failure"));
-	    break;
-	  default:
-	    (void) sprintf(first_free_in_buf,
-#ifdef OW_I18N
-			XV_MSG("file '%ws': %s"),
-#else
-			XV_MSG("file '%s': %s"),
-#endif
-			   file_name, strerror(errno));
-	    break;
+	if (!init_msg) {
+		file_name_only_msgs[0] = XV_MSG("cannot read file '%s'");
+		file_name_only_msgs[1] = XV_MSG("'%s' does not exist");
+		file_name_only_msgs[2] = XV_MSG("not permitted to access '%s'");
+		file_name_only_msgs[3] = XV_MSG("'%s' is not a text file");
+		file_name_only_msgs[4] = XV_MSG("too many symbolic links from '%s'");
+		file_name_only_msgs[5] = XV_MSG("out of space for file '%s'");
+		init_msg = 1;
 	}
-	break;
-      case ES_INVALID_HANDLE:
-	(void) strcat(error_buf, XV_MSG("invalid es_handle"));
-	break;
-      case ES_SEEK_FAILED:
-	(void) strcat(error_buf, XV_MSG("seek failed"));
-	break;
-      case ES_FLUSH_FAILED:
-      case ES_FSYNC_FAILED:
-      case ES_SHORT_WRITE:
-	msg_index = 5;
-	goto Default;
-      default:
-Default:
-	(void) sprintf(first_free_in_buf, file_name_only_msgs[msg_index],
-		       file_name);
-    }
+
+	first_free_in_buf = error_buf + strlen(error_buf);
+	if (status & ES_CLIENT_STATUS(0)) {
+		(void)sprintf(first_free_in_buf,
+				XV_MSG("INTERNAL error for file '%s', status is %ld"),
+				file_name, status);
+		return;
+	}
+	switch (ES_BASE_STATUS(status)) {
+		case ES_SUCCESS:
+			break;	/* Caller is REALLY lazy! */
+		case ES_CHECK_ERRNO:
+			switch (errno) {
+				case ENOENT:
+					msg_index = 1;
+					goto Default;
+				case EACCES:
+					msg_index = 2;
+					goto Default;
+				case EISDIR:
+					msg_index = 3;
+					goto Default;
+
+#ifndef SVR4
+				case ELOOP:
+					msg_index = 4;
+					goto Default;
+#endif /* SVR4 */
+
+				case ENOMEM:
+					strcat(error_buf, XV_MSG("alloc failure"));
+					break;
+				default:
+					sprintf(first_free_in_buf, XV_MSG("file '%s': %s"),
+							file_name, strerror(errno));
+					break;
+			}
+			break;
+		case ES_INVALID_HANDLE:
+			(void)strcat(error_buf, XV_MSG("invalid es_handle"));
+			break;
+		case ES_SEEK_FAILED:
+			(void)strcat(error_buf, XV_MSG("seek failed"));
+			break;
+		case ES_FLUSH_FAILED:
+		case ES_FSYNC_FAILED:
+		case ES_SHORT_WRITE:
+			msg_index = 5;
+			goto Default;
+		default:
+		  Default:
+			(void)sprintf(first_free_in_buf, file_name_only_msgs[msg_index],
+					file_name);
+	}
 }
 
-#ifdef OW_I18N
-Pkg_private     Es_handle es_file_create(name_wc, options, status)
-    CHAR           *name_wc;
-    int             options;
-    Es_status      *status;
-#else
 Pkg_private Es_handle es_file_create(char *name, int options, Es_status *status)
-#endif
 {
-    Es_handle       esh = (Es_object *) calloc((size_t)1, sizeof(Es_object));
-    Es_file_data private = 0;
-    int             open_option;
-    struct stat     buf;
-    Es_status       dummy_status;
-#ifndef BACKUP_AT_HEAD_OF_LINK
-    char           *temp_name, true_name[MAXNAMLEN];
-    int             link_count, true_name_len;
-#endif
-#ifdef OW_I18N
-    char            name[MAXNAMLEN];
-    (void) wcstombs(name, name_wc, MAXNAMLEN);
-#endif /* OW_I18N */
-
-    if (status == 0)
-	status = &dummy_status;
-    *status = ES_CHECK_ERRNO;
-    errno = 0;
-
-    /* (1) Try to allocate all necessary memory */
-    if (esh == NULL)
-	goto AllocFailed;
-    if ((private = (struct private_data*)calloc((size_t)1, sizeof(struct private_data))) == NULL)
-	goto AllocFailed;
-    private->fd = -1;		/* In case of later AllocFailed */
-#ifdef OW_I18N
-     private->mb_fd = -1;	/* In case of later AllocFailed */
-#endif
-    BUF_INVALIDATE(&private->read_buf);
-
-    if ((private->read_buf.chars = MALLOC((long)ES_READ_BUF_LEN)) == NULL)
-	goto AllocFailed;
-    BUF_INVALIDATE(&private->write_buf);
-    if (options & ES_OPT_APPEND) {
-    if ((private->write_buf.chars = MALLOC((long)ES_WRITE_BUF_LEN)) == NULL)
-	    goto AllocFailed;
-    } else {
-	private->write_buf.chars = NULL;
-    }
-#ifdef OW_I18N
-    if ((private->name = wsdup(name_wc)) == NULL)
-#else
-    if ((private->name = strdup(name)) == NULL)
-#endif
-	goto AllocFailed;
+	Es_handle esh = (Es_object *) calloc((size_t)1, sizeof(Es_object));
+	Es_file_data private = 0;
+	int open_option;
+	struct stat buf;
+	Es_status dummy_status;
 
 #ifndef BACKUP_AT_HEAD_OF_LINK
-    /* (2) Chase the symbolic link if 'name' is one. */
-    for (temp_name = name, link_count = 0;
-	 (link_count < MAXSYMLINKS) &&
-	 (-1 != (true_name_len =
-		 readlink(temp_name, true_name, sizeof(true_name))));
-	 temp_name = true_name, link_count++) {
-	true_name[true_name_len] = '\0';
-    }
-    if (link_count == MAXSYMLINKS) {
-	errno = ELOOP;
-	goto Error_Return;
-    }
-    if (temp_name == name) {
-	private->true_name = NULL;
-    } else
-#ifdef OW_I18N
-	private->true_name = _xv_mbstowcsdup(true_name);
-#else
-	private->true_name = strdup(true_name);
+	char *temp_name, true_name[MAXNAMLEN];
+	int link_count, true_name_len;
 #endif
+
+	if (status == 0)
+		status = &dummy_status;
+	*status = ES_CHECK_ERRNO;
+	errno = 0;
+
+	/* (1) Try to allocate all necessary memory */
+	if (esh == NULL)
+		goto AllocFailed;
+	if ((private = (struct private_data *)calloc((size_t)1,
+							sizeof(struct private_data))) == NULL)
+		goto AllocFailed;
+	private->fd = -1;	/* In case of later AllocFailed */
+	BUF_INVALIDATE(&private->read_buf);
+
+	if ((private->read_buf.chars = MALLOC((long)ES_READ_BUF_LEN)) == NULL)
+		goto AllocFailed;
+	BUF_INVALIDATE(&private->write_buf);
+	if (options & ES_OPT_APPEND) {
+		if ((private->write_buf.chars = MALLOC((long)ES_WRITE_BUF_LEN)) == NULL)
+			goto AllocFailed;
+	}
+	else {
+		private->write_buf.chars = NULL;
+	}
+	if ((private->name = strdup(name)) == NULL)
+		goto AllocFailed;
+
+#ifndef BACKUP_AT_HEAD_OF_LINK
+	/* (2) Chase the symbolic link if 'name' is one. */
+	for (temp_name = name, link_count = 0;
+			(link_count < MAXSYMLINKS) &&
+			(-1 != (true_name_len =
+							readlink(temp_name, true_name, sizeof(true_name))));
+			temp_name = true_name, link_count++) {
+		true_name[true_name_len] = '\0';
+	}
+	if (link_count == MAXSYMLINKS) {
+		errno = ELOOP;
+		goto Error_Return;
+	}
+	if (temp_name == name) {
+		private->true_name = NULL;
+	}
+	else
+		private->true_name = strdup(true_name);
 #endif /* BACKUP_AT_HEAD_OF_LINK */
 
-    /* (3) Open up the file and check to see it is not directory. */
-    open_option = (options & ES_OPT_APPEND)
-	? (O_RDWR | O_TRUNC | O_CREAT)
-	: (O_RDONLY);
-    private->fd = open(name, open_option, 0666);
-    if (private->fd < 0) {
-	goto Error_Return;
-    }
-    private->flags = 0;
-    private->options = options;
-    if ((private->options & ES_OPT_APPEND) == 0) {
-	if (fstat(private->fd, &buf) == -1)
-	    goto Error_Return;
-	if ((buf.st_mode & S_IFMT) != S_IFREG) {
-	    errno = EISDIR;
-	    goto Error_Return;
+	/* (3) Open up the file and check to see it is not directory. */
+	open_option = (options & ES_OPT_APPEND)
+			? (O_RDWR | O_TRUNC | O_CREAT)
+			: (O_RDONLY);
+	private->fd = open(name, open_option, 0666);
+	if (private->fd < 0) {
+		goto Error_Return;
 	}
-#ifdef OW_I18N
-    if (!multibyte)
-        private->length = buf.st_size;
-#else /* OW_I18N */
-	private->length = buf.st_size;
-#endif /* OW_I18N */
-    }
-    /* (4) Final fix ups. */
-
-#ifdef OW_I18N
-    if (!multibyte)
-        private->length_on_disk = private->length;
-#else /* OW_I18N */
-    private->length_on_disk = private->length;
-#endif /* OW_I18N */
-    esh->ops = &es_file_ops;
-    esh->data = (caddr_t) private;
-#ifdef OW_I18N		/* Now create the wchar file */
-
-    if (multibyte && ((private->options & ES_OPT_APPEND) == 0)) {
-	private->mb_fd = private->fd;
-
-	if (options == 0) {/* For other options, ther file should be in wchar */
-	    private->fd = es_file_make_wchar_file(esh, open_option);
-
-	    if (private->fd < 0)
-		goto Error_Return;
-	    if (fstat(private->fd, &buf) == -1)
-		goto Error_Return;
-	    if ((buf.st_mode & S_IFMT) != S_IFREG) {
-		*status = ES_FLUSH_FAILED;
-		goto Error_Return;
-	    }
+	private->flags = 0;
+	private->options = options;
+	if ((private->options & ES_OPT_APPEND) == 0) {
+		if (fstat(private->fd, &buf) == -1)
+			goto Error_Return;
+		if ((buf.st_mode & S_IFMT) != S_IFREG) {
+			errno = EISDIR;
+			goto Error_Return;
+		}
+		private->length = buf.st_size;
 	}
-	private->length = buf.st_size / sizeof(CHAR);
+	/* (4) Final fix ups. */
+
 	private->length_on_disk = private->length;
-    }
-#endif /* OW_I18N */
-    *status = private->status = ES_SUCCESS;
-    return (esh);
+	esh->ops = &es_file_ops;
+	esh->data = (caddr_t) private;
 
-AllocFailed:
-    errno = ENOMEM;
-Error_Return:
-    if (esh) {
-	free((char *) esh);
-	esh = ES_NULL;
-    }
-    if (private) {
-	if (private->read_buf.chars)
-	    free(private->read_buf.chars);
-	if (private->write_buf.chars)
-	    free(private->write_buf.chars);
-	if (private->fd >= 0)
-	    (void) close(private->fd);
-	free((char *) private);
-	private = (Es_file_data) 0;
-    }
-    return (esh);
+	*status = private->status = ES_SUCCESS;
+	return (esh);
+
+  AllocFailed:
+	errno = ENOMEM;
+  Error_Return:
+	if (esh) {
+		free((char *)esh);
+		esh = ES_NULL;
+	}
+	if (private) {
+		if (private->read_buf.chars)
+			free(private->read_buf.chars);
+		if (private->write_buf.chars)
+			free(private->write_buf.chars);
+		if (private->fd >= 0)
+			(void)close(private->fd);
+		free((char *)private);
+		private = (Es_file_data) 0;
+	}
+	return (esh);
 }
 
 /* ARGSUSED */
@@ -468,28 +397,28 @@ es_file_get(esh, attribute, va_alist)
 va_dcl
 #endif
 {
-    register Es_file_data private = ABS_TO_REP(esh);
+	register Es_file_data private = ABS_TO_REP(esh);
+
 #ifndef lint
 /*     va_list         args; */
 #endif
-    switch (attribute) {
-      case ES_CLIENT_DATA:
-	return ((caddr_t) (private->client_data));
-      case ES_NAME:
-	return ((caddr_t) (private->name));
-      case ES_STATUS:
-	return ((caddr_t) (private->status));
-      case ES_SIZE_OF_ENTITY:
-	return ((caddr_t) sizeof(CHAR));
-      case ES_TYPE:
-	return ((caddr_t) ES_TYPE_FILE);
-#ifdef OW_I18N
-      case ES_SKIPPED:
-	return ((caddr_t) private->skipped);
-#endif
-      default:
-	return (0);
-    }
+
+	switch (attribute) {
+		case ES_CLIENT_DATA:
+			return ((caddr_t) (private->client_data));
+		case ES_NAME:
+			return ((caddr_t) (private->name));
+		case ES_STATUS:
+			return ((caddr_t) (private->status));
+		case ES_SIZE_OF_ENTITY:
+			return ((caddr_t) sizeof(char));
+		case ES_TYPE:
+			return ((caddr_t) ES_TYPE_FILE);
+		case ES_SKIPPED:
+			return ((caddr_t) 0);
+		default:
+			return (0);
+	}
 }
 
 static int es_file_set(Es_handle esh, Attr_avlist attrs)
@@ -527,30 +456,27 @@ static int es_file_seek(Es_file_data private, Es_index pos, char *caller)
 {
 
 #ifdef DEBUG
-    if (private->length_on_disk < pos) {
-	private->status = ES_SEEK_FAILED;
-	(void) fprintf(stderr,
-		       "%s: lseek to position %d > length_on_disk %d!!\n",
-		       caller, pos, private->length_on_disk);
-	return (1);
-    }
+	if (private->length_on_disk < pos) {
+		private->status = ES_SEEK_FAILED;
+		(void)fprintf(stderr,
+				"%s: lseek to position %d > length_on_disk %d!!\n",
+				caller, pos, private->length_on_disk);
+		return (1);
+	}
 #endif
-#ifdef OW_I18N
-    /* Backup file or multibyte locale, file is wchar */
-    if ((multibyte) || (private->options & ES_OPT_BACKUPFILE))
-        pos *= sizeof(CHAR);
-#endif /* OW_I18N */
-    if (lseek(private->fd, (off_t)pos, L_SET) == -1) {
 
-	private->status = ES_SEEK_FAILED;
+	if (lseek(private->fd, (off_t) pos, L_SET) == -1) {
+		private->status = ES_SEEK_FAILED;
+
 #ifdef DEBUG
-	(void) fprintf(stderr, "Bad lseek in %s to position %d\n",
-		       caller, pos);
+		(void)fprintf(stderr, "Bad lseek in %s to position %d\n", caller, pos);
 #endif
-	return (1);
-    } else {
-	return (0);
-    }
+
+		return (1);
+	}
+	else {
+		return (0);
+	}
 }
 
 static long loop_counter;
@@ -570,34 +496,7 @@ if (loop_counter >= 100 && loop_counter <= 105) {
 			return read_in;
 		}
 
-#ifdef OW_I18N
-		if ((multibyte) || (private->options & ES_OPT_BACKUPFILE)) {
-			/* Backup file or multibyte locale, read in without converting */
-			read_in = read(private->fd, buf->chars,
-					(last_plus_one - first) * sizeof(CHAR)) / sizeof(CHAR);
-		}
-		else {
-			/* special case for reading input file in single byte locale */
-			char dummy_read_mb_buf[ES_READ_BUF_LEN + 1];
-			char *temp_buf_ptr = dummy_read_mb_buf;
-
-			/*  In case someone asks to read in more than ES_READ_BUF_LEN bytes */
-			if ((last_plus_one - first) > ES_READ_BUF_LEN)
-				temp_buf_ptr = (char *)malloc(last_plus_one - first + 1);
-
-			read_in = read(private->fd, temp_buf_ptr, last_plus_one - first);
-			if (read_in > 0) {
-				temp_buf_ptr[read_in] = NULL;
-				_xv_mbstowcs(buf->chars, (unsigned char *)temp_buf_ptr,
-						read_in);
-			}
-
-			if (temp_buf_ptr && (temp_buf_ptr != dummy_read_mb_buf))
-				free(temp_buf_ptr);
-		}
-#else /* OW_I18N */
 		read_in = read(private->fd, buf->chars, (size_t)(last_plus_one - first));
-#endif /* OW_I18N */
 
 		if (read_in == -1 || read_in != last_plus_one - first /* paranoia */ ) {
 			private->status = ES_CHECK_ERRNO;
@@ -633,71 +532,37 @@ static int es_file_flush_write_buf(Es_file_data private, Es_file_buf buf)
  * for successful retry in all cases (e.g., short writes or failed fsynch).
  */
 {
-    register int    written;
-#ifdef OW_I18N
-    int		    num_of_bytes;
-#endif /* OW_I18N */
+	register int written;
 
-    if (buf->used == 0) {
-	written = 0;
-	return (written);
-    }
-#ifdef OW_I18N
-    /* No need to covert for backup file */
-    if (private->options & ES_OPT_BACKUPFILE) {
-	if (es_file_seek(private, buf->start, "es_file_flush_write_buf")) {
-	    return (-1);
+	if (buf->used == 0) {
+		written = 0;
+		return (written);
 	}
-        num_of_bytes = buf->used * sizeof(CHAR);
-        written = write(private->fd, buf->chars, num_of_bytes);
-    } else {
-        /*
-           the temp_buf is for protection wrt requests that are bigger
-           than expected. This should never happen...
-        */
-        char dummy_write_mb_buf[(ES_WRITE_BUF_LEN + 1) * sizeof(CHAR) ];
-        char *temp_buf_ptr = dummy_write_mb_buf;
 
-        if (buf->used > ES_WRITE_BUF_LEN)
-            temp_buf_ptr = (char *)malloc((buf->used + 1) * sizeof(CHAR));
+	if (es_file_seek(private, buf->start, "es_file_flush_write_buf")) {
+		return (-1);
+	}
+	written = write(private->fd, buf->chars, (size_t)buf->used);
+	if (written == -1 || written != (int)buf->used /* paranoia */ ) {
+		private->status = ES_SHORT_WRITE;	/* ES_FLUSH_FAILED instead? */
+		written = -2;
 
-	buf->chars[buf->used] = NULL;
-	num_of_bytes = wcstombs(temp_buf_ptr, buf->chars,
-				(buf->used +1) * sizeof(CHAR));
-	written = write(private->fd, temp_buf_ptr, num_of_bytes);
-
-        if (temp_buf_ptr && (temp_buf_ptr != dummy_write_mb_buf))
-            free(temp_buf_ptr);
-    }
-    if (written == -1 ||
-	written != num_of_bytes /* paranoia */ ) {	/* } for match */
-#else /* OW_I18N */
-    if (es_file_seek(private, buf->start, "es_file_flush_write_buf")) {
-	return (-1);
-    }
-    written = write(private->fd, buf->chars, (size_t)buf->used);
-    if (written == -1 ||
-	written != buf->used /* paranoia */ ) {
-#endif /* OW_I18N */
-	private->status = ES_SHORT_WRITE;	/* ES_FLUSH_FAILED instead? */
-	written = -2;
 #ifdef DEBUG
-	(void) fprintf(stderr,
-		       "Failed write in %s of %d chars\n",
-		       "es_file_flush_write_buf", buf->used);
+		(void)fprintf(stderr,
+				"Failed write in %s of %d chars\n",
+				"es_file_flush_write_buf", buf->used);
 #endif
+
+		return (written);
+	}
+
+	if (buf->start + written > private->length_on_disk)
+		private->length_on_disk = buf->start + written;
+	BUF_INVALIDATE(buf);
 	return (written);
-    }
-#ifdef OW_I18N
-    written = buf->used;
-#endif
-    if (buf->start + written > private->length_on_disk)
-        private->length_on_disk = buf->start + written;
-    BUF_INVALIDATE(buf);
-    return (written);
 }
 
-static int es_file_move_write_buf(Es_file_data private, Es_index include, Es_index also_include, CHAR **include_offset)
+static int es_file_move_write_buf(Es_file_data private, Es_index include, Es_index also_include, char **include_offset)
 /*
  * Caller ensures: include <= also_include < include+ES_WRITE_BUF_LEN <
  * ES_INFINITY, include <= private->length Return values: < 0 indicate
@@ -758,10 +623,10 @@ Fill_Buffer:
 
 static void es_file_maybe_truncate_buf(Es_file_buf buf, Es_index new_last_plus_one)
 {
-    if (buf->used > 0 && new_last_plus_one < BUF_LAST_PLUS_ONE(buf)) {
-	buf->used = (new_last_plus_one < buf->start)
-	    ? 0 : new_last_plus_one - buf->start;
-    }
+	if (buf->used > 0 && new_last_plus_one < (int)BUF_LAST_PLUS_ONE(buf)) {
+		buf->used = (new_last_plus_one < buf->start)
+				? 0 : new_last_plus_one - buf->start;
+	}
 }
 
 static Es_status es_file_commit(Es_handle esh)
@@ -786,58 +651,40 @@ static Es_status es_file_commit(Es_handle esh)
 
 static Es_handle es_file_destroy(Es_handle esh)
 {
-    register Es_file_data private = ABS_TO_REP(esh);
+	register Es_file_data private = ABS_TO_REP(esh);
 
-    if (private->write_buf.chars) {
+	if (private->write_buf.chars) {
+
 #ifdef XV_DEBUG
-	if ((private->write_buf.used > 0) &&
-	    (private->flags & COMMIT_DONE)) {
-	    /*
-	     * Caller should have called es_commit in order to guarantee
-	     * appropriate recovery in case of errors.
-	     */
-	    take_breakpoint();
+		if ((private->write_buf.used > 0) && (private->flags & COMMIT_DONE)) {
+			/*
+			 * Caller should have called es_commit in order to guarantee
+			 * appropriate recovery in case of errors.
+			 */
+			take_breakpoint();
+		}
+#endif
+
+		free(private->write_buf.chars);
 	}
-#endif
-	free(private->write_buf.chars);
-    }
-    (void) close(private->fd);
-    private->fd = -1;
-#ifdef OW_I18N
-    if (private->mb_fd > 0) {
-	(void)close(private->mb_fd);
-	private->mb_fd = -1;
-    }
-#endif
+	(void)close(private->fd);
+	private->fd = -1;
 
-    if ((private->options & ES_OPT_APPEND) &&
-	(private->flags & COMMIT_DONE) == 0) {
-#ifdef OW_I18N
-	char	*temp_name = _xv_wcstombsdup(private->name);
+	if ((private->options & ES_OPT_APPEND) &&
+			(private->flags & COMMIT_DONE) == 0) {
+		(void)unlink(private->name);
+	}
 
-	(void) unlink(temp_name);
-	if (temp_name)
-	    xv_free(temp_name);
-#else
-	(void) unlink(private->name);
-#endif
-    }
+	free((char *)esh);
+	free(private->read_buf.chars);
 
-#ifdef OW_I18N
-    if (private->wc_filename) {
-	(void) unlink(private->wc_filename);
-	xv_free(private->wc_filename);
-	private->wc_filename = NULL;
-    }
-#endif
-    free((char *) esh);
-    free(private->read_buf.chars);
 #ifndef BACKUP_AT_HEAD_OF_LINK
-    free((char *)private->true_name);
+	free((char *)private->true_name);
 #endif
-    free(private->name);
-    free((char *) private);
-    return (NULL);
+
+	free(private->name);
+	free((char *)private);
+	return (NULL);
 }
 
 static          Es_index es_file_get_length(Es_handle esh)
@@ -871,7 +718,7 @@ static void catch_looper(int lala)
 	abort();
 }
 
-static Es_index es_file_read(Es_handle esh, int count, CHAR *buf,
+static Es_index es_file_read(Es_handle esh, int count, char *buf,
 									int *count_read)
 /*
  * Needed characters may be in the read_buf, the write_buf, or on disk, or
@@ -985,11 +832,11 @@ typedef enum {
     esfr_truncate, esfr_overwrite, esfr_insert
 }               Esfr_mode;
 
-static Es_index es_file_replace(Es_handle esh, Es_index last_plus_one, int count, CHAR *buf, int *count_used)
+static Es_index es_file_replace(Es_handle esh, Es_index last_plus_one, int count, char *buf, int *count_used)
 {
     register Es_file_data private = ABS_TO_REP(esh);
     register Esfr_mode mode;
-    CHAR           *offset;
+    char           *offset;
     es_file_buf     dummy_write_buf;
 
     /* Ensure that the operation is consistent with the options. */
@@ -1059,7 +906,7 @@ static Es_index es_file_replace(Es_handle esh, Es_index last_plus_one, int count
 	if (count <= ES_WRITE_BUF_LEN) {
 	    if (count < 5 &&
 		(last_plus_one < private->write_buf.start ||
-		 private->pos >= BUF_LAST_PLUS_ONE(&private->write_buf))) {
+		 private->pos >= (int)BUF_LAST_PLUS_ONE(&private->write_buf))) {
 		goto Write_Direct;
 	    }
 	    if (es_file_move_write_buf(private, private->pos,
@@ -1112,7 +959,7 @@ static Es_index es_file_replace(Es_handle esh, Es_index last_plus_one, int count
 	     * overlap with the write_buf.
 	     */
 	    if (private->read_buf.used > 0 &&
-		private->pos < BUF_LAST_PLUS_ONE(&private->read_buf) &&
+		private->pos < (Es_index)BUF_LAST_PLUS_ONE(&private->read_buf) &&
 		private->read_buf.start < private->pos + count) {
 		/*
 		 * There is overlap: in future, might be better to update
@@ -1130,25 +977,18 @@ static Es_index es_file_replace(Es_handle esh, Es_index last_plus_one, int count
     return (private->pos);
 }
 
-Pkg_private int es_file_copy_status(Es_handle esh, CHAR *to)
+Pkg_private int es_file_copy_status(Es_handle esh, char *to)
 {
     Es_file_data    private = ABS_TO_REP(esh);
     int             dummy;
-#ifdef OW_I18N
-    char            to_mb[MAXNAMLEN];
-
-    (void) wcstombs(to_mb,to,MAXNAMLEN);
-    return (es_copy_status(to_mb,private->fd, &dummy));
-#else
     return (es_copy_status(to, private->fd, &dummy));
-#endif
 }
 
 Pkg_private Es_handle es_file_make_backup(Es_handle esh, char *backup_pattern, Es_status *status)
 /* Currently backup_pattern must be of the form "%s<suffix>" */
 {
     register Es_file_data private;
-    CHAR            backup_name[MAXNAMLEN];
+    char            backup_name[MAXNAMLEN];
     int             fd, len, retrying = FALSE;
     Es_status       dummy_status;
     Es_handle       result;
@@ -1177,11 +1017,7 @@ Pkg_private Es_handle es_file_make_backup(Es_handle esh, char *backup_pattern, E
 					(private->true_name) ? private->true_name : private->name);
 	}
 #endif
-#ifdef OW_I18N
-    fd = (!multibyte) ? private->fd : private->mb_fd;
-#else
     fd = private->fd;
-#endif /* OW_I18N */
     len = lseek(fd, (off_t)0, 1);
     if (lseek(fd, (off_t)0, 0) != 0)
 	goto Lseek_Failed;
@@ -1192,14 +1028,7 @@ Retry:
 	     * It may be that the backup_name is already taken by a file that
 	     * cannot be overwritten, so try to remove it first.
 	     */
-#ifdef OW_I18N
-	    char	dummy[MAXNAMLEN];
-
-	    (void) wcstombs(dummy, backup_name, MAXNAMLEN);
-	    if (unlink(dummy) == 0) {	/* } for match */
-#else
 	    if (unlink(backup_name) == 0) {
-#endif
 		retrying = TRUE;
 		goto Retry;
 	    }
@@ -1223,50 +1052,6 @@ Lseek_Failed:
     *status = ES_SEEK_FAILED;
     return (NULL);
 }
-
-#ifdef OW_I18N
-static int
-es_file_make_wchar_file(esh, open_option)
-    register Es_handle 	esh;
-    int     		open_option;
-{
-    register Es_file_data private;
-    char            *filename;
-    char	    old_filename[MAXNAMLEN];
-    int             fd, new_fd, len;
-    extern int	    es_mb_to_wc_fd();
-
-    if ((esh == NULL) || (esh->ops != &es_file_ops)) {
-	return(NULL);
-    }
-    private = ABS_TO_REP(esh);
-
-    fd = private->mb_fd;
-    len = lseek(fd, 0L, 1);
-    if (lseek(fd, 0L, 0) != 0)
-	return(NULL);
-
-    filename = tempnam(NULL,NULL);
-
-    (void)wcstombs(old_filename, private->name, MAXNAMLEN);
-    private->skipped = 0;
-
-    if (es_mb_to_wc_fd(old_filename, filename, fd, &private->skipped) == 0) {
-        if (lseek(fd, (long)len, 0) == len) {
-            new_fd = open(filename, open_option, 0666);
-            (void)unlink(filename);
-            private->wc_filename = strdup(filename);
-        } else {
-            new_fd = NULL;
-        }
-    } else {
-        new_fd = NULL;
-    }
-    free(filename);
-    return(new_fd);
-}
-#endif /* OW_I18N */
-
 
 #ifdef HERE_ENDLESS_LOOP_KILLED
 
