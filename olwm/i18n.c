@@ -1,5 +1,5 @@
 /* #ident	"@(#)i18n.c	1.12	93/06/28 SMI" */
-char i18n_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: i18n.c,v 1.3 2024/04/20 15:28:04 dra Exp $";
+char i18n_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: i18n.c,v 1.4 2026/07/27 20:37:12 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -20,6 +20,7 @@ char i18n_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: i18n.c,v 1.3 2024/04/20 15:28
 #include "olwm.h"
 #include "globals.h"
 
+#ifdef NO_LONGER_NEEDED_all_done_by_olgx_draw_text
 /*
  * DrawText	- Displays Text.
  *		  #ifdef'd for both normal and wide text
@@ -59,6 +60,7 @@ DrawText(dpy,drawable,font,gc,x,y,text,len)
 	XDrawString(dpy,drawable,gc,x,y,text,len);
 #endif
 }
+#endif /* NO_LONGER_NEEDED_all_done_by_olgx_draw_text */
 
 /*
  * FontInfo - returns width,height,ascent,descent for the set of
