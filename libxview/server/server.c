@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.48 2026/07/25 05:33:51 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.49 2026/07/29 04:32:15 dra Exp $";
 #endif
 #endif
 
@@ -7828,6 +7828,70 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 }
 
 /* ACC_XVIEW */
+
+Xv_private int xv_utf8_next_char(const char *str, int index)
+{
+	int clen = mblen(str + index, MB_CUR_MAX);
+
+	return index + (clen > 0 ? clen : 1);
+}
+
+/* Returns the byte length of the UTF-8 character starting at str[index] */
+Xv_private int xv_utf8_next_char_len(const char *str, int index)
+{
+	if (!str[index])
+		return 0;
+	int len = mblen(str + index, MB_CUR_MAX);
+
+	return (len < 1) ? 1 : len;
+}
+
+/* Returns the byte offset of the previous UTF-8 character start
+ * before 'index'
+ */
+Xv_private int xv_utf8_prev_char_offset(const char *str, int index)
+{
+	if (index <= 0)
+		return 0;
+	int pos = index - 1;
+
+	while (pos > 0 && IS_UTF8_CONT(str[pos])) {
+		pos--;
+	}
+	return pos;
+}
+
+Xv_private int xv_utf8_current_char_offset(const char *str, int index)
+{
+	if (index <= 0)
+		return 0;
+
+	while (index > 0 && IS_UTF8_CONT(str[index])) {
+		index--;
+	}
+	return index;
+}
+
+/* Returns the byte length of the UTF-8 character ending at or
+ * containing 'index - 1'
+ */
+Xv_private int xv_utf8_prev_char_len(const char *str, int index)
+{
+	if (index <= 0)
+		return 0;
+	int prev_pos = xv_utf8_prev_char_offset(str, index);
+
+	return index - prev_pos;
+}
+
+Xv_private int xv_utf8_align_left(const char *str, int index)
+{
+	while (index > 0 && IS_UTF8_CONT(str[index])) {
+		index--;
+	}
+	return index;
+}
+
 
 static void server_warning(char *msg)
 {
