@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_once_c_sccsid[] = "@(#)ev_once.c 20.28 93/06/28 DRA: $Id: ev_once.c,v 4.3 2024/12/23 11:21:12 dra Exp $";
+char     ev_once_c_sccsid[] = "@(#)ev_once.c 20.28 93/06/28 DRA: $Id: ev_once.c,v 4.4 2026/07/29 04:15:18 dra Exp $";
 #endif
 
 /*
@@ -78,10 +78,8 @@ Pkg_private	Ev_chain ev_create_chain(Es_handle esh, Ei_handle eih)
     private->cache_pos_for_file_line.edit_number = 0;
     private->cache_pos_for_file_line.first_line_number = 0;
     private->cache_pos_for_file_line.line_count = 0;
-#ifdef OW_I18N
     private->updated = TRUE;
-#endif
-    chain->private_data = (caddr_t) private;
+    chain->evc_private_data = private;
     return (chain);
 }
 
@@ -106,7 +104,7 @@ Pkg_private	Ev_handle ev_create_view(Ev_chain chain, Xv_Window pw, struct rect *
      * private->cached_line_info.
      */
     view->client_data = 0;
-    view->private_data = (caddr_t) private;
+    view->evo_private_data = private;
     return (view);
 }
 
@@ -129,7 +127,7 @@ Pkg_private	void ev_destroy(Ev_handle view)
 	}
 	ft_destroy(&view->line_table);
 	ft_destroy(&view->tmp_line_table);
-	free((char *)(view->private_data));
+	free((char *)(view->evo_private_data));
 	free((char *)view);
 }
 
@@ -142,8 +140,8 @@ Pkg_private	Ev_chain ev_destroy_chain_and_views(Ev_chain chain)
 		ev_destroy(chain->first_view);
 	}
 	ft_destroy(&chain->fingers);
-	ft_destroy(&((Ev_chain_pd_handle) (chain->private_data))->op_bdry);
-	free(chain->private_data);
+	ft_destroy(&(chain->evc_private_data)->op_bdry);
+	free(chain->evc_private_data);
 	free((char *)chain);
 	return (0);
 }
