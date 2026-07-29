@@ -1,5 +1,5 @@
 #ifndef lint
-char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,v 4.7 2026/07/27 17:40:49 dra Exp $ ";
+char     es_file_c_sccsid[] = "@(#)es_file.c 20.49 93/06/28 DRA: $Id: es_file.c,v 4.8 2026/07/29 03:53:56 dra Exp $ ";
 #endif
 
 /*
@@ -143,7 +143,7 @@ typedef es_file_buf *Es_file_buf;
 	((_buf)->used > 0 &&						\
 	(_buf)->start <= (_pos) && (_pos) < (int)BUF_LAST_PLUS_ONE(_buf))
 
-struct private_data {
+struct es_private_data {
     Es_status       status;
     char           *name;
 #ifndef BACKUP_AT_HEAD_OF_LINK
@@ -159,7 +159,7 @@ struct private_data {
     es_file_buf     read_buf;	/* cache for read's */
     es_file_buf     write_buf;	/* cache for replace's */
 };
-typedef struct private_data *Es_file_data;
+typedef struct es_private_data *Es_file_data;
 
 /* Bits for flags */
 #define COMMIT_DONE	0x00000001
@@ -299,8 +299,8 @@ Pkg_private Es_handle es_file_create(char *name, int options, Es_status *status)
 	/* (1) Try to allocate all necessary memory */
 	if (esh == NULL)
 		goto AllocFailed;
-	if ((private = (struct private_data *)calloc((size_t)1,
-							sizeof(struct private_data))) == NULL)
+	if ((private = (struct es_private_data *)calloc((size_t)1,
+							sizeof(struct es_private_data))) == NULL)
 		goto AllocFailed;
 	private->fd = -1;	/* In case of later AllocFailed */
 	BUF_INVALIDATE(&private->read_buf);
