@@ -1,5 +1,5 @@
 #ifndef lint
-char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.5 2025/04/08 18:21:23 dra Exp $";
+char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.6 2026/07/28 20:40:33 dra Exp $";
 #endif
 
 /*
@@ -40,10 +40,7 @@ char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,
 #include <xview/pixwin.h>
 #include <xview_private/ev.h>
 #include <xview/window.h>
-#ifdef OW_I18N
 #include <xview/server.h>
-#include <euc.h>
-#endif
 
 #include <xview_private/tty_impl.h>
 
@@ -52,11 +49,7 @@ char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,
 #define	TAB	'\t'
 
 typedef struct ei_plain_text_object {
-#ifdef OW_I18N
     Xv_Font 	    font;
-#else
-    PIXFONT        *font;
-#endif
     XFontStruct	   *x_font_info;	/* Perf. Cache font info */
     Pixfont	   *pf_font;
     unsigned        state;
@@ -71,13 +64,6 @@ typedef struct ei_plain_text_object {
     short           max_tab_stops;	/* Never decreases */
     short          *tab_pixels;	/* tab stops in pixels */
     short          *tab_widths;	/* tab stops in 'm's */
-#ifdef OW_I18N
-    struct pixchar	dummy_kanji_pc;
-    struct pixchar	dummy_half_size_kana_pc;
-    struct pixrect      dummy_kanji_pr;
-    struct pixrect      dummy_half_size_kana_pr;
-    int			locale_is_ale;
-#endif
 }               ei_plain_text_object;
 typedef ei_plain_text_object *Eipt_handle;
 #define	ABS_TO_REP(eih)	(Eipt_handle)eih->data
@@ -100,15 +86,8 @@ typedef ei_plain_text_object *Eipt_handle;
 #define FF_EASY_Y		(FF_UNIFORM_HEIGHT|FF_UNIFORM_HOME| \
 				 FF_ZERO_Y_ADVANCE)
 
-#ifdef OW_I18N
-#define ISCNTRL(c)		((c >= 0) && iswcntrl(c))
-#else
-#  define ISCNTRL(c) ((unsigned char)c < 32)
-#endif
+#define ISCNTRL(c) ((unsigned char)c < 32)
 
-#ifdef OW_I18N
-static void	ei_plain_text_set_dummy_char();
-#endif
 static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_handle esbuf, int group_spec, int indx);
 static struct ei_process_result ei_plain_text_expand(Ei_handle eih, Es_buf_handle esbuf, Rect *rect, int x, CHAR *out_buf, long out_buf_len, int tab_origin);
 static Ei_handle ei_plain_text_destroy( Ei_handle eih);
@@ -203,132 +182,85 @@ static int ei_plain_text_set_tab_widths(Ei_handle eih, Attr_attribute *widths, i
     return (0);
 }
 
-#ifdef OW_I18N
-static void
-ei_plain_text_set_dummy_char(eih)
-    Ei_handle       eih;
+static void ei_plain_text_set_font(Ei_handle eih, Xv_font font)
 {
-    register Eipt_handle private = ABS_TO_REP(eih);
-    XRectangle	overall_ink_extents, overall_logical_extents;
-    XFontSet	font_set;
-    char	dummy_str[3];
-    CHAR	dummy_wstr[3];
+	register Eipt_handle private = ABS_TO_REP(eih);
+	Pixfont *tempPf;
+	struct pixchar *pc;
+	register short i, height, home, adv_x;
 
-    dummy_str[0] = 0xa1; /* 0xa1a1: first full size character */
-    dummy_str[1] = 0xa1;
-    dummy_str[2] = 0;
-
-    if (mbstowcs(dummy_wstr, dummy_str, 2) != 1) { /* non Asian locale */
-	private->locale_is_ale = 0;
-	return;
-    }
-    private->locale_is_ale = 1;
-
-    font_set = (XFontSet)xv_get((Xv_opaque)private->font, FONT_SET_ID);
-    (void) XwcTextExtents(font_set, dummy_wstr, 1,
-			  &overall_ink_extents, &overall_logical_extents);
-    private->dummy_kanji_pc.pc_pr = &private->dummy_kanji_pr;
-    private->dummy_kanji_pc.pc_home.x = overall_logical_extents.x;
-    private->dummy_kanji_pc.pc_home.y = overall_logical_extents.y;
-    private->dummy_kanji_pc.pc_pr->pr_size.x = private->dummy_kanji_pc.pc_adv.x = overall_logical_extents.width;
-    private->dummy_kanji_pc.pc_pr->pr_size.y = private->dummy_kanji_pc.pc_adv.y = 0;
-
-    dummy_str[0] = 0x8e; /* SS2 */
-    dummy_str[1] = 0xa1;
-    dummy_str[2] = 0;
-    if (mbstowcs(dummy_wstr, dummy_str, 2) == 1) { /* locale is ja */
-	(void) XwcTextExtents(font_set, dummy_wstr, 1,
-			      &overall_ink_extents, &overall_logical_extents);
-	private->dummy_half_size_kana_pc.pc_pr = &private->dummy_half_size_kana_pr;
-	private->dummy_half_size_kana_pc.pc_home.x = overall_logical_extents.x;
-	private->dummy_half_size_kana_pc.pc_home.y = overall_logical_extents.y;
-	private->dummy_half_size_kana_pc.pc_pr->pr_size.x = private->dummy_half_size_kana_pc.pc_adv.x = overall_logical_extents.width;
-	private->dummy_half_size_kana_pc.pc_pr->pr_size.y = private->dummy_half_size_kana_pc.pc_adv.y = 0;
-    }
-}
-#endif /* OW_I18N */
-
-#ifdef OW_I18N
-static void ei_plain_text_set_font(eih, font)
-    Ei_handle       eih;
-    register Xv_Font font;
-#else
-static void ei_plain_text_set_font(Ei_handle eih, PIXFONT *font)
-#endif /* OW_I18N */
-{
-    register Eipt_handle private = ABS_TO_REP(eih);
-    Pixfont	*tempPf;
-    struct pixchar *pc;
-    register short  i, height, home, adv_x;
 /*    XFontStruct		*x_font_info;*/
-    int		max_char, min_char;
-#ifdef OW_I18N
-    XFontSetExtents	*font_set_extents;
+	int max_char, min_char;
+	XFontSetExtents *font_set_extents;
 
-    font_set_extents =
-	XExtentsOfFontSet((XFontSet)xv_get((Xv_opaque)font, FONT_SET_ID));
-#endif /* OW_I18N */
-    tempPf = (Pixfont *)xv_get((Xv_opaque)font, FONT_PIXFONT);
-    pc = &tempPf->pf_char[SPACE];
-    /* if Xfont does not have a glyph for space */
-    if (pc->pc_pr->pr_size.x == 0 && pc->pc_pr->pr_size.y == 0)
-	pc = &tempPf->pf_char['n'];
-    private->font = font;
-    private->font_home.x = 0;
-    private->x_font_info = (XFontStruct *)xv_get((Xv_opaque)font, FONT_INFO);
-    private->height = xv_get((Xv_opaque)font, FONT_DEFAULT_CHAR_HEIGHT);
-    ei_plain_text_set_tab_width(eih, private->tab_width);
-    ei_plain_text_set_tab_widths(eih, (Attr_attribute *) 0, TRUE);
-    private->pf_font = tempPf;
-#ifdef OW_I18N
-    ei_plain_text_set_dummy_char(eih);
-    height = font_set_extents->max_logical_extent.height;
-    home = font_set_extents->max_logical_extent.y;
-    private->tab_delta_y = home + height;
-    adv_x = font_set_extents->max_logical_extent.width; /* Assume that this is >= 0 */
-#else /* OW_I18N */
-    height = pc->pc_pr->pr_size.y;
-    home = pc->pc_home.y;
-    private->tab_delta_y = home + height;
-    adv_x = pc->pc_adv.x;	/* Assume that this is >= 0 */
-#endif /* OW_I18N */
-    private->font_flags = FF_ALL;
-    max_char = MIN(255, private->x_font_info->max_char_or_byte2);
-    min_char = MIN(255, private->x_font_info->min_char_or_byte2);
+	if (_xv_is_multibyte) {
+		font_set_extents =
+				XExtentsOfFontSet((XFontSet) xv_get((Xv_opaque) font,
+						FONT_SET_ID));
+	}
+	tempPf = (Pixfont *) xv_get((Xv_opaque) font, FONT_PIXFONT);
+	pc = &tempPf->pf_char[SPACE];
+	/* if Xfont does not have a glyph for space */
+	if (pc->pc_pr->pr_size.x == 0 && pc->pc_pr->pr_size.y == 0)
+		pc = &tempPf->pf_char['n'];
+	private->font = font;
+	private->font_home.x = 0;
+	private->x_font_info = (XFontStruct *) xv_get((Xv_opaque) font, FONT_INFO);
+	private->height = xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_HEIGHT);
+	ei_plain_text_set_tab_width(eih, private->tab_width);
+	ei_plain_text_set_tab_widths(eih, (Attr_attribute *) 0, TRUE);
+	private->pf_font = tempPf;
+	if (_xv_is_multibyte) {
+		height = font_set_extents->max_logical_extent.height;
+		home = font_set_extents->max_logical_extent.y;
+		private->tab_delta_y = home + height;
+		adv_x = font_set_extents->max_logical_extent.width;	/* Assume that this is >= 0 */
+	}
+	else {
+		height = pc->pc_pr->pr_size.y;
+		home = pc->pc_home.y;
+		private->tab_delta_y = home + height;
+		adv_x = pc->pc_adv.x;	/* Assume that this is >= 0 */
+	}
+	private->font_flags = FF_ALL;
+	max_char = MIN(255, private->x_font_info->max_char_or_byte2);
+	min_char = MIN(255, private->x_font_info->min_char_or_byte2);
 
-    for (i = min_char; i <= MIN(255, max_char); i++) {
-	pc = &tempPf->pf_char[i];
-	if (adv_x != pc->pc_adv.x) {
-	    if (pc->pc_pr) {
-		private->font_flags &=
-		    ~(FF_UNIFORM_X_ADVANCE | FF_UNIFORM_X_PR_ADVANCE);
-	    } else {
-		private->font_flags &= ~FF_UNIFORM_X_ADVANCE;
-	    }
-	    if (adv_x < 0) {
-		private->font_flags &= ~FF_POSITIVE_X_ADVANCE;
-	    }
-	}
-	if (pc->pc_adv.y != 0) {
-	    private->font_flags &= ~FF_ZERO_Y_ADVANCE;
-	}
-	if (pc->pc_pr) {
-	    /* Home is meaningless unless pixrect exists for char. */
-	    if (home != pc->pc_home.y) {
-		private->font_flags &= ~FF_UNIFORM_HOME;
-		/* Accumulate largest (magnitude, homes are < 0) home */
-		if (home > pc->pc_home.y) {
-		    home = pc->pc_home.y;
+	for (i = min_char; i <= MIN(255, max_char); i++) {
+		pc = &tempPf->pf_char[i];
+		if (adv_x != pc->pc_adv.x) {
+			if (pc->pc_pr) {
+				private->font_flags &=
+						~(FF_UNIFORM_X_ADVANCE | FF_UNIFORM_X_PR_ADVANCE);
+			}
+			else {
+				private->font_flags &= ~FF_UNIFORM_X_ADVANCE;
+			}
+			if (adv_x < 0) {
+				private->font_flags &= ~FF_POSITIVE_X_ADVANCE;
+			}
 		}
-	    }
-	    if (height != pc->pc_pr->pr_size.y) {
-		private->font_flags &= ~FF_UNIFORM_HEIGHT;
-	    }
+		if (pc->pc_adv.y != 0) {
+			private->font_flags &= ~FF_ZERO_Y_ADVANCE;
+		}
+		if (pc->pc_pr) {
+			/* Home is meaningless unless pixrect exists for char. */
+			if (home != pc->pc_home.y) {
+				private->font_flags &= ~FF_UNIFORM_HOME;
+				/* Accumulate largest (magnitude, homes are < 0) home */
+				if (home > pc->pc_home.y) {
+					home = pc->pc_home.y;
+				}
+			}
+			if (height != pc->pc_pr->pr_size.y) {
+				private->font_flags &= ~FF_UNIFORM_HEIGHT;
+			}
+		}
 	}
-    }
-    private->font_home.y = home;
+	private->font_home.y = home;
+
 #ifdef DEBUG
-    (void) fprintf(stderr, "Font_flags: %lx\n", private->font_flags);
+	(void)fprintf(stderr, "Font_flags: %lx\n", private->font_flags);
 #endif
 }
 
@@ -419,7 +351,7 @@ typedef struct run {
 	(_run)->len = batch - (_run)->chars; \
 	_run++;
 
-static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *run, int run_length, struct rect *bounds, Pixfont *font);
+static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *run, int run_length, struct rect *bounds, Xv_font font);
 
 /*
  * The following macros (suggested by JAG) make sure the compiler keeps all
@@ -431,23 +363,26 @@ static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *r
 			(short)((short)((short)(_a) + (short)(_b)) - (short)1)
 
 #define MAX_PER_BATCH 200
-static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op, Es_buf_handle esbuf, int x, int y, int rop, Xv_Window pw, struct rect *rect, int tab_origin)
+static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
+				Es_buf_handle esbuf, int x, int y, int rop, Xv_Window pw,
+				struct rect *rect, int tab_origin)
 /*
  * Arguments are: eih	handle of the entity interpreter whose ei_process op
- * mapped to this routine. op		see EI_OP_* in entity_interpreter.h.
- * esbuf	chars to be painted/measured. sizeof_buf	number of
- * characters in buffer. buf		the characters themselves. esh andle
- * of entity stream they came from. first		Es_index into esh.
- * last_plus_one	Es_index into esh. x		position to start
- * painting from. y		position of the largest ascender's top, NOT
- * the baseline. Probably always == rect.r_top. rop	raster op, usually
- * either PIX_SRC or PIX_SRC|PIX_DST. pw		pixwin to paint into.
- * rect	rectangle to paint into, indicates where to stop with
- * result.break_reason = EI_HIT_RIGHT, or whether to do nothing due to
- * result.break_reason = EI_HIT_BOTTOM. r_left only needs to be different
- * from x if we are starting to paint later than the beginning of the line,
- * and op specifies EI_OP_CLEAR_FRONT. tab_origin	x position of zeroth
- * tab stop on the line.
+ *                      mapped to this routine.
+ *  op			see EI_OP_* in entity_interpreter.h.
+ *  esbuf		chars to be painted/measured.
+ *  sizeof_buf	number of characters in buffer.
+ *  x			position to start painting from.
+ *  y			position of the largest ascender's top, NOT the baseline.
+ *				Probably always == rect.r_top.
+ *  rop			raster op, usually either PIX_SRC or PIX_SRC|PIX_DST.
+ *  pw			pixwin to paint into.
+ *  rect		rectangle to paint into, indicates where to stop with
+ *				result.break_reason = EI_HIT_RIGHT, or whether to do nothing
+ *				due to result.break_reason = EI_HIT_BOTTOM. r_left only needs
+ *				to be different from x if we are starting to paint later than
+ *				the beginning of the line, and op specifies EI_OP_CLEAR_FRONT.
+ *  tab_origin	x position of zeroth tab stop on the line.
  *
  * WARNING!  This code has been extensively hand tuned to make sure that the
  * compiler generates good code.  Seemingly trivial changes can impact the
@@ -455,22 +390,17 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op, Es_
  * assembly code both before and after.
  */
 {
-	register Eipt_handle private = ABS_TO_REP(eih);
-	register struct pixchar *pc;
-
-#ifdef OW_I18N
-	register CHAR c;
-#else
-	register short c = 0;
-#endif
-	register short temp;
-	register Es_index esi;
+	Eipt_handle private = ABS_TO_REP(eih);
+	struct pixchar *pc;
+	unsigned char c = 0;
+	short temp;
+	Es_index esi;
 	CHAR *buf_rep = (CHAR *) esbuf->buf;
 	struct ei_process_result result;
-	register short bounds_right, rects_right;
+	short bounds_right, rects_right;
 	short bounds_bottom, rects_bottom;
 	short in_white_space = 0, special_char = -1;
-	register int check_vert_bounds = TRUE;
+	int check_vert_bounds = TRUE;
 
 	Run run_array[MAX_PER_BATCH + 1];
 	Run *run;
@@ -478,12 +408,6 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op, Es_
 	CHAR *batch;
 	int ii;
 	Pixfont *tempPf;
-
-#ifdef OW_I18N
-	CHAR temp_wc[2];
-
-	temp_wc[1] = NULL;
-#endif
 
 	temp = (short)x;
 	result.bounds.r_left = temp;
@@ -518,43 +442,36 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op, Es_
 	INIT_RUN(run, result.pos.x, result.pos.y);
 	tempPf = private->pf_font;
 
-#ifndef OW_I18N
 	if (private->x_font_info == (XFontStruct *) NULL)
 		private->x_font_info =
 							(XFontStruct *) xv_get((Xv_opaque) private->font,
 												   FONT_INFO);
-#endif
 
 	for (esi = esbuf->first; esi < esbuf->last_plus_one; esi++) {
 
-#ifdef OW_I18N
-		c = (CHAR) (*buf_rep++);
-#else
-		c = (unsigned char)(*buf_rep++);
+		c = (unsigned char)(*buf_rep++);  /* OW_I18N ++ ??? */
 
-		/* BUG ALERT: The following 2 lines are so that inputting 8-bit characters
-		 * using a 7-bit font doesn't cause a seg fault (bugid 1073484).  This is
-		 * not the correct solution, but it's one that at least fixes the seg fault.
-		 * The correct solution would have the 8-bit character ignored.  However,
-		 * by the time we have gotten to this point, the character has already
-		 * been stored in a buffer (e.g, esbuf, whatever that is).  Who knows what
-		 * havoc could be wreaked if we just ignore the character at this point!
+		/* BUG ALERT: The following 2 lines are so that inputting 8-bit 
+		 * characters using a 7-bit font doesn't cause a seg fault (bugid 
+		 * 1073484).  This is not the correct solution, but it's one that 
+		 * at least fixes the seg fault.  The correct solution would have 
+		 * the 8-bit character ignored.  However, by the time we have 
+		 * gotten to this point, the character has already been stored in 
+		 * a buffer (e.g, esbuf, whatever that is).  Who knows what havoc 
+		 * could be wreaked if we just ignore the character at this point!
 		 */
 		if (c > private->x_font_info->max_char_or_byte2) {
 fprintf(stderr, "in questionalble 'bug fix'\n");
 			c = SPACE;
 		}
-#endif
 
 	  Rescan:
 		if (c == SPACE) {
 			in_white_space = 1;
 
-#ifdef OW_I18N
 			if (!check_vert_bounds)
 				/* Ascii is shorter than kanji, so clean up first */
 				op |= EI_OP_CLEAR_INTERIOR;
-#endif
 
 			pc = &tempPf->pf_char[SPACE];
 			/* if Xfont does not have glyph for space */
@@ -630,12 +547,8 @@ fprintf(stderr, "in questionalble 'bug fix'\n");
 			goto Skip_pc_pr_tests;
 		}
 		else if (c == NEWLINE) {
-
-#ifdef OW_I18N
 			if (!check_vert_bounds)
 				op |= EI_OP_CLEAR_INTERIOR;
-#endif
-
 			in_white_space = 0;
 			pc = &tempPf->pf_char[SPACE];
 			/* if Xfont does not have glyph for space */
@@ -644,35 +557,8 @@ fprintf(stderr, "in questionalble 'bug fix'\n");
 		}
 		else {
 
-#ifdef OW_I18N
-			in_white_space = 0;
-			if (ISASCII(c)) {
-				pc = &tempPf->pf_char[c];
-				if (!check_vert_bounds)
-					op |= EI_OP_CLEAR_INTERIOR;
-			}
-			else if (private->locale_is_ale) {
-				temp_wc[0] = c;
-				if (wscol(temp_wc) == 2)	/* This char occupy two col */
-					pc = &private->dummy_kanji_pc;
-				else {
-					pc = &private->dummy_half_size_kana_pc;
-					if (!check_vert_bounds)
-						op |= EI_OP_CLEAR_INTERIOR;
-				}
-			}
-			else {
-				/*
-				 * Most likely this character does not exit in the
-				 * pixfont. So just assume it is the same dimension as
-				 * letter n
-				 */
-				pc = &tempPf->pf_char['n'];
-			}
-#else /* OW_I18N */
 			in_white_space = 0;
 			pc = &tempPf->pf_char[c];
-#endif /* OW_I18N */
 		}
 		if (pc->pc_pr &&
 				(!ISCNTRL(c) || in_white_space || c == NEWLINE ||
@@ -681,11 +567,7 @@ fprintf(stderr, "in questionalble 'bug fix'\n");
 			temp = (short)pc->pc_home.x;
 			temp += result.pos.x;
 
-#ifdef OW_I18N
-			temp += pc->pc_pr->pr_size.x - 1;
-#else
 			temp += pc->pc_pr->pr_width - 1;
-#endif
 
 			if (temp > bounds_right) {
 				if (temp > rects_right) {
@@ -790,18 +672,7 @@ c = 27, 033   ??????
 	return (result);
 }
 
-#ifdef OW_I18N
-static void paint_batch(op, rop, pw, rect, run, run_length, bounds, font)
-    int             op, rop;
-    Xv_Window       pw;
-    struct rect    *rect;
-    Run            *run;
-    Xv_Font         font;
-    int             run_length;
-    struct rect    *bounds;
-#else
-static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *run, int run_length, struct rect *bounds, Pixfont *font)
-#endif
+static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *run, int run_length, struct rect *bounds, Xv_font font)
 {
 #define EI_OP_CLEAR_ALL (EI_OP_CLEAR_FRONT|EI_OP_CLEAR_INTERIOR|EI_OP_CLEAR_BACK)
 	int temp;
@@ -870,15 +741,13 @@ static caddr_t ei_plain_text_get(Ei_handle eih, int attr)
 		case EI_TAB_WIDTH:
 			return ((caddr_t) ((long)private->tab_width));
 
-#ifdef OW_I18N
 		case EI_LOCALE_IS_ALE:
-			return ((caddr_t) (private->locale_is_ale));
+			return ((caddr_t)0);
 
 #ifdef FULL_R5
 		case EI_LINE_SPACE:
 			return ((caddr_t) (private->tab_delta_y));
 #endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 		default:
 			return (0);
@@ -902,8 +771,7 @@ int ei_plain_text_set(Ei_handle eih, Attr_attribute *attributes)
 	    break;
 	  case EI_FONT:
 	    if (attributes[1]) {
-		ei_plain_text_set_font(eih,
-				       (struct pixfont *) attributes[1]);
+		ei_plain_text_set_font(eih, (Xv_font)attributes[1]);
 	    } else {
 		return (1);
 	    }
@@ -949,32 +817,11 @@ static short    ei_classes_initialized;	/* = 0 (implicit init for cc -A-R) */
  */
 #define	DELIMITERS	 " \t,.:;?!\'\"`*/-+=(){}[]<>\\|~@#$%^&"
 
-#ifdef OW_I18N
-static CHAR	delims_wcs[DEFAULTS_MAX_VALUE_SIZE];
-static int	delims_class_value;
-
-#define	word_type(c)	((delims_wcs[0]) ? (wschr(delims_wcs, c) ? 0 : 1) \
-					 : wchar_kind(c))
-#endif	/* OW_I18N */
-
 static void ei_classes_initialize(void)
 {
     register SET   *setp;	/* character class of interest */
     char	*delims;
     char	delim_chars[256];
-
-#ifdef OW_I18N
-    delims = (char*)defaults_get_string("text.delimiterChars",
-					"Text.DelimiterChars", "");
-    if (*delims) {
-	(void) mbstowcs(delims_wcs, delims, DEFAULTS_MAX_VALUE_SIZE - 1);
-	delims_class_value = 0;
-    }
-    else {
-	delims_wcs[0] = NULL;
-	delims_class_value = wchar_kind(L' '); /* SPACE */
-    }
-#else /* OW_I18N */
 
     /*
      * changing the logic to use the delimiters that are in the array rather
@@ -998,8 +845,6 @@ static void ei_classes_initialize(void)
     for( delims = delim_chars; *delims; delims++ ) {
 	    REMOVE_ELEMENT(setp, *delims );
     }
-
-#endif /* OW_I18N */
 
     /* PATH_NAME is non-white & non-null chars */
     setp = &ei_classes[EI_PATH_NAME_CLASS];
@@ -1027,7 +872,8 @@ static void ei_classes_initialize(void)
 
 /* ARGSUSED */
 	/* Currently unused eih */
-static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_handle esbuf, int group_spec, int indx)
+static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
+						Es_buf_handle esbuf, int group_spec, int indx)
 {
 	Es_index index = (Es_index)indx;
 	register Es_index esi = index;
@@ -1041,13 +887,8 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_h
 	 * of type unsigned char.
 	 */
 
-#ifdef OW_I18N
-	register CHAR *buf_rep = (CHAR *) esbuf->buf;
-	register CHAR c;
-#else
-	register unsigned char *buf_rep = (unsigned char *)esbuf->buf;
-	register unsigned char c;
-#endif
+	unsigned char *buf_rep = (unsigned char *)esbuf->buf;
+	unsigned char c;
 
 	/*
 	 * Invariants of this routine: i == esi - esbuf->first during left scan,
@@ -1131,7 +972,7 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_h
 		}
 		esi++;
 		i++;
-		if ((group_spec & EI_SPAN_LEFT_ONLY) == 0)
+		if ((group_spec & EI_SPAN_LEFT_ONLY) == 0) {
 			for (; !in_class;) {
 				if (esi >= esbuf->last_plus_one) {
 					esbuf->last_plus_one = esi;
@@ -1144,78 +985,7 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_h
 				in_class = EI_IS_LINE_CHAR(c);
 				result.last_plus_one = esi;
 			}
-
-#ifdef OW_I18N
-	}
-	else if ((group_spec & EI_SPAN_CLASS_MASK) == EI_SPAN_WORD) {
-		int charType;
-
-		if (!ei_classes_initialized)
-			ei_classes_initialize();
-		charType = word_type(c);
-		if (charType == delims_class_value) {
-			result.flags |= EI_SPAN_NOT_IN_CLASS;
-			if (group_spec & EI_SPAN_IN_CLASS_ONLY)
-				goto ErrorReturn;
 		}
-		else {
-			if (group_spec & EI_SPAN_NOT_CLASS_ONLY)
-				goto ErrorReturn;
-		}
-		if ((group_spec & EI_SPAN_RIGHT_ONLY) == 0) {
-			while (esi > 0) {	/* Scan left. */
-				if (i == 0) {
-					esi = es_backup_buf(esbuf);
-					if (esi == ES_CANNOT_SET) {
-						goto DoneWordScanLeft;
-					}
-					esi++;	/* ... because i is pre-decremented */
-					ESTABLISH_I_INVARIANT;
-				}
-				ESTABLISH_C_INVARIANT_LEFT;
-				if (word_type(c) != charType) {
-					break;
-					/* Here we assume LINE is the next level for this class */
-				}
-				else if (EI_IS_LINE_CHAR(c)) {
-					result.flags |= EI_SPAN_LEFT_HIT_NEXT_LEVEL;
-					break;
-				}
-				else
-					result.first = esi;
-			}
-		  DoneWordScanLeft:	/* Fix the buffer up for the scan right */
-			esi = index;
-			if (esi < esbuf->last_plus_one) {
-				ESTABLISH_I_INVARIANT;
-			}
-		}
-		esi++;
-		i++;
-		if ((group_spec & EI_SPAN_LEFT_ONLY) == 0)
-			for (;;) {
-				if (esi + 2 >= esbuf->last_plus_one) {
-					esbuf->last_plus_one = esi;
-					es_set_position(esbuf->esh, esbuf->last_plus_one);
-					if (es_advance_buf(esbuf))
-						goto Return;
-					ESTABLISH_I_INVARIANT;
-				}
-				/* ESTABLISH_C_INVARIANT_RIGHT; */
-				c = buf_rep[i];
-				if (word_type(c) != charType) {
-					break;
-					/* Here we assume LINE is the next level for this class */
-				}
-				else if (EI_IS_LINE_CHAR(c)) {
-					result.flags |= EI_SPAN_RIGHT_HIT_NEXT_LEVEL;
-					break;
-				}
-				esi++;
-				i++;
-				result.last_plus_one = esi;
-			}
-#endif /* OW_I18N */
 	}
 	else {	/* Handle other classes uniformly */
 		SET *setp;	/* character class of interest */
@@ -1223,13 +993,9 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_h
 		if (!ei_classes_initialized)
 			ei_classes_initialize();
 		switch (group_spec & EI_SPAN_CLASS_MASK) {
-
-#ifndef OW_I18N
 			case EI_SPAN_WORD:
 				setp = &ei_classes[EI_WORD_CLASS];
 				break;
-#endif
-
 			case EI_SPAN_PATH_NAME:
 				setp = &ei_classes[EI_PATH_NAME_CLASS];
 				break;
@@ -1265,7 +1031,7 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_h
 					ESTABLISH_I_INVARIANT;
 				}
 				ESTABLISH_C_INVARIANT_LEFT;
-				if (in_class != IN(setp, c)) {
+				if (in_class != (int)IN(setp, c)) {
 					break;
 					/* Here we assume LINE is the next level for this class */
 				}
@@ -1294,7 +1060,7 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih, Es_buf_h
 					ESTABLISH_I_INVARIANT;
 				}
 				ESTABLISH_C_INVARIANT_RIGHT;
-				if (in_class != IN(setp, c)) {
+				if (in_class != (int)IN(setp, c)) {
 					break;
 					/* Here we assume LINE is the next level for this class */
 				}
