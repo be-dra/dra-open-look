@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_text.c 20.26 89/07/31 DRA: RCS $Id: xv_text.c,v 2.2 2025/03/16 13:42:45 dra Exp $";
+static char     sccsid[] = "@(#)xv_text.c 20.26 89/07/31 DRA: RCS $Id: xv_text.c,v 2.3 2026/07/28 20:12:09 dra Exp $";
 #endif
 #endif
 
@@ -20,154 +20,136 @@ static char     sccsid[] = "@(#)xv_text.c 20.26 89/07/31 DRA: RCS $Id: xv_text.c
 
 PIXFONT        *xv_pf_sys;
 
-extern          xv_pf_ttext(), xv_pf_text();
-
-Xv_public int
-pw_char(pw, xw, yw, op, pixfont, c)
-    Xv_opaque       pw;
-    int             op, xw, yw;
-    char            c;
-    struct pixfont *pixfont;
+Xv_public int pw_char(Xv_opaque pw, int op, int xw, int yw,
+					struct pixfont *pixfont, int c)
 {
     char            str[2];
 
-    str[0] = c;
-    str[1] = NULL;
-    (void) xv_text(pw, xw, yw, op, (Xv_opaque)pixfont, str);
+    str[0] = (char)c;
+    str[1] = '\0';
+    xv_text(pw, xw, yw, op, (Xv_opaque)pixfont, str);
+	return 0;
 }
 
-Xv_public int
-xv_ttext(window, xbasew, ybasew, op, pixfont, str)
-    Xv_opaque       window;
-    int             op;
-    register int    xbasew, ybasew;
-    Xv_opaque       pixfont;
-    char           *str;
+Xv_public int xv_ttext(Xv_opaque window, int xbasew, int ybasew, int op,
+							Xv_opaque pixfont, char *str)
 {
-    Xv_Drawable_info *info;
-    Display        *display;
-    Drawable        d;
-    GC              gc;
-    XID             font;
-    int             len;
+	Xv_Drawable_info *info;
+	Display *display;
+	Drawable d;
+	GC  gc;
+	XID font;
+	int len;
 
-    if ((len = strlen(str)) == 0) {
-	return;
-    }
+	if ((len = strlen(str)) == 0) {
+		return 0;
+	}
 
-    DRAWABLE_INFO_MACRO(window, info);
-    display = xv_display(info);
-    d = xv_xid(info);
-    gc = xv_find_proper_gc(display, info, PW_TEXT);
+	DRAWABLE_INFO_MACRO(window, info);
+	display = xv_display(info);
+	d = xv_xid(info);
+	gc = xv_find_proper_gc(display, info, PW_TEXT);
 
-    /* SunView1.X incompatibility: NULL pixfont meant use system_font. */
-    if (pixfont == 0) {
-	pixfont = xv_get(window, XV_FONT);
-    }
-    /*
-     * Since this is transparent text, we always paint it with the background
-     * color.
-     */
-    xv_set_gc_op(display, info, gc, op, XV_USE_CMS_FG,
-		 XV_INVERTED_FG_BG);
-    font = (XID) xv_get(pixfont, XV_XID);
-    XSetFont(display, gc, font);
-    XDrawString(display, d, gc, xbasew, ybasew, str, len);
-}
-
-Xv_public int
-xv_text(window, xbasew, ybasew, op, pixfont, str)
-    Xv_opaque       window;
-    int             op;
-    register int    xbasew, ybasew;
-    Xv_opaque       pixfont;
-    char           *str;
-{
-    Xv_Drawable_info *info;
-    Display        *display;
-    Drawable        d;
-    GC              gc;
-    XID             font;
-    int             len;
-
-    DRAWABLE_INFO_MACRO(window, info);
-    display = xv_display(info);
-    d = xv_xid(info);
-    gc = xv_find_proper_gc(display, info, PW_TEXT);
-
-    if ((len = strlen(str)) == 0) {
-	return;
-    }
-
-    /* SunView1.X incompatibility: NULL pixfont meant use system_font. */
-    if (pixfont == 0) {
-	pixfont = xv_get(window, XV_FONT);
-    }
-    if (PIX_OP(op) == PIX_NOT(PIX_SRC)) {
-	xv_set_gc_op(display, info, gc, op, 
-		     PIX_OPCOLOR(op) ? XV_USE_OP_FG : XV_USE_CMS_FG,
-		     XV_INVERTED_FG_BG);
-    } else {
-	xv_set_gc_op(display, info, gc, op, 
-		     PIX_OPCOLOR(op) ? XV_USE_OP_FG : XV_USE_CMS_FG,
-		     XV_DEFAULT_FG_BG);
-    }
-    font = (XID) xv_get(pixfont, XV_XID);
-    XSetFont(display, gc, font);
-
-    if (PIX_OP(op) == PIX_SRC || PIX_OP(op) == PIX_NOT(PIX_SRC)) {
-	XDrawImageString(display, d, gc, xbasew, ybasew, str, len);
-    } else
+	/* SunView1.X incompatibility: NULL pixfont meant use system_font. */
+	if (pixfont == 0) {
+		pixfont = xv_get(window, XV_FONT);
+	}
+	/*
+	 * Since this is transparent text, we always paint it with the background
+	 * color.
+	 */
+	xv_set_gc_op(display, info, gc, op, XV_USE_CMS_FG, XV_INVERTED_FG_BG);
+	font = (XID) xv_get(pixfont, XV_XID);
+	XSetFont(display, gc, font);
 	XDrawString(display, d, gc, xbasew, ybasew, str, len);
+	return 0;
 }
 
-Xv_public int
-xv_glyph_char(window, x, y, width, height, pixfont, c, color_index)
-    Xv_opaque       window;
-    register int    x, y;
-    int             width, height;
-    Pixfont        *pixfont;
-    char            c;
-    int		    color_index;   /* -1 => use default foreground color */
+Xv_public int xv_text(Xv_opaque window, int xbasew, int ybasew, int op,
+			Xv_opaque pixfont, char *str)
 {
-    Xv_Drawable_info *info;
-    Display        *display;
-    Drawable        d;
-    GC              gc, gc1;
-    XID             font;
-    char            s[2];
-    int		    color_op;
-    int		    fg_type;	/* foreground type */
+	Xv_Drawable_info *info;
+	Display *display;
+	Drawable d;
+	GC  gc;
+	XID font;
+	int len;
 
-    if (color_index < 0) {
-	color_op = PIX_SRC;
-	fg_type = XV_USE_CMS_FG;
-    } else {
-	color_op = PIX_SRC | PIX_COLOR(color_index);
-	fg_type = XV_USE_OP_FG;
-    }
+	DRAWABLE_INFO_MACRO(window, info);
+	display = xv_display(info);
+	d = xv_xid(info);
+	gc = xv_find_proper_gc(display, info, PW_TEXT);
 
-    DRAWABLE_INFO_MACRO(window, info);
-    display = xv_display(info);
-    d = (Drawable) xv_xid(info);
-    s[0] = c;
-    s[1] = NULL;
-    gc = xv_find_proper_gc(display, info, PW_TEXT);
-    gc1 = xv_find_proper_gc(display, info, PW_ROP_NULL_SRC);
-    /*
-     * Note - It is far cheaper not to do any clipping, but to draw the
-     * entire glyph char. This will have to be changed.
-     */
-    xv_set_gc_op(display, info, gc, color_op, fg_type,
-		 XV_DEFAULT_FG_BG);
-    xv_set_gc_op(display, info, gc1, color_op, fg_type,
-		 XV_INVERTED_FG_BG);
+	if ((len = strlen(str)) == 0) {
+		return 0;
+	}
 
-    font = (XID) xv_get((Xv_opaque)pixfont, XV_XID);
-    XSetFont(display, gc, font);
+	/* SunView1.X incompatibility: NULL pixfont meant use system_font. */
+	if (pixfont == 0) {
+		pixfont = xv_get(window, XV_FONT);
+	}
+	if (PIX_OP(op) == PIX_NOT(PIX_SRC)) {
+		xv_set_gc_op(display, info, gc, op,
+				PIX_OPCOLOR(op) ? XV_USE_OP_FG : XV_USE_CMS_FG,
+				XV_INVERTED_FG_BG);
+	}
+	else {
+		xv_set_gc_op(display, info, gc, op,
+				PIX_OPCOLOR(op) ? XV_USE_OP_FG : XV_USE_CMS_FG,
+				XV_DEFAULT_FG_BG);
+	}
+	font = (XID) xv_get(pixfont, XV_XID);
+	XSetFont(display, gc, font);
 
-    XFillRectangle(display, d, gc1, x, y, width, height);
-    XDrawString(display, d, gc, x, y, s, 1);
+	if (PIX_OP(op) == PIX_SRC || PIX_OP(op) == PIX_NOT(PIX_SRC)) {
+		XDrawImageString(display, d, gc, xbasew, ybasew, str, len);
+	}
+	else
+		XDrawString(display, d, gc, xbasew, ybasew, str, len);
+	return 0;
+}
+
+Xv_public int xv_glyph_char(Xv_opaque window, int x, int y, int width,
+				int height, Pixfont *pixfont, int c, int color_index)
+{
+	Xv_Drawable_info *info;
+	Display *display;
+	Drawable d;
+	GC  gc, gc1;
+	XID font;
+	char s[2];
+	int color_op;
+	int fg_type;	/* foreground type */
+
+	if (color_index < 0) {
+		color_op = PIX_SRC;
+		fg_type = XV_USE_CMS_FG;
+	}
+	else {
+		color_op = PIX_SRC | PIX_COLOR(color_index);
+		fg_type = XV_USE_OP_FG;
+	}
+
+	DRAWABLE_INFO_MACRO(window, info);
+	display = xv_display(info);
+	d = (Drawable) xv_xid(info);
+	s[0] = (char)c;
+	s[1] = '\0';
+	gc = xv_find_proper_gc(display, info, PW_TEXT);
+	gc1 = xv_find_proper_gc(display, info, PW_ROP_NULL_SRC);
+	/*
+	 * Note - It is far cheaper not to do any clipping, but to draw the
+	 * entire glyph char. This will have to be changed.
+	 */
+	xv_set_gc_op(display, info, gc, color_op, fg_type, XV_DEFAULT_FG_BG);
+	xv_set_gc_op(display, info, gc1, color_op, fg_type, XV_INVERTED_FG_BG);
+
+	font = (XID) xv_get((Xv_opaque) pixfont, XV_XID);
+	XSetFont(display, gc, font);
+
+	XFillRectangle(display, d, gc1, x, y, width, height);
+	XDrawString(display, d, gc, x, y, s, 1);
+	return 0;
 }
 
 Xv_public Pixfont *xv_pf_open(char *fontname, Xv_server srv);
@@ -191,4 +173,5 @@ pw_pfsysopen()
 Xv_public int
 pw_pfsysclose()
 {
+	return 0;
 }
