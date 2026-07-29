@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.18 2026/07/20 22:23:38 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.19 2026/07/29 04:32:15 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -207,4 +207,14 @@ Xv_private int server_sem_map_index(KeySym ks);
 
 Xv_private void server_set_popup(Frame, Attr_attribute *);
 Xv_private void server_set_menu(Xv_opaque menu, Xv_opaque win);
+
+#define IS_UTF8_CONT(c) (((unsigned char)(c) & 0xC0) == 0x80)
+
+Xv_private int xv_utf8_next_char(const char *str, int index);
+Xv_private int xv_utf8_next_char_len(const char *str, int index);
+Xv_private int xv_utf8_prev_char_offset(const char *str, int index);
+Xv_private int xv_utf8_current_char_offset(const char *str, int index);
+Xv_private int xv_utf8_prev_char_len(const char *str, int index);
+Xv_private int xv_utf8_align_left(const char *str, int index);
+
 #endif
