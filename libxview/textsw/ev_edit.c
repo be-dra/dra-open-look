@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_edit_c_sccsid[] = "@(#)ev_edit.c 20.27 93/06/28 DRA $Id: ev_edit.c,v 4.3 2025/01/08 13:30:39 dra Exp $";
+char     ev_edit_c_sccsid[] = "@(#)ev_edit.c 20.27 93/06/28 DRA $Id: ev_edit.c,v 4.4 2026/07/29 04:15:21 dra Exp $";
 #endif
 
 /*
@@ -16,6 +16,8 @@ char     ev_edit_c_sccsid[] = "@(#)ev_edit.c 20.27 93/06/28 DRA $Id: ev_edit.c,v
 #include <xview_private/primal.h>
 #include <xview_private/ev_impl.h>
 #include <xview_private/txt_18impl.h>
+#include <xview_private/txt_impl.h>
+
 #include <sys/time.h>
 #include <pixrect/pr_util.h>
 
@@ -266,73 +268,62 @@ Return:
     return (result);
 }
 
-#ifdef OW_I18N
-#include <xview_private/txt_impl.h>
-
 /* Return *delta as number of the deleted bytes. */
-Pkg_private int ev_delete_span_bytes(Textsw_private priv, Es_index first, Es_index last_plus_one, Es_index *delta)
+Pkg_private int ev_delete_span_bytes(Textsw_private priv, Es_index first,
+							Es_index last_plus_one, Es_index *delta)
 {
-    Ev_chain        views = priv->views;
-    Es_handle       esh = views->esh;
-    register        Ev_chain_pd_handle
-                    private = EV_CHAIN_PRIVATE(views);
-    register Es_index old_length = es_get_length(esh);
-    Es_index        new_insert_pos, private_insert_pos = private->insert_pos;
-    Es_index        byte_delta;
-    int             result, used;
+	Ev_chain views = priv->views;
+	Es_handle esh = views->esh;
+	register Ev_chain_pd_handle private = EV_CHAIN_PRIVATE(views);
+	register Es_index old_length = es_get_length(esh);
+	Es_index new_insert_pos, private_insert_pos = private->insert_pos;
+	Es_index byte_delta;
+	int used;
 
-    /* Since *delta depends on last_plus_one, normalize ES_INFINITY */
-    if (last_plus_one > old_length) {
-	last_plus_one = old_length;
-    }
-    /* See if operation makes sense */
-    if (old_length == 0) {
-	result = 1;
-	goto Return;
-    }
-    /* We cannot assume where the esh is positioned, so position first. */
-    if (first != es_set_position(esh, first)) {
-	result = 2;
-	goto Return;
-    }
+	/* Since *delta depends on last_plus_one, normalize ES_INFINITY */
+	if (last_plus_one > old_length) {
+		last_plus_one = old_length;
+	}
+	/* See if operation makes sense */
+	if (old_length == 0) {
+		return 1;
+	}
+	/* We cannot assume where the esh is positioned, so position first. */
+	if (first != es_set_position(esh, first)) {
+		return 2;
+	}
 
-    byte_delta = (Es_index) -textsw_get_bytes_span(priv, first, last_plus_one);
-    /*
-     * need the following statement as textsw_get_bytes_span() changes the
-     * es_position.
-     */
-    es_set_position(esh, first);
+	byte_delta = (Es_index) first - last_plus_one;
+	/*
+	 * need the following statement as textsw_get_bytes_span() changes the
+	 * es_position.
+	 */
+	es_set_position(esh, first);
 
-    new_insert_pos = es_replace(esh, last_plus_one, 0, 0, &used);
-    if (new_insert_pos == ES_CANNOT_SET) {
-	result = 3;
-	goto Return;
-    }
-    *delta = first - last_plus_one;
-    private->insert_pos = new_insert_pos;
-    /* Above assignment required to make following call work! */
-    ev_update_after_edit(
-			 views, last_plus_one, *delta, old_length, first);
-    if (first < private_insert_pos) {
-	if (last_plus_one < private_insert_pos)
-	    private->insert_pos = private_insert_pos + *delta;
+	new_insert_pos = es_replace(esh, last_plus_one, 0, 0, &used);
+	if (new_insert_pos == ES_CANNOT_SET) {
+		return 3;
+	}
+	*delta = first - last_plus_one;
+	private->insert_pos = new_insert_pos;
+	/* Above assignment required to make following call work! */
+	ev_update_after_edit(views, last_plus_one, *delta, old_length, first);
+	if (first < private_insert_pos) {
+		if (last_plus_one < private_insert_pos)
+			private->insert_pos = private_insert_pos + *delta;
+		else
+			/* Don't optimize out in case kludge above vanishes. */
+			private->insert_pos = new_insert_pos;
+	}
 	else
-	    /* Don't optimize out in case kludge above vanishes. */
-	    private->insert_pos = new_insert_pos;
-    } else
-	private->insert_pos = private_insert_pos;
-    if (private->notify_level & EV_NOTIFY_EDIT_DELETE) {
-	ev_notify(views->first_view,
-		  EV_ACTION_EDIT, first, old_length, first, last_plus_one,
-		  0,
-		  0);
-    }
-    result = 0;
-    *delta = byte_delta;
-Return:
-    return (result);
+		private->insert_pos = private_insert_pos;
+	if (private->notify_level & EV_NOTIFY_EDIT_DELETE) {
+		ev_notify(views->first_view,
+				EV_ACTION_EDIT, first, old_length, first, last_plus_one, 0, 0);
+	}
+	*delta = byte_delta;
+	return 0;
 }
-#endif /* OW_I18N */
 
 static void ev_update_fingers_after_edit(Ev_finger_table *ft, Es_index insert, int delta)
 /*
@@ -403,9 +394,7 @@ Pkg_private void ev_update_after_edit(Ev_chain views, Es_index last_plus_one,
 	 */
 	chain->edit_number++;
 	if (delta != 0) {
-#ifdef OW_I18N
 		chain->updated = TRUE;
-#endif
 		ev_update_lt_after_edit(&chain->op_bdry, last_plus_one, (long)delta);
 		ev_update_fingers_after_edit(&views->fingers, last_plus_one, delta);
 	}
