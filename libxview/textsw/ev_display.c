@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_display_c_sccsid[] = "@(#)ev_display.c 20.60 93/06/28 DRA: $Id: ev_display.c,v 4.8 2025/04/07 18:46:07 dra Exp $";
+char     ev_display_c_sccsid[] = "@(#)ev_display.c 20.60 93/06/28 DRA: $Id: ev_display.c,v 4.11 2026/07/29 06:30:55 dra Exp $";
 #endif
 
 /*
@@ -17,6 +17,7 @@ char     ev_display_c_sccsid[] = "@(#)ev_display.c 20.60 93/06/28 DRA: $Id: ev_d
 #include <xview_private/primal.h>
 #include <xview_private/ev_impl.h>
 #include <xview_private/txt_18impl.h>
+#include <xview_private/svr_impl.h>
 #include <sys/time.h>
 #include <pixrect/pr_util.h>
 
@@ -121,7 +122,7 @@ static void ev_put_caret(Xv_opaque window, int which, int x, int y)
 	Window drawable;
 	Xv_Drawable_info *info;
 	Pixmap pixmap;
-	int new_fg, new_bg;
+	unsigned long new_fg, new_bg;
 	XGCValues gcvalues, *gv;
 	unsigned long gcvaluemask;
 	GC *gc_list;
@@ -229,25 +230,21 @@ Pkg_private int ev_check_cached_pos_info(Ev_handle view, Es_index pos,
 	return (cache->lt_index != EV_NOT_IN_VIEW_LT_INDEX);
 }
 
-#ifdef OW_I18N
-#ifdef FULL_R5
-Pkg_private 	int
-ev_caret_to_xy(view, x, y)
-    register Ev_handle view;
-    int            *x, *y;
-{
-    Ev_pd_handle    private = EV_PRIVATE(view);
+Pkg_private int ev_caret_to_xy(Ev_handle view, int *x, int *y);
 
-    if (EV_INSERT_VISIBLE_IN_VIEW(view)) {
-	*x = private->caret_pr_pos.x;
-	*y = private->caret_pr_pos.y;
-	return (TRUE);
-    } else {
-	return (FALSE);
-    }
+Pkg_private int ev_caret_to_xy(Ev_handle view, int *x, int *y)
+{
+	Ev_pd_handle private = EV_PRIVATE(view);
+
+	if (EV_INSERT_VISIBLE_IN_VIEW(view)) {
+		*x = private->caret_pr_pos.x;
+		*y = private->caret_pr_pos.y;
+		return (TRUE);
+	}
+	else {
+		return (FALSE);
+	}
 }
-#endif /* FULL_R5 */	    
-#endif /* OW_I18N */	
 
 
 Pkg_private	void ev_check_insert_visibility(Ev_chain views)
@@ -609,72 +606,75 @@ ev_set_selection(chain, first, last_plus_one, type)
     register Es_index first, last_plus_one;
     unsigned        type;
 {
-    register        Ev_chain_pd_handle
-                    private = EV_CHAIN_PRIVATE(chain);
-    register Es_index repaint_first = first, repaint_last_plus_one = last_plus_one;
-    Ev_mark         to_use;
+	register Ev_chain_pd_handle private = EV_CHAIN_PRIVATE(chain);
+	register Es_index repaint_first = first, repaint_last_plus_one =
+			last_plus_one;
+	Ev_mark to_use;
 
-    ASSUME(0 < type && type < 0x34);
-    to_use = SELECTION_FOR_TYPE(private, type);
-    if (!NO_SELECTION(to_use)) {
-	Ev_range        selection;
-	int             was_pending_delete;
-	selection = ev_get_selection_range(private, type,
-					   &was_pending_delete);
-	ev_remove_op_bdry(
-			  &private->op_bdry, selection.first,
-			  type, EV_BDRY_TYPE_ONLY);
-	ev_remove_op_bdry(
-			  &private->op_bdry, selection.last_plus_one,
-			  type | EV_BDRY_END, EV_BDRY_TYPE_ONLY);
-	if (selection.last_plus_one > first &&
-	    last_plus_one > selection.first) {
-	    /*
-	     * Old and new selection overlap: we will repaint the affected
-	     * enclosing range once.
-	     */
-	    if (first == selection.first &&
-		(was_pending_delete == (type & EV_SEL_PD_PRIMARY))) {
-		/*
-		 * Old and new selection have same head: only repaint the
-		 * altered tail.
-		 */
-		if (last_plus_one < selection.last_plus_one) {
-		    repaint_first = last_plus_one;
-		    repaint_last_plus_one = selection.last_plus_one;
-		} else {
-		    repaint_first = selection.last_plus_one;
+	ASSUME(0 < type && type < 0x34);
+	to_use = SELECTION_FOR_TYPE(private, type);
+	if (!NO_SELECTION(to_use)) {
+		Ev_range selection;
+		int was_pending_delete;
+
+		selection = ev_get_selection_range(private, type, &was_pending_delete);
+		ev_remove_op_bdry(&private->op_bdry, selection.first,
+				type, EV_BDRY_TYPE_ONLY);
+		ev_remove_op_bdry(&private->op_bdry, selection.last_plus_one,
+				type | EV_BDRY_END, EV_BDRY_TYPE_ONLY);
+		if (selection.last_plus_one > first && last_plus_one > selection.first) {
+			/*
+			 * Old and new selection overlap: we will repaint the affected
+			 * enclosing range once.
+			 */
+			if (first == selection.first &&
+					((unsigned)was_pending_delete ==
+							(type & EV_SEL_PD_PRIMARY))) {
+				/*
+				 * Old and new selection have same head: only repaint the
+				 * altered tail.
+				 */
+				if (last_plus_one < selection.last_plus_one) {
+					repaint_first = last_plus_one;
+					repaint_last_plus_one = selection.last_plus_one;
+				}
+				else {
+					repaint_first = selection.last_plus_one;
+				}
+			}
+			else if (last_plus_one == selection.last_plus_one &&
+					((unsigned)was_pending_delete ==
+							(type & EV_SEL_PD_PRIMARY))) {
+				/*
+				 * Old and new selection have same tail: only repaint the
+				 * altered head.
+				 */
+				if (first < selection.first) {
+					repaint_last_plus_one = selection.first;
+				}
+				else {
+					repaint_first = selection.first;
+					repaint_last_plus_one = first;
+				}
+			}
+			else {
+				/*
+				 * Repaint the entire enclosing range.
+				 */
+				if (first > selection.first)
+					repaint_first = selection.first;
+				if (last_plus_one < selection.last_plus_one)
+					repaint_last_plus_one = selection.last_plus_one;
+			}
 		}
-	    } else if (last_plus_one == selection.last_plus_one &&
-		   (was_pending_delete == (type & EV_SEL_PD_PRIMARY))) {
-		/*
-		 * Old and new selection have same tail: only repaint the
-		 * altered head.
-		 */
-		if (first < selection.first) {
-		    repaint_last_plus_one = selection.first;
-		} else {
-		    repaint_first = selection.first;
-		    repaint_last_plus_one = first;
+		else {
+			ev_display_range(chain, selection.first, selection.last_plus_one);
 		}
-	    } else {
-		/*
-		 * Repaint the entire enclosing range.
-		 */
-		if (first > selection.first)
-		    repaint_first = selection.first;
-		if (last_plus_one < selection.last_plus_one)
-		    repaint_last_plus_one = selection.last_plus_one;
-	    }
-	} else {
-	    ev_display_range(chain,
-			     selection.first, selection.last_plus_one);
 	}
-    }
-    ev_add_op_bdry(&private->op_bdry, first, type, &to_use[0]);
-    ev_add_op_bdry(&private->op_bdry, last_plus_one,
-		   type | EV_BDRY_END, &to_use[1]);
-    ev_display_range(chain, repaint_first, repaint_last_plus_one);
+	ev_add_op_bdry(&private->op_bdry, first, type, &to_use[0]);
+	ev_add_op_bdry(&private->op_bdry, last_plus_one,
+			type | EV_BDRY_END, &to_use[1]);
+	ev_display_range(chain, repaint_first, repaint_last_plus_one);
 }
 
 Pkg_private	int ev_get_selection(Ev_chain chain, Es_index *first, Es_index *last_plus_one, unsigned type)
@@ -1855,10 +1855,11 @@ Pkg_private void ev_extend_to_view_bottom(Ev_handle view, struct rect *rect)
 Pkg_private Ev_handle ev_resolve_xy_to_view(Ev_chain views, int x, int y)
 {
     register Ev_handle result;
+
     FORALLVIEWS(views, result) {
-	if (rect_includespoint(&result->rect, x, y))
-	    return (result);
-    }
+		if (rect_includespoint(&result->rect, x, y))
+	    	return (result);
+    	}
     return (EV_NULL);
 }
 
@@ -1902,6 +1903,94 @@ Pkg_private Ev_handle ev_nearest_view(Ev_chain views, int x, int y, int *x_used,
     return (result);
 }
 
+/*
+ * Helper to adjust an Es_index to the start of a valid UTF-8 character,
+ * reusing the existing xv_utf8_* logic.
+ */
+Xv_private Es_index ev_utf8_align_index(Es_handle esh, Es_index index)
+{
+	char buf[8];
+	int bytes_actually_read;
+
+	if (index <= 0)
+		return 0;
+
+	/* Read a small window of bytes around 'index' from the Entity Stream */
+	/* (Assuming index might be pointing to a continuation byte) */
+	Es_index start_pos = (index >= 4) ? (index - 3) : 0;
+
+	es_set_position(esh, start_pos);
+	/* Read enough bytes to inspect the UTF-8 sequence */
+	es_read(esh, 7, buf, &bytes_actually_read);
+
+	/* Pass buf to your existing helper: */
+	return start_pos + xv_utf8_align_left(buf, index - start_pos);
+}
+
+Pkg_private Es_index ev_utf8_prev_char_boundary(Es_handle esh, Es_index index)
+{
+	char read_buf[8];
+	int read_len;
+	int bytes_actually_read;
+	Es_index fetch_pos;
+
+	/* Boundary check: already at the beginning of the stream */
+	if (index <= 0) {
+		return 0;
+	}
+
+	/* We need to inspect up to 4 bytes before the current index. */
+	fetch_pos = (index >= 4) ? (index - 4) : 0;
+	read_len = (int)(index - fetch_pos);
+
+	/* Position the stream pointer and read the bytes into our local buffer */
+	es_set_position(esh, fetch_pos);
+	es_read(esh, read_len, read_buf, &bytes_actually_read);
+
+	/* * Now use your existing helper logic!
+	 * Since xv_utf8_prev_char_len expects a pointer and an offset, 
+	 * we pass our local buffer and the offset within that buffer (read_len).
+	 */
+	int prev_len = xv_utf8_prev_char_len(read_buf, read_len);
+
+	/* Subtract the character byte length from our original index */
+	return index - prev_len;
+}
+
+/*
+ * Given an Es_handle and a byte index, returns the Es_index corresponding 
+ * to the start of the NEXT UTF-8 character.
+ */
+Pkg_private Es_index ev_utf8_next_char_boundary(Es_handle esh, Es_index index,
+								Es_index file_length)
+{
+	char read_buf[8];
+	int bytes_actually_read = 0;
+	int max_to_read = 4;
+
+	if (index >= file_length) {
+		return file_length;
+	}
+
+	if ((file_length - index) < max_to_read) {
+		max_to_read = (int)(file_length - index);
+	}
+
+	es_set_position(esh, index);
+	es_read(esh, max_to_read, read_buf, &bytes_actually_read);
+
+	if (bytes_actually_read <= 0) {
+		return file_length;
+	}
+
+	/* * Reuse your helper logic!
+	 * xv_utf8_next_char_len inspecting 'read_buf' at offset 0
+	 */
+	int next_len = xv_utf8_next_char_len(read_buf, 0);
+
+	return index + next_len;
+}
+
 Pkg_private Es_index ev_resolve_xy(Ev_handle view, int x, int y)
 {
 	Es_handle esh = view->view_chain->esh;
@@ -1913,6 +2002,7 @@ Pkg_private Es_index ev_resolve_xy(Ev_handle view, int x, int y)
 
 	if (view == EV_NULL)
 		return (result);
+
 	line_seq = (Ev_impl_line_seq) view->line_table.seq;
 	lt_index = ev_line_for_y(view, y);
 	rect = ev_rect_for_line(view, lt_index);
@@ -1938,23 +2028,37 @@ Pkg_private Es_index ev_resolve_xy(Ev_handle view, int x, int y)
 			result = p_result.last_plus_one;
 			if ((p_result.break_reason & EI_PR_HIT_RIGHT)
 					&& result >= line_seq[lt_index + 1].pos) {
-				--result;
+				/* FIX FOR MULTIBYTE / UTF-8:
+				 * Do not simply decrement by 1 byte, as it might land
+				 * inside a UTF-8 sequence.
+				 */
+				if (_xv_is_multibyte) {
+					/* Move backward using UTF-8 aware logic */
+					/* Note: Ensure result aligns to previous full character boundary */
+					result = ev_utf8_prev_char_boundary(esh, result);
+				}
+				else {
+					--result;
+				}
 			}
 		}
 	}
 	else {
 		result = es_get_length(esh);
 	}
+
+	/* Safety check: Always align final index to valid UTF-8 start byte */
+	if (_xv_is_multibyte && result < es_get_length(esh)) {
+		result = ev_utf8_align_index(esh, result);
+	}
 	return (result);
 }
 
+Pkg_private	void ev_set_pre_edit_region(Ev_chain chain, Es_index first,
+				Es_index last_plus_one, unsigned type);
 
-#ifdef OW_I18N
-Pkg_private	void
-ev_set_pre_edit_region(chain, first, last_plus_one, type)
-    Ev_chain        	    chain;
-    register Es_index 	    first, last_plus_one;
-    unsigned        	    type;
+Pkg_private	void ev_set_pre_edit_region(Ev_chain chain, Es_index first,
+				Es_index last_plus_one, unsigned type)
 {
     register Ev_chain_pd_handle
                     	    private = EV_CHAIN_PRIVATE(chain);
@@ -1973,7 +2077,6 @@ ev_set_pre_edit_region(chain, first, last_plus_one, type)
     ev_add_op_bdry(&private->op_bdry, last_plus_one,
 		   type | EV_BDRY_END, &to_use[1]);
 }
-#endif /* OW_I18N */
 
 
 /*
