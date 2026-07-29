@@ -1,4 +1,4 @@
-/*	@(#)ev_impl.h 20.20 93/06/28 SMI  DRA: $Id: ev_impl.h,v 4.2 2024/12/18 11:27:25 dra Exp $	*/
+/*	@(#)ev_impl.h 20.20 93/06/28 SMI  DRA: $Id: ev_impl.h,v 4.4 2026/07/29 06:14:29 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -129,7 +129,7 @@ struct ev_private_data_object {
 #ifdef lint
 #define EV_PRIVATE(view_formal)	(Ev_pd_handle)(view_formal ? 0 : 0)
 #else
-#define EV_PRIVATE(view_formal)	((Ev_pd_handle) view_formal->private_data)
+#define EV_PRIVATE(view_formal)	(view_formal->evo_private_data)
 #endif
 
 #define	EV_VIEW_FIRST(view_formal)	ft_position_for_index( \
@@ -163,9 +163,7 @@ struct ev_chain_private_data_object {
 	struct pixrect		 *ghost_pr;
 	struct pr_pos		  ghost_hotpoint;
 	Ev_physical_line_info	  cache_pos_for_file_line;
-#ifdef OW_I18N
 	int			  updated;	/* contents update flag */
-#endif
 };
 #ifdef lint
 #define EV_CHAIN_PRIVATE(chain_formal)					\
@@ -175,8 +173,7 @@ struct ev_chain_private_data_object {
 #define	EV_CACHED_LINE_INFO_IS_VALID(view_formal)			\
 	((view_formal))
 #else
-#define EV_CHAIN_PRIVATE(chain_formal)					\
-	((Ev_chain_pd_handle) (chain_formal)->private_data)
+#define EV_CHAIN_PRIVATE(chain_formal)	((chain_formal)->evc_private_data)
 #define	EV_CACHED_POS_INFO_IS_VALID(view_formal, pos_formal, cache_formal) \
     (	((cache_formal)->pos == (pos_formal)) &&			   \
 	((cache_formal)->index_of_first == EV_VIEW_FIRST(view_formal)) &&  \
@@ -523,6 +520,8 @@ Pkg_private void ev_clear_from_margins(Ev_handle view, Rect *from_rect, Rect *to
 Pkg_private void ev_add_margins(Ev_handle view, Rect *rect);
 Pkg_private void ev_blink_caret(Xv_Window focus_view, Ev_chain views, int on);
 
+Xv_private Es_index ev_utf8_align_index(Es_handle esh, Es_index index);
+Pkg_private Es_index ev_utf8_prev_char_boundary(Es_handle esh, Es_index index);
 
 #define EV_INSERT_VISIBLE_IN_VIEW(_view)\
     ev_check_cached_pos_info(_view, EV_CHAIN_PRIVATE(_view->view_chain)->insert_pos, &EV_PRIVATE(_view)->cached_insert_info)
