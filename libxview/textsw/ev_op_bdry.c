@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_op_bdry_c_sccsid[] = "@(#)ev_op_bdry.c 20.18 93/06/28 DRA: $Id: ev_op_bdry.c,v 4.2 2024/09/15 16:17:30 dra Exp $";
+char     ev_op_bdry_c_sccsid[] = "@(#)ev_op_bdry.c 20.18 93/06/28 DRA: $Id: ev_op_bdry.c,v 4.3 2026/07/29 04:15:07 dra Exp $";
 #endif
 
 /*
@@ -94,38 +94,41 @@ Ev_finger_handle ev_find_finger(Ev_finger_table *fingers, Ev_mark_object  mark)
 
 static int ev_find_finger_internal(Ev_finger_table *fingers, Ev_mark mark)
 {
-    register Ev_finger_handle finger =
-    (Ev_finger_handle) fingers->seq;
-    register int    i, mark_id;
+	register Ev_finger_handle finger = (Ev_finger_handle) fingers->seq;
+	int i;
+	unsigned long mark_id;
 
-    if ((mark_id = EV_MARK_ID(*mark)) != 0) {
-	if (EV_MARK_ID(finger->info) == mark_id) {
-	    return (0);
+	if ((mark_id = EV_MARK_ID(*mark)) != 0) {
+		if (EV_MARK_ID(finger->info) == mark_id) {
+			return (0);
+		}
+		i = ft_bounding_index(fingers, ES_INFINITY - 1);
+		if (i != fingers->last_plus_one) {
+			finger = (Ev_finger_handle) FT_ADDRESS(fingers, i);
+			if (EV_MARK_ID(finger->info) == mark_id) {
+				return (i);
+			}
+			{
+				finger = (Ev_finger_handle) fingers->seq;
+			}
+		}
+		for (i = 1; i < fingers->last_plus_one; i++) {
+			finger = (Ev_finger_handle) FT_NEXT_ADDRESS(fingers, finger);
+			if (EV_MARK_ID(finger->info) == mark_id)
+				return (i);
+		}
 	}
-	i = ft_bounding_index(fingers, ES_INFINITY - 1);
-	if (i != fingers->last_plus_one) {
-	    finger = (Ev_finger_handle) FT_ADDRESS(fingers, i);
-	    if (EV_MARK_ID(finger->info) == mark_id) {
-		return (i);
-	    } {
-		finger = (Ev_finger_handle) fingers->seq;
-	    }
-	}
-	for (i = 1; i < fingers->last_plus_one; i++) {
-	    finger = (Ev_finger_handle) FT_NEXT_ADDRESS(fingers, finger);
-	    if (EV_MARK_ID(finger->info) == mark_id)
-		return (i);
-	}
-    }
-    return (fingers->last_plus_one);
+	return (fingers->last_plus_one);
 }
 
 static void ev_remove_finger_internal(Ev_finger_table *fingers, int i)
 {
-    if (i < fingers->last_plus_one) {
-	(void) ft_shift_out(fingers, i, i + 1);
-    } else
-	LINT_IGNORE(ASSUME(0));	/* There should be an entry */
+	if (i < fingers->last_plus_one) {
+		(void)ft_shift_out(fingers, i, i + 1);
+	}
+	else {
+		LINT_IGNORE(ASSUME(0));	/* There should be an entry */
+	}
 }
 
 Pkg_private void ev_remove_finger(Ev_finger_table *fingers, Ev_mark_object  mark)
@@ -235,13 +238,11 @@ Return:
     return;
 }
 
-#ifdef OW_I18N
-Pkg_private	void
-ev_remove_all_op_bdry(chain, start, end, type, mask)
-    Ev_chain        	    chain;
-    register Es_index start, end;
-    unsigned        type;
-    register unsigned mask;
+Pkg_private	void ev_remove_all_op_bdry(Ev_chain chain, Es_index start,
+						Es_index end, unsigned type, unsigned mask);
+
+Pkg_private	void ev_remove_all_op_bdry(Ev_chain chain, Es_index start,
+						Es_index end, unsigned type, unsigned mask)
 {
     register Ev_chain_pd_handle
                     	    private = EV_CHAIN_PRIVATE(chain);
@@ -263,7 +264,6 @@ ev_remove_all_op_bdry(chain, start, end, type, mask)
         }
     }
 }
-#endif
 
 Pkg_private Ev_mark_object ev_add_glyph(Ev_chain chain, Es_index line_start, Es_index pos, Pixrect *pr, int op, int offset_x, int offset_y, int flags)
 {
