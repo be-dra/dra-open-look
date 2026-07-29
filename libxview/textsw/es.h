@@ -1,4 +1,4 @@
-/*	@(#)es.h 20.17 93/06/28 SMI	DRA: $Id: es.h,v 4.2 2026/07/27 17:05:20 dra Exp $ */
+/*	@(#)es.h 20.17 93/06/28 SMI	DRA: $Id: es.h,v 4.3 2026/07/29 05:58:57 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -13,6 +13,34 @@
 #					ifndef sunwindow_attr_DEFINED
 #include <xview/attrol.h>
 #					endif
+
+
+#ifdef NO_CODE_JUST_GERMAN_EXPLANATION
+Das Prinzip des Entity Streams verstaendlich erklaert
+
+Um esh zu verstehen, muss man wissen, wie XView/SunView damals aufgebaut wurde:
+
+Ein normales Textsw speichert Text nicht einfach als einen riesigen C-String
+(char *) im Arbeitsspeicher. Wenn du eine 500 MB groﬂe Datei oeffnest,
+wuerde ein normaler String viel zu viel RAM verbrauchen und jedes Einfuegen
+in der Mitte waere extrem langsam, weil der gesamte Speicher dahinter
+verschoben werden muesste.
+
+Deshalb nutzt XView das Prinzip des Entity Streams (Es_handle):
+
+Der Text ist abstrahiert. Er kann im RAM liegen, teilweise in einer Datei
+auf der Festplatte (Scratch File) oder aus mehreren Stuecken (Chunks)
+bestehen.
+
+Ein Es_index ist einfach nur eine fortlaufende Byte-Position
+(0, 1, 2, 3...) in diesem virtuellen Datenstrom.
+
+Um an die tatsaechlichen Bytes an Position X zu kommen, musst du dem
+Stream sagen: "Setze deinen Lese-Zeiger auf Position X (es_set_position)"
+und "Lies mir von dort N Bytes in meinen eigenen Puffer (es_read)".
+
+#endif /* NO_CODE_JUST_GERMAN_EXPLANATION */
+
 
 /*
  * This file defines the programmer interface to the entity stream abstraction.
