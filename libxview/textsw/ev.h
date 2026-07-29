@@ -1,4 +1,4 @@
-/*      @(#)ev.h 20.21 93/06/28 SMI  DRA: $Id: ev.h,v 4.3 2024/12/21 21:25:58 dra Exp $      */
+/*      @(#)ev.h 20.21 93/06/28 SMI  DRA: $Id: ev.h,v 4.4 2026/07/29 04:14:14 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -59,6 +59,9 @@ struct first_line_info {
 };
 
 typedef struct ev_object *Ev_handle;
+struct ev_chain_private_data_object;
+struct ev_private_data_object;
+
 struct ev_object {
 	Ev_handle		 next;
 	struct ev_chain_object	*view_chain;
@@ -68,7 +71,7 @@ struct ev_object {
 	Ev_line_table		 line_table;
 	Ev_line_table		 tmp_line_table;
 	Xv_opaque		 client_data;	/* Client scratch space */
-	caddr_t			 private_data;
+	struct ev_private_data_object *evo_private_data;
 };
 #define EV_NULL		(Ev_handle) 0
 
@@ -79,7 +82,7 @@ struct ev_chain_object {
 	Ev_handle		first_view;
 	Ev_finger_table		fingers;
 	Xv_opaque		client_data;
-	caddr_t			private_data;
+	struct ev_chain_private_data_object	*evc_private_data;
 };
 typedef struct ev_chain_object *Ev_chain;
 #define EV_CHAIN_NULL	(Ev_chain_handle) 0
