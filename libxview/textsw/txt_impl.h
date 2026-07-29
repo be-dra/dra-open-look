@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.65 2026/02/11 21:20:17 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.66 2026/07/29 06:13:53 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -41,6 +41,7 @@
 #include <xview_private/ev.h>
 #				endif
 #include <sys/stat.h>
+#include <xview_private/convpos.h>
 
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
@@ -51,10 +52,7 @@
 #include <xview/panel.h>
 #include <xview/dragdrop.h>
 
-#ifdef OW_I18N
 #include <xview_private/i18n_impl.h> 
-#include <xview_private/convpos.h>
-#endif /* OW_I18N */
 
 
 /* Although not needed to support types used in this header file, the
@@ -78,30 +76,7 @@
 #define TXTSW_DO_AGAIN(_textsw)	\
 	((_textsw->again_count != 0) && \
 	 ((_textsw->state & TXTSW_NO_AGAIN_RECORDING) == 0))
-#ifdef OW_I18N		/* Tune off undo for preedit region */
-#define TXTSW_DO_UNDO(_textsw) \
-        ((_textsw->undo_count != 0) && \
-                 ((_textsw->state & TXTSW_NO_UNDO_RECORDING) == 0))
-#else
 #define TXTSW_DO_UNDO(_textsw)	(_textsw->undo_count != 0)
-#endif /* OW_I18N */
-
-#ifdef OW_I18N
-#ifdef FULL_R5
-#define	textsw_implicit_commit(_folio) \
-    if ((_folio->xim_style & XIMPreeditCallbacks) \
-		? (_folio->preedit_start ? 1 : 0) \
-		: (_folio->ic && \
-		   xv_get(TEXTSW_PUBLIC(_folio), WIN_IC_CONVERSION) == TRUE) \
-		   ? 1 : 0) \
-	textsw_implicit_commit_doit(_folio);
-#else /* FULL_R5 */
-#define	textsw_implicit_commit(_folio) \
-    if (_folio->preedit_start) \
-	textsw_implicit_commit_doit(_folio);
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
-
 
 typedef struct textsw_string {
 	int	max_length;
@@ -184,11 +159,7 @@ Pkg_private int textsw_destroy(Textsw tsw, Destroy_status status);
 typedef void (*split_init_proc_t)(Xv_opaque, Xv_opaque, int);
 
 #define	TEXTSW_MAGIC		0xF2205050
-#ifdef OW_I18N
-#define TXTSW_UI_BUFLEN	256
-#else
 #define TXTSW_UI_BUFLEN	12
-#endif
 
 #define TSW_SEL_PRIMARY	0
 #define TSW_SEL_SECONDARY	1
@@ -251,27 +222,6 @@ typedef struct textsw_object {
     window_layout_proc_t layout_proc; /* interposed window layout proc */
 	Xv_Window	  focus_view;	/* view window with the kbd focus */
 	unsigned	  accel_menus:1; /* Are core menu items accelerated */
-#ifdef OW_I18N
-	int		  blocking_newline; /* This is used for bug# 1090046 */
-	int		  need_im; /* TRUE if XV_IM and XV_USE_IM are TRUE */
-	XIC		  ic;
-	Ev_mark_object	  preedit_start;
-	/*
-	 * This variable is used for OnTheSpot input style.
-	 * preedit_start saves an insertion point for preedit text.
-	 * If preedit_start is non NULL, IC exists, conversion mode is ON
-	 * and preedit text exists.
-	 */
-	XIMCallback	  start_pecb_struct; 
-	XIMCallback	  draw_pecb_struct;
-	XIMCallback	  done_pecb_struct;
-#ifdef FULL_R5
-        XIMStyle	  xim_style;
-#endif /* FULL_R5 */    	
-	eucwidth_t	  euc_width;
-	int		  locale_is_ale;
-	Conv_pos_handle	  cph;	/* conversion pos handle */
-#endif /* OW_I18N */
 	split_init_proc_t orig_split_init_proc;
 	char backup_pattern[1000];
 	int restrict_menu;
@@ -382,9 +332,7 @@ Pkg_private Textsw_view_private textsw_view_abs_to_rep(Textsw_view abstract
 	/* Bit flags for Textsw_handle->state */
 #define TXTSW_AGAIN_HAS_FIND	0x00000001
 #define TXTSW_AGAIN_HAS_MATCH   0x00000002
-#ifdef OW_I18N
 #define TXTSW_NO_UNDO_RECORDING	0x00000004
-#endif
 #define TXTSW_DELETE_REPLACES_CLIPBOARD         \
                                 0x00000008
 #define TXTSW_ADJUST_IS_PD	0x00000010
@@ -399,7 +347,6 @@ Pkg_private Textsw_view_private textsw_view_abs_to_rep(Textsw_view abstract
 #define TXTSW_READ_ONLY_ESH	0x00001000
 #define TXTSW_READ_ONLY_SW	0x00002000
 #define TXTSW_RETAINED		0x00008000
-#define TXTSW_CAPS_LOCK_ON	0x00010000
 #define TXTSW_DISPLAYED		0x00020000
 #define TXTSW_EDITED		0x00040000
 #define TXTSW_INITIALIZED	0x00080000
@@ -536,9 +483,7 @@ Pkg_private Es_index textsw_delete_span(Textsw_view_private view, Es_index first
 #define	TXTSW_DS_CLEAR_IF_ADJUST(sel)	(EV_SEL_CLIENT_FLAG(0x2)|(sel))
 #define	TXTSW_DS_SHELVE			 EV_SEL_CLIENT_FLAG(0x4)
 #define	TXTSW_DS_RECORD			 EV_SEL_CLIENT_FLAG(0x8)
-#ifdef OW_I18N
 #define	TXTSW_DS_RETURN_BYTES		EV_SEL_CLIENT_FLAG(0x10)
-#endif
 
 Pkg_private Es_index textsw_do_input(Textsw_view_private view, CHAR *buf,
 						long int buf_len, unsigned flag);
