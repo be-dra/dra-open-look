@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.27 2026/07/04 17:13:13 dra Exp $";
+char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,v 4.28 2026/07/30 07:18:28 dra Exp $";
 #endif
 
 /*
@@ -24,20 +24,9 @@ char     txt_sel_c_sccsid[] = "@(#)txt_sel.c 20.55 93/06/28 DRA: $Id: txt_sel.c,
 #endif /* SVR4 */
 #include <assert.h> 
 
-#ifdef OW_I18N
-Xv_public   void	textsw_set_selection_wcs();
-#endif
-
 extern char *xv_app_name;
 
-Xv_public void
-#ifdef OW_I18N
-textsw_normalize_view_wc(abstract, pos)
-    Textsw          abstract;
-    Textsw_index        pos;
-#else
-textsw_normalize_view(Textsw_view v, Textsw_index pos)
-#endif
+Xv_public void textsw_normalize_view(Textsw_view v, Textsw_index pos)
 {
     int             upper_context;
     Textsw_view_private view;
@@ -55,22 +44,6 @@ textsw_normalize_view(Textsw_view v, Textsw_index pos)
     textsw_normalize_internal(view, pos, pos,
 			      upper_context, 0, TXTSW_NI_DEFAULT);
 }
-
-#ifdef OW_I18N
-Xv_public void
-textsw_normalize_view(abstract, pos)
-    Textsw          abstract;
-    Es_index        pos;
-{
-    Textsw_view_private view = VIEW_ABS_TO_REP(abstract);
-    int             upper_context;
-
-    upper_context = (int) ev_get(view->e_view, EV_CHAIN_UPPER_CONTEXT, XV_NULL, XV_NULL, XV_NULL);
-    pos = textsw_wcpos_from_mbpos(TSWPRIV_FOR_VIEWPRIV(view), pos);
-    textsw_normalize_internal(view, pos, pos,
-			      upper_context, 0, TXTSW_NI_DEFAULT);
-}
-#endif /* OW_I18N */
 
 static void textsw_not_visible_normalize(Textsw_view v, Es_index pos)
 {
@@ -93,30 +66,10 @@ static void textsw_not_visible_normalize(Textsw_view v, Es_index pos)
 /*
  *	the following two routines are identical names for the same thing
  */
-Xv_public	void
-#ifdef OW_I18N
-textsw_possibly_normalize_wc(abstract, pos)
-    Textsw          abstract;
-    Es_index        pos;
-#else
-textsw_possibly_normalize(Textsw_view v, Textsw_index pos)
-#endif
+Xv_public	void textsw_possibly_normalize(Textsw_view v, Textsw_index pos)
 {
     textsw_not_visible_normalize(v, pos);
 }
-
-#ifdef OW_I18N
-Xv_public	void
-textsw_possibly_normalize(abstract, pos)
-    Textsw          abstract;
-    Es_index        pos;
-{
-    Textsw_view_private view = VIEW_ABS_TO_REP(abstract);
-
-    textsw_not_visible_normalize(abstract,
-			textsw_wcpos_from_mbpos(TSWPRIV_FOR_VIEWPRIV(view), pos));
-}
-#endif /* OW_I18N */
 
 Pkg_private	void textsw_possibly_normalize_and_set_selection(Textsw abstract, Es_index first, Es_index last_plus_one, unsigned type)
 {
@@ -130,9 +83,6 @@ Pkg_private	void textsw_possibly_normalize_and_set_selection(Textsw abstract, Es
     	view = VIEW_ABS_TO_REP(abstract);
 	}
 
-#ifdef OW_I18N
-	textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
     upper_context = (int)
 	ev_get(view->e_view, EV_CHAIN_UPPER_CONTEXT, XV_NULL, XV_NULL, XV_NULL);
 
@@ -195,24 +145,12 @@ Pkg_private void textsw_normalize_internal(Textsw_view_private view, Es_index fi
 	 * force textsw find to do pending delete selection
 	 */
 	if (flags & EV_SEL_PD_PRIMARY)
-
-#ifdef OW_I18N
-		textsw_set_selection_wcs(VIEW_PUBLIC(view), first, last_plus_one,
-#else
 		textsw_set_selection(xv_get(VIEW_PUBLIC(view), XV_OWNER),
 						first, last_plus_one,
-#endif
-
 				(EV_SEL_BASE_TYPE(flags) | EV_SEL_PD_PRIMARY));
 	else if (EV_SEL_BASE_TYPE(flags)) {
-
-#ifdef OW_I18N
-		textsw_set_selection_wcs(VIEW_PUBLIC(view), first, last_plus_one,
-#else
 		textsw_set_selection(xv_get(VIEW_PUBLIC(view), XV_OWNER),
 									first, last_plus_one,
-#endif
-
 				EV_SEL_BASE_TYPE(flags));
 	}
 }
@@ -364,18 +302,10 @@ static void set_local_selected_text(Textsw_private priv, int indx, unsigned typ)
 			NULL);
 }
 
-Xv_public	void
-#ifdef OW_I18N
-textsw_set_selection_wcs(abstract, first, last_plus_one, type)
-    Textsw          abstract;
-    Es_index        first, last_plus_one;
-    unsigned        type;
-#else
 /* abstract kann ein View sein oder auch das Textsw   !!! */
 /* aber den View-Quatsch will ich nicht */
-textsw_set_selection(Textsw abstract, Textsw_index first,
+Xv_public	void textsw_set_selection(Textsw abstract, Textsw_index first,
 					Textsw_index last_plus_one, unsigned type)
-#endif
 {
 	Es_index max_len;
 	register Textsw_private priv;
@@ -631,20 +561,11 @@ Pkg_private	int textsw_mouseless_select_event(Textsw_view_private view, Event *i
 /*			printf("do:    position %d/%d first %d last %d sel_type %d\n", 
 			       old_position, new_position, first, last_plus_one, sel_type );
 */
-#ifdef OW_I18N
-			textsw_set_selection_wcs( VIEW_PUBLIC(view),
-#else
 			textsw_set_selection(TEXTSW_PUBLIC(priv),
-#endif
 					     first, last_plus_one, 
 					     sel_type | EV_SEL_PD_PRIMARY);
 
-#ifdef OW_I18N
-			textsw_possibly_normalize_wc(VIEW_PUBLIC(view),
-#else
-			textsw_possibly_normalize(VIEW_PUBLIC(view),
-#endif
-						  new_position );
+			textsw_possibly_normalize(VIEW_PUBLIC(view), new_position );
 		}
 	}
 
@@ -736,11 +657,17 @@ static void update_selection(Textsw_view_private view, Event *ie)
 		}
 		else {
 			/* laf */
-			if (priv->span_level == EI_SPAN_POINT) {
-				last_plus_one = position + 1;
-			}
-			else if (priv->span_level == EI_SPAN_CHAR) {
-				last_plus_one = position + 1;
+			if (priv->span_level == EI_SPAN_POINT
+				|| priv->span_level == EI_SPAN_CHAR)
+			{
+				if (_xv_is_multibyte) {
+					Es_index file_length = es_get_length(priv->views->esh);
+					last_plus_one = ev_utf8_next_char_boundary(priv->views->esh,
+											position, file_length);
+				}
+				else {
+					last_plus_one = position + 1;
+				}
 			}
 			else {
 				(void)ev_span(priv->views, position, &first, &last_plus_one,
@@ -775,11 +702,31 @@ static void update_selection(Textsw_view_private view, Event *ie)
 										|| (last_plus_one <= ro_bdry)))
 						|| (first == TEXTSW_INFINITY)) {
 					first = EV_GET_INSERT(priv->views);
-					last_plus_one = (position < first) ? first : first + 1;
+					if (position < first) {
+						last_plus_one = first;
+					}
+					else {
+						if (_xv_is_multibyte) {
+							last_plus_one = ev_utf8_next_char_boundary(
+											priv->views->esh, first,
+											es_get_length(priv->views->esh));
+						}
+						else {
+							last_plus_one = first + 1;
+						}
+					}
 				}
 				else {
-					if (position < first)
-						last_plus_one++;
+					if (position < first) {
+						if (_xv_is_multibyte) {
+							last_plus_one = ev_utf8_next_char_boundary(
+											priv->views->esh, last_plus_one,
+											es_get_length(priv->views->esh));
+						}
+						else {
+							last_plus_one++;
+						}
+					}
 				}
 			}
 			if ((position == first) || (position + 1 == last_plus_one)) {
@@ -838,7 +785,14 @@ static void update_selection(Textsw_view_private view, Event *ie)
 		else {
 			if ((priv->span_level == EI_SPAN_CHAR) ||	/* laf */
 					(priv->span_level == EI_SPAN_POINT)) {
-				last_plus_one = position + 1;
+				if (_xv_is_multibyte) {
+					Es_index file_length = es_get_length(priv->views->esh);
+					last_plus_one = ev_utf8_next_char_boundary(priv->views->esh,
+											position, file_length);
+				}
+				else {
+					last_plus_one = position + 1;
+				}
 			}
 			else {
 				ev_span(priv->views, position, &first, &last_plus_one,
@@ -859,12 +813,7 @@ static void update_selection(Textsw_view_private view, Event *ie)
 		}
 	}
 
-#ifdef OW_I18N
-	textsw_set_selection_wcs(VIEW_PUBLIC(view),
-#else
-	textsw_set_selection(TEXTSW_PUBLIC(priv),
-#endif
-			position, last_plus_one, sel_type);
+	textsw_set_selection(TEXTSW_PUBLIC(priv),position, last_plus_one, sel_type);
 	if (sel_type & EV_SEL_PRIMARY) {
 		textsw_checkpoint_again(TEXTSW_PUBLIC(priv));
 	}
