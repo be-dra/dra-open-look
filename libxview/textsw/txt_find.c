@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_find_c_sccsid[] = "@(#)txt_find.c 20.27 93/06/28 DRA: $Id: txt_find.c,v 4.9 2024/12/21 21:25:58 dra Exp $";
+char     txt_find_c_sccsid[] = "@(#)txt_find.c 20.27 93/06/28 DRA: $Id: txt_find.c,v 4.10 2026/07/30 07:49:26 dra Exp $";
 #endif
 
 /*
@@ -156,23 +156,12 @@ Pkg_private void textsw_find_pattern_and_normalize(Textsw_view_private view, int
  * If the pattern is found, return the index where it is found, else return
  * -1.
  */
-Xv_public int
-#ifdef OW_I18N
-textsw_find_wcs(abstract, first, last_plus_one, buf, buf_len, flags)
-    Textsw          abstract;	/* find in this textsw */
-    Es_index       *first;	/* start here, return start of found pattern here */
-    Es_index       *last_plus_one;	/* return end of found pattern */
-    CHAR           *buf;	/* pattern */
-    unsigned        buf_len;	/* pattern length */
-    unsigned        flags;	/* 0=forward, !0=backward */
-#else
-textsw_find_bytes(Textsw abstract,	/* find in this textsw */
+Xv_public int textsw_find_bytes(Textsw abstract,	/* find in this textsw */
     Textsw_index   *first,	/* start here, return start of found pattern here */
     Textsw_index   *last_plus_one,	/* return end of found pattern */
     CHAR           *buf,	/* pattern */
     unsigned        buf_len,	/* pattern length */
     unsigned        flags)	/* 0=forward, !0=backward */
-#endif
 {
     int save_first = *first;
     Textsw_private priv;
@@ -194,54 +183,3 @@ textsw_find_bytes(Textsw abstract,	/* find in this textsw */
 	return *first;
     }
 }
-
-#ifdef OW_I18N
-/*
- * If the pattern is found, return the index where it is found, else return
- * -1.
- */
-Xv_public int
-textsw_find_bytes(abstract, first, last_plus_one, buf, buf_len, flags)
-    Textsw          abstract;	/* find in this textsw */
-    Es_index       *first;	/* start here, return start of found pattern
-				 * here */
-    Es_index       *last_plus_one;	/* return end of found pattern */
-    char           *buf;	/* pattern */
-    unsigned        buf_len;	/* pattern length */
-    unsigned        flags;	/* 0=forward, !0=backward */
-{
-    Textsw_private    priv = TSWPRIV_FOR_VIEWPRIV(VIEW_ABS_TO_REP(abstract));
-    int             save_first = *first;
-    int             save_last_plus_one = *last_plus_one;
-    int             unconverted_bytes = buf_len;
-    int             wbuf_len, big_len_flag;
-    CHAR            *wbuf = MALLOC(buf_len + 1);
-
-    wbuf_len = textsw_mbstowcs_by_mblen(wbuf, buf,
-					&unconverted_bytes, &big_len_flag);
-    wbuf[wbuf_len] = 0;
-    /*
-     * When buf_len is bigger than string length in buf,
-     * do error retrun as the generic textsw's behavior.
-     */
-    if (big_len_flag) {
-	free(wbuf);
-	return -1;
-    }
-    *first = textsw_wcpos_from_mbpos(priv, *first);
-    textsw_find_pattern(priv, first, last_plus_one, wbuf, wbuf_len,
-			(unsigned) (flags ? EV_FIND_BACKWARD : 0));
-    free(wbuf);
-    if (*first == ES_CANNOT_SET) {
-	*first = save_first;
-	*last_plus_one = save_last_plus_one;
-	return -1;
-    } else {
-	*first = textsw_mbpos_from_wcpos(priv, *first);
-
-	/* dosen't use textsw_mbpos_from_wcpos() for the performance. */
-	*last_plus_one = *first + buf_len - unconverted_bytes;
-	return *first;
-    }
-}
-#endif /* OW_I18N */
