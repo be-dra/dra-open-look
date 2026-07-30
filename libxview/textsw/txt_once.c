@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.22 2026/03/22 09:25:24 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.23 2026/07/30 07:17:26 dra Exp $";
 #endif
 
 /*
@@ -42,9 +42,6 @@ char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,
 #include <xview_private/font_impl.h>
 #include <xview_private/ps_impl.h>
 #include <xview_private/ev_impl.h>
-#ifdef OW_I18N
-#include <xview_private/draw_impl.h>
-#endif
 #ifdef SVR4
 #include <dirent.h>
 #else
@@ -194,24 +191,7 @@ static void textsw_read_defaults(Textsw_private textsw, Attr_avlist defaults)
 																							 * strategy? */
 	textsw->edit_bk_line = def_str[0];
 
-#ifdef OW_I18N
-	textsw->need_im = (xv_get(XV_SERVER_FROM_WINDOW(textsw_public), XV_IM) &&
-			xv_get(textsw_public, WIN_USE_IM)) ? TRUE : FALSE;
-
-	/*  Drawing pre-edit text requires doing lots of replace.
-	 *  This causes the memory buffer to run out very fast,
-	 *  So if the user do not set this value, we will default it
-	 *  to TEXTSW_INFINITY.
-	 */
-	if (textsw->need_im)
-		textsw->es_mem_maximum =
-				defaults_get_integer_check("text.maxDocumentSize",
-				"Text.MaxDocumentSize", TEXTSW_INFINITY, 0,
-				TEXTSW_INFINITY + 1);
-	else
-#endif /* OW_I18N */
-
-		textsw->es_mem_maximum =
+	textsw->es_mem_maximum =
 				defaults_get_integer_check("text.maxDocumentSize",
 				"Text.MaxDocumentSize", 20000, 0, (int)(TEXTSW_INFINITY + 1));
 	textsw->drag_threshold = defaults_get_integer("openWindows.dragThreshold",
@@ -276,46 +256,6 @@ static void textsw_read_defaults(Textsw_private textsw, Attr_avlist defaults)
 	*defaults++ = textsw_get_from_defaults((Attr32_attribute)attr, srv);
 	*defaults++ = attr = TEXTSW_UPPER_CONTEXT;
 	*defaults++ = textsw_get_from_defaults((Attr32_attribute)attr, srv);
-
-#ifdef OW_I18N
-	defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
-	name = xv_font_monospace();
-	defaults_set_locale(NULL, NULL);
-
-	if (name && ((int)strlen(name) > 0)) {
-		font = (Xv_opaque) xv_pf_open(name, srv);
-	}
-	else
-		font = (Xv_opaque) 0;
-
-	if (!font) {
-		Xv_opaque parent_font;
-		int scale, size;
-
-		parent_font = (Xv_opaque) xv_get(textsw_public, XV_FONT);
-		scale = (int)xv_get(parent_font, FONT_SCALE);
-
-		if (scale > 0) {
-			font = (Xv_opaque) xv_find(textsw_public, FONT,
-					FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-					FONT_SCALE, scale, NULL);
-		}
-		else {
-			size = (int)xv_get(parent_font, FONT_SIZE);
-			font = (Xv_opaque) xv_find(textsw_public, FONT,
-					FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-					FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT, NULL);
-		}
-
-		if (!font)
-			font = (Xv_opaque) xv_find(NULL, FONT, NULL);
-	}
-	if (font) {
-		attr = XV_FONT;
-		*defaults++ = attr;
-		*defaults++ = font;
-	}
-#else /* OW_I18N */
 
 	name = xv_font_monospace();
 	if (name && ((int)strlen(name) > 0)) {
@@ -386,7 +326,6 @@ static void textsw_read_defaults(Textsw_private textsw, Attr_avlist defaults)
 			*defaults++ = font;
 		}
 	}
-#endif /* OW_I18N */
 
 	*defaults++ = attr = TEXTSW_LINE_BREAK_ACTION;
 	*defaults++ = textsw_get_from_defaults((Attr32_attribute)attr, srv);
@@ -501,16 +440,6 @@ Pkg_private Textsw_private textsw_init_internal(Textsw_private priv,
 	Frame frame;
 	Xv_Notice text_notice;
 
-#ifdef OW_I18N
-	CHAR name_wc[MAXNAMLEN];
-
-#ifdef FULL_R5
-	XVaNestedList va_nested_list;
-#endif /* FULL_R5 */
-
-	name_wc[0] = NULL;
-#endif
-
 	priv->magic = TEXTSW_MAGIC;
 
 	if ((plain_text_eih = ei_plain_text_create()) == 0)
@@ -544,22 +473,6 @@ Pkg_private Textsw_private textsw_init_internal(Textsw_private priv,
 		(void)ei_set(plain_text_eih, EI_FONT, xv_get(textsw, XV_FONT), NULL);
 	}
 	priv->state |= TXTSW_OPENED_FONT;
-
-#ifdef FULL_R5
-
-#ifdef OW_I18N
-	if (priv->ic
-			&& (priv->
-					xim_style & (XIMPreeditArea | XIMPreeditPosition |
-							XIMPreeditNothing))) {
-		va_nested_list =
-				XVaCreateNestedList(NULL, XNLineSpace,
-				(int)ei_get(plain_text_eih, EI_LINE_SPACE), NULL);
-		XSetICValues(priv->ic, XNPreeditAttributes, va_nested_list, NULL);
-		XFree(va_nested_list);
-	}
-#endif /* OW_I18N */
-#endif /* FULL_R5 */
 
 	/*
 	 * Look for client provided entity_stream creation proc, and client
@@ -597,29 +510,10 @@ Pkg_private Textsw_private textsw_init_internal(Textsw_private priv,
 	if (*defaults) {
 		ATTR_CONSUME(*defaults);
 		name = (char *)defaults[1];
-
-#ifdef OW_I18N
-		if (name)
-			(void)mbstowcs(name_wc, name, MAXNAMLEN);
-#endif
 	}
 
-#ifdef OW_I18N
-	defaults = attr_find(attrs, (Attr_attribute) TEXTSW_FILE_WCS);
-	if (*defaults) {
-		char name_mb[MAXNAMLEN];
-
-		ATTR_CONSUME(*defaults);
-		STRCPY(name_wc, (CHAR *) defaults[1]);
-		(void)wcstombs(name_mb, name_wc, MAXNAMLEN);
-		name = name_mb;
-	}
-	if (name_wc[0] != NULL) {	/* } for match */
-		ps_esh = textsw_create_file_ps(priv, name_wc, scratch_name, &es_status);
-#else /* OW_I18N */
 	if (name) {
 		ps_esh = textsw_create_file_ps(priv, name, scratch_name, &es_status);
-#endif /* OW_I18N */
 
 		if (es_status != ES_SUCCESS) {
 			frame = (Frame) xv_get((Xv_opaque) textsw, WIN_FRAME);
@@ -647,12 +541,6 @@ Pkg_private Textsw_private textsw_init_internal(Textsw_private priv,
 		int have_file_contents;
 		char *initial_greeting;
 
-#ifdef OW_I18N
-		CHAR *initial_greeting_ws;
-		int free_string = 0;
-		extern CHAR _xv_null_string_wc[];
-#endif
-
 		attr = attr_find(attrs, (Attr_attribute) TEXTSW_FILE_CONTENTS);
 		have_file_contents = (*attr != 0);
 		/*
@@ -667,42 +555,8 @@ Pkg_private Textsw_private textsw_init_internal(Textsw_private priv,
 				: ((*defaults) ? (char *)defaults[1]
 						: ""));
 
-#ifdef OW_I18N
-		if ((initial_greeting) && (unsigned)strlen(initial_greeting) > 0) {
-			initial_greeting_ws = _xv_mbstowcsdup(initial_greeting);
-			free_string = TRUE;
-		}
-		else {
-			attr = attr_find(attrs, (Attr_attribute) TEXTSW_FILE_CONTENTS_WCS);
-			if (!have_file_contents)
-				have_file_contents = (*attr != 0);
-			/*
-			 * Always look for TEXTSW_CONTENTS_WCS in defaults_array so that it is
-			 * freed, even if it is not used, to avoid storage leak. Similarly,
-			 * always consume TEXTSW_CONTENTS_WCS from attrs.
-			 */
-			defaults =
-					attr_find(defaults_array,
-					(Attr_attribute) TEXTSW_CONTENTS_WCS);
-			attr = attr_find(attrs, (Attr_attribute) TEXTSW_CONTENTS_WCS);
-			initial_greeting_ws =
-					(have_file_contents) ? _xv_null_string_wc
-					: ((*attr) ? (CHAR *) attr[1]
-					: ((*defaults) ? (CHAR *) defaults[1]
-							: _xv_null_string_wc));
-		}
-		if (!initial_greeting_ws) {
-			initial_greeting_ws = _xv_null_string_wc;
-		}
-
-		ps_esh = es_mem_create((unsigned)STRLEN(initial_greeting_ws),
-				initial_greeting_ws);
-		if (free_string)
-			free((char *)initial_greeting_ws);
-#else /* OW_I18N */
 		ps_esh = es_mem_create((unsigned)strlen(initial_greeting),
 				initial_greeting);
-#endif /* OW_I18N */
 
 		ps_esh = textsw_create_mem_ps(priv, ps_esh);
 		if (*defaults) {
@@ -804,45 +658,6 @@ Pkg_private Textsw_private textsw_init_internal(Textsw_private priv,
 		priv->state |= TXTSW_DELETE_REPLACES_CLIPBOARD;
 	}
 
-#ifdef OW_I18N
-	priv->ic = NULL;
-	EV_INIT_MARK(priv->preedit_start);
-	priv->blocking_newline = FALSE;
-	priv->locale_is_ale = (int)ei_get(plain_text_eih, EI_LOCALE_IS_ALE);
-	(void)getwidth(&priv->euc_width);
-	priv->euc_width._eucw2++;	/* increment one for SS2 */
-	priv->euc_width._eucw3++;	/* increment one for SS3 */
-	textsw_init_convpos(priv);
-	/*
-	 * Textsw should have IC even if TEXTSW_READ_ONLY is True.
-	 * Because read_only mode may be changed to edit mode later on
-	 * by setting TEXTSW_READ_ONLY to TRUE, or by loading another file.
-	 */
-	if (priv->need_im) {
-		Xv_private void textsw_pre_edit_start();
-		Xv_private void textsw_pre_edit_draw();
-		Xv_private void textsw_pre_edit_done();
-
-		/* Set preedit callbacks */
-		xv_set(textsw,
-				WIN_IC_PREEDIT_START,
-				(XIMProc) textsw_pre_edit_start, (XPointer) textsw,
-				WIN_IC_PREEDIT_DRAW,
-				(XIMProc) textsw_pre_edit_draw, (XPointer) textsw,
-				WIN_IC_PREEDIT_DONE,
-				(XIMProc) textsw_pre_edit_done, (XPointer) textsw, NULL);
-
-		priv->start_pecb_struct.callback = (XIMProc) textsw_pre_edit_start;
-		priv->start_pecb_struct.client_data = (XPointer) textsw;
-
-		priv->draw_pecb_struct.callback = (XIMProc) textsw_pre_edit_draw;
-		priv->draw_pecb_struct.client_data = (XPointer) textsw;
-
-		priv->done_pecb_struct.callback = (XIMProc) textsw_pre_edit_done;
-		priv->done_pecb_struct.client_data = (XPointer) textsw;
-	}
-#endif /* OW_I18N */
-
 	return (priv);
 
   Error_Return:
@@ -942,10 +757,6 @@ static void textsw_folio_cleanup(Textsw_private priv)
 		view->textsw_priv = NULL;
 	OPENWIN_END_EACH
 	ev_destroy_chain_and_views(priv->views);
-
-#ifdef OW_I18N
-	textsw_destroy_convpos(priv);
-#endif
 
 	priv->caret_state &= ~TXTSW_CARET_ON;
 	textsw_remove_timer(priv);
@@ -1184,50 +995,6 @@ contents or store the contents as a new file."),
 			}
 			break;
 		case DESTROY_CLEANUP:
-#ifdef OW_I18N
-			/*
-			 * When focus window set in ic is equal to the destroying view window,
-			 * set XNFocusWindow with the other view window. And then unsetting of
-			 * ic focus and after care of caret have to be done because KBD_DONE
-			 * event will not be sent to textsw in this case.
-			 */
-			if (priv->ic) {
-				Xv_Drawable_info *info;
-				XID ic_xid;
-
-				XGetICValues(priv->ic, XNFocusWindow, &ic_xid, NULL);
-				DRAWABLE_INFO_MACRO(view_public, info);
-
-				if (xv_xid(info) == ic_xid) {
-					Xv_Window view_win;
-					int view_nbr;
-					Xv_object frame;
-
-					for (view_nbr = 0;; view_nbr++) {
-						view_win = xv_get(tsw, OPENWIN_NTH_VIEW, view_nbr);
-						if (!view_win)
-							break;
-						if (view_public != view_win) {
-							DRAWABLE_INFO_MACRO(view_win, info);
-							window_set_ic_focus_win(tsw, priv->ic,
-									xv_xid(info));
-							XUnsetICFocus(priv->ic);
-
-							/* after care of caret */
-							textsw_hide_caret(priv);
-							priv->state &= ~TXTSW_HAS_FOCUS;
-							if (frame = xv_get(TEXTSW_PUBLIC(priv), WIN_FRAME))
-								frame_kbd_done(frame, TEXTSW_PUBLIC(priv));
-							textsw_stop_blinker(priv);
-
-							priv->focus_view = view_win;
-							break;
-						}
-					}
-				}
-			}
-#endif /* OW_I18N */
-
 			/* If menus access the view being destroyed, then set
 			   TEXTSW_MENU_DATA_KEY to another view.
 			 */
@@ -1284,20 +1051,8 @@ Xv_private void textsw_register_view(Textsw textsw, Xv_Window newview)
 
 	if (textsw_file_name(priv, &name))
 		textsw_notify(view, TEXTSW_ACTION_USING_MEMORY, NULL);
-
-#ifdef OW_I18N
-	else {
-		char *name_mb = _xv_wcstombsdup(name);
-
-		textsw_notify(view, TEXTSW_ACTION_LOADED_FILE, name_mb,
-				TEXTSW_ACTION_LOADED_FILE_WCS, name, NULL);
-		if (name_mb)
-			free(name_mb);
-	}
-#else
 	else
 		textsw_notify(view, TEXTSW_ACTION_LOADED_FILE, name, NULL);
-#endif /* OW_I18N */
 
 	if (nviews >= 1) {
 		/* is a split */
