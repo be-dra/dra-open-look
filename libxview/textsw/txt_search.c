@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_search_c_sccsid[] = "@(#)txt_search.c 20.45 93/06/28 DRA: $Id: txt_search.c,v 4.10 2024/11/09 21:34:13 dra Exp $";
+char     txt_search_c_sccsid[] = "@(#)txt_search.c 20.45 93/06/28 DRA: $Id: txt_search.c,v 4.11 2026/07/30 08:09:47 dra Exp $";
 #endif
 
 /*
@@ -82,14 +82,8 @@ static Es_index textsw_do_search_proc(Textsw_view_private view, unsigned directi
 			textsw_possibly_normalize_and_set_selection(VIEW_PUBLIC(view),
 					first, last_plus_one, EV_SEL_PRIMARY);
 		else
-
-#ifdef OW_I18N
-			textsw_set_selection_wcs(VIEW_PUBLIC(view), first,
-					last_plus_one, EV_SEL_PRIMARY);
-#else
 			textsw_set_selection(TEXTSW_PUBLIC(priv), first, last_plus_one,
 					EV_SEL_PRIMARY);
-#endif
 
 		(void)textsw_set_insert(priv, last_plus_one);
 		textsw_record_find(priv, buf, (int)str_len, (int)direction);
@@ -153,17 +147,9 @@ static void do_replace_all_proc(Textsw_view_private view, int do_replace_first, 
 
     exit_loop = (cur_pos == ES_CANNOT_SET);
 
-#ifdef OW_I18N
-    string_length_diff = STRLEN((CHAR *) xv_get(
-	    search_panel_items[(int) REPLACE_STRING_ITEM], PANEL_VALUE_WCS, 
-	    NULL)) - STRLEN((CHAR *) xv_get(
-	    search_panel_items[(int) FIND_STRING_ITEM],
-	    PANEL_VALUE_WCS, NULL));
-#else
     string_length_diff = STRLEN((CHAR *) xv_get(
 	    xv_get(fram, XV_KEY_DATA, key_replace), PANEL_VALUE))
 		- STRLEN((CHAR *) xv_get(xv_get(fram, XV_KEY_DATA, key_find), PANEL_VALUE));
-#endif
 
     while (!process_aborted && !exit_loop) {
 	if (start_checking) {
@@ -206,14 +192,8 @@ static void do_replace_all_proc(Textsw_view_private view, int do_replace_first, 
     }
  
     if (prev_pos != ES_CANNOT_SET)
-#ifdef OW_I18N
-    textsw_normalize_view_wc(VIEW_PUBLIC(view), prev_pos);
-#else /* OW_I18N */
     textsw_normalize_view(VIEW_PUBLIC(view), prev_pos);
 
-#endif /* OW_I18N */
-    
-    
     if (process_aborted)
 	window_bell(VIEW_PUBLIC(view));
 }
@@ -330,11 +310,7 @@ static Panel create_search_items(Frame fram, Textsw_view_private view,int tf_key
 				PANEL_VALUE_DISPLAY_LENGTH, MAX_DISPLAY_LENGTH,
 				PANEL_VALUE_STORED_LENGTH, MAX_STR_LENGTH,
 				PANEL_LABEL_STRING, XV_MSG("Search:"),
-#ifdef OW_I18N
-				PANEL_VALUE_WCS, search_string,
-#else
 				PANEL_VALUE, search_string,
-#endif
 				XV_HELP_DATA, textsw_make_help(tsw, "findstring"),
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, textsw_free_help,
 				NULL);
