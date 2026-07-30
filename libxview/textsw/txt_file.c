@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_file_c_sccsid[] = "@(#)txt_file.c 20.81 93/06/28 DRA: $Id: txt_file.c,v 4.14 2026/02/12 12:38:06 dra Exp $";
+char     txt_file_c_sccsid[] = "@(#)txt_file.c 20.81 93/06/28 DRA: $Id: txt_file.c,v 4.15 2026/07/30 07:13:04 dra Exp $";
 #endif
 
 /*
@@ -49,9 +49,6 @@ char     txt_file_c_sccsid[] = "@(#)txt_file.c 20.81 93/06/28 DRA: $Id: txt_file
 /* extern CHAR    *STRCAT(CHAR *, CHAR *); */
 /* extern char    *getcwd(); */
 
-#ifdef OW_I18N
-Pkg_private void textsw_invalid_data_notice();
-#endif
 Pkg_private void textsw_set_dir_str(int popup_type);
 Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_type);
 
@@ -97,12 +94,10 @@ static void textsw_make_temp_name(CHAR *in_here)
     SPRINTF(in_here, "%s/Text%d.%d", "/tmp", getpid(), tmtn_counter++);
 }
 
-Pkg_private Es_handle textsw_create_file_ps(Textsw_private priv, CHAR *name, CHAR *scratch_name, Es_status *status)
+Pkg_private Es_handle textsw_create_file_ps(Textsw_private priv, char *name,
+							char *scratch_name, Es_status *status)
 /* *scratch_name must be at least MAXNAMLEN characters long, and is modified */
 {
-#ifdef OW_I18N
-    char           *scratch_name_mbs;
-#endif
     register Es_handle original_esh, scratch_esh, piece_esh;
 
     original_esh = es_file_create(name, 0, status);
@@ -110,11 +105,7 @@ Pkg_private Es_handle textsw_create_file_ps(Textsw_private priv, CHAR *name, CHA
 	return (ES_NULL);
     textsw_make_temp_name(scratch_name);
     scratch_esh = es_file_create(scratch_name,
-#ifdef OW_I18N
-				 ES_OPT_APPEND | ES_OPT_OVERWRITE | ES_OPT_BACKUPFILE,
-#else
 				 ES_OPT_APPEND | ES_OPT_OVERWRITE,
-#endif
 				 status);
     if (!scratch_esh) {
 	es_destroy(original_esh);
@@ -122,13 +113,7 @@ Pkg_private Es_handle textsw_create_file_ps(Textsw_private priv, CHAR *name, CHA
     }
     (void) es_set(scratch_esh, ES_FILE_MODE, 0600, NULL);
     piece_esh = textsw_create_ps(priv, original_esh, scratch_esh, status);
-#ifdef OW_I18N
-    scratch_name_mbs = _xv_wcstombsdup(scratch_name);
-    (void) unlink(scratch_name_mbs);
-    xv_free(scratch_name_mbs);
-#else
     (void) unlink(scratch_name);
-#endif
     return (piece_esh);
 }
 
@@ -172,28 +157,15 @@ Pkg_private Es_status textsw_load_file_internal(Textsw_private priv,
 		textsw_replace_esh(priv, *piece_esh);
 		if (start_at != ES_CANNOT_SET) {
 
-#ifdef OW_I18N
-			char *name_mb = _xv_wcstombsdup(name);
-#endif
-
 			(void)ev_set(priv->views->first_view,
 					EV_FOR_ALL_VIEWS,
 					EV_DISPLAY_LEVEL, EV_DISPLAY_NONE,
 					EV_DISPLAY_START, start_at,
 					EV_DISPLAY_LEVEL, EV_DISPLAY, NULL);
 
-#ifdef OW_I18N
-			textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv), OPENWIN_NTH_VIEW,
-									0)), TEXTSW_ACTION_LOADED_FILE, name_mb,
-					TEXTSW_ACTION_LOADED_FILE_WCS, name, NULL);
-			textsw_update_scrollbars(priv, TEXTSW_VIEW_NULL);
-			if (name_mb)
-				free(name_mb);
-#else
 			textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv), OPENWIN_NTH_VIEW,
 									0)), TEXTSW_ACTION_LOADED_FILE, name, NULL);
 			textsw_update_scrollbars(priv, TEXTSW_VIEW_NULL);
-#endif
 		}
 	}
 	return (status);
@@ -228,17 +200,6 @@ Pkg_private void textsw_replace_esh(Textsw_private priv, Es_handle new_esh)
 	textsw_init_undo(priv, 0);
 	textsw_init_undo(priv, undo_count);
 
-#ifdef OW_I18N
-	if (TXTSW_IS_READ_ONLY(priv) && priv->ic &&
-			xv_get(TEXTSW_PUBLIC(priv), WIN_IC_ACTIVE)) {
-		register Textsw_view_private view;
-
-		FORALL_TEXT_VIEWS(priv, view) {
-			xv_set(VIEW_PUBLIC(view), WIN_IC_ACTIVE, TRUE, NULL);
-		}
-	}
-#endif /* OW_I18N */
-
 	priv->state &= ~TXTSW_READ_ONLY_ESH;
 	if (priv->notify_level & TEXTSW_NOTIFY_SCROLL) {
 		Textsw tsw = TEXTSW_PUBLIC(priv);
@@ -255,19 +216,10 @@ Pkg_private     Es_handle textsw_create_mem_ps(Textsw_private priv, Es_handle or
     register Es_handle scratch;
     Es_status       status;
     Es_handle       ps_esh = ES_NULL;
-#ifdef OW_I18N
-    CHAR            dummy[1];
-
-    dummy[0] = NULL;
-#endif
 
     if (original == ES_NULL)
 	goto Return;
-#ifdef OW_I18N
-    scratch = es_mem_create(priv->es_mem_maximum, dummy);
-#else
     scratch = es_mem_create(priv->es_mem_maximum, "");
-#endif
     if (scratch == ES_NULL) {
 	es_destroy(original);
 	goto Return;
@@ -280,10 +232,6 @@ Return:
 static CHAR * textsw_full_pathname(CHAR *name)
 {
     CHAR            pathname[MAXPATHLEN];
-#ifdef OW_I18N
-    char            pathname_mb[MAXPATHLEN];
-    CHAR            dummy[2];
-#endif
     register CHAR  *full_pathname;
 
     if (name == 0)
@@ -295,28 +243,13 @@ static CHAR * textsw_full_pathname(CHAR *name)
 	return (full_pathname);
     }
 
-#ifdef		OW_I18N
-    if (getcwd(pathname_mb, MAXPATHLEN) == 0)
-	return (0);
-    (void) mbstowcs(pathname, pathname_mb, MAXPATHLEN-1);
-
-#else		/* OW_I18N */
-
-    if (getcwd(pathname, sizeof(pathname)) == 0)
-	return (0);
-#endif		/* OW_I18N */
+    if (getcwd(pathname, sizeof(pathname)) == 0) return (0);
 
     if ((full_pathname =
 	 MALLOC((2 + STRLEN(pathname) + STRLEN(name)))) == 0)
 	return (0);
     (void) STRCPY(full_pathname, pathname);
-#ifdef OW_I18N
-    dummy[0] = '/';
-    dummy[1] = NULL;
-    (void) STRCAT(full_pathname, dummy);
-#else
     (void) strcat(full_pathname, "/");
-#endif
     (void) STRCAT(full_pathname, name);
     return (full_pathname);
 }
@@ -325,11 +258,6 @@ static CHAR * textsw_full_pathname(CHAR *name)
 Pkg_private void textsw_format_load_error(char *msg, Es_status status, CHAR *filename, CHAR *scratch_name)
 {
 	CHAR *full_pathname;
-
-#ifdef OW_I18N
-#define TEMP_LENGTH		30
-	CHAR temp[TEMP_LENGTH];
-#endif
 
 	switch (status) {
 		case ES_PIECE_FAIL:
@@ -342,14 +270,7 @@ Pkg_private void textsw_format_load_error(char *msg, Es_status status, CHAR *fil
 			full_pathname = textsw_full_pathname(filename);
 			(void)sprintf(msg, XV_MSG("Cannot load; "));
 
-#ifdef OW_I18N
-			(void)mbstowcs(temp, XV_MSG("file"), TEMP_LENGTH - 1);
-			es_file_append_error(msg, temp, status);
-#undef TEMP_LENGTH
-#else
 			es_file_append_error(msg, XV_MSG("file"), status);
-#endif
-
 			es_file_append_error(msg, full_pathname, status);
 			free(full_pathname);
 			break;
@@ -393,36 +314,13 @@ Pkg_private int textsw_load_file(Textsw abstract, CHAR *filename,
 	assert(xv_get(abstract, XV_IS_SUBTYPE_OF, OPENWIN));
 	priv = TEXTSW_PRIVATE(abstract);
 
-#ifdef OW_I18N
-	textsw_implicit_commit(priv);
-#endif
-
 	start_at = (reset_views) ? 0 : ES_CANNOT_SET;
 	status = textsw_load_file_internal(priv, filename, scratch_name, &new_esh,
 			start_at, TXTSW_LFI_CLEAR_SELECTIONS);
 	if (status == ES_SUCCESS) {
-
-#ifdef OW_I18N
-		SET_CONTENTS_UPDATED(priv, TRUE);
-		if ((int)es_get((Es_handle) es_get(new_esh, ES_PS_ORIGINAL),
-						ES_SKIPPED))
-			textsw_invalid_data_notice(view, filename, 1);
-#endif /* OW_I18N */
-
 		if (start_at == ES_CANNOT_SET) {
-
-#ifdef OW_I18N
-			char *filename_mb = _xv_wcstombsdup(filename);
-
-			textsw_notify((Textsw_view_private) priv,	/* Cast for lint */
-					TEXTSW_ACTION_LOADED_FILE, filename_mb,
-					TEXTSW_ACTION_LOADED_FILE_WCS, filename, NULL);
-			if (filename_mb)
-				free(filename_mb);
-#else
 			textsw_notify((Textsw_view_private) priv,	/* Cast for lint */
 					TEXTSW_ACTION_LOADED_FILE, filename, NULL);
-#endif
 		}
 	}
 	else {
@@ -468,15 +366,7 @@ static Es_status textsw_save_store_common(Textsw_private priv, CHAR *output_name
 		es_destroy(output);
 		if (priv->checkpoint_name) {
 
-#ifdef OW_I18N
-			char temp_mb[MAXNAMLEN];
-
-			(void)wcstombs(temp_mb, priv->checkpoint_name, MAXNAMLEN);
-			if (unlink(temp_mb) == -1) {	/* } for match */
-#else
 			if (unlink(priv->checkpoint_name) == -1) {
-#endif
-
 				perror(XV_MSG("removing checkpoint file:"));
 			}
 			free(priv->checkpoint_name);
@@ -601,13 +491,8 @@ static Es_status textsw_save_internal(Textsw_private priv, char *error_buf, int 
 		goto Return_Error_Status;
 	}
 
-#ifdef OW_I18N
-	if ((backup = es_file_make_backup(original, "%ws%%", &es_status))
-#else
 	if ((backup = es_file_make_backup(original, priv->backup_pattern,
 												&es_status))
-#endif
-
 			== ES_NULL) {
 		return (((es_status == ES_CHECK_ERRNO) && (errno == ENOSPC))
 				? ES_BACKUP_OUT_OF_SPACE : ES_BACKUP_FAILED);
@@ -645,29 +530,13 @@ Was the file edited with another editor?."),
 		goto Dont_Return_Error_Status;
 	}
 
-#ifdef OW_I18N
-	textsw_implicit_commit(priv);
-#endif
-
 	switch (status = textsw_save_store_common(priv, original_name, RELOAD)) {
 		case ES_SUCCESS:{
-
-#ifdef OW_I18N
-				char original_name_mb[MAXNAMLEN];
-
-				(void)wcstombs(original_name_mb, original_name, MAXNAMLEN);
-#endif
 
 				(void)es_destroy(original);
 				textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv),
 										OPENWIN_NTH_VIEW, 0)),
-
-#ifdef OW_I18N
-						TEXTSW_ACTION_LOADED_FILE, original_name_mb,
-						TEXTSW_ACTION_LOADED_FILE_WCS, original_name, NULL);
-#else
 						TEXTSW_ACTION_LOADED_FILE, original_name, NULL);
-#endif
 
 				return (ES_SUCCESS);
 			}
@@ -714,84 +583,44 @@ Xv_public unsigned textsw_save(Textsw abstract, int locx, int locy)
 	return ((unsigned)status);
 }
 
-#ifdef OW_I18N
-static Es_status
-textsw_get_from_fd(view, fd, print_error_msg, filename)
-    register Textsw_view_private view;
-    int             fd;
-    int             print_error_msg;
-    CHAR	   *filename;
-#else
-static Es_status textsw_get_from_fd(Textsw_view_private view, int fd, int print_error_msg)
-#endif
+static Es_status textsw_get_from_fd(Textsw_view_private view, int fd,
+								int print_error_msg)
 {
-    Textsw_private    priv = TSWPRIV_FOR_VIEWPRIV(view);
-    int             record;
-    Es_index        old_insert_pos, old_length;
-    register long   count;
-    char            buf[2096];
-    Es_status       result = ES_SUCCESS;
-    int             status;
-#ifdef OW_I18N
-    CHAR            buf_ws[2096];
-    int             wc_count, temp_count;
-    int             new_pos = 0, old_pos = 0;
-    int             skipped = 0;
-#endif /* OW_I18N */
+	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
+	int record;
+	Es_index old_insert_pos, old_length;
+	ssize_t count;
+	char buf[2096];
+	Es_status result = ES_SUCCESS;
+	int status;
 
-    textsw_flush_caches(view, TFC_PD_SEL);	/* Changes length! */
-    textsw_input_before(priv, &old_insert_pos, &old_length);
-    textsw_take_down_caret(priv);
-    for (;;) {
-	count = read(fd, buf, sizeof(buf) - 1);
-	if (count == 0)
-	    break;
-	if (count < 0) {
-	    return (ES_UNKNOWN_ERROR);
-	}
-	buf[count] = '\0';
-#ifdef OW_I18N
-	temp_count = count;
+	textsw_flush_caches(view, TFC_PD_SEL);	/* Changes length! */
+	textsw_input_before(priv, &old_insert_pos, &old_length);
+	textsw_take_down_caret(priv);
+	for (;;) {
+		count = read(fd, buf, sizeof(buf) - 1);
+		if (count == 0)
+			break;
+		if (count < 0) {
+			return (ES_UNKNOWN_ERROR);
+		}
+		buf[count] = '\0';
 
-	wc_count = textsw_mbstowcs(buf_ws, buf, &temp_count);
-	if (temp_count != count) {
-	    /* re-read the incomplete mb character */
-#ifdef SVR4
-	    new_pos = lseek(fd, temp_count - count, SEEK_CUR);
-#else
-	    new_pos = lseek(fd, temp_count - count, L_INCR);
-#endif
-	    if (new_pos == old_pos) {
-		/* Invalid char, so advance to next byte */
-#ifdef SVR4
-		old_pos = lseek(fd, 1L, SEEK_CUR);
-#else
-		old_pos = lseek(fd, 1L, L_INCR);
-#endif
-		skipped = 1;
-	    } else
-		old_pos = new_pos;
-	}
-	status = ev_input_partial(TSWPRIV_FOR_VIEWPRIV(view)->views, buf_ws, wc_count);
-#else /* OW_I18N */
-	status = ev_input_partial(TSWPRIV_FOR_VIEWPRIV(view)->views, buf, count);
-#endif /* OW_I18N */
+		status = ev_input_partial(TSWPRIV_FOR_VIEWPRIV(view)->views, buf,
+				count);
 
-	if (status) {
-	    if (print_error_msg)
-			textsw_esh_failed_msg(priv, XV_MSG("Insertion failed - "));
-	    result = (Es_status) es_get(priv->views->esh, ES_STATUS);
-	    break;
+		if (status) {
+			if (print_error_msg)
+				textsw_esh_failed_msg(priv, XV_MSG("Insertion failed - "));
+			result = (Es_status) es_get(priv->views->esh, ES_STATUS);
+			break;
+		}
 	}
-    }
-    record = (TXTSW_DO_AGAIN(priv) &&
-	      ((priv->func_state & TXTSW_FUNC_AGAIN) == 0));
-    (void) textsw_input_after(view, old_insert_pos, old_length, record);
-#ifdef OW_I18N
-    if (result == ES_SUCCESS && skipped)
-	textsw_invalid_data_notice(view, filename, 0);
-#endif
-    return (result);
+	record = (TXTSW_DO_AGAIN(priv) &&
+			((priv->func_state & TXTSW_FUNC_AGAIN) == 0));
+	(void)textsw_input_after(view, old_insert_pos, old_length, record);
+
+	return (result);
 }
 
 /* static void textsw_cd(Textsw_private textsw, int locx, int  locy) */
@@ -815,25 +644,12 @@ Pkg_private Textsw_status textsw_get_from_file(Textsw_view_private view, CHAR *f
 
     if (!TXTSW_IS_READ_ONLY(priv) && ((int)STRLEN(filename) > 0)) {
 	STRCPY(buf, filename);
-#ifdef OW_I18N
-	if (textsw_expand_filename(priv, buf, MAXNAMLEN, -1, -1) == 0) {/* } */
-	    char	buf_mb[MAXNAMLEN];
-
-	    (void) wcstombs(buf_mb, buf, MAXNAMLEN);
-	    if ((fd = open(buf_mb, 0)) >= 0) {	/* } for match */
-		textsw_implicit_commit(priv);
-#else
 	if (textsw_expand_filename(priv, buf, -1, -1) == 0) {
 	    if ((fd = open(buf, 0)) >= 0) {
-#endif
 		textsw_take_down_caret(priv);
 		textsw_checkpoint_undo(TEXTSW_PUBLIC(priv),
 				       (caddr_t) TEXTSW_INFINITY - 1);
-#ifdef OW_I18N
-		status = textsw_get_from_fd(view, fd, print_error_msg,filename);
-#else
 		status = textsw_get_from_fd(view, fd, print_error_msg);
-#endif
 		textsw_checkpoint_undo(TEXTSW_PUBLIC(priv),
 				       (caddr_t) TEXTSW_INFINITY - 1);
 		textsw_update_scrollbars(priv, TEXTSW_VIEW_NULL);
@@ -862,31 +678,15 @@ Pkg_private Textsw_status textsw_file_stuff_from_str(Textsw_view_private view,
 	Xv_Notice text_notice;
 	Frame frame;
 
-#ifdef OW_I18N
-	char buf_mb[MAXNAMLEN];
-
-	(void)wcstombs(buf_mb, buf, MAXNAMLEN);
-	if ((fd = open(buf_mb, 0)) < 0) {	/* } for match */
-#else
 	if ((fd = open(buf, 0)) < 0) {
-#endif
 		cannot_open = (fd == -1);
 		goto InternalError;
 	}
 	errno = 0;
 
-#ifdef OW_I18N
-	textsw_implicit_commit(priv);
-#endif
-
 	textsw_checkpoint_undo(TEXTSW_PUBLIC(priv), (caddr_t) TEXTSW_INFINITY - 1);
 
-#ifdef OW_I18N
-	status = textsw_get_from_fd(view, fd, TRUE, buf);
-#else
 	status = textsw_get_from_fd(view, fd, TRUE);
-#endif
-
 	textsw_checkpoint_undo(TEXTSW_PUBLIC(priv), (caddr_t) TEXTSW_INFINITY - 1);
 	textsw_update_scrollbars(priv, TEXTSW_VIEW_NULL);
 	(void)close(fd);
@@ -899,13 +699,8 @@ Pkg_private Textsw_status textsw_file_stuff_from_str(Textsw_view_private view,
 
 		full_pathname = textsw_full_pathname(buf);
 
-#ifdef OW_I18N
-		(void)sprintf(msg, "'%ws': ", full_pathname);
-		(void)sprintf(notice_msg1, "'%ws'", full_pathname);
-#else
 		(void)sprintf(msg, "'%s': ", full_pathname);
 		(void)sprintf(notice_msg1, "'%s'", full_pathname);
-#endif
 
 		notice_msg2 = "  ";
 		free(full_pathname);
@@ -943,14 +738,7 @@ Pkg_private Textsw_status textsw_file_stuff_from_str(Textsw_view_private view,
 Pkg_private Es_status textsw_store_init(Textsw_private textsw, CHAR *filename)
 {
     struct stat     stat_buf;
-#ifdef OW_I18N
-    char            filename_mb[MAXNAMLEN];
-
-    (void) wcstombs(filename_mb, filename, MAXNAMLEN);
-    if (stat(filename_mb, &stat_buf) == 0) {	/* } for match */
-#else
     if (stat(filename, &stat_buf) == 0) {
-#endif
 	Es_handle       original = (Es_handle)
 	es_get(textsw->views->esh, ES_PS_ORIGINAL);
 	if AN_ERROR
@@ -1005,14 +793,6 @@ Pkg_private Es_status textsw_process_store_error(Textsw_private textsw, CHAR *fi
 			strcat(msg, msg2);
 			goto PostError;
 		case ES_CANNOT_OVERWRITE:
-
-#ifdef OW_I18N
-			{
-				char filename_mb[MAXNAMLEN];
-
-				(void)wcstombs(filename_mb, filename, MAXNAMLEN);
-#endif
-
 				frame = xv_get(TEXTSW_PUBLIC(textsw), WIN_FRAME);
 				text_notice = xv_get(frame, XV_KEY_DATA, text_notice_key);
 
@@ -1025,11 +805,7 @@ Pkg_private Es_status textsw_process_store_error(Textsw_private textsw, CHAR *fi
 				xv_set(text_notice,
 						NOTICE_MESSAGE_STRINGS,
 							XV_MSG("Please confirm Store as New File:"),
-#ifdef OW_I18N
-							filename_mb,
-#else
 							filename,
-#endif
 							"  ",
 							XV_MSG("That file exists and has data in it."),
 							NULL,
@@ -1042,9 +818,6 @@ Pkg_private Es_status textsw_process_store_error(Textsw_private textsw, CHAR *fi
 
 				return ((result == NOTICE_YES) ? ES_SUCCESS : ES_UNKNOWN_ERROR);
 
-#ifdef OW_I18N
-			}
-#endif
 
 		case ES_FLUSH_FAILED:
 		case ES_FSYNC_FAILED:
@@ -1110,30 +883,15 @@ static unsigned textsw_store_file_internal(Textsw abstract, CHAR *filename, int 
 	}
 
 	if (status == ES_SUCCESS) {
-
-#ifdef OW_I18N
-		textsw_implicit_commit(priv);
-#endif
-
 		status = textsw_save_store_common(priv, filename,
 				(priv->state & TXTSW_STORE_CHANGES_FILE)
 				? TRUE : FALSE);
 		if (status == ES_SUCCESS) {
 			if (priv->state & TXTSW_STORE_CHANGES_FILE) {
 
-#ifdef OW_I18N
-				char filename_mbs[MAXNAMLEN];
-
-				(void)wcstombs(filename_mbs, filename, MAXNAMLEN);
-				textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv),
-										OPENWIN_NTH_VIEW, 0)),
-						TEXTSW_ACTION_LOADED_FILE, filename_mbs,
-						TEXTSW_ACTION_LOADED_FILE_WCS, filename, NULL);
-#else /* OW_I18N */
 				textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv),
 										OPENWIN_NTH_VIEW, 0)),
 						TEXTSW_ACTION_LOADED_FILE, filename, NULL);
-#endif /* OW_I18N */
 			}
 		}
 		else {
@@ -1146,28 +904,10 @@ static unsigned textsw_store_file_internal(Textsw abstract, CHAR *filename, int 
 
 Xv_public unsigned textsw_store_file(Textsw abstract, char *filename, int locx, int locy)
 {
-#ifdef OW_I18N
-    CHAR	filename_wcs[MAXNAMLEN];
-
-    (void) mbstowcs(filename_wcs, filename, MAXNAMLEN);
-    return (textsw_store_file_internal(abstract, filename_wcs, locx, locy));
-#else
 	assert(xv_get(abstract, XV_IS_SUBTYPE_OF, OPENWIN));
 
     return (textsw_store_file_internal(abstract, filename, locx, locy));
-#endif /* OW_I18N */
 }
-
-#ifdef OW_I18N
-Xv_public unsigned
-textsw_store_file_wcs(abstract, filename, locx, locy)
-    Textsw          abstract;
-    CHAR           *filename;
-    int             locx, locy;
-{
-    return (textsw_store_file_internal(abstract, filename, locx, locy));
-}
-#endif /* OW_I18N */
 
 static Es_status textsw_checkpoint_internal(Textsw_private priv);
 
@@ -1175,12 +915,7 @@ static Es_status textsw_checkpoint_internal(Textsw_private priv);
 Pkg_private void textsw_reset_2(Textsw abstract, int locx, int locy, int preserve_memory, int cmd_is_undo_all_edit)
 {
     Es_handle       piece_esh, old_original_esh, new_original_esh;
-#ifdef OW_I18N
-    CHAR           *name, save_name[MAXNAMLEN], scratch_name[MAXNAMLEN];
-    char	   *temp_name;
-#else
     char           *name, save_name[MAXNAMLEN], scratch_name[MAXNAMLEN], *temp_name;
-#endif
     int             status;
     Textsw_private priv;
     register int    old_count;
@@ -1195,12 +930,6 @@ Pkg_private void textsw_reset_2(Textsw abstract, int locx, int locy, int preserv
     wrap_around_size = (long) es_get(priv->views->esh, ES_PS_SCRATCH_MAX_LEN);
     is_readonly = TXTSW_IS_READ_ONLY(priv);	/* jcb */
 
-#ifdef OW_I18N
-    textsw_implicit_commit(priv);
-    SET_CONTENTS_UPDATED(priv, TRUE);
-    /* Note: This check should be done without ifdef OW_I18N. */
-    if (priv->again->base)
-#endif /* OW_I18N */
     free(priv->again->base);
     if (preserve_memory) {
 	/* Get info about original esh before possibly invalidating it. */
@@ -1227,13 +956,9 @@ Pkg_private void textsw_reset_2(Textsw abstract, int locx, int locy, int preserv
 	temp_name = cmd_is_undo_all_edit ? NULL :
 	    (char *) xv_get(abstract, TEXTSW_TEMP_FILENAME);
 	if (temp_name)
-#ifdef OW_I18N
-	    (void) mbstowcs(save_name, temp_name, MAXNAMLEN);
-#else
-	    (void) STRCPY(save_name, temp_name);
-#endif
+	    strcpy(save_name, temp_name);
 	else
-	    (void) STRCPY(save_name, name);
+	    strcpy(save_name, name);
 
 	status = textsw_load_file_internal(priv, save_name, scratch_name,
 				&piece_esh, 0, TXTSW_LFI_CLEAR_SELECTIONS);
@@ -1318,31 +1043,13 @@ static int textsw_filename_is_all_blanks(CHAR *filename)
 
 /* Returns 0 iff a selection exists and it is matched by exactly one name. */
 
-Pkg_private int
-#ifdef OW_I18N
-textsw_expand_filename(priv, buf, buf_len, locx, locy)
-    Textsw_private    priv;
-    CHAR           *buf;
-    int             buf_len;
-    int             locx, locy;
-#else
-textsw_expand_filename(Textsw_private priv, char *buf, int locx, int locy)
-#endif /* OW_I18N */
+Pkg_private int textsw_expand_filename(Textsw_private priv, char *buf, int locx, int locy)
 {
 	Frame frame;
 	Xv_Notice text_notice;
 	struct namelist *nl;
 
-#ifdef OW_I18N
-	char buf_mb[MAXPATHLEN];
-
-	(void)wcstombs(buf_mb, buf, MAXPATHLEN);
-	nl = xv_expand_name(buf_mb);
-	(void)mbstowcs(buf, buf_mb, buf_len);
-#else
 	nl = xv_expand_name(buf);
-#endif
-
 	if ((buf[0] == '\0') || (nl == NONAMES)) {
 		frame = xv_get(TEXTSW_PUBLIC(priv), WIN_FRAME);
 		text_notice = xv_get(frame, XV_KEY_DATA, text_notice_key);
@@ -1356,11 +1063,7 @@ textsw_expand_filename(Textsw_private priv, char *buf, int locx, int locy)
 				NOTICE_MESSAGE_STRINGS,
 					XV_MSG("Unrecognized file name.\n\
 Unable to expand specified pattern:"),
-#ifdef OW_I18N
-					buf_mb,
-#else
 					buf,
-#endif
 					NULL,
 				NOTICE_BUTTON_YES, XV_MSG("Continue"),
 				NOTICE_BUSY_FRAMES, frame, NULL,
@@ -1407,11 +1110,7 @@ Please use a valid file name."),
 				NOTICE_MESSAGE_STRINGS,
 					XV_MSG("Unrecognized file name.\n\
 No files match specified pattern:"),
-#ifdef OW_I18N
-					buf_mb,
-#else
 					buf,
-#endif
 					NULL,
 				NOTICE_BUTTON_YES, XV_MSG("Continue"),
 				NOTICE_BUSY_FRAMES, frame, NULL,
@@ -1433,11 +1132,7 @@ No files match specified pattern:"),
 				NOTICE_MESSAGE_STRINGS,
 					XV_MSG("Unrecognized file name.\n\
 Too many files match specified pattern:"),
-#ifdef OW_I18N
-					buf_mb,
-#else
 					buf,
-#endif
 					NULL,
 				NOTICE_BUTTON_YES, XV_MSG("Continue"),
 				NOTICE_BUSY_FRAMES, frame, NULL,
@@ -1447,12 +1142,7 @@ Too many files match specified pattern:"),
 		return (1);
 	}
 	else
-
-#ifdef OW_I18N
-		(void)mbstowcs(buf, nl->names[0], buf_len);
-#else
 		(void)strcpy(buf, nl->names[0]);
-#endif
 
 	free_namelist(nl);
 	return (0);
@@ -1472,25 +1162,14 @@ Pkg_private void textsw_possibly_edited_now_notify(Textsw_private priv)
 	priv->state |= TXTSW_EDITED;
 
 	if (textsw_file_name(priv, &name) == 0) {
-#ifdef OW_I18N
-	    char	*name_mb = _xv_wcstombsdup(name);
-#endif
 	    if (textsw_menu_get(priv)
 			&& priv->sub_menu_table
 			&& priv->sub_menu_table[(int) TXTSW_FILE_SUB_MENU])
 			xv_set(priv->sub_menu_table[(int) TXTSW_FILE_SUB_MENU],
 							MENU_DEFAULT, 2,
 							NULL );
-#ifdef OW_I18N
-	    textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv), OPENWIN_NTH_VIEW, 0)),
-			  TEXTSW_ACTION_EDITED_FILE, name_mb,
-			  TEXTSW_ACTION_EDITED_FILE_WCS, name, NULL);
-	    if (name_mb)
-		free(name_mb);
-#else
 	    textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv), OPENWIN_NTH_VIEW, 0)),
 			  TEXTSW_ACTION_EDITED_FILE, name, NULL);
-#endif
 
 	} else {
 	    textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv), OPENWIN_NTH_VIEW, 0)),
@@ -1531,14 +1210,7 @@ Pkg_private int textsw_file_name(Textsw_private    priv, CHAR **name)
 	return (0);
 }
 
-Xv_public int
-#ifdef OW_I18N
-textsw_append_file_name_wcs(abstract, name)
-#else
-textsw_append_file_name(abstract, name)
-#endif
-    Textsw          abstract;
-    CHAR           *name;
+Xv_public int textsw_append_file_name(Textsw abstract, char *name)
 /* Returns 0 iff editing a file and name could be successfully acquired. */
 {
     Textsw_private    priv = TEXTSW_PRIVATE(abstract);
@@ -1550,29 +1222,6 @@ textsw_append_file_name(abstract, name)
 	(void) STRCAT(name, internal_name);
     return (result);
 }
-
-#ifdef OW_I18N
-Xv_public int
-textsw_append_file_name(abstract, name)
-    Textsw          abstract;
-    char           *name;
-/* Returns 0 iff editing a file and name could be successfully acquired. */
-{
-    CHAR           *internal_name;
-    int             result;
-
-    result = textsw_file_name(textsw, &internal_name);
-    if (result == 0) {
-	char       *temp;
-
-	temp = _xv_wcstombsdup(internal_name);
-	(void) strcat (name, temp);
-	if (temp)
-	    free(temp);
-    }
-    return (result);
-}
-#endif /* OW_I18N */
 
 /* ARGSUSED */
 Pkg_private void textsw_post_error(Textsw_private priv, int locx, int locy,
@@ -1586,7 +1235,7 @@ Pkg_private void textsw_post_error(Textsw_private priv, int locx, int locy,
 	buf[0] = '\0';
 	strncat(buf, msg1, size_to_use-1);
 	if (msg2) {
-		int len = strlen(buf);
+		size_t len = strlen(buf);
 
 		if (len < size_to_use) {
 			(void)strncat(buf, msg2, size_to_use - len);
@@ -1620,35 +1269,17 @@ Pkg_private void textsw_post_error(Textsw_private priv, int locx, int locy,
 
 /* Returns 0 iff change directory succeeded. */
 Pkg_private int
-#ifdef OW_I18N
-textsw_change_directory(textsw, filename_wc, might_not_be_dir, locx, locy)
-    Textsw_private    textsw;
-    CHAR           *filename_wc;
-    int             might_not_be_dir;
-    int             locx, locy;
-#else
 textsw_change_directory(Textsw_private textsw, char *filename,
     int might_not_be_dir, int locx, int locy)
-#endif /* OW_I18N */
 {
 	char *sys_msg;
 	char *full_pathname;
-
-#ifdef OW_I18N
-	CHAR *full_pathname_wc;
-	char filename[MAXPATHLEN];
-#endif
-
 	char msg[MAXNAMLEN + 100];
 	char notice_msg[MAXNAMLEN + 100];
 	struct stat stat_buf;
 	int result = 0;
 	Frame frame;
 	Xv_Notice text_notice;
-
-#ifdef OW_I18N
-	(void)wcstombs(filename, filename_wc, MAXPATHLEN);
-#endif
 
 	errno = 0;
 	if (stat(filename, &stat_buf) < 0) {
@@ -1665,23 +1296,12 @@ textsw_change_directory(Textsw_private textsw, char *filename,
 	}
 	textsw_notify(VIEW_PRIVATE(xv_get(XV_PUBLIC(textsw), OPENWIN_NTH_VIEW, 0)),
 			TEXTSW_ACTION_CHANGED_DIRECTORY, filename,
-
-#ifdef OW_I18N
-			TEXTSW_ACTION_CHANGED_DIRECTORY_WCS, filename_wc,
-#endif
-
 			NULL);
 	return (result);
 
   Error:
 
-#ifdef OW_I18N
-	full_pathname_wc = textsw_full_pathname(filename_wc);
-	full_pathname = _xv_wcstombsdup(full_pathname_wc);
-	free((char *)full_pathname_wc);
-#else
 	full_pathname = textsw_full_pathname(filename);
-#endif
 
 	(void)sprintf(msg, "%s '%s': ",
 			(might_not_be_dir ?
@@ -1727,11 +1347,7 @@ static Es_status textsw_checkpoint_internal(Textsw_private priv)
 	    return (ES_CANNOT_GET_NAME);
 	if ((priv->checkpoint_name = malloc((size_t)MAXNAMLEN)) == 0)
 	    return (ES_CANNOT_GET_NAME);
-#ifdef OW_I18N
-	(void) SPRINTF(priv->checkpoint_name, "%ws%%%%", name);
-#else
 	(void) sprintf(priv->checkpoint_name, "%s%%%%", name);
-#endif
     }
     cp_file = es_file_create(priv->checkpoint_name,
 			     ES_OPT_APPEND, &result);
@@ -1843,51 +1459,6 @@ Pkg_private void textsw_post_need_selection(Textsw abstract, Event *ie)
 			XV_SHOW, TRUE,
 			NULL);
 }
-
-#ifdef OW_I18N
-Pkg_private	void
-textsw_invalid_data_notice(view, filename, flag)
-    Textsw_view_private	 view;
-    CHAR		*filename;
-    int			 flag;
-{
-    Xv_Notice	text_notice;
-    char	notice_msg[MAXNAMLEN + 300];
-    Frame frame = xv_get(VIEW_PUBLIC(view), WIN_FRAME);
-
-    if (flag) {
-	(void) sprintf(notice_msg, XV_MSG(
-"Warning:  File '%ws' is loaded.\n\
-This file contains invalid characters in the current locale '%s'.\n\
-These invalid characters have been skipped over when this file   \n\
-was loaded. These invalid characters will not be stored when the \n\
-contents of the textsw is saved.                                 "),
-		   filename,
-		   (char *) xv_get(XV_PUBLIC(view), XV_LC_BASIC_LOCALE));
-    }
-    else {
-	(void) sprintf(notice_msg, XV_MSG(
-"Warning:  File '%ws' is included.\n\
-This file contains invalid characters in the current locale '%s'.\n\
-These invalid characters have been skipped over when this file was included."),
-		   filename,
-		   (char *) xv_get(XV_PUBLIC(view), XV_LC_BASIC_LOCALE));
-    }
-
-    text_notice = (Xv_Notice)xv_get(frame, XV_KEY_DATA, text_notice_key);
-    if (!text_notice) {
-		text_notice = xv_create(frame, NOTICE, NULL);
-		xv_set(frame, XV_KEY_DATA, text_notice_key, text_notice, NULL);
-    }
-	xv_set(text_notice,
-		NOTICE_MESSAGE_STRING, notice_msg,
-		NOTICE_BUTTON_YES, XV_MSG("Continue"),
-		NOTICE_BUSY_FRAMES, frame, NULL,
-		XV_SHOW, TRUE,
-		NULL);
-}
-#endif /* OW_I18N */
-
 
 #if defined(DEBUG) && !defined(lint)
 static char    *header = "fd      dev: #, type    inode\n";
