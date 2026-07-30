@@ -1,4 +1,4 @@
-/*	@(#)textsw.h 20.56 93/06/28 SMI  DRA: $Id: textsw.h,v 4.13 2025/07/24 16:59:35 dra Exp $	*/
+/*	@(#)textsw.h 20.56 93/06/28 SMI  DRA: $Id: textsw.h,v 4.14 2026/07/30 07:25:00 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -192,9 +192,6 @@ typedef enum {
 	TEXTSW_CLIENT_DATA		= TEXTSW_ATTR(ATTR_OPAQUE,	 14),
 	TEXTSW_CONFIRM_OVERWRITE	= TEXTSW_ATTR(ATTR_BOOLEAN,	 16),
 	TEXTSW_CONTENTS			= TEXTSW_ATTR(ATTR_STRING,	 18),
-#ifdef OW_I18N
-	TEXTSW_CONTENTS_WCS		= TEXTSW_ATTR(ATTR_WSTRING,	 19),
-#endif
 	TEXTSW_CONTROL_CHARS_USE_FONT	= TEXTSW_ATTR(ATTR_BOOLEAN,	 20),
 	TEXTSW_DISABLE_CD		= TEXTSW_ATTR(ATTR_BOOLEAN,	 22),
 	TEXTSW_DISABLE_LOAD		= TEXTSW_ATTR(ATTR_BOOLEAN,	 24),
@@ -202,36 +199,18 @@ typedef enum {
 	TEXTSW_EDIT_COUNT		= TEXTSW_ATTR(ATTR_INT,		 28),
 	TEXTSW_EXTRAS_CMD_MENU		= TEXTSW_ATTR(ATTR_INT,		 30),
 	TEXTSW_FILE			= TEXTSW_ATTR(ATTR_STRING,	 32),
-#ifdef OW_I18N
-	TEXTSW_FILE_WCS			= TEXTSW_ATTR(ATTR_WSTRING,	 33),
-#endif
 	TEXTSW_SUBMENU_FILE		= TEXTSW_ATTR(ATTR_NO_VALUE,	 34),
 	TEXTSW_FILE_CONTENTS		= TEXTSW_ATTR(ATTR_STRING,	 36),
-#ifdef OW_I18N
-	TEXTSW_FILE_CONTENTS_WCS	= TEXTSW_ATTR(ATTR_WSTRING,	 37),
-#endif
 	TEXTSW_SUBMENU_FIND		= TEXTSW_ATTR(ATTR_NO_VALUE,	 38),
 	TEXTSW_FIRST			= TEXTSW_ATTR(ATTR_INT,		 40),
-#ifdef OW_I18N
-	TEXTSW_FIRST_WC			= TEXTSW_ATTR(ATTR_INT,		 41),
-#endif
 	TEXTSW_FIRST_LINE		= TEXTSW_ATTR(ATTR_INT,		 42),
 	TEXTSW_HISTORY_LIMIT		= TEXTSW_ATTR(ATTR_INT,		 44),
 	TEXTSW_IGNORE_LIMIT		= TEXTSW_ATTR(ATTR_INT,		 46),
 	TEXTSW_SMART_WORD_HANDLING	= TEXTSW_ATTR(ATTR_BOOLEAN,	 47),
 	TEXTSW_INSERTION_POINT		= TEXTSW_ATTR(ATTR_INT,		 48),
-#ifdef OW_I18N
-	TEXTSW_INSERTION_POINT_WC	= TEXTSW_ATTR(ATTR_INT,		 49),
-#endif
 	TEXTSW_INSERT_FROM_FILE		= TEXTSW_ATTR(ATTR_STRING,	 50),
-#ifdef OW_I18N
-	TEXTSW_INSERT_FROM_FILE_WCS	= TEXTSW_ATTR(ATTR_WSTRING,	 51),
-#endif
 	TEXTSW_INSERT_MAKES_VISIBLE	= TEXTSW_ATTR(ATTR_ENUM,	 52),
 	TEXTSW_LENGTH			= TEXTSW_ATTR(ATTR_INT,		 54),
-#ifdef OW_I18N
-	TEXTSW_LENGTH_WC		= TEXTSW_ATTR(ATTR_INT,	 	 55),
-#endif
 	TEXTSW_LINE_BREAK_ACTION	= TEXTSW_ATTR(ATTR_ENUM,	 56),
 	TEXTSW_LOWER_CONTEXT		= TEXTSW_ATTR(ATTR_INT,		 58),
 	TEXTSW_MEMORY_MAXIMUM		= TEXTSW_ATTR(ATTR_INT,		 60),
@@ -290,10 +269,6 @@ typedef enum {
 	TEXTSW_FOR_ALL_VIEWS		= TEXTSW_ATTR(ATTR_NO_VALUE,	146),
 	/*1030878*/
 	TEXTSW_DIFFERENTIATE_CR_LF      = TEXTSW_ATTR(ATTR_BOOLEAN,	148)
-#ifdef OW_I18N
-       ,TEXTSW_CONTENTS_NO_COMMIT	= TEXTSW_ATTR(ATTR_WSTRING,	150),
-	TEXTSW_CONTENTS_WCS_NO_COMMIT	= TEXTSW_ATTR(ATTR_WSTRING,	152)
-#endif
 } Textsw_attribute;
 
 typedef int	(*textsw_notify_proc_t)(Textsw, Attr_avlist);
@@ -318,11 +293,6 @@ typedef enum {
 	TEXTSW_ACTION_TOOL_MGR		= TEXTSW_ATTR(ATTR_OPAQUE,	40),
 	TEXTSW_ACTION_TOOL_QUIT		= TEXTSW_ATTR(ATTR_OPAQUE,	45),
 	TEXTSW_ACTION_USING_MEMORY	= TEXTSW_ATTR(ATTR_NO_VALUE,	50),
-#ifdef OW_I18N
-	TEXTSW_ACTION_CHANGED_DIRECTORY_WCS = TEXTSW_ATTR(ATTR_WSTRING,	51),
-	TEXTSW_ACTION_EDITED_FILE_WCS	= TEXTSW_ATTR(ATTR_WSTRING,	52),
-	TEXTSW_ACTION_LOADED_FILE_WCS	= TEXTSW_ATTR(ATTR_WSTRING,	53),
-#endif
 	/*
 	 * Private Attributes
 	 */
@@ -537,43 +507,13 @@ EXTERN_FUNCTION (void textsw_scroll_lines, (Textsw_view v, int count));
 
 EXTERN_FUNCTION (unsigned int textsw_store_file, (Textsw textsw, char *filename, int locx, int locy));
 
-#ifdef OW_I18N
-EXTERN_FUNCTION (Textsw_mark textsw_add_mark_wc, (Textsw textsw, Textsw_index position, unsigned flags));
-
-EXTERN_FUNCTION (Textsw_index textsw_delete_wcs, (Textsw textsw, Textsw_index first, Textsw_index last_plus_one));
-
-EXTERN_FUNCTION (Textsw_index textsw_edit_wcs, (Textsw textsw, unsigned int unit, unsigned int count, unsigned int direction));
-
-EXTERN_FUNCTION (Textsw_index textsw_erase_wcs, (Textsw textsw, Textsw_index first, Textsw_index last_plus_one));
-
-EXTERN_FUNCTION (Textsw_index textsw_find_mark_wc, (Textsw textsw, Textsw_mark mark));
-
-EXTERN_FUNCTION (Textsw_index textsw_index_for_file_line_wc, (Textsw textsw, int line));
-
-EXTERN_FUNCTION (int textsw_append_file_name_wcs, (Textsw textsw, wchar_t *name));
-
-EXTERN_FUNCTION (int textsw_find_wcs, (Textsw textsw, Textsw_index *first, Textsw_index *last_plus_one, wchar_t *buf, unsigned int buf_len, unsigned int flags));
-
-EXTERN_FUNCTION (Textsw_index textsw_insert_wcs, (Textsw textsw, wchar_t *buf, int buf_len));
-
-EXTERN_FUNCTION (int textsw_match_wcs, (Textsw textsw, Textsw_index *first, Textsw_index *last_plus_one, wchar_t * start_sym, int start_sym_len, wchar_t *end_sym, int end_sym_len, unsigned int field_flag));
-
-EXTERN_FUNCTION (Textsw_index textsw_replace_wcs, (Textsw textsw, Textsw_index first, Textsw_index last_plus_one, wchar_t *buf, long int buf_len));
-
-EXTERN_FUNCTION (unsigned int textsw_store_file_wcs, (Textsw textsw, wchar_t *filename, int locx, int locy));
-#endif /* OW_I18N */
-
 EXTERN_FUNCTION (int textsw_get_primary_selection, (Textsw tsw, char *buf, int maxlen, Textsw_index *first, Textsw_index *last_plus_one));
 
 /*
  * Private functions
  */
 
-#ifdef OW_I18N
-EXTERN_FUNCTION (Textsw_expand_status textsw_expand, (Textsw textsw, Textsw_index start, Textsw_index stop_plus_one, wchar_t *out_buf, int out_buf_len, int *total_chars));
-#else
 EXTERN_FUNCTION (Textsw_expand_status textsw_expand, (Textsw textsw, Textsw_index start, Textsw_index stop_plus_one, char *out_buf, int out_buf_len, int *total_chars));
-#endif /* OW_I18N */
 
 EXTERN_FUNCTION (int textsw_default_notify, (Textsw textsw, Attr_avlist attrs));
 
@@ -586,12 +526,6 @@ EXTERN_FUNCTION (void textsw_set_backup_pattern, (Textsw textsw, const char *pat
 EXTERN_FUNCTION (void textsw_normalize_view, (Textsw_view v, Textsw_index pos));
 EXTERN_FUNCTION (void textsw_possibly_normalize, (Textsw_view v, Textsw_index pos));
 EXTERN_FUNCTION (void textsw_set_selection, (Textsw textsw, Textsw_index first, Textsw_index last_plus_one, unsigned int type));
-
-#ifdef OW_I18N
-EXTERN_FUNCTION (void textsw_normalize_view_wc, (Textsw textsw, Textsw_index pos));
-EXTERN_FUNCTION (void textsw_possibly_normalize_wc, (Textsw textsw, Textsw_index pos));
-EXTERN_FUNCTION (void textsw_set_selection_wcs, (Textsw textsw, Textsw_index first, Textsw_index last_plus_one, unsigned int type));
-#endif /* OW_I18N */
 
 #endif /* _OTHER_TEXTSW_FUNCTIONS */
 
