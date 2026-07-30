@@ -1,4 +1,4 @@
-/*	@(#)ev_impl.h 20.20 93/06/28 SMI  DRA: $Id: ev_impl.h,v 4.4 2026/07/29 06:14:29 dra Exp $	*/
+/*	@(#)ev_impl.h 20.20 93/06/28 SMI  DRA: $Id: ev_impl.h,v 4.5 2026/07/29 09:07:47 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -522,6 +522,8 @@ Pkg_private void ev_blink_caret(Xv_Window focus_view, Ev_chain views, int on);
 
 Xv_private Es_index ev_utf8_align_index(Es_handle esh, Es_index index);
 Pkg_private Es_index ev_utf8_prev_char_boundary(Es_handle esh, Es_index index);
+Pkg_private Es_index ev_utf8_next_char_boundary(Es_handle esh, Es_index index,
+								Es_index file_length);
 
 #define EV_INSERT_VISIBLE_IN_VIEW(_view)\
     ev_check_cached_pos_info(_view, EV_CHAIN_PRIVATE(_view->view_chain)->insert_pos, &EV_PRIVATE(_view)->cached_insert_info)
