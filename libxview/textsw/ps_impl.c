@@ -1,5 +1,5 @@
 #ifndef lint
-char     ps_impl_c_sccsid[] = "@(#)ps_impl.c 20.41 93/06/28 DRA: $Id: ps_impl.c,v 4.1 2024/03/28 19:06:00 dra Exp $";
+char     ps_impl_c_sccsid[] = "@(#)ps_impl.c 20.41 93/06/28 DRA: $Id: ps_impl.c,v 4.2 2026/07/30 07:24:39 dra Exp $";
 #endif
 
 /*
@@ -528,10 +528,6 @@ static Es_index ps_debug_read(Es_handle esh, int len, CHAR *bufp, int *resultp)
 	register Piece pieces;
 	register Piece_table private = ABS_TO_REP(esh);
 
-#ifdef OW_I18N
-	static CHAR *wrap_msg_wcs;
-#endif
-
 	if (private->length - private->position < len) {
 		len = private->length - private->position;
 	}
@@ -653,13 +649,7 @@ static Es_index ps_debug_read(Es_handle esh, int len, CHAR *bufp, int *resultp)
 				INVALIDATE_CURRENT(private);
 				ASSUME(original_len <= current_pos);
 
-#ifdef OW_I18N
-				wrap_msg_wcs = _xv_mbstowcsdup(wrap_msg);
-				read_count = STRLEN(wrap_msg_wcs);
-#else
 				read_count = strlen(wrap_msg);
-#endif
-
 				if (*resultp == 0 && current_pos < original_len + read_count) {
 					FILE *console_fd;
 
@@ -669,12 +659,7 @@ static Es_index ps_debug_read(Es_handle esh, int len, CHAR *bufp, int *resultp)
 					if (len < read_count)
 						read_count = len;
 
-#ifdef OW_I18N
-					BCOPY(wrap_msg_wcs + current_pos, bufp, read_count);
-#else
 					XV_BCOPY(wrap_msg + current_pos, bufp, (size_t)read_count);
-#endif
-
 					*resultp = read_count;
 					/* tell user that they are going to wrap */
 
@@ -690,11 +675,6 @@ static Es_index ps_debug_read(Es_handle esh, int len, CHAR *bufp, int *resultp)
 						}
 					}
 				}
-
-#ifdef OW_I18N
-				if (wrap_msg_wcs)
-					free((char *)wrap_msg_wcs);
-#endif
 			}
 			/*
 			 * All of the above code is free and easy with local variables
