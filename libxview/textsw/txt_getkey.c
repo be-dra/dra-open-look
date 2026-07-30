@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_getkey_c_sccsid[] = "@(#)txt_getkey.c 20.36 93/06/29 DRA: $Id: txt_getkey.c,v 4.16 2025/01/30 08:50:14 dra Exp $";
+char     txt_getkey_c_sccsid[] = "@(#)txt_getkey.c 20.36 93/06/29 DRA: $Id: txt_getkey.c,v 4.17 2026/07/30 07:50:27 dra Exp $";
 #endif
 
 /*
@@ -97,15 +97,7 @@ Pkg_private Ev_mark_object textsw_add_mark_internal(Textsw_private textsw, Es_in
     return (*mark_to_use);
 }
 
-Xv_public          Textsw_mark
-#ifdef OW_I18N
-textsw_add_mark_wc(abstract, position, flags)
-    Textsw          abstract;
-    Textsw_index        position;
-    unsigned        flags;
-#else
-textsw_add_mark(Textsw abstract, Textsw_index position, unsigned flags)
-#endif
+Xv_public          Textsw_mark textsw_add_mark(Textsw abstract, Textsw_index position, unsigned flags)
 {
     Textsw_private priv;
 
@@ -123,21 +115,6 @@ textsw_add_mark(Textsw abstract, Textsw_index position, unsigned flags)
     return ((Textsw_mark) textsw_add_mark_internal(priv, position, flags));
 }
 
-#ifdef OW_I18N
-Xv_public          Textsw_mark
-textsw_add_mark(abstract, position, flags)
-    Textsw          abstract;
-    Es_index        position;
-    unsigned        flags;
-{
-    Textsw_view_private view = VIEW_ABS_TO_REP(abstract);
-    Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
-
-    return ((Textsw_mark) textsw_add_mark_internal(priv,
-			      textsw_wcpos_from_mbpos(priv, position), flags));
-}
-#endif /* OW_I18N */
-
 Pkg_private Es_index textsw_find_mark_internal(Textsw_private textsw, Ev_mark_object  mark)
 {
     Ev_finger_handle finger;
@@ -147,11 +124,7 @@ Pkg_private Es_index textsw_find_mark_internal(Textsw_private textsw, Ev_mark_ob
 }
 
 Xv_public          Textsw_index
-#ifdef OW_I18N
-textsw_find_mark_wc(abstract, mark)
-#else
 textsw_find_mark(abstract, mark)
-#endif
     Textsw          abstract;
     Textsw_mark     mark;
 {
@@ -171,26 +144,6 @@ textsw_find_mark(abstract, mark)
 
     return (Textsw_index)textsw_find_mark_internal(priv, *dummy_for_compiler);
 }
-
-#ifdef OW_I18N
-Xv_public          Textsw_index
-textsw_find_mark(abstract, mark)
-    Textsw          abstract;
-    Textsw_mark     mark;
-{
-    Textsw_view_private view = VIEW_ABS_TO_REP(abstract);
-    Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
-    Ev_mark_object *dummy_for_compiler = (Ev_mark_object *) & mark;
-
-#ifdef	lint
-    view->magic = *dummy_for_compiler;	/* To get rid of unused msg */
-    return ((Textsw_index) 0);
-#else	/* lint */
-    return ((Textsw_index) textsw_mbpos_from_wcpos(priv,
-		textsw_find_mark_internal(priv, *dummy_for_compiler)));
-#endif	/* lint */
-}
-#endif /* OW_I18N */
 
 Pkg_private void textsw_remove_mark_internal(Textsw_private textsw, Ev_mark_object mark)
 {
