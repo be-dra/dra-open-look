@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_menu_c_sccsid[] = "@(#)txt_menu.c 20.90 93/06/28 DRA: $Id: txt_menu.c,v 4.34 2025/01/31 19:46:27 dra Exp $";
+char     txt_menu_c_sccsid[] = "@(#)txt_menu.c 20.90 93/06/28 DRA: $Id: txt_menu.c,v 4.35 2026/07/30 07:54:31 dra Exp $";
 #endif
 
 /*
@@ -445,11 +445,6 @@ static void textsw_find_do_menu_action(Menu cmd_menu, Menu_item cmd_item)
 	register int locx, locy;
 	register long unsigned find_options = 0L;
 
-#ifdef OW_I18N
-	static CHAR bar_lt[] = { '<', '|', 0 };
-	static CHAR bar_gt[] = { '|', '>', 0 };
-#endif
-
 	if (AN_ERROR(textsw_view == 0)) {
 		if (event_action(ie) == ACTION_ACCELERATOR) {
 			textsw = xv_get(cmd_menu, XV_KEY_DATA, TEXTSW_HANDLE_KEY);
@@ -496,35 +491,18 @@ static void textsw_find_do_menu_action(Menu cmd_menu, Menu_item cmd_item)
 				first = last_plus_one = EV_GET_INSERT(priv->views);
 				(void)textsw_match_field_and_normalize(view, &first,
 						&last_plus_one,
-
-#ifdef OW_I18N
-						bar_lt, 2, TEXTSW_FIELD_ENCLOSE, FALSE);
-#else
 						"<|", 2, TEXTSW_FIELD_ENCLOSE, FALSE);
-#endif
 
 				break;
 			}
 		case TEXTSW_MENU_SEL_NEXT_FIELD:
 			textsw_match_selection_and_normalize(view,
-
-#ifdef OW_I18N
-					bar_gt, TEXTSW_FIELD_FORWARD);
-#else
 					"|>", TEXTSW_FIELD_FORWARD);
-#endif
-
 			break;
 
 		case TEXTSW_MENU_SEL_PREV_FIELD:
 			textsw_match_selection_and_normalize(view,
-
-#ifdef OW_I18N
-					bar_lt, TEXTSW_FIELD_BACKWARD);
-#else
 					"<|", TEXTSW_FIELD_BACKWARD);
-#endif
-
 			break;
 
 		case TEXTSW_MENU_SEL_MARK_TEXT:{
@@ -1557,11 +1535,7 @@ Save File operation ignored."),
 	    textsw->state &= ~TXTSW_CONFIRM_OVERWRITE;
 	    confirm_state_changed = 1;
 	}
-#ifdef OW_I18N
-        textsw_store_file_wcs(VIEW_PUBLIC(view),name,0,0);
-#else
-        textsw_store_file(abstract, name,0,0);
-#endif
+	textsw_store_file(abstract, name,0,0);
 	if (confirm_state_changed)
 	    textsw->state |= TXTSW_CONFIRM_OVERWRITE;
         return;
