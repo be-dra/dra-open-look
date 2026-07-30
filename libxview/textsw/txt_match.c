@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_match_c_sccsid[] = "@(#)txt_match.c 1.33 93/06/28 DRA: $Id: txt_match.c,v 4.6 2025/01/01 20:35:21 dra Exp $";
+char     txt_match_c_sccsid[] = "@(#)txt_match.c 1.33 93/06/28 DRA: $Id: txt_match.c,v 4.7 2026/07/30 07:53:08 dra Exp $";
 #endif
 
 /*
@@ -36,37 +36,11 @@ static int key_choice = 0;
 
 Pkg_private int textsw_match_selection_and_normalize(Textsw_view_private view, CHAR *start_marker, unsigned field_flag);
 
-#ifdef OW_I18N
-
-static CHAR l_curly_brace[] = { '{', 0 };
-static CHAR l_paren[] = { '(', 0 };
-static CHAR dbl_quote[] = { '"', 0 };
-static CHAR sgl_quote[] = { '\'', 0 };
-static CHAR accent_grave[] = { '`', 0 };
-static CHAR l_square_brace[] = { '[', 0 };
-static CHAR bar_gt[] = { '|', '>', 0 };
-static CHAR open_comment[] = { '/', '*', 0 };
-
-static CHAR r_curly_brace[] = { '}', 0 };
-static CHAR r_paren[] = { ')', 0 };
-static CHAR r_square_brace[] = { ']', 0 };
-static CHAR lt_bar[] = { '<', '|', 0 };
-static CHAR close_comment[] = { '*', '/', 0 };
-
-static CHAR    *delimiter_pairs[2][8] = {
-    { l_paren, dbl_quote, sgl_quote, accent_grave, bar_gt, l_square_brace,
-      l_curly_brace, open_comment,},
-    { r_paren, dbl_quote, sgl_quote, accent_grave, lt_bar, r_square_brace,
-      r_curly_brace, close_comment,}
-};
-
-#else /* OW_I18N */
 
 static char    *delimiter_pairs[2][8] = {
     {"(", "\"", "'", "`", "|>", "[", "{", "/*"},
     {")", "\"", "'", "`", "<|", "]", "}", "*/"}
 };
-#endif /* OW_I18N */
 
 static void do_insert_or_remove_delimiter(Textsw_view_private view, int value, int do_insert)
 {
@@ -196,10 +170,6 @@ Selection does not include the indicated pair."),
 			return;
 		}
 	}
-
-#ifdef OW_I18N
-	textsw_implicit_commit(priv);
-#endif
 
 	num_of_byte =
 			textsw_replace(TEXTSW_PUBLIC(priv), first, last_plus_one, buf,
