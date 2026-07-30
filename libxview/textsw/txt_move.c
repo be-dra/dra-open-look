@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.53 2026/05/21 19:59:46 dra Exp $";
+char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.54 2026/07/30 07:56:48 dra Exp $";
 #endif
 
 /*
@@ -25,20 +25,6 @@ char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move
 #include <ctype.h> 
 #include <assert.h> 
 #include <time.h> 
-
-#ifdef OW_I18N		/* for reducing #ifdef OW_I18N */
-#define TEXTSW_CONTENTS_I18N		TEXTSW_CONTENTS_WCS
-#define textsw_insert_i18n		textsw_insert_wcs
-#define textsw_set_selection_i18n	textsw_set_selection_wcs
-#define textsw_delete_i18n		textsw_delete_wcs
-#define TEXTSW_INSERTION_POINT_I18N	TEXTSW_INSERTION_POINT_WC
-#else
-#define TEXTSW_CONTENTS_I18N		TEXTSW_CONTENTS
-#define textsw_insert_i18n		textsw_insert
-#define textsw_set_selection_i18n	textsw_set_selection
-#define textsw_delete_i18n		textsw_delete
-#define TEXTSW_INSERTION_POINT_I18N	TEXTSW_INSERTION_POINT
-#endif /* OW_I18N */
 
 static int dnd_data_key = 0;
 static int dnd_view_key = 0; 
@@ -200,9 +186,6 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
     CHAR *tgt;
     int	dnd_status, i;
     CHAR *buffer;
-#ifdef OW_I18N
-    char *buffer_mb;
-#endif
     Es_index first, last_plus_one;
 	Es_index to_read;
 	int len;
@@ -226,30 +209,18 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 	*tgt = '\0';
 
     dnd_cursor = xv_create(tsw, CURSOR,
-#ifdef OW_I18N
-			CURSOR_STRING_WCS, 	buf,
-#else
 			CURSOR_STRING, 		buf,
-#endif
 			CURSOR_DRAG_TYPE, (is_copy ? CURSOR_DUPLICATE : CURSOR_MOVE),
 			NULL);
 
     dnd_accept_cursor = xv_create(tsw, CURSOR,
-#ifdef OW_I18N
-			CURSOR_STRING_WCS, 	buf,
-#else
 			CURSOR_STRING, 		buf,
-#endif
 			CURSOR_DRAG_TYPE, (is_copy ? CURSOR_DUPLICATE : CURSOR_MOVE),
 			CURSOR_DRAG_STATE,	CURSOR_ACCEPT,
 			NULL);
 
     dnd_reject_cursor = xv_create(tsw, CURSOR,
-#ifdef OW_I18N
-			CURSOR_STRING_WCS, 	buf,
-#else
 			CURSOR_STRING, 		buf,
-#endif
 			CURSOR_DRAG_TYPE, (is_copy ? CURSOR_DUPLICATE : CURSOR_MOVE),
 			CURSOR_DRAG_STATE,	CURSOR_REJECT,
 			NULL);
@@ -275,24 +246,14 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 			NULL);
 
     ev_get_selection(priv->views, &first, &last_plus_one,EV_SEL_PRIMARY);
-#ifdef OW_I18N
-    buffer = (CHAR *)xv_malloc((last_plus_one - first + 1) * sizeof(CHAR));
-#else
     buffer = (char *)xv_malloc((size_t)(last_plus_one - first + 1));
-#endif
 	len = textsw_es_read(priv->views->esh, buffer, first, last_plus_one);
 	buffer[len] = '\0';
 
-#ifdef OW_I18N
-    buffer_mb = _xv_wcstombsdup(buffer);
-    xv_set(dnd, XV_KEY_DATA, dnd_data_key, buffer_mb, NULL);
-    if (buffer) free((char *)buffer);
-#else
     xv_set(dnd,
 				XV_KEY_DATA, dnd_data_key, buffer,
 				XV_KEY_DATA_REMOVE_PROC, dnd_data_key, free_dnd_keys,
 				NULL);
-#endif
     xv_set(dnd, XV_KEY_DATA, dnd_view_key, view, NULL);
 
 #ifdef NO_XDND
@@ -341,10 +302,6 @@ Pkg_private int textsw_do_remote_drag_copy_move(Textsw_view_private view, Event 
 	char *string, wbuf[3];
 	int word_drop;
 	Textsw_mark mark = TEXTSW_NULL_MARK;
-
-#ifdef OW_I18N
-	CHAR *string_wc = NULL;
-#endif
 	long length;
 	int format;
 	Es_index ro_bdry, pos, index, temp, selpos;
@@ -455,13 +412,6 @@ Pkg_private int textsw_do_remote_drag_copy_move(Textsw_view_private view, Event 
 	ev_set(view->e_view, EV_CHAIN_DELAY_UPDATE, FALSE, NULL);
 	EV_SET_INSERT(priv->views, pos, temp);
 
-#ifdef OW_I18N
-	string_wc = _xv_mbstowcsdup(string);
-	index = textsw_do_input(view, string_wc, (long int)STRLEN(string_wc),
-			TXTSW_UPDATE_SCROLLBAR);
-	if (string_wc)
-		free((char *)string_wc);
-#else
 	/* preparation of the "word drop" case */
 	wbuf[0] = '\0';
 	if (pos == 0) xv_get(tsw, TEXTSW_CONTENTS, pos, wbuf+1, 1);
@@ -474,7 +424,6 @@ Pkg_private int textsw_do_remote_drag_copy_move(Textsw_view_private view, Event 
 	index = textsw_wrap_do_input(tsw, view, (char *)string, &length);
 
 	selpos = textsw_smart_word_handling(priv, word_drop, wbuf, pos, length);
-#endif
 
 	/* If this is a move operation and we were able to insert the text,
 	 * ask the source to delete the selection.
