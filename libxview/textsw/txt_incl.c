@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_incl_c_sccsid[] = "@(#)txt_incl.c 1.35 93/06/28 DRA: $Id: txt_incl.c,v 4.7 2025/05/11 12:58:23 dra Exp $";
+char     txt_incl_c_sccsid[] = "@(#)txt_incl.c 1.35 93/06/28 DRA: $Id: txt_incl.c,v 4.8 2026/07/30 07:52:22 dra Exp $";
 #endif
 
 /*
@@ -52,41 +52,17 @@ Pkg_private int textsw_include_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opa
 	CHAR *dir_str;
 	register int locx, locy;
 	CHAR curr_dir[MAXPATHLEN];
-#ifdef OW_I18N
-	char curr_dir_mb[MAXPATHLEN];
-#endif
 	Frame frame;
 	Xv_Notice text_notice;
 	int textsw_changed_directory;
 
-#ifdef OW_I18N
-	dir_str = (CHAR *) xv_get(fc, FILE_CHOOSER_DIRECTORY_WCS);
-#else
 	dir_str = (char *)xv_get(fc, FILE_CHOOSER_DIRECTORY);
-#endif
 
 	locx = locy = 0;
 
-#ifdef OW_I18N
-	if (textsw_expand_filename(priv, dir_str, MAXPATHLEN, locx, locy)) {
-		/* error handled inside routine */
-		return TRUE;
-	}
-	if (textsw_expand_filename(priv, file, MAXPATHLEN, locx, locy)) {
-		/* error handled inside routine */
-		return TRUE;
-	}
-#else
-#endif
-
 	/* if "cd" is not disabled and the "cd" dir is not the current dir */
 
-#ifdef OW_I18N
-	(void)getcwd(curr_dir_mb, MAXPATHLEN);
-	(void)mbstowcs(curr_dir, curr_dir_mb, MAXPATHLEN);
-#else /* OW_I18N */
 	(void)getcwd(curr_dir, (long)MAXPATHLEN);
-#endif /* OW_I18N */
 
 	textsw_changed_directory = FALSE;
 	if (STRCMP(curr_dir, dir_str) != 0) {
