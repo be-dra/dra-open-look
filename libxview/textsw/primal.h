@@ -1,4 +1,4 @@
-/*      @(#)primal.h 20.17 93/06/28 SMI  DRA: $Id: primal.h,v 4.1 2024/03/28 19:06:00 dra Exp $      */
+/*      @(#)primal.h 20.17 93/06/28 SMI  DRA: $Id: primal.h,v 4.2 2026/07/30 07:21:46 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -60,11 +60,7 @@ struct set
 
 typedef struct set SET;
 
-#ifdef OW_I18N
-#define	BYTE(n)		((unsigned char)(n) >> 3) /* byte for element n */
-#else
 #define	BYTE(n)		((unsigned)(n) >> 3)	/* byte for element n */
-#endif
 #define	BIT(n)		((n) & 07)		/* bit in byte for element n */
 
 #define	ADD_ELEMENT(set, n)	(set)->bytes[BYTE(n)] |= (1 << BIT(n))
