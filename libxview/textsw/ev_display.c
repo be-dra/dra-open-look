@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_display_c_sccsid[] = "@(#)ev_display.c 20.60 93/06/28 DRA: $Id: ev_display.c,v 4.11 2026/07/29 06:30:55 dra Exp $";
+char     ev_display_c_sccsid[] = "@(#)ev_display.c 20.60 93/06/28 DRA: $Id: ev_display.c,v 4.12 2026/07/29 17:08:25 dra Exp $";
 #endif
 
 /*
@@ -249,94 +249,96 @@ Pkg_private int ev_caret_to_xy(Ev_handle view, int *x, int *y)
 
 Pkg_private	void ev_check_insert_visibility(Ev_chain views)
 {
-    /*
-     * This routine does not use EV_INSERT_VISIBLE_IN_VIEW to avoid procedure
-     * call overhead, redundant field extraction and to make better use of
-     * registers.
-     */
-    register Ev_handle view;
-    register Ev_pd_handle private;
-    Ev_chain_pd_handle chain_private = EV_CHAIN_PRIVATE(views);
-    Es_index        insert_pos;
+	/*
+	 * This routine does not use EV_INSERT_VISIBLE_IN_VIEW to avoid procedure
+	 * call overhead, redundant field extraction and to make better use of
+	 * registers.
+	 */
+	register Ev_handle view;
+	register Ev_pd_handle private;
+	Ev_chain_pd_handle chain_private = EV_CHAIN_PRIVATE(views);
+	Es_index insert_pos;
 
-    insert_pos = chain_private->insert_pos;
-    FORALLVIEWS(views, view) {
-	private = EV_PRIVATE(view);
-	if (ev_check_cached_pos_info(view, insert_pos,
-				     &private->cached_insert_info)) {
-	    private->state |= EV_VS_INSERT_WAS_IN_VIEW;
-	    if (rect_includespoint(
-				   &view->rect,
-				   private->cached_insert_info.pr_pos.x,
-				   private->cached_insert_info.pr_pos.y)) {
-		private->state |= EV_VS_INSERT_WAS_IN_VIEW_RECT;
-	    } else {
-		private->state &= ~EV_VS_INSERT_WAS_IN_VIEW_RECT;
-	    }
-	} else {
-	    if (!(private->state & EV_VS_BUFFERED_OUTPUT))
-	        private->state &= ~(EV_VS_INSERT_WAS_IN_VIEW |
-				EV_VS_INSERT_WAS_IN_VIEW_RECT);
+	insert_pos = chain_private->insert_pos;
+	FORALLVIEWS(views, view) {
+		private = EV_PRIVATE(view);
+		if (ev_check_cached_pos_info(view, insert_pos,
+						&private->cached_insert_info)) {
+			private->state |= EV_VS_INSERT_WAS_IN_VIEW;
+			if (rect_includespoint(&view->rect,
+							private->cached_insert_info.pr_pos.x,
+							private->cached_insert_info.pr_pos.y)) {
+				private->state |= EV_VS_INSERT_WAS_IN_VIEW_RECT;
+			}
+			else {
+				private->state &= ~EV_VS_INSERT_WAS_IN_VIEW_RECT;
+			}
+		}
+		else {
+			if (!(private->state & EV_VS_BUFFERED_OUTPUT))
+				private->state &= ~(EV_VS_INSERT_WAS_IN_VIEW |
+						EV_VS_INSERT_WAS_IN_VIEW_RECT);
+		}
 	}
-    }
 }
 
 /* Should be static */
 Pkg_private void ev_blink_caret(Xv_Window focus_view, Ev_chain views, int on)
 {
-    struct pr_pos   hotpoint;
-    Ev_chain_pd_handle chain_private = EV_CHAIN_PRIVATE(views);
-    Ev_pd_handle private;
-    Ev_handle view;
-    int which;
-    
+	struct pr_pos hotpoint;
+	Ev_chain_pd_handle chain_private = EV_CHAIN_PRIVATE(views);
+	Ev_pd_handle private;
+	Ev_handle view;
+	int which;
 
-    /* static int pcount, rcount;  */
 
-    if (chain_private->caret_is_ghost) {
-	hotpoint = chain_private->ghost_hotpoint;
-	which = GHOST_CARET;
-    } else {
-	hotpoint = chain_private->caret_hotpoint;
-	which = NORMAL_CARET;
-    }
-    if (on) {
-	if (chain_private->insert_pos != ES_CANNOT_SET) {
-	    ev_check_insert_visibility(views);
-	    FORALLVIEWS(views, view) {
-		private = EV_PRIVATE(view);
+	/* static int pcount, rcount;  */
 
-		if (private->state & EV_VS_INSERT_WAS_IN_VIEW_RECT) {
-		    private->caret_pr_pos.x =
-			private->cached_insert_info.pr_pos.x - hotpoint.x;
-		    private->caret_pr_pos.y =
-			private->cached_insert_info.pr_pos.y - hotpoint.y;
-		    if (view->pw == focus_view) {
-			ev_put_caret(view->pw, which,
-				     private->caret_pr_pos.x,
-				     private->caret_pr_pos.y);
-		    }
-		    /*
-		     * printf("%3d: place  at %3d,%3d\n", ++pcount,
-		     * private->caret_pr_pos.x, private->caret_pr_pos.y );
-		     */
-		} /*else printf("No caret on2\n");*/
-	    }
-	} /*else printf("No caret on1\n");*/
-    } else {
-	FORALLVIEWS(views, view) {
-	    private = EV_PRIVATE(view);
-	    if (private->caret_pr_pos.x != EV_NULL_DIM) {
-		if (view->pw == focus_view) {
-		    ev_put_caret(view->pw, which,
-				 private->caret_pr_pos.x,
-				 private->caret_pr_pos.y);
-		}
-		private->caret_pr_pos.x = EV_NULL_DIM;
-		private->caret_pr_pos.y = EV_NULL_DIM;
-	    } /*else printf("No caret off2\n");*/
+	if (chain_private->caret_is_ghost) {
+		hotpoint = chain_private->ghost_hotpoint;
+		which = GHOST_CARET;
 	}
-    }
+	else {
+		hotpoint = chain_private->caret_hotpoint;
+		which = NORMAL_CARET;
+	}
+	if (on) {
+		if (chain_private->insert_pos != ES_CANNOT_SET) {
+			ev_check_insert_visibility(views);
+			FORALLVIEWS(views, view) {
+				private = EV_PRIVATE(view);
+
+				if (private->state & EV_VS_INSERT_WAS_IN_VIEW_RECT) {
+					private->caret_pr_pos.x =
+							private->cached_insert_info.pr_pos.x - hotpoint.x;
+					private->caret_pr_pos.y =
+							private->cached_insert_info.pr_pos.y - hotpoint.y;
+					if (view->pw == focus_view) {
+						ev_put_caret(view->pw, which,
+								private->caret_pr_pos.x,
+								private->caret_pr_pos.y);
+					}
+					/*
+					 * printf("%3d: place  at %3d,%3d\n", ++pcount,
+					 * private->caret_pr_pos.x, private->caret_pr_pos.y );
+					 */
+				}	/*else printf("No caret on2\n"); */
+			}
+		}	/*else printf("No caret on1\n"); */
+	}
+	else {
+		FORALLVIEWS(views, view) {
+			private = EV_PRIVATE(view);
+			if (private->caret_pr_pos.x != EV_NULL_DIM) {
+				if (view->pw == focus_view) {
+					ev_put_caret(view->pw, which,
+							private->caret_pr_pos.x, private->caret_pr_pos.y);
+				}
+				private->caret_pr_pos.x = EV_NULL_DIM;
+				private->caret_pr_pos.y = EV_NULL_DIM;
+			}	/*else printf("No caret off2\n"); */
+		}
+	}
 }
 
 #define EI_PR_OUT_OF_RANGE	EI_PR_CLIENT_REASON(1)
@@ -490,60 +492,64 @@ Pkg_private void ev_view_range(Ev_handle view, Es_index *first, Es_index *last_p
 	}
 }
 
-Pkg_private	int ev_xy_in_view(Ev_handle view, Es_index	 pos, int *lt_index, struct rect *rect)
+Pkg_private	int ev_xy_in_view(Ev_handle view, Es_index	 pos, int *lt_index,
+							struct rect *rect)
 {
-    register Ev_impl_line_seq seq = (Ev_impl_line_seq)
-    view->line_table.seq;
-    unsigned        at_end_of_stream = 0;
-    struct ei_process_result display_result;
+	register Ev_impl_line_seq seq = (Ev_impl_line_seq)
+			view->line_table.seq;
+	unsigned at_end_of_stream = 0;
+	struct ei_process_result display_result;
 
-    if (pos < seq[0].pos)
-	return (EV_XY_ABOVE);
-    if (pos > seq[view->line_table.last_plus_one - 1].pos)
-	return (EV_XY_BELOW);
-    *lt_index = ft_bounding_index(&view->line_table, pos);
-    if (pos == seq[*lt_index].pos) {
-	if (*lt_index + 1 < view->line_table.last_plus_one &&
-	    seq[*lt_index + 1].pos == ES_INFINITY) {
-	    at_end_of_stream = 1;
-	} else if (*lt_index + 1 == view->line_table.last_plus_one) {
-	    if (pos == es_get_length(view->view_chain->esh)) {
-		at_end_of_stream = 1;
-	    } else {
+	if (pos < seq[0].pos)
+		return (EV_XY_ABOVE);
+	if (pos > seq[view->line_table.last_plus_one - 1].pos)
 		return (EV_XY_BELOW);
-	    }
-	}
-	if (at_end_of_stream && *lt_index > 0)
-	    (*lt_index)--;
-    }
-    *rect = ev_rect_for_line(view, *lt_index);
-    if (pos != seq[*lt_index].pos || at_end_of_stream) {
-	es_set_position(view->view_chain->esh, seq[*lt_index].pos);
-	display_result = ev_display_internal(
-			view, rect, *lt_index, pos, (int)EI_OP_MEASURE, EV_QUIT);
-	switch (display_result.break_reason) {
-	  case EI_PR_HIT_RIGHT:
-	    if (*lt_index + 1 == view->line_table.last_plus_one)
-		return (EV_XY_BELOW);
-	    else
-		return (EV_XY_RIGHT);
-	  case EI_PR_NEWLINE:
-	    if (at_end_of_stream) {
-		*lt_index += 1;
-		rect->r_top += ei_line_height(view->view_chain->eih);
-		if (rect_bottom(&view->rect) < rect_bottom(rect)) {
-		    return (EV_XY_BELOW);
+	*lt_index = ft_bounding_index(&view->line_table, pos);
+	if (pos == seq[*lt_index].pos) {
+		if (*lt_index + 1 < view->line_table.last_plus_one &&
+				seq[*lt_index + 1].pos == ES_INFINITY) {
+			at_end_of_stream = 1;
 		}
-		break;
-	    }
-	    /* else fall through. */
-	  default:{
-		rect->r_width += rect->r_left - display_result.pos.x;
-		rect->r_left = display_result.pos.x;
-	    }
+		else if (*lt_index + 1 == view->line_table.last_plus_one) {
+			if (pos == es_get_length(view->view_chain->esh)) {
+				at_end_of_stream = 1;
+			}
+			else {
+				return (EV_XY_BELOW);
+			}
+		}
+		if (at_end_of_stream && *lt_index > 0)
+			(*lt_index)--;
 	}
-    }
-    return (EV_XY_VISIBLE);
+	*rect = ev_rect_for_line(view, *lt_index);
+	if (pos != seq[*lt_index].pos || at_end_of_stream) {
+		es_set_position(view->view_chain->esh, seq[*lt_index].pos);
+		display_result =
+				ev_display_internal(view, rect, *lt_index, pos,
+				(int)EI_OP_MEASURE, EV_QUIT);
+		switch (display_result.break_reason) {
+			case EI_PR_HIT_RIGHT:
+				if (*lt_index + 1 == view->line_table.last_plus_one)
+					return (EV_XY_BELOW);
+				else
+					return (EV_XY_RIGHT);
+			case EI_PR_NEWLINE:
+				if (at_end_of_stream) {
+					*lt_index += 1;
+					rect->r_top += ei_line_height(view->view_chain->eih);
+					if (rect_bottom(&view->rect) < rect_bottom(rect)) {
+						return (EV_XY_BELOW);
+					}
+					break;
+				}
+				/* else fall through. */
+			default:{
+					rect->r_width += rect->r_left - display_result.pos.x;
+					rect->r_left = display_result.pos.x;
+				}
+		}
+	}
+	return (EV_XY_VISIBLE);
 }
 
 Pkg_private	void
@@ -1375,45 +1381,45 @@ Pkg_private	Es_index ev_display_line_start(Ev_handle view, Es_index pos)
 Pkg_private	void ev_do_glyph(Ev_handle view, Es_index *glyph_pos_ptr,
     Ev_overlay_handle *glyph_ptr, struct ei_process_result *result)
 {
-    Ev_overlay_handle glyph = *glyph_ptr;
-    Ev_chain        chain = view->view_chain;
-    Ei_handle       eih = chain->eih;
-    Ev_pd_handle    private = EV_PRIVATE(view);
-    int             height = ei_line_height(eih);
-    int             width = -glyph->offset_x;
-    int             left;
-    Rect            margin_rect;
+	Ev_overlay_handle glyph = *glyph_ptr;
+	Ev_chain chain = view->view_chain;
+	Ei_handle eih = chain->eih;
+	Ev_pd_handle private = EV_PRIVATE(view);
+	int height = ei_line_height(eih);
+	int width = -glyph->offset_x;
+	int left;
+	Rect margin_rect;
 
-    if (glyph->flags & EV_OVERLAY_RIGHT_MARGIN) {
-	left = rect_right(&(view->rect)) + 1;
-	width = glyph->pr->pr_width;
-	if (width > private->right_margin)
-	    width = private->right_margin;
-	margin_rect.r_left = left;
-	margin_rect.r_top = result->bounds.r_top;
-	margin_rect.r_width = private->right_margin;
-	margin_rect.r_height = height;
-	ev_clear_rect(view, &margin_rect);
-    } else {
-	left = rect_right(&(result->bounds)) + 1 + glyph->offset_x;
-	if (height > glyph->pr->pr_height)
-	    height = glyph->pr->pr_height;
-	if (width > glyph->pr->pr_width)
-	    width = glyph->pr->pr_width;
-	if (left < view->rect.r_left) {
-	    margin_rect.r_left =
-		view->rect.r_left - private->left_margin;
-	    margin_rect.r_top = result->bounds.r_top;
-	    margin_rect.r_width = private->left_margin;
-	    margin_rect.r_height = height;
-	    ev_clear_rect(view, &margin_rect);
+	if (glyph->flags & EV_OVERLAY_RIGHT_MARGIN) {
+		left = rect_right(&(view->rect)) + 1;
+		width = glyph->pr->pr_width;
+		if (width > private->right_margin)
+			width = private->right_margin;
+		margin_rect.r_left = left;
+		margin_rect.r_top = result->bounds.r_top;
+		margin_rect.r_width = private->right_margin;
+		margin_rect.r_height = height;
+		ev_clear_rect(view, &margin_rect);
 	}
-    }
-    xv_rop(view->pw,
-	   left, result->bounds.r_top, width, height,
-	   glyph->pix_op, glyph->pr, 0, 0);
-    *glyph_ptr = (Ev_overlay_handle) 0;
-    *glyph_pos_ptr = ES_INFINITY;
+	else {
+		left = rect_right(&(result->bounds)) + 1 + glyph->offset_x;
+		if (height > glyph->pr->pr_height)
+			height = glyph->pr->pr_height;
+		if (width > glyph->pr->pr_width)
+			width = glyph->pr->pr_width;
+		if (left < view->rect.r_left) {
+			margin_rect.r_left = view->rect.r_left - private->left_margin;
+			margin_rect.r_top = result->bounds.r_top;
+			margin_rect.r_width = private->left_margin;
+			margin_rect.r_height = height;
+			ev_clear_rect(view, &margin_rect);
+		}
+	}
+	xv_rop(view->pw,
+			left, result->bounds.r_top, width, height,
+			glyph->pix_op, glyph->pr, 0, 0);
+	*glyph_ptr = (Ev_overlay_handle) 0;
+	*glyph_pos_ptr = ES_INFINITY;
 }
 
 /*
@@ -1421,33 +1427,32 @@ Pkg_private	void ev_do_glyph(Ev_handle view, Es_index *glyph_pos_ptr,
  * correct.  If the line table is not correct, the caller should be going
  * through ev_update_view_display();
  */
-Pkg_private	struct ei_process_result ev_display_internal(Ev_handle view, Rect *rect, int line, Es_index stop_plus_one, int ei_op, int break_action)
+Pkg_private	struct ei_process_result ev_display_internal(Ev_handle view,
+					Rect *rect, int line, Es_index stop_plus_one, int ei_op,
+					int break_action)
 {
-    /*
-     * before calling this function, be sure to
-     * es_set_position(view->view_chain->esh, the 1st char to be displayed);
-     */
+	/*
+	 * before calling this function, be sure to
+	 * es_set_position(view->view_chain->esh, the 1st char to be displayed);
+	 */
 
-    Ev_chain        chain = view->view_chain;
-    Ei_handle       eih = chain->eih;
-    CHAR            buf[EV_BUFSIZE];
-    register Ev_impl_line_seq line_seq =
-    (Ev_impl_line_seq)
-    view->line_table.seq;
-    Es_index        last_plus_one;
-    int             save_left = rect->r_left;
-    int             save_width = rect->r_width;
-    struct range    range;
-    Ev_pd_handle    private = EV_PRIVATE(view);
-    Ev_chain_pd_handle chain_private =
-    EV_CHAIN_PRIVATE(chain);
-    Es_buf_object   esbuf;
-    Ev_overlay_handle glyph;
-    Es_index        glyph_pos;
-    struct ei_process_result glyph_save_result, result;
-    int             rop_to_use;
-    Es_index        esbuf_last_plus_one;
-    Es_index        esbuf_sizeof_buf;
+	Ev_chain chain = view->view_chain;
+	Ei_handle eih = chain->eih;
+	CHAR buf[EV_BUFSIZE];
+	Ev_impl_line_seq line_seq = (Ev_impl_line_seq)view->line_table.seq;
+	Es_index last_plus_one;
+	int save_left = rect->r_left;
+	int save_width = rect->r_width;
+	struct range range;
+	Ev_pd_handle private = EV_PRIVATE(view);
+	Ev_chain_pd_handle chain_private = EV_CHAIN_PRIVATE(chain);
+	Es_buf_object esbuf;
+	Ev_overlay_handle glyph;
+	Es_index glyph_pos;
+	struct ei_process_result glyph_save_result, result;
+	int rop_to_use;
+	Es_index esbuf_last_plus_one;
+	Es_index esbuf_sizeof_buf;
 
 #define INCREMENT_LINE	line++; ASSERT(line < view->line_table.last_plus_one)
 #define ADVANCE_TO_NEW_LINE						\
@@ -1460,228 +1465,239 @@ Pkg_private	struct ei_process_result ev_display_internal(Ev_handle view, Rect *r
 	es_set_position(esbuf.esh, 					\
 			(last_plus_one = esbuf.last_plus_one = (pos)))
 
-    result.break_reason = EI_PR_OUT_OF_RANGE;
-    glyph_save_result.break_reason = EI_PR_OUT_OF_RANGE;
-    glyph_pos = ES_INFINITY;
-Glyph_restart:
-    result.pos.x = rect->r_left;
-    result.pos.y = rect->r_top;
-    /*
-     * WARNING: Anytime that result.last_plus_one is modified it may be
-     * necessary to call ev_range_info().
-     */
-    result.last_plus_one = last_plus_one = es_get_position(chain->esh);
-    if AN_ERROR
-	(line + 1 >= view->line_table.last_plus_one) {
-	result.break_reason = EI_PR_HIT_BOTTOM;
-	goto Done;
-	}
-    if ((ei_op & EI_OP_MEASURE) == 0) {
-	ev_range_info(chain_private->op_bdry, last_plus_one, &range);
-	range.ei_op |= ei_op;
-	if (range.ei_op & EI_OP_EV_OVERLAY) {
-	    if (last_plus_one != line_seq[line].pos) {
-		/*
-		 * Start is part way into the glyph region. Pretend the call
-		 * really started at line's start.
-		 */
-		es_set_position(chain->esh, line_seq[line].pos);
-		rect->r_width += (rect->r_left - view->rect.r_left);
-		rect->r_left = view->rect.r_left;
-		goto Glyph_restart;
-	    }
-	}
-	glyph = (Ev_overlay_handle) 0;
-    } else {
-	range.last_plus_one = ES_INFINITY;
-	range.ei_op = ei_op;
-    }
-    esbuf.esh = chain->esh;
-    FOREVER {
-	esbuf.buf = buf;
-	if ((stop_plus_one < ES_INFINITY) &&
-	    (stop_plus_one > last_plus_one) &&
-	    (stop_plus_one - last_plus_one < EV_BUFSIZE)) {
-	    esbuf.sizeof_buf = stop_plus_one - last_plus_one;
-	} else
-	    esbuf.sizeof_buf = EV_BUFSIZE;
-	if (ev_fill_esbuf(&esbuf, &last_plus_one)) {
-	    if (result.break_reason == EI_PR_OUT_OF_RANGE) {
-		if (line + 1 < view->line_table.last_plus_one &&
-		    line_seq[line + 1].pos < ES_INFINITY) {
-		    break;
-		} else
-		    goto Done;
-	    }
-	    result.break_reason |= EI_PR_END_OF_STREAM;
-	    break;
-	}
-	if (esbuf.last_plus_one > range.last_plus_one) {
-	    ESBUF_SET_POSITION(range.last_plus_one);
-	}
-	if (esbuf.last_plus_one > stop_plus_one) {
-	    ESBUF_SET_POSITION(stop_plus_one);
-	}
+	result.break_reason = EI_PR_OUT_OF_RANGE;
+	glyph_save_result.break_reason = EI_PR_OUT_OF_RANGE;
+	glyph_pos = ES_INFINITY;
+  Glyph_restart:
+	result.pos.x = rect->r_left;
+	result.pos.y = rect->r_top;
 	/*
-	 * Invariant at this point: esbuf.last_plus_one <= MIN[stop_plus_one,
-	 * range.last_plus_one]
+	 * WARNING: Anytime that result.last_plus_one is modified it may be
+	 * necessary to call ev_range_info().
 	 */
-	while (esbuf.first < esbuf.last_plus_one) {
-	    if (range.ei_op & EI_OP_EV_OVERLAY) {
-		Op_bdry_handle  glyph_op_bdry;
-		range.ei_op &= ~EI_OP_EV_OVERLAY;
-		glyph_op_bdry = ev_find_glyph(chain, line_seq[line].pos);
-		if (glyph_op_bdry) {
-		    glyph = (Ev_overlay_handle)
-			glyph_op_bdry->more_info;
-		    glyph_pos = glyph_op_bdry->pos;
-		    if (esbuf.last_plus_one > glyph_pos) {
-			ESBUF_SET_POSITION(glyph_pos);
-		    }
-		}
-	    }
-	    rop_to_use = PIX_SRC;
-	    esbuf_last_plus_one = esbuf.last_plus_one;
-	    esbuf_sizeof_buf = esbuf.sizeof_buf;
-	    if (esbuf_last_plus_one > line_seq[line + 1].pos) {
-		esbuf.last_plus_one = line_seq[line + 1].pos;
-		esbuf.sizeof_buf = esbuf.last_plus_one - esbuf.first;
-	    }
-	    result = ei_process(
-		       eih, range.ei_op, &esbuf, result.pos.x, result.pos.y,
-			     rop_to_use, view->pw, rect, view->rect.r_left);
-	    /*
-	     * BUG ALERT: if we constrained esbuf.last_plus_one with the
-	     * start of the next line, ei_process returned EI_PR_BUF_EMPTIED
-	     * when it should have been EI_PR_HIT_RIGHT.
-	     */
-	    if (esbuf.last_plus_one < esbuf_last_plus_one
-		&& result.break_reason & EI_PR_BUF_EMPTIED) {
-		result.break_reason = EI_PR_HIT_RIGHT;
-	    }
-	    esbuf.last_plus_one = esbuf_last_plus_one;
-	    esbuf.sizeof_buf = esbuf_sizeof_buf;
-	    switch (result.break_reason) {
-	      case EI_PR_BUF_EMPTIED:
-		if (esbuf.last_plus_one == glyph_pos) {
-		    ev_do_glyph(view, &glyph_pos, &glyph, &result);
-		}
-		if (esbuf.last_plus_one == range.last_plus_one) {
-		    ev_range_info(chain_private->op_bdry,
-				  ES_INFINITY, &range);
-		    range.ei_op |= ei_op;
-		}
-		goto NextBuffer;
-	      case EI_PR_NEWLINE:
-		if (esbuf.last_plus_one == glyph_pos) {
-		    ev_do_glyph(view, &glyph_pos, &glyph, &result);
-		}
-		if (break_action & EV_QUIT) {
-		    goto Done;
-		}
-		result.last_plus_one++;
-		ADVANCE_TO_NEW_LINE;
-		rect->r_width += (rect->r_left - view->rect.r_left);
-		rect->r_left = view->rect.r_left;
-		if (result.last_plus_one == range.last_plus_one) {
-		    ev_range_info(chain_private->op_bdry,
-				  ES_INFINITY, &range);
-		    range.ei_op |= ei_op;
-		}
-		break;
-	      case EI_PR_HIT_RIGHT:
-		result.bounds.r_width = MIN(result.bounds.r_width,
-					    view->rect.r_width -
-				       (int) ev_get(view, EV_RIGHT_MARGIN, XV_NULL, XV_NULL, XV_NULL));
-		switch (private->right_break) {
-		  case EV_CLIP:{
-			struct ei_span_result span_result;
-			if (break_action & EV_QUIT
-			    && !(break_action & EV_Q_DORBREAK))
-			    goto Done;
-			span_result = ei_span_of_group(
-			     eih, &esbuf, EI_SPAN_RIGHT_ONLY | EI_SPAN_LINE,
-						       (int)result.last_plus_one);
-			if (span_result.first != ES_CANNOT_SET) {
-			    result.last_plus_one = span_result.last_plus_one;
-			    ESBUF_SET_POSITION(result.last_plus_one);
-			    if (result.last_plus_one >= range.last_plus_one) {
-				ev_range_info(chain_private->op_bdry,
-					      result.last_plus_one, &range);
-				range.ei_op |= ei_op;
-			    }
-			}
-			break;
-		    }
-		  case EV_WRAP_AT_WORD:{
-			Rect            tmp_rect;
-
-			tmp_rect = ev_rect_for_line(view, line);
-			if (result.last_plus_one > line_seq[line + 1].pos
-			    || rect_right(&tmp_rect) <= rect_right(rect)) {
-			    result.last_plus_one = line_seq[line + 1].pos;
-			}
-			if (break_action & EV_QUIT
-			    && !(break_action & EV_Q_DORBREAK))
-			    goto Done;
-			if (result.last_plus_one < esbuf.first) {
-			    last_plus_one = result.last_plus_one - 1;
-			    goto NextBuffer;
-			}
-			ESBUF_SET_POSITION(result.last_plus_one);
-			if (result.last_plus_one >= range.last_plus_one) {
-			    ev_range_info(chain_private->op_bdry,
-					  result.last_plus_one, &range);
-			    range.ei_op |= ei_op;
-			}
-			break;
-		    }		/* end case EV_WRAP_AT_WORD */
-		  default:
-		    if (break_action & EV_QUIT
-			&& !(break_action & EV_Q_DORBREAK))
-			goto Done;
-		    break;
-		}		/* switch right_break */
-		ADVANCE_TO_NEW_LINE;
-		if (break_action & (EV_QUIT | EV_Q_DORBREAK)) {
-		    goto Done;
-		}
-		rect->r_width += (rect->r_left - view->rect.r_left);
-		rect->r_left = view->rect.r_left;
-		break;		/* case EI_PR_HIT_RIGHT */
-	      case EI_PR_HIT_BOTTOM:
+	result.last_plus_one = last_plus_one = es_get_position(chain->esh);
+	if (AN_ERROR(line + 1 >= view->line_table.last_plus_one)) {
+		result.break_reason = EI_PR_HIT_BOTTOM;
 		goto Done;
-	      default:
-		break;
-	    }
-	    esbuf.buf += result.last_plus_one - esbuf.first;
-	    esbuf.sizeof_buf -= result.last_plus_one - esbuf.first;
-	    esbuf.first = result.last_plus_one;
 	}
-NextBuffer:
-	if (esbuf.last_plus_one >= stop_plus_one) {
-	    if (glyph_pos == ES_INFINITY)
-		goto Done;
-	    if (glyph_pos < stop_plus_one)
+	if ((ei_op & EI_OP_MEASURE) == 0) {
+		ev_range_info(chain_private->op_bdry, last_plus_one, &range);
+		range.ei_op |= ei_op;
+		if (range.ei_op & EI_OP_EV_OVERLAY) {
+			if (last_plus_one != line_seq[line].pos) {
+				/*
+				 * Start is part way into the glyph region. Pretend the call
+				 * really started at line's start.
+				 */
+				es_set_position(chain->esh, line_seq[line].pos);
+				rect->r_width += (rect->r_left - view->rect.r_left);
+				rect->r_left = view->rect.r_left;
+				goto Glyph_restart;
+			}
+		}
+		glyph = (Ev_overlay_handle) 0;
+	}
+	else {
+		range.last_plus_one = ES_INFINITY;
+		range.ei_op = ei_op;
+	}
+	esbuf.esh = chain->esh;
+	FOREVER {
+		esbuf.buf = buf;
+		if ((stop_plus_one < ES_INFINITY) &&
+				(stop_plus_one > last_plus_one) &&
+				(stop_plus_one - last_plus_one < EV_BUFSIZE)) {
+			esbuf.sizeof_buf = stop_plus_one - last_plus_one;
+		}
+		else
+			esbuf.sizeof_buf = EV_BUFSIZE;
+		if (ev_fill_esbuf(&esbuf, &last_plus_one)) {
+			if (result.break_reason == EI_PR_OUT_OF_RANGE) {
+				if (line + 1 < view->line_table.last_plus_one &&
+						line_seq[line + 1].pos < ES_INFINITY) {
+					break;
+				}
+				else
+					goto Done;
+			}
+			result.break_reason |= EI_PR_END_OF_STREAM;
+			break;
+		}
+		if (esbuf.last_plus_one > range.last_plus_one) {
+			ESBUF_SET_POSITION(range.last_plus_one);
+		}
+		if (esbuf.last_plus_one > stop_plus_one) {
+			ESBUF_SET_POSITION(stop_plus_one);
+		}
 		/*
-		 * BUG ALERT! (Maybe) Processing quit because of some other
-		 * condition. It is probably safe to quit, so lets try that.
+		 * Invariant at this point: esbuf.last_plus_one <= MIN[stop_plus_one,
+		 * range.last_plus_one]
 		 */
-		goto Done;
-	    /*
-	     * Have to keep painting until all of text under glyph has been
-	     * displayed.
-	     */
-	    glyph_save_result = result;
-	    stop_plus_one = glyph_pos;
+		while (esbuf.first < esbuf.last_plus_one) {
+			if (range.ei_op & EI_OP_EV_OVERLAY) {
+				Op_bdry_handle glyph_op_bdry;
+
+				range.ei_op &= ~EI_OP_EV_OVERLAY;
+				glyph_op_bdry = ev_find_glyph(chain, line_seq[line].pos);
+				if (glyph_op_bdry) {
+					glyph = (Ev_overlay_handle)
+							glyph_op_bdry->more_info;
+					glyph_pos = glyph_op_bdry->pos;
+					if (esbuf.last_plus_one > glyph_pos) {
+						ESBUF_SET_POSITION(glyph_pos);
+					}
+				}
+			}
+			rop_to_use = PIX_SRC;
+			esbuf_last_plus_one = esbuf.last_plus_one;
+			esbuf_sizeof_buf = esbuf.sizeof_buf;
+			if (esbuf_last_plus_one > line_seq[line + 1].pos) {
+				esbuf.last_plus_one = line_seq[line + 1].pos;
+				esbuf.sizeof_buf = esbuf.last_plus_one - esbuf.first;
+			}
+			result = ei_process(eih, range.ei_op, &esbuf, result.pos.x,
+					result.pos.y, rop_to_use, view->pw, rect,
+					view->rect.r_left);
+			/*
+			 * BUG ALERT: if we constrained esbuf.last_plus_one with the
+			 * start of the next line, ei_process returned EI_PR_BUF_EMPTIED
+			 * when it should have been EI_PR_HIT_RIGHT.
+			 */
+			if (esbuf.last_plus_one < esbuf_last_plus_one
+					&& result.break_reason & EI_PR_BUF_EMPTIED) {
+				result.break_reason = EI_PR_HIT_RIGHT;
+			}
+			esbuf.last_plus_one = esbuf_last_plus_one;
+			esbuf.sizeof_buf = esbuf_sizeof_buf;
+			switch (result.break_reason) {
+				case EI_PR_BUF_EMPTIED:
+					if (esbuf.last_plus_one == glyph_pos) {
+						ev_do_glyph(view, &glyph_pos, &glyph, &result);
+					}
+					if (esbuf.last_plus_one == range.last_plus_one) {
+						ev_range_info(chain_private->op_bdry,
+								ES_INFINITY, &range);
+						range.ei_op |= ei_op;
+					}
+					goto NextBuffer;
+				case EI_PR_NEWLINE:
+					if (esbuf.last_plus_one == glyph_pos) {
+						ev_do_glyph(view, &glyph_pos, &glyph, &result);
+					}
+					if (break_action & EV_QUIT) {
+						goto Done;
+					}
+					result.last_plus_one++;
+					ADVANCE_TO_NEW_LINE;
+					rect->r_width += (rect->r_left - view->rect.r_left);
+					rect->r_left = view->rect.r_left;
+					if (result.last_plus_one == range.last_plus_one) {
+						ev_range_info(chain_private->op_bdry,
+								ES_INFINITY, &range);
+						range.ei_op |= ei_op;
+					}
+					break;
+				case EI_PR_HIT_RIGHT:
+					result.bounds.r_width = MIN(result.bounds.r_width,
+							view->rect.r_width -
+							(int)ev_get(view, EV_RIGHT_MARGIN, XV_NULL, XV_NULL,
+									XV_NULL));
+					switch (private->right_break) {
+						case EV_CLIP:{
+								struct ei_span_result span_result;
+
+								if (break_action & EV_QUIT
+										&& !(break_action & EV_Q_DORBREAK))
+									goto Done;
+								span_result =
+										ei_span_of_group(eih, &esbuf,
+										EI_SPAN_RIGHT_ONLY | EI_SPAN_LINE,
+										(int)result.last_plus_one);
+								if (span_result.first != ES_CANNOT_SET) {
+									result.last_plus_one =
+											span_result.last_plus_one;
+									ESBUF_SET_POSITION(result.last_plus_one);
+									if (result.last_plus_one >=
+											range.last_plus_one) {
+										ev_range_info(chain_private->op_bdry,
+												result.last_plus_one, &range);
+										range.ei_op |= ei_op;
+									}
+								}
+								break;
+							}
+						case EV_WRAP_AT_WORD:{
+								Rect tmp_rect;
+
+								tmp_rect = ev_rect_for_line(view, line);
+								if (result.last_plus_one >
+										line_seq[line + 1].pos
+										|| rect_right(&tmp_rect) <=
+										rect_right(rect)) {
+									result.last_plus_one =
+											line_seq[line + 1].pos;
+								}
+								if (break_action & EV_QUIT
+										&& !(break_action & EV_Q_DORBREAK))
+									goto Done;
+								if (result.last_plus_one < esbuf.first) {
+									last_plus_one = result.last_plus_one - 1;
+									goto NextBuffer;
+								}
+								ESBUF_SET_POSITION(result.last_plus_one);
+								if (result.last_plus_one >= range.last_plus_one) {
+									ev_range_info(chain_private->op_bdry,
+											result.last_plus_one, &range);
+									range.ei_op |= ei_op;
+								}
+								break;
+							}	/* end case EV_WRAP_AT_WORD */
+						default:
+							if (break_action & EV_QUIT
+									&& !(break_action & EV_Q_DORBREAK))
+								goto Done;
+							break;
+					}	/* switch right_break */
+					ADVANCE_TO_NEW_LINE;
+					if (break_action & (EV_QUIT | EV_Q_DORBREAK)) {
+						goto Done;
+					}
+					rect->r_width += (rect->r_left - view->rect.r_left);
+					rect->r_left = view->rect.r_left;
+					break;	/* case EI_PR_HIT_RIGHT */
+				case EI_PR_HIT_BOTTOM:
+					goto Done;
+				default:
+					break;
+			}
+			esbuf.buf += result.last_plus_one - esbuf.first;
+			esbuf.sizeof_buf -= result.last_plus_one - esbuf.first;
+			esbuf.first = result.last_plus_one;
+		}
+	  NextBuffer:
+		if (esbuf.last_plus_one >= stop_plus_one) {
+			if (glyph_pos == ES_INFINITY)
+				goto Done;
+			if (glyph_pos < stop_plus_one)
+				/*
+				 * BUG ALERT! (Maybe) Processing quit because of some other
+				 * condition. It is probably safe to quit, so lets try that.
+				 */
+				goto Done;
+			/*
+			 * Have to keep painting until all of text under glyph has been
+			 * displayed.
+			 */
+			glyph_save_result = result;
+			stop_plus_one = glyph_pos;
+		}
 	}
-    }
-Done:
-    rect->r_left = save_left;
-    rect->r_width = save_width;
-    ASSUME(line_table_is_consistent(view->line_table));
-    return ((glyph_save_result.break_reason == EI_PR_OUT_OF_RANGE)
-	    ? result : glyph_save_result);
+  Done:
+	rect->r_left = save_left;
+	rect->r_width = save_width;
+	ASSUME(line_table_is_consistent(view->line_table));
+	return ((glyph_save_result.break_reason == EI_PR_OUT_OF_RANGE)
+			? result : glyph_save_result);
 }
 
 Pkg_private Ev_expand_status ev_expand(Ev_handle view,
