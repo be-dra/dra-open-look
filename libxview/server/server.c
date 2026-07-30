@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.49 2026/07/29 04:32:15 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.50 2026/07/29 21:27:28 dra Exp $";
 #endif
 #endif
 
@@ -7980,6 +7980,11 @@ void server_appl_busy(Frame fram, int busy, Frame except)
 	Xv_server srv = XV_SERVER_FROM_WINDOW(fram);
 
 	xv_set(srv, SERVER_APPL_BUSY, busy, except, NULL);
+}
+
+int xv_is_multibyte(void)
+{
+	return _xv_is_multibyte;
 }
 
 const Xv_pkg xv_server_pkg = {
