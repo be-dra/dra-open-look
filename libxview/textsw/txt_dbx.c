@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_dbx_c_sccsid[] = "@(#)txt_dbx.c 20.26 93/06/28 DRA: $Id: txt_dbx.c,v 4.5 2025/03/16 13:37:28 dra Exp $";
+char     txt_dbx_c_sccsid[] = "@(#)txt_dbx.c 20.26 93/06/28 DRA: $Id: txt_dbx.c,v 4.6 2026/07/30 07:43:45 dra Exp $";
 #endif
 
 /*
@@ -218,14 +218,7 @@ Pkg_private int textsw_nop_notify(Textsw abstract, Attr_avlist attrs)
     return 0;
 }
 
-Xv_public Textsw_index
-#ifdef OW_I18N
-textsw_index_for_file_line_wc(abstract, line)
-    Textsw          abstract;
-    int             line;
-#else
-textsw_index_for_file_line(Textsw abstract, int line)
-#endif
+Xv_public Textsw_index textsw_index_for_file_line(Textsw abstract, int line)
 {
     Es_index result;
     Textsw_private priv;
@@ -238,29 +231,10 @@ textsw_index_for_file_line(Textsw abstract, int line)
     return (Textsw_index)result;
 }
 
-#ifdef OW_I18N
-Xv_public          Textsw_index
-textsw_index_for_file_line(abstract, line)
-    Textsw          abstract;
-    int             line;
-{
-    Textsw_view_private view = VIEW_ABS_TO_REP(abstract);
-    Textsw_private    priv = TSWPRIV_FOR_VIEWPRIV(view);
-    Es_index        result;
-
-    result = ev_position_for_physical_line(priv->views, line, 0);
-    return ((Textsw_index) textsw_mbpos_from_wcpos(priv, result));
-}
-#endif /* OW_I18N */
-
 /* Following is for compatibility with old client code. */
 Pkg_private Textsw_index textsw_position_for_physical_line(Textsw abstract, int physical_line)	/* Note: 1-origin, not 0! */
 {
-#ifdef OW_I18N
-    return (textsw_index_for_file_line_wc(abstract, physical_line - 1));
-#else
     return (textsw_index_for_file_line(abstract, physical_line - 1));
-#endif
 }
 
 Xv_public void textsw_scroll_lines(Textsw_view v, int count)
