@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_e_menu_c_sccsid[] = "@(#)txt_e_menu.c 20.50 93/06/28 DRA: $Id: txt_e_menu.c,v 4.10 2024/11/14 15:49:27 dra Exp $";
+char     txt_e_menu_c_sccsid[] = "@(#)txt_e_menu.c 20.50 93/06/28 DRA: $Id: txt_e_menu.c,v 4.11 2026/07/30 07:45:47 dra Exp $";
 #endif
 
 /*
@@ -488,10 +488,6 @@ static Menu_item textsw_handle_extras_menuitem(Menu menu, Menu_item item)
 	register Textsw_private priv;
 	int again_state;
 
-#ifdef OW_I18N
-	CHAR cmd_line_wcs[MAXPATHLEN];
-#endif
-
 	if AN_ERROR
 		(textsw_view == 0)
 				return XV_NULL;
@@ -509,13 +505,7 @@ static Menu_item textsw_handle_extras_menuitem(Menu menu, Menu_item item)
 	priv->func_state |= TXTSW_FUNC_FILTER;
 	again_state = priv->func_state & TXTSW_FUNC_AGAIN;
 
-#ifdef OW_I18N
-	(void)mbstowcs(cmd_line_wcs, command_line, MAXPATHLEN);
-	textsw_record_extras(priv, cmd_line_wcs);
-#else
 	textsw_record_extras(priv, command_line);
-#endif
-
 	priv->func_state |= TXTSW_FUNC_AGAIN;
 
 	textsw_checkpoint_undo(TEXTSW_PUBLIC(priv),
