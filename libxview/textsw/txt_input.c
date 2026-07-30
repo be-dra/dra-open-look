@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.41 2025/02/15 13:16:37 dra Exp $";
+char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.42 2026/07/30 07:19:53 dra Exp $";
 #endif
 
 /*
@@ -42,16 +42,8 @@ char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_i
 
 Pkg_private int textsw_timer_active;
 static void textsw_do_undo(Textsw_view_private view);
-#ifdef OW_I18N
-Pkg_private     void textsw_implicit_commit_doit();
-#endif
 
-#ifdef OW_I18N
-Pkg_private	int
-#else
-static int
-#endif
-textsw_do_newline(Textsw_view_private view, int action);
+Pkg_private	int textsw_do_newline(Textsw_view_private view, int action);
 static void textsw_undo_notify(Textsw_private priv, Es_index start, Es_index delta);
 static int textsw_scroll_event(Textsw_view_private view, Event *ie, Notify_arg arg);
 static int textsw_function_key_event(Textsw_view_private view, Event *ie, int *result);
@@ -188,10 +180,6 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_
 	int action = event_action(ev);
 	register int down_event = event_is_down(ev);
 
-#ifdef OW_I18N
-	char byte;
-#endif
-
 /* 	caret_was_up = textsw->caret_state & TXTSW_CARET_ON; */
 	/* Watch out for caret turds */
 	if ((action == LOC_MOVE || action == LOC_WINENTER || action == LOC_WINEXIT)
@@ -202,50 +190,6 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_
 		textsw_take_down_caret(textsw);
 	}
 	textsw_note_event_shifts(textsw, ev);
-
-#ifdef OW_I18N
-	if (event_is_string(ev) && down_event && textsw->ic) {
-		int num_of_char =
-				mbstowcs(textsw->to_insert_next_free, event_string(ev),
-				((TXTSW_UI_BUFLEN - (textsw->to_insert_next_free -
-										textsw->to_insert)) - 1));
-
-		textsw->to_insert_next_free += num_of_char;
-
-		if (!textsw->preedit_start)
-			textsw_flush_caches(view, TFC_STD);
-		else {	/* This is for partial commit */
-			Es_index mark_pos, old_insert_pos, tmp;
-
-			/* Set the insertion position front of the preedit text */
-			old_insert_pos = EV_GET_INSERT(textsw->views);
-			mark_pos = textsw_find_mark_internal(textsw, textsw->preedit_start);
-			EV_SET_INSERT(textsw->views, mark_pos, tmp);
-			ev_remove_all_op_bdry(textsw->views, mark_pos, mark_pos,
-					EV_SEL_PRIMARY | EV_SEL_SECONDARY, EV_BDRY_TYPE_ONLY);
-
-			/* Resume undo and again for commited text */
-			textsw->state &=
-					~(TXTSW_NO_UNDO_RECORDING | TXTSW_NO_AGAIN_RECORDING);
-			/* Insert the commited text */
-			textsw_flush_caches(view, TFC_STD);
-
-			/* Turn off undo and again */
-			textsw->state |=
-					(TXTSW_NO_UNDO_RECORDING | TXTSW_NO_AGAIN_RECORDING);
-			/* Update preedit_start front of the preedit text */
-			textsw_remove_mark_internal(textsw, textsw->preedit_start);
-			textsw->preedit_start = textsw_add_mark_internal(textsw,
-					EV_GET_INSERT(textsw->views), NULL);
-
-			/* Reset the insertion position after the preedit text */
-			EV_SET_INSERT(textsw->views, old_insert_pos + num_of_char, tmp);
-		}
-		if ((textsw->state & TXTSW_EDITED) == 0)
-			textsw_possibly_edited_now_notify(textsw);
-		goto Done;
-	}
-#endif /* OW_I18N */
 
 	/* NOTE: This is just a hack for performance */
 	if ((action >= SPACE_CHAR) && (action <= ASCII_LAST))
@@ -302,18 +246,6 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_
 		/* Its already taken care by the procedure */
 
 	}
-	else if (action == ACTION_CAPS_LOCK) {
-		if (TXTSW_IS_READ_ONLY(textsw))
-			goto Read_Only;
-		if (!down_event) {
-			textsw->state ^= TXTSW_CAPS_LOCK_ON;
-			textsw_notify(view, TEXTSW_ACTION_CAPS_LOCK,
-					(textsw->state & TXTSW_CAPS_LOCK_ON), NULL);
-		}
-		/*
-		 * Type-in
-		 */
-	}
 	else if (textsw->track_state & TXTSW_TRACK_SECONDARY) {
 		/* No type-in processing during secondary (function) selections */
 	}
@@ -353,19 +285,10 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_
 						if (TXTSW_IS_READ_ONLY(textsw))
 							goto Read_Only;
 
-#ifdef OW_I18N
-						/* This is a transaction for bug 1090046. */
-						if (textsw->preedit_start)
-							textsw->blocking_newline = TRUE;
+						if (textsw->state & TXTSW_DIFF_CR_LF)
+							(void)textsw_do_newline(view, action);
 						else
-#endif
-
-						{	/* 1030878 */
-							if (textsw->state & TXTSW_DIFF_CR_LF)
-								(void)textsw_do_newline(view, action);
-							else
-								(void)textsw_do_newline(view, '\n');
-						}
+							(void)textsw_do_newline(view, '\n');
 					}
 					break;
 				default:
@@ -373,34 +296,7 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_
 						goto Read_Only;
 					if (!down_event)
 						break;
-					if (textsw->state & TXTSW_CAPS_LOCK_ON) {
-						if ((char)action >= 'a' && (char)action <= 'z')
-							ev->ie_code += 'A' - 'a';
-						/* BUG ALERT: above may need to set event_id */
-					}
 
-#ifdef OW_I18N
-					/*
-					 * Asian Textsw dosen't handle NULL character as current spec.
-					 * If the spec is changed to handle NULL character, following
-					 * statement should be removed.
-					 */
-					if (action == NULL)
-						break;
-					byte = event_action(ev);
-
-#ifdef sun
-					if (isascii(byte))
-						/*
-						 * Type casting wchar_t is not quite right thing
-						 * to do, however we know ASCII works in Sun.
-						 */
-						*textsw->to_insert_next_free++ = byte;
-					else
-#endif
-
-						mbtowc(textsw->to_insert_next_free++, &byte, 1);
-#else /* OW_I18N */
 					if (event_is_string(ev)) {
 						char *p = event_string(ev);
 						while (*p) {
@@ -412,7 +308,6 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_
 						SERVERTRACE((505, "ins '%c'\n", event_action(ev)));
 						*textsw->to_insert_next_free++ = (char)event_action(ev);
 					}
-#endif /* OW_I18N */
 
 					if (textsw->to_insert_next_free ==
 							textsw->to_insert + sizeof(textsw->to_insert)) {
@@ -555,12 +450,7 @@ Pkg_private Key_map_handle textsw_do_filter(Textsw_view_private view, Event *ie)
 }
 
 
-#ifdef OW_I18N
-Pkg_private	int
-#else
-static int
-#endif
-textsw_do_newline(Textsw_view_private view, int action)
+Pkg_private	int textsw_do_newline(Textsw_view_private view, int action)
 {
 	register Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
 	int delta;
@@ -754,14 +644,6 @@ Pkg_private void textsw_end_function(Textsw_view_private view, unsigned function
 
 static void textsw_begin_again(Textsw_view_private view)
 {
-#ifdef OW_I18N
-    /*
-     * Hopefully, wanted to put it right before textsw_do_again(),
-     * but textsw_begin_function() makes another checkpoint
-     * by calling textsw_checkpoint_again() for AGAIN action.
-     */
-    textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
     textsw_begin_function(view, TXTSW_FUNC_AGAIN);
 }
 
@@ -790,9 +672,6 @@ static void textsw_begin_undo(Textsw_view_private view)
 
 static void textsw_end_undo(Textsw_view_private view)
 {
-#ifdef OW_I18N
-    textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
     textsw_do_undo(view);
     textsw_end_function(view, TXTSW_FUNC_UNDO);
     textsw_update_scrollbars(TSWPRIV_FOR_VIEWPRIV(view), TEXTSW_VIEW_NULL);
@@ -865,17 +744,7 @@ static void textsw_do_undo(Textsw_view_private view)
 		CHAR *name;
 
 		if (textsw_file_name(priv, &name) == 0) {
-
-#ifdef OW_I18N
-			char *name_mb = _xv_wcstombsdup(name);
-
-			textsw_notify(view, TEXTSW_ACTION_LOADED_FILE, name_mb,
-					TEXTSW_ACTION_LOADED_FILE_WCS, name, NULL);
-			if (name_mb)
-				free(name_mb);
-#else
 			textsw_notify(view, TEXTSW_ACTION_LOADED_FILE, name, NULL);
-#endif
 		}
 		priv->state &= ~TXTSW_EDITED;
 		if (textsw_menu_get(priv)
@@ -1022,21 +891,9 @@ static int textsw_mouse_event(Textsw_view_private view, Event *ie)
 			}
 			break;
 		case ACTION_DRAG_MOVE:
-
-#ifdef OW_I18N
-			/* Event is always down event */
-			textsw_implicit_commit(priv);
-#endif
-
 			textsw_do_remote_drag_copy_move(view, ie, 0);
 			break;
 		case ACTION_DRAG_COPY:
-
-#ifdef OW_I18N
-			/* Event is always down event */
-			textsw_implicit_commit(priv);
-#endif
-
 			textsw_do_remote_drag_copy_move(view, ie, 1);
 			break;
 		default:
@@ -1169,99 +1026,39 @@ static int textsw_caret_motion_event(Textsw_view_private view, Event *ie)
 
 	switch (action) {
 		case ACTION_GO_CHAR_FORWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_CHAR_FORWARD);
 			break;
 		case ACTION_GO_CHAR_BACKWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_CHAR_BACKWARD);
 			break;
 		case ACTION_GO_COLUMN_BACKWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_PREVIOUS_LINE);
 			break;
 		case ACTION_GO_COLUMN_FORWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_NEXT_LINE);
 			break;
 		case ACTION_GO_WORD_BACKWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_WORD_BACKWARD);
 			break;
 		case ACTION_GO_WORD_FORWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_WORD_FORWARD);
 			break;
 		case ACTION_GO_WORD_END:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_WORD_END);
 			break;
 		case ACTION_GO_LINE_BACKWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_LINE_START);
 			break;
 		case ACTION_GO_LINE_END:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_LINE_END);
 			break;
 		case ACTION_GO_LINE_FORWARD:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_NEXT_LINE_START);
 			break;
 		case ACTION_GO_DOCUMENT_START:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_DOCUMENT_START);
 			break;
 		case ACTION_GO_DOCUMENT_END:
-
-#ifdef OW_I18N
-			textsw_implicit_commit(TSWPRIV_FOR_VIEWPRIV(view));
-#endif
-
 			textsw_move_caret(view, TXTSW_DOCUMENT_END);
 			break;
 		default:
@@ -1284,33 +1081,19 @@ static int textsw_field_event(Textsw_view_private view, Event *ie)
     int             is_field_event = FALSE;
 
     if (action == ACTION_SELECT_FIELD_FORWARD) {
-#ifdef OW_I18N
-	static CHAR bar_gt[] = { '|', '>', 0 };
-#endif
 	is_field_event = TRUE;
 
 	if (down_event) {
 	    textsw_flush_caches(view, TFC_STD);
-#ifdef OW_I18N
-	    textsw_match_selection_and_normalize(view, bar_gt,
-#else
 	    textsw_match_selection_and_normalize(view, "|>",
-#endif
 						      TEXTSW_FIELD_FORWARD);
 	}
     } else if (action == ACTION_SELECT_FIELD_BACKWARD) {
-#ifdef OW_I18N
-	static CHAR bar_lt[] = { '<', '|',  0 };
-#endif
 	is_field_event = TRUE;
 
 	if (down_event) {
 	    textsw_flush_caches(view, TFC_STD);
-#ifdef OW_I18N
-	    textsw_match_selection_and_normalize(view, bar_lt,
-#else
 	    textsw_match_selection_and_normalize(view, "<|",
-#endif
 						     TEXTSW_FIELD_BACKWARD);
 	}
     } else if (action == ACTION_MATCH_DELIMITER) {
@@ -1529,67 +1312,9 @@ static int textsw_erase_action(Textsw_view win, Event *ie)
 		}
 		textsw_flush_caches(view, TFC_INSERT | TFC_PD_IFF_INSERT | TFC_SEL);
 
-#ifdef OW_I18N
-		(void)textsw_do_edit(view, edit_unit, direction, 0);
-#else
 		(void)textsw_do_edit(view, edit_unit, (unsigned)direction);
-#endif
 	}
 	/* scrollbar updating needed esp. for large deletes */
 	textsw_update_scrollbars(priv, TEXTSW_VIEW_NULL);
 	return (TRUE);
 }
-
-#ifdef OW_I18N
-#define	TXT_INSERT_LEN(x) ((TXTSW_UI_BUFLEN - \
-			    ((x)->to_insert_next_free - (x)->to_insert)) - 1)
-/*
- * textsw package interface to archive implicit commit.
- * Assumption:  1. IC is valid
- *		2. conversion mode is ON
- *		3. preedit text exist.
- *   So, textsw_implicit_commit_doit() has to be called when
- *   priv->preedit_start is non NULL case.
- */
-Pkg_private	void textsw_implicit_commit_doit(register Textsw_private	priv)
-{
-    register Textsw		textsw_public = TEXTSW_PUBLIC(priv);
-    char		       *committed_string = 0;
-
-    xv_set(textsw_public, WIN_IC_RESET, NULL);
-    committed_string = (char *)xv_get(textsw_public, WIN_IC_COMMIT_STRING);
-    xv_set(textsw_public, WIN_IC_CONVERSION, TRUE, NULL);
-
-    /*
-     *  Workaroud for 1092682 and 1094340
-     *  If preedit_draw() for erasing the preedit text (after now call it as
-     *  preedit_erasing) isn't called yet, call it in order for any processing
-     *  after textsw_implicit_commit_doit(). The real preedit_erasing sent by
-     *  mle (Htt) will process nothing.
-     *  This is a hack for such mle. mle should send the preedit_erasing before
-     *  the committed text, when IC is reseted.
-     */
-    if (priv->preedit_start) { /* preedit text dosen't erase yet. */
-	XIMPreeditDrawCallbackStruct	callback_data;
-
-	callback_data.chg_first = 0;
-	callback_data.chg_length = EV_GET_INSERT(priv->views) -
-			textsw_find_mark_internal(priv, priv->preedit_start);
-	callback_data.text = (XIMText *)0;
-	textsw_pre_edit_draw(priv->ic, (XPointer)TEXTSW_PUBLIC(priv),
-			     &callback_data);
-    }
-
-    /* insert committed text into window if exists */
-    if (committed_string != (char *)NULL && *committed_string != '\0') {
-	int	num_of_char = mbstowcs(priv->to_insert_next_free,
-				       committed_string,
-				       TXT_INSERT_LEN(priv));
-	priv->to_insert_next_free += num_of_char;
-	textsw_flush_caches(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv), OPENWIN_NTH_VIEW, 0)), TFC_STD);
-
-	if ((priv->state & TXTSW_EDITED) == 0)
-	    textsw_possibly_edited_now_notify(priv);
-    }
-}
-#endif /* OW_I18N */
