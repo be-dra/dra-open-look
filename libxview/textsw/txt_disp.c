@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_disp_c_sccsid[] = "@(#)txt_disp.c 20.31 93/06/28 DRA: $Id: txt_disp.c,v 4.2 2024/12/23 09:57:31 dra Exp $";
+char     txt_disp_c_sccsid[] = "@(#)txt_disp.c 20.31 93/06/28 DRA: $Id: txt_disp.c,v 4.3 2026/07/30 07:44:44 dra Exp $";
 #endif
 
 /*
@@ -18,13 +18,6 @@ char     txt_disp_c_sccsid[] = "@(#)txt_disp.c 20.31 93/06/28 DRA: $Id: txt_disp
 #include <xview_private/win_info.h>
 #include <xview/win_notify.h>
 #include <xview/pixwin.h>
-#ifdef OW_I18N
-#ifdef FULL_R5
-#include <xview/frame.h>
-#include <X11/Xlib.h>
-#endif /* FULL_R5 */    
-#endif /* OW_I18N */    
-
 
 /* Used as hack to communicate between textsw_display and textsw_display_view
  * to establish who should manage the caret. */
@@ -110,13 +103,6 @@ Pkg_private void textsw_repaint(Textsw_view_private view)
 
 Pkg_private void textsw_resize(Textsw_view_private view)
 {
-
-#ifdef OW_I18N
-#ifdef FULL_R5
-    Textsw_private    priv = TSWPRIV_FOR_VIEWPRIV(view);
-#endif /* FULL_R5 */    
-#endif /* OW_I18N */    
-
     win_getsize(VIEW_PUBLIC(view), &view->rect);
 
     /* Cannot trust the x and y from openwin */
@@ -131,34 +117,6 @@ Pkg_private void textsw_resize(Textsw_view_private view)
 			    	DROP_SITE_REGION, &view->rect,
 			    	NULL);
 	}
-#ifdef OW_I18N			    
-#ifdef FULL_R5
-    if (priv->ic) {
-	XRectangle	x_rect;
-	XVaNestedList   preedit_nested_list;
-    	    
-	preedit_nested_list = NULL;
-    	    
-	if  (priv->xim_style & (XIMPreeditPosition | XIMPreeditArea)) {
-	    x_rect.x = view->rect.r_left;
-	    x_rect.y = view->rect.r_top;
-	    x_rect.width = view->rect.r_width;
-	    x_rect.height = view->rect.r_height;
-      	
-            preedit_nested_list = XVaCreateNestedList(NULL, 
-					     XNArea, &x_rect, 
-					     NULL);
-	}
-        
-	if (preedit_nested_list) {
-	    XSetICValues(priv->ic, XNPreeditAttributes, preedit_nested_list, 
-        	     NULL);
-            XFree(preedit_nested_list);
-	}
-    }
-#endif /* FULL_R5 */
-#endif /* OW_I18N */    
-	           			    
 }
 
 Pkg_private void textsw_do_resize(Textsw_view abstract)
