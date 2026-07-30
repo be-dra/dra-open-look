@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.16 2025/11/01 14:56:37 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.17 2026/07/30 07:42:41 dra Exp $";
 #endif
 
 /*
@@ -34,9 +34,6 @@ char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_att
 #include <xview_private/font_impl.h>
 
 Xv_public Pixfont *xv_pf_open(char *fontname, Xv_server srv);
-#ifdef OW_I18N
-Pkg_private Es_index textsw_get_contents_wcs();
-#endif /* OW_I18N */
 Xv_public int xv_pf_close(Pixfont *pf);
 
 #ifndef CTRL
@@ -67,35 +64,17 @@ static Textsw_status set_first(Textsw_view_private view, char *error_msg,
     Es_status       load_status;
     Textsw_status   result = TEXTSW_STATUS_OKAY;
     Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
-#ifdef OW_I18N
-    Pkg_private void     textsw_normalize_view_wc();
-#else
-#endif
 
     msg = (error_msg) ? error_msg : msg_buf;
-#ifdef OW_I18N
-    if (filename && (STRLEN(filename) > 0))
-#else
-    if (filename)
-#endif
-	{
+    if (filename) {
 		CHAR            scratch_name[MAXNAMLEN];
 		Es_handle       new_esh;
-#ifdef OW_I18N
-		char           *filename_mb;
-#endif
 		/* Ensure no caret turds will leave behind */
 		textsw_take_down_caret(priv);
 		load_status =
 	    	textsw_load_file_internal(priv, filename, scratch_name, &new_esh,
 									ES_CANNOT_SET, 1);
 		if (load_status == ES_SUCCESS) {
-#ifdef OW_I18N
-	    	SET_CONTENTS_UPDATED(priv, TRUE);
-	    	if ((int) es_get((Es_handle)
-					es_get(new_esh, ES_PS_ORIGINAL), ES_SKIPPED))
-				textsw_invalid_data_notice(view, filename, 1);
-#endif /* OW_I18N */
 	    	if (first_line > -1) {
 				first = textsw_position_for_physical_line(
 				     		VIEW_PUBLIC(view), first_line + 1);
@@ -108,16 +87,7 @@ static Textsw_status set_first(Textsw_view_private view, char *error_msg,
 			      		EV_DISPLAY_LEVEL, EV_DISPLAY,
 			      		NULL);
 	    	}
-#ifdef OW_I18N
-	    	filename_mb = _xv_wcstombsdup(filename);
-	    	textsw_notify(view,
-			  	TEXTSW_ACTION_LOADED_FILE, filename_mb,
-			  	TEXTSW_ACTION_LOADED_FILE_WCS, filename, NULL);
-	    	if (filename_mb)
-				free(filename_mb);
-#else
 	    	textsw_notify(view, TEXTSW_ACTION_LOADED_FILE, filename, NULL);
-#endif
 		}
 		else {
 	    	textsw_format_load_error(msg, load_status, filename, scratch_name);
@@ -141,11 +111,7 @@ static Textsw_status set_first(Textsw_view_private view, char *error_msg,
 				OPENWIN_END_EACH
 	    	}
 			else {
-#ifdef OW_I18N
-				textsw_normalize_view_wc(VIEW_PUBLIC(view), first);
-#else
 				textsw_normalize_view(VIEW_PUBLIC(view), first);
-#endif
 			}
 		}
 		else {
@@ -175,14 +141,6 @@ Pkg_private void textsw_set_null_view_avlist(Textsw_private priv, Attr_avlist at
 			case TEXTSW_FILE_CONTENTS:
 			case TEXTSW_FILE:
 			case TEXTSW_FIRST:
-
-#ifdef OW_I18N
-			case TEXTSW_CONTENTS_WCS:
-			case TEXTSW_FILE_CONTENTS_WCS:
-			case TEXTSW_FILE_WCS:
-			case TEXTSW_INSERT_FROM_FILE_WCS:
-			case TEXTSW_FIRST_WC:
-#endif /* OW_I18N */
 
 			case TEXTSW_FIRST_LINE:
 			case TEXTSW_INSERT_FROM_FILE:
@@ -224,16 +182,149 @@ Pkg_private void textsw_set_null_view_avlist(Textsw_private priv, Attr_avlist at
 	/* now attrs has no view attrs left uncomsumed in it */
 }
 
-#ifdef OW_I18N
-#define	IC_ACTIVE_TRUE		1
-#define	IC_ACTIVE_FALSE		2
-#endif
-
-Pkg_private void textsw_set_internal_tier2(Textsw_private textsw,
-	Textsw_view_private view,
+static void textsw_set_internal_tier2(Textsw_private textsw,
+		Textsw_view_private view,
     Attr_attribute *attrs, int is_folio, Textsw_status  *status_ptr,
-    char **error_msg_addr, CHAR *file, CHAR *name_wc, int *reset_mode,
-	int *all_views, int *update_scrollbar, int *read_only_changed);
+    char **error_msg_addr, CHAR *file, int *reset_mode,
+	int *all_views, int *update_scrollbar, int *read_only_changed)
+/*
+ * TRUE= we're setting attr's on the textsw_folio FALSE= we're setting attr's
+ * on the textsw_view
+ */
+{
+    int    temp;
+    unsigned long read_only_start;
+#ifndef LEFT_HAND_SIDE_CAST
+    int            *int_ptr;
+#endif /* LEFT_HAND_SIDE_CAST */
+
+    switch (*attrs) {
+          case TEXTSW_FOR_ALL_VIEWS:
+            *all_views = TRUE;
+            break;
+          case TEXTSW_END_ALL_VIEWS:
+            *all_views = FALSE;
+            break;
+
+          case TEXTSW_ADJUST_IS_PENDING_DELETE:
+            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_ADJUST_IS_PD);
+            break;
+          case TEXTSW_BROWSING:
+            read_only_start = TXTSW_IS_READ_ONLY(textsw);
+            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_READ_ONLY_SW);
+            *read_only_changed = (read_only_start!=TXTSW_IS_READ_ONLY(textsw));            break;
+
+          case TEXTSW_CONFIRM_OVERWRITE:
+            SET_BOOL_FLAG(textsw->state, attrs[1],
+                          TXTSW_CONFIRM_OVERWRITE);
+            break;
+          case TEXTSW_CONTENTS:
+            temp = (textsw->state & TXTSW_NO_AGAIN_RECORDING);
+            if (!(textsw->state & TXTSW_INITIALIZED))
+                textsw->state |= TXTSW_NO_AGAIN_RECORDING;
+            textsw_replace(VIEW_PUBLIC(view), 0,
+                   TEXTSW_INFINITY, (char *)attrs[1],
+				   (long)strlen((char *)attrs[1]));
+			if (!(textsw->state & TXTSW_INITIALIZED)) {
+                SET_BOOL_FLAG(textsw->state, temp, TXTSW_NO_AGAIN_RECORDING);
+			}
+            break;
+          case TEXTSW_DESTROY_ALL_VIEWS:
+            SET_BOOL_FLAG(textsw->state, attrs[1],
+                          TXTSW_DESTROY_ALL_VIEWS);
+            break;
+          case TEXTSW_DIFFERENTIATE_CR_LF: /*1030878*/
+            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_DIFF_CR_LF);
+            break;
+          case TEXTSW_STORE_CHANGES_FILE:
+            SET_BOOL_FLAG(textsw->state, attrs[1],
+                          TXTSW_STORE_CHANGES_FILE);
+            break;
+          case TEXTSW_EDIT_BACK_CHAR:
+            textsw->edit_bk_char = (char) (attrs[1]);
+            break;
+          case TEXTSW_EDIT_BACK_WORD:
+            textsw->edit_bk_word = (char) (attrs[1]);
+            break;
+          case TEXTSW_EDIT_BACK_LINE:
+            textsw->edit_bk_line = (char) (attrs[1]);
+            break;
+          case TEXTSW_ERROR_MSG:
+            *error_msg_addr = (char *) (attrs[1]);
+            (*error_msg_addr)[0] = '\0';
+            break;
+          case TEXTSW_INSERT_FROM_FILE:{
+                *status_ptr = textsw_get_from_file(view, (CHAR *) (attrs[1]),
+                                             TRUE);
+                if (*status_ptr == TEXTSW_STATUS_OKAY)
+                    *update_scrollbar = 2;
+                break;
+            };
+          case TEXTSW_INSERT_MAKES_VISIBLE:
+            switch ((Textsw_enum) attrs[1]) {
+              case TEXTSW_ALWAYS:
+              case TEXTSW_IF_AUTO_SCROLL:
+                textsw->insert_makes_visible = (Textsw_enum) attrs[1];
+                break;
+              default:
+                *status_ptr = TEXTSW_STATUS_BAD_ATTR_VALUE;
+                break;
+            }
+            break;
+
+          case TEXTSW_MULTI_CLICK_SPACE:
+            if ((int) (attrs[1]) != -1)
+                textsw->multi_click_space = (int) (attrs[1]);
+            break;
+          case TEXTSW_MULTI_CLICK_TIMEOUT:
+            if ((int) (attrs[1]) != -1)
+                textsw->multi_click_timeout = (int) (attrs[1]);
+            break;
+          case TEXTSW_NO_REPAINT_TIL_EVENT:
+            ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, (int) (attrs[1]),
+                   NULL);
+            break;
+           case TEXTSW_RESET_MODE:
+            *reset_mode = (int) (attrs[1]);
+            break;
+          case TEXTSW_RESET_TO_CONTENTS:
+            textsw_reset_2(TEXTSW_PUBLIC(textsw), 0, 0, TRUE, FALSE);
+            break;
+           case TEXTSW_TAB_WIDTHS:
+#ifdef LEFT_HAND_SIDE_CAST
+            /* XXX cheat here */
+            *(int *) attrs = (int) EI_TAB_WIDTHS;
+#else
+            int_ptr = (int *) attrs;
+            *int_ptr = (int) EI_TAB_WIDTHS;
+#endif /* LEFT_HAND_SIDE_CAST */
+            ei_plain_text_set(textsw->views->eih, attrs);
+            /* (void) ei_set(textsw->views->eih, EI_TAB_WIDTHS, attrs[1], 0); */            break;
+          case TEXTSW_UPDATE_SCROLLBAR:
+            *update_scrollbar = (all_views) ? 2 : 1;
+            break;
+
+          case WIN_CMS_CHANGE:
+            if (is_folio) {
+                Xv_Window       textsw_public = TEXTSW_PUBLIC(textsw);
+                Xv_Window       view_public;
+/*                 Textsw_view_private view_next; */
+                Xv_Drawable_info *info;
+                Cms             cms;
+
+                DRAWABLE_INFO_MACRO(textsw_public, info);
+                cms = xv_cms(info);
+				OPENWIN_EACH_VIEW(textsw_public, view_public)
+                    window_set_cms(view_public, cms,
+									xv_cms_bg(info), xv_cms_fg(info));
+				OPENWIN_END_EACH
+            } else {
+                textsw_view_cms_change(textsw, view);
+            }
+            break;
+    }
+}
+
 
 Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_private view, Attr_attribute *attrs, int is_folio)
 /*
@@ -246,29 +337,14 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 	Textsw_status *status_ptr = &status_dummy;
 	char error_dummy[256];
 	char *error_msg = error_dummy;
-
-#ifdef OW_I18N
-	CHAR file[MAXPATHLEN];
-	CHAR name_wc[MAXPATHLEN];
-
-#ifdef FULL_R5
-	XVaNestedList va_nested_list;
-#endif /* FULL_R5 */
-#else /* OW_I18N */
 	char *file = NULL;
-
-	/* Added because it is used on both sides of OW_I18N ifdef. */
-	/* When OW_I18n is not defined, it is an unused parameter */
-	/* of textsw_set_internal_tier2. */
-	char *name_wc = NULL;
-#endif /* OW_I18N */
 	int reset_mode = -1;
 	int temp;
 	int all_views = 0;
 	int display_views = 0;
 	int update_scrollbar = 0;
 	int read_only_changed = 0;
-	int read_only_start;
+	unsigned long read_only_start;
 	int row_height;
 	int set_read_only_esh = 0;
 	int str_length = 0;
@@ -281,13 +357,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
  * Remove it after a suitable grace period
     int    consume_attrs = 0;
  */
-
-#ifdef OW_I18N
-	int ic_active_changed = 0;
-	extern CHAR _xv_null_string_wc[];
-
-	file[0] = NULL;
-#endif
 
 	error_dummy[0] = '\0';
 
@@ -347,37 +416,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 					/* don't want things to autoclear for us! jcb 5/15/90 */
 					xv_set(self, OPENWIN_AUTO_CLEAR, FALSE, NULL);
 
-#ifdef OW_I18N
-					if (priv->need_im) {
-						Textsw_view view_public = VIEW_PUBLIC(view);
-						Xv_Drawable_info *info;
-
-						DRAWABLE_INFO_MACRO(view_public, info);
-
-						/*
-						 * create IC, even read only case. Because the mode may be
-						 * changed to Edit from Read-only mode later on.
-						 */
-						priv->ic = (XIC) xv_get(self, WIN_IC);
-
-						if (priv->ic) {
-							xv_set(view_public, WIN_IC, priv->ic, NULL);
-
-#ifdef FULL_R5
-							XGetICValues(priv->ic, XNInputStyle,
-									&priv->xim_style, NULL);
-							window_set_ic_focus_win(view_public, priv->ic,
-									xv_xid(info));
-#endif /* FULL_R5 */
-						}
-						if (!priv->ic || TXTSW_IS_READ_ONLY(priv) ||
-								xv_get(self, WIN_IC_ACTIVE) == FALSE)
-							xv_set(view_public, WIN_IC_ACTIVE, FALSE, NULL);
-					}
-					else
-						xv_set(VIEW_PUBLIC(view), WIN_IC_ACTIVE, FALSE, NULL);
-#endif /* OW_I18N */
-
 					textsw_resize(view);
 				}
 				break;
@@ -423,15 +461,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				break;
 			case TEXTSW_FILE:
 
-#ifndef OW_I18N
 				file = (char *)attrs[1];
-#else /* OW_I18N */
-				if ((char *)(attrs[1]) == (char *)NULL)
-					file[0] = NULL;
-				else
-					(void)mbstowcs(file, (char *)(attrs[1]), MAXPATHLEN);
-#endif /* OW_I18N */
-
 				break;
 
 			case TEXTSW_FILE_CONTENTS:
@@ -439,29 +469,9 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				ps_esh = ES_NULL;
 				str_length = (attrs[1] ? strlen((char *)attrs[1]) : 0);
 
-#ifdef OW_I18N
-				if (str_length > 0)
-					(void)mbstowcs(name_wc, (char *)(attrs[1]), MAXPATHLEN);
-				goto Do_create_file;
-
-			case TEXTSW_FILE_CONTENTS_WCS:
-				textsw_flush_caches(view, TFC_PD_SEL);
-				ps_esh = ES_NULL;
-				str_length = (attrs[1] ? STRLEN((CHAR *) attrs[1]) : 0);
-				if (str_length > 0)
-					STRCPY(name_wc, (CHAR *) (attrs[1]));
-
-			  Do_create_file:
-				textsw_implicit_commit(priv);
-				if (STRLEN(file) == 0) {	/* } for match */
-					if (str_length > 0) {	/* } for match */
-						scratch_esh = es_file_create(name_wc, 0, &es_status);
-#else /* OW_I18 */
 				if (!file) {
 					if (str_length > 0) {
 						scratch_esh = es_file_create((char *)attrs[1], 0, &es_status);
-#endif /* OW_I18N */
-
 						/* Ensure no caret turds will leave behind */
 						textsw_take_down_caret(priv);
 					}
@@ -471,15 +481,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 
 					if (scratch_esh) {
 
-#ifdef OW_I18N
-						SET_CONTENTS_UPDATED(priv, TRUE);
-						if ((int)es_get(scratch_esh, ES_SKIPPED))
-							textsw_invalid_data_notice(view, name_wc, 1);
-						mem_esh = es_mem_create(es_get_length(scratch_esh) + 1,
-								_xv_null_string_wc);
-#else /* OW_I18N */
 						mem_esh = es_mem_create((unsigned)es_get_length(scratch_esh) + 1, "");
-#endif /* OW_I18N */
 
 						if (mem_esh) {
 							if (es_copy(scratch_esh, mem_esh,
@@ -493,12 +495,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 						}
 						if (mem_esh) {
 							scratch_esh = es_mem_create(priv->es_mem_maximum,
-
-#ifdef OW_I18N
-									_xv_null_string_wc);
-#else
 									"");
-#endif
 
 							if (scratch_esh) {
 								ps_esh = textsw_create_ps(priv, mem_esh,
@@ -540,14 +537,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 
 			case TEXTSW_FIRST:
 
-#ifdef OW_I18N
-				*status_ptr = set_first(view, error_msg, file, reset_mode,
-						textsw_wcpos_from_mbpos(priv, (Es_index) (attrs[1])),
-						-1, all_views);
-				goto MakeSure;
-			case TEXTSW_FIRST_WC:
-#endif /* OW_I18N */
-
 				*status_ptr = set_first(view, error_msg, file, reset_mode,
 						(Es_index) (attrs[1]), -1, all_views);
 				goto MakeSure;
@@ -560,16 +549,9 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				 * called with TEXT_FIRST.
 				 */
 
-#ifdef OW_I18N
-				if ((STRLEN(file) > 0) && !update_scrollbar)
-					update_scrollbar = 2;
-				file[0] = NULL;
-#else
 				if (file && !update_scrollbar)
 					update_scrollbar = 2;
 				file = NULL;
-#endif /* OW_I18N */
-
 				display_views = 0;
 				break;
 			case TEXTSW_CHECKPOINT_FREQUENCY:
@@ -585,16 +567,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				priv->ignore_limit = (unsigned)(attrs[1]);
 				break;
 			case TEXTSW_INSERTION_POINT:
-
-#ifdef OW_I18N
-				textsw_implicit_commit(priv);
-				(void)textsw_set_insert(priv,
-						textsw_wcpos_from_mbpos(priv, (Es_index) (attrs[1])));
-				break;
-			case TEXTSW_INSERTION_POINT_WC:
-				textsw_implicit_commit(priv);
-#endif /* OW_I18N */
-
 				(void)textsw_set_insert(priv, (Es_index) (attrs[1]));
 				break;
 			case TEXTSW_LINE_BREAK_ACTION:{
@@ -657,17 +629,10 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				break;
 			case TEXTSW_READ_ONLY:
 				read_only_start = TXTSW_IS_READ_ONLY(priv);
-
-#ifdef OW_I18N
-				/* to Read-only mode from Edit mode */
-				if (!read_only_start && attrs[1] == TRUE)
-					textsw_implicit_commit(priv);
-#endif
-
 				SET_BOOL_FLAG(priv->state, attrs[1], TXTSW_READ_ONLY_ESH);
 				set_read_only_esh = (priv->state & TXTSW_READ_ONLY_ESH);
 				read_only_changed =
-						(read_only_start != TXTSW_IS_READ_ONLY(priv));
+					((unsigned long)read_only_start !=TXTSW_IS_READ_ONLY(priv));
 				break;
 			case TEXTSW_STATUS:
 				status_ptr = (Textsw_status *) attrs[1];
@@ -763,26 +728,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 						}
 						(void)ei_set(priv->views->eih,
 								EI_FONT, attrs[1], NULL);
-
-#ifdef FULL_R5
-
-#ifdef OW_I18N
-						if (priv->ic
-								&& (priv->
-										xim_style & (XIMPreeditArea |
-												XIMPreeditPosition |
-												XIMPreeditNothing))) {
-							va_nested_list =
-									XVaCreateNestedList(NULL, XNLineSpace,
-									(int)ei_get(priv->views->eih,
-											EI_LINE_SPACE), NULL);
-
-							XSetICValues(priv->ic, XNPreeditAttributes,
-									va_nested_list, NULL);
-							XFree(va_nested_list);
-						}
-#endif /* OW_I18N */
-#endif /* FULL_R5 */
 					}
 					/* Adjust the views to account for the font change */
 					FORALLVIEWS(priv->views, ev_next) {
@@ -846,28 +791,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 					break;
 				}
 
-#ifdef OW_I18N
-			case WIN_IC_ACTIVE:
-				if (is_folio && priv->need_im) {
-					ic_active_changed =
-							(attrs[1] ==
-							TRUE) ? IC_ACTIVE_TRUE : IC_ACTIVE_FALSE;
-					if (attrs[1] == FALSE && priv->ic
-							&& (int)xv_get(self, WIN_IC_CONVERSION)) {
-						textsw_implicit_commit(priv);
-						xv_set(self, WIN_IC_CONVERSION, FALSE, NULL);
-					}
-
-					if (TXTSW_IS_READ_ONLY(priv) && attrs[1] == TRUE)
-						break;
-					FORALL_TEXT_VIEWS(priv, next) {
-						xv_set(VIEW_PUBLIC(next), WIN_IC_ACTIVE, attrs[1],
-								NULL);
-					}
-				}
-				break;
-#endif /* OW_I18N */
-
 			case TEXTSW_COALESCE_WITH:	/* Get only */
 			case TEXTSW_BLINK_CARET:
 				/*
@@ -890,13 +813,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 			case TEXTSW_EDIT_BACK_LINE:
 			case TEXTSW_ERROR_MSG:
 			case TEXTSW_INSERT_FROM_FILE:
-
-#ifdef OW_I18N
-			case TEXTSW_FILE_WCS:
-			case TEXTSW_CONTENTS_WCS:
-			case TEXTSW_INSERT_FROM_FILE_WCS:
-#endif /* OW_I18N */
-
 			case TEXTSW_INSERT_MAKES_VISIBLE:
 			case TEXTSW_MULTI_CLICK_SPACE:
 			case TEXTSW_MULTI_CLICK_TIMEOUT:
@@ -907,7 +823,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 			case TEXTSW_UPDATE_SCROLLBAR:
 			case WIN_CMS_CHANGE:
 				textsw_set_internal_tier2(priv, view, attrs, is_folio,
-						status_ptr, &error_msg, file, name_wc, &reset_mode,
+						status_ptr, &error_msg, file, &reset_mode,
 						&all_views, &update_scrollbar, &read_only_changed);
 				break;
 
@@ -918,13 +834,7 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 		}
 	}
 
-#ifdef OW_I18N
-	if (STRLEN(file) > 0) {	/* } for match */
-		textsw_implicit_commit(priv);
-#else
 	if (file) {
-#endif
-
 		*status_ptr = set_first(view, error_msg, file, reset_mode,
 									ES_CANNOT_SET, -1, all_views);
 		/*
@@ -957,205 +867,8 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 			textsw_hide_caret(priv);
 		else
 			textsw_show_caret(priv);
-
-#ifdef OW_I18N
-		if (priv->need_im) {
-			if ((ic_active_changed == IC_ACTIVE_TRUE) ||
-					(!ic_active_changed
-							&& xv_get(self, WIN_IC_ACTIVE))) {
-
-				FORALL_TEXT_VIEWS(priv, next) {
-					xv_set(VIEW_PUBLIC(next), WIN_IC_ACTIVE,
-							(TXTSW_IS_READ_ONLY(priv) ? FALSE : TRUE), NULL);
-				}
-			}
-		}
-#endif /* OW_I18N */
 	}
 	return (status);
-}
-
-Pkg_private void
-textsw_set_internal_tier2(Textsw_private textsw, Textsw_view_private view,
-    Attr_attribute *attrs, int is_folio, Textsw_status  *status_ptr,
-    char **error_msg_addr, CHAR *file, CHAR *name_wc, int *reset_mode,
-	int *all_views, int *update_scrollbar, int *read_only_changed)
-/*
- * TRUE= we're setting attr's on the textsw_folio FALSE= we're setting attr's
- * on the textsw_view
- */
-{
-    int    temp;
-    int             read_only_start;
-#ifndef LEFT_HAND_SIDE_CAST
-    int            *int_ptr;
-#endif /* LEFT_HAND_SIDE_CAST */
-
-    switch (*attrs) {
-          case TEXTSW_FOR_ALL_VIEWS:
-            *all_views = TRUE;
-            break;
-          case TEXTSW_END_ALL_VIEWS:
-            *all_views = FALSE;
-            break;
-
-          case TEXTSW_ADJUST_IS_PENDING_DELETE:
-            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_ADJUST_IS_PD);
-            break;
-          case TEXTSW_BROWSING:
-            read_only_start = TXTSW_IS_READ_ONLY(textsw);
-#ifdef OW_I18N
-            /* to Read-only mode from Edit mode */
-            if (!read_only_start && attrs[1] == TRUE)
-                textsw_implicit_commit(textsw);
-#endif
-            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_READ_ONLY_SW);
-            *read_only_changed = (read_only_start!=TXTSW_IS_READ_ONLY(textsw));            break;
-
-          case TEXTSW_CONFIRM_OVERWRITE:
-            SET_BOOL_FLAG(textsw->state, attrs[1],
-                          TXTSW_CONFIRM_OVERWRITE);
-            break;
-          case TEXTSW_CONTENTS:
-            temp = (textsw->state & TXTSW_NO_AGAIN_RECORDING);
-            if (!(textsw->state & TXTSW_INITIALIZED))
-                textsw->state |= TXTSW_NO_AGAIN_RECORDING;
-#ifdef OW_I18N
-            (void) textsw_replace_bytes(VIEW_PUBLIC(view), 0,
-#else
-            textsw_replace(VIEW_PUBLIC(view), 0,
-#endif
-                   TEXTSW_INFINITY, (char *)attrs[1],
-				   (long)strlen((char *)attrs[1]));
-			if (!(textsw->state & TXTSW_INITIALIZED)) {
-                SET_BOOL_FLAG(textsw->state, temp, TXTSW_NO_AGAIN_RECORDING);
-			}
-            break;
-#ifdef OW_I18N
-          case TEXTSW_CONTENTS_WCS:
-            temp = (textsw->state & TXTSW_NO_AGAIN_RECORDING);
-            if (!(textsw->state & TXTSW_INITIALIZED))
-                textsw->state |= TXTSW_NO_AGAIN_RECORDING;
-            textsw_implicit_commit(textsw);
-            (void) textsw_replace(VIEW_PUBLIC(view), 0,
-                   TEXTSW_INFINITY, (CHAR *)attrs[1], STRLEN((CHAR *)attrs[1]));            if (!(textsw->state & TXTSW_INITIALIZED))
-                SET_BOOL_FLAG(textsw->state, temp,
-                              TXTSW_NO_AGAIN_RECORDING);
-            break;
-#endif /* OW_I18N */
-
-          case TEXTSW_DESTROY_ALL_VIEWS:
-            SET_BOOL_FLAG(textsw->state, attrs[1],
-                          TXTSW_DESTROY_ALL_VIEWS);
-            break;
-          case TEXTSW_DIFFERENTIATE_CR_LF: /*1030878*/
-            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_DIFF_CR_LF);
-            break;
-          case TEXTSW_STORE_CHANGES_FILE:
-            SET_BOOL_FLAG(textsw->state, attrs[1],
-                          TXTSW_STORE_CHANGES_FILE);
-            break;
-          case TEXTSW_EDIT_BACK_CHAR:
-            textsw->edit_bk_char = (char) (attrs[1]);
-            break;
-          case TEXTSW_EDIT_BACK_WORD:
-            textsw->edit_bk_word = (char) (attrs[1]);
-            break;
-          case TEXTSW_EDIT_BACK_LINE:
-            textsw->edit_bk_line = (char) (attrs[1]);
-            break;
-          case TEXTSW_ERROR_MSG:
-            *error_msg_addr = (char *) (attrs[1]);
-            (*error_msg_addr)[0] = '\0';
-            break;
-#ifdef OW_I18N
-          case TEXTSW_FILE_WCS:
-            if ((CHAR *)(attrs[1]) == (CHAR *)NULL)
-                file[0]  = NULL;
-            else
-                (void) STRCPY(file, (CHAR *) (attrs[1]));
-            break;
-#endif /* OW_I18N */
-
-          case TEXTSW_INSERT_FROM_FILE:{
-#ifdef OW_I18N
-                (void) mbstowcs(name_wc, (char *) (attrs[1]), MAXPATHLEN);
-                *status_ptr = textsw_get_from_file(view, name_wc, TRUE);
-                if (*status_ptr == TEXTSW_STATUS_OKAY)
-                    *update_scrollbar = 2;
-                break;
-            };
-          case TEXTSW_INSERT_FROM_FILE_WCS:{
-#endif /* OW_I18N */
-                *status_ptr = textsw_get_from_file(view, (CHAR *) (attrs[1]),
-                                             TRUE);
-                if (*status_ptr == TEXTSW_STATUS_OKAY)
-                    *update_scrollbar = 2;
-                break;
-            };
-          case TEXTSW_INSERT_MAKES_VISIBLE:
-            switch ((Textsw_enum) attrs[1]) {
-              case TEXTSW_ALWAYS:
-              case TEXTSW_IF_AUTO_SCROLL:
-                textsw->insert_makes_visible = (Textsw_enum) attrs[1];
-                break;
-              default:
-                *status_ptr = TEXTSW_STATUS_BAD_ATTR_VALUE;
-                break;
-            }
-            break;
-
-          case TEXTSW_MULTI_CLICK_SPACE:
-            if ((int) (attrs[1]) != -1)
-                textsw->multi_click_space = (int) (attrs[1]);
-            break;
-          case TEXTSW_MULTI_CLICK_TIMEOUT:
-            if ((int) (attrs[1]) != -1)
-                textsw->multi_click_timeout = (int) (attrs[1]);
-            break;
-          case TEXTSW_NO_REPAINT_TIL_EVENT:
-            ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, (int) (attrs[1]),
-                   NULL);
-            break;
-           case TEXTSW_RESET_MODE:
-            *reset_mode = (int) (attrs[1]);
-            break;
-          case TEXTSW_RESET_TO_CONTENTS:
-            textsw_reset_2(TEXTSW_PUBLIC(textsw), 0, 0, TRUE, FALSE);
-            break;
-           case TEXTSW_TAB_WIDTHS:
-#ifdef LEFT_HAND_SIDE_CAST
-            /* XXX cheat here */
-            *(int *) attrs = (int) EI_TAB_WIDTHS;
-#else
-            int_ptr = (int *) attrs;
-            *int_ptr = (int) EI_TAB_WIDTHS;
-#endif /* LEFT_HAND_SIDE_CAST */
-            ei_plain_text_set(textsw->views->eih, attrs);
-            /* (void) ei_set(textsw->views->eih, EI_TAB_WIDTHS, attrs[1], 0); */            break;
-          case TEXTSW_UPDATE_SCROLLBAR:
-            *update_scrollbar = (all_views) ? 2 : 1;
-            break;
-
-          case WIN_CMS_CHANGE:
-            if (is_folio) {
-                Xv_Window       textsw_public = TEXTSW_PUBLIC(textsw);
-                Xv_Window       view_public;
-/*                 Textsw_view_private view_next; */
-                Xv_Drawable_info *info;
-                Cms             cms;
-
-                DRAWABLE_INFO_MACRO(textsw_public, info);
-                cms = xv_cms(info);
-				OPENWIN_EACH_VIEW(textsw_public, view_public)
-                    window_set_cms(view_public, cms,
-									xv_cms_bg(info), xv_cms_fg(info));
-				OPENWIN_END_EACH
-            } else {
-                textsw_view_cms_change(textsw, view);
-            }
-            break;
-    }
 }
 
 
@@ -1256,14 +969,7 @@ Pkg_private long textsw_get_from_defaults(Attr32_attribute attribute, Xv_opaque 
 
 				/* Text.d may have "" rather than NULL, so check for this case.  */
 
-#ifdef OW_I18N
-				defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
 				def_str = xv_font_monospace();
-				defaults_set_locale(NULL, NULL);
-#else
-				def_str = xv_font_monospace();
-#endif /* OW_I18N */
-
 				font = (def_str && ((int)strlen(def_str) > 0))
 						? xv_pf_open(def_str, srv) : 0;
 				return ((long)font);
@@ -1345,16 +1051,6 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 		case XV_RIGHT_MARGIN:
 		case WIN_VERTICAL_SCROLLBAR:
 		case TEXTSW_CONTENTS:
-
-#ifdef OW_I18N
-		case TEXTSW_CONTENTS_WCS:
-		case TEXTSW_CONTENTS_NO_COMMIT:
-		case TEXTSW_CONTENTS_WCS_NO_COMMIT:
-		case TEXTSW_LENGTH_WC:
-		case TEXTSW_INSERTION_POINT_WC:
-		case TEXTSW_FIRST_WC:
-#endif /* OW_I18N */
-
 		case TEXTSW_EDIT_COUNT:
 			if (!view) {
 				*status = XV_ERROR;
@@ -1369,24 +1065,9 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 	 */
 	switch ((Attr_attribute)attribute) {
 		case TEXTSW_LENGTH:
-
-#ifdef OW_I18N
-			textsw_flush_caches(view, TFC_STD);
-			return ((Xv_opaque) textsw_get_mb_length(priv));
-		case TEXTSW_LENGTH_WC:
-#endif /* OW_I18N */
-
 			textsw_flush_caches(view, TFC_STD);
 			return ((Xv_opaque) es_get_length(priv->views->esh));
 		case TEXTSW_INSERTION_POINT:
-
-#ifdef OW_I18N
-			textsw_flush_caches(view, TFC_STD);
-			return ((Xv_opaque) textsw_mbpos_from_wcpos(priv,
-							EV_GET_INSERT(priv->views)));
-		case TEXTSW_INSERTION_POINT_WC:
-#endif
-
 			textsw_flush_caches(view, TFC_STD);
 			return ((Xv_opaque) EV_GET_INSERT(priv->views));
 		case TEXTSW_LOWER_CONTEXT:
@@ -1424,14 +1105,7 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 			return ((Xv_opaque)
 					BOOL_FLAG_VALUE(priv->state, TXTSW_CONFIRM_OVERWRITE));
 		case TEXTSW_CONTENTS:{
-
-#ifdef OW_I18N
-				textsw_implicit_commit(priv);
-			}
-		case TEXTSW_CONTENTS_NO_COMMIT:{
 				/* This is used by only mailtool for autosave. */
-#endif
-
 				/* pos, buf and buf_len are */
 				Es_index pos = va_arg(args, Es_index);
 
@@ -1442,25 +1116,6 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 				return ((Xv_opaque)
 						textsw_get_contents(priv, pos, buf, buf_len));
 			}
-
-#ifdef OW_I18N
-		case TEXTSW_CONTENTS_WCS:
-			textsw_implicit_commit(priv);
-		case TEXTSW_CONTENTS_WCS_NO_COMMIT:{
-				/* This is used by only Termsw. */
-				/* OW_I18N: pos is character based */
-				Es_index pos = va_arg(args, Es_index);
-
-				/* temporaries for TEXTSW_CONTENTS */
-				CHAR *buf = va_arg(args, CHAR *);
-
-				/* OW_I18N: buf_len is character based */
-				int buf_len = va_arg(args, int);
-
-				return ((Xv_opaque)
-						textsw_get_contents_wcs(priv, pos, buf, buf_len));
-			}
-#endif
 
 		case TEXTSW_CONTROL_CHARS_USE_FONT:
 			return ((Xv_opaque)
@@ -1489,13 +1144,7 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 							ES_PS_SCRATCH_MAX_LEN));
 		case TEXTSW_ES_CREATE_PROC: return ((Xv_opaque) priv->es_create);
 
-#ifdef OW_I18N
-		case TEXTSW_FILE_WCS:{
-				/* } for match */
-#else
 		case TEXTSW_FILE:{
-#endif
-
 				CHAR *name;
 
 				if (textsw_file_name(priv, &name))
@@ -1503,20 +1152,6 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 				else
 					return ((Xv_opaque) name);
 			}
-
-#ifdef OW_I18N
-		case TEXTSW_FILE:{
-				CHAR *name;
-				char name_mb[MAXPATHLEN];
-
-				if (textsw_file_name(priv, &name))
-					return ((Xv_opaque) 0);
-				else {
-					(void)wcstombs(name_mb, name, MAXPATHLEN);
-					return ((Xv_opaque) name_mb);
-				}
-			}
-#endif
 
 		case TEXTSW_SUBMENU_FILE:{
 				if (!textsw_menu_get(priv) || !priv->sub_menu_table)
@@ -1549,14 +1184,6 @@ static Xv_opaque textsw_get_internal(Textsw_private priv,
 					return priv->sub_menu_table[TXTSW_EXTRAS_SUB_MENU];
 			}
 		case TEXTSW_FIRST:
-
-#ifdef OW_I18N
-			return ((Xv_opaque) textsw_mbpos_from_wcpos(priv,
-							ft_position_for_index(view->e_view->line_table,
-									0)));
-		case TEXTSW_FIRST_WC:
-#endif
-
 			return ((Xv_opaque)
 					ft_position_for_index(view->e_view->line_table, 0));
 		case TEXTSW_FIRST_LINE:{
@@ -1805,14 +1432,8 @@ Pkg_private void textsw_notify_replaced(Textsw_view_private view, Es_index inser
 	priv->state &= ~TXTSW_IN_NOTIFY_PROC;
 }
 
-Pkg_private     Es_index
-#ifdef OW_I18N
-textsw_get_contents_wcs
-#else
-textsw_get_contents
-#endif
-	( Textsw_private textsw, Es_index position,
-    CHAR *buffer, int buffer_length)
+Pkg_private     Es_index textsw_get_contents(Textsw_private textsw,
+						Es_index position, char *buffer, int buffer_length)
 {
     Es_index        next_read_at;
     int darllenwyd;
@@ -1822,50 +1443,10 @@ textsw_get_contents
 			   &darllenwyd);
     if AN_ERROR
 	(darllenwyd != buffer_length) {
-#ifdef OW_I18N
-	XV_BZERO(buffer + darllenwyd, ((buffer_length - darllenwyd) * sizeof(CHAR)));
-#else
 	XV_BZERO(buffer + darllenwyd, (size_t)(buffer_length - darllenwyd));
-#endif
 	}
     return (next_read_at);
 }
-
-#ifdef OW_I18N
-
-Pkg_private Es_index textsw_get_contents(Textsw_private priv, Es_index position, char *buffer,
-    int buffer_length)
-{
-	Es_index next_read_at, wc_position;
-	int read;
-	CHAR *buf_wcs = MALLOC(buffer_length + 1);
-
-	wc_position = textsw_wcpos_from_mbpos(priv, position);
-
-	/* Make sure whether position is over the end of contents or not */
-	textsw_flush_caches(VIEW_PRIVATE(xv_get(XV_PUBLIC(priv), OPENWIN_NTH_VIEW, 0)), TFC_STD);
-					,
-	if (wc_position == TEXTSW_INFINITY ||
-			wc_position >= es_get_length(priv->views->esh)) {
-		next_read_at = (Es_index) textsw_get_mb_length(priv);
-		read = 0;
-	}
-	else {
-		es_set_position(priv->views->esh, wc_position);
-		(void)es_read(priv->views->esh, buffer_length, buf_wcs, &read);
-		buf_wcs[read] = NULL;
-		read = wcstombs(buffer, buf_wcs, buffer_length);
-		next_read_at = (position < 0 ? 0 : position) + read;
-	}
-
-	free((char *)buf_wcs);
-	if AN_ERROR
-		(read != buffer_length) {
-		XV_BZERO(buffer + read, buffer_length - read);
-		}
-	return (next_read_at);
-}
-#endif /* OW_I18N */
 
 /* originally, TEXTSW (a subclass of OPENWIN) had views and performed
  * all event handling and painting on the views.
