@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_field_c_sccsid[] = "@(#)txt_field.c 20.31 93/06/28 DRA: $Id: txt_field.c,v 4.3 2024/12/22 08:44:43 dra Exp $";
+char     txt_field_c_sccsid[] = "@(#)txt_field.c 20.31 93/06/28 DRA: $Id: txt_field.c,v 4.4 2026/07/30 07:47:00 dra Exp $";
 #endif
 
 /*
@@ -33,34 +33,9 @@ static void textsw_get_match_symbol(CHAR *buf, unsigned buf_len,CHAR *match_buf,
 
 Pkg_private int textsw_match_selection_and_normalize(Textsw_view_private view, CHAR *start_marker, unsigned field_flag);
 
-#ifdef OW_I18N
-
-static wchar_t l_curly_brace[] = { '{', 0 };
-static wchar_t l_paren[] = { '(', 0 };
-static wchar_t dbl_quote[] = { '"', 0 };
-static wchar_t sgl_quote[] = { '\'', 0 };
-static wchar_t accent_grave[] = { '`', 0 };
-static wchar_t l_square_brace[] = { '[', 0 };
-static wchar_t bar_gt[] = { '|', '>', 0 };
-static wchar_t open_comment[] = { '/', '*', 0 };
-
-static wchar_t r_curly_brace[] = { '}', 0 };
-static wchar_t r_paren[] = { ')', 0 };
-static wchar_t r_square_brace[] = { ']', 0 };
-static wchar_t lt_bar[] = { '<', '|', 0 };
-static wchar_t close_comment[] = { '*', '/', 0 };
-
-static CHAR     *match_table[NUM_OF_COL][MAX_SYMBOLS] =
-{{ l_curly_brace, l_paren, dbl_quote, sgl_quote, accent_grave, l_square_brace,
-   bar_gt, open_comment,},
- { r_curly_brace, r_paren, dbl_quote, sgl_quote, accent_grave, r_square_brace,
-   lt_bar, close_comment,}};
-#else /* OW_I18N */
 static char     *match_table[NUM_OF_COL][MAX_SYMBOLS] =
 {{"{", "(", "\"", "'", "`", "[", "|>", "/*",},
 {"}", ")", "\"", "'", "`", "]", "<|", "*/",}};
-#endif /* OW_I18N */
-
 
 
 
@@ -327,11 +302,7 @@ Pkg_private int textsw_match_field_and_normalize(Textsw_view_private view,
 			      VIEW_PUBLIC(view), *first, *last_plus_one,
 			      (unsigned)((want_pending_delete) ? 0 : EV_SEL_PRIMARY));
 	if (want_pending_delete) {
-#ifdef OW_I18N
-	    (void) textsw_set_selection_wcs(
-#else
 	    (void) textsw_set_selection(
-#endif
 			      TEXTSW_PUBLIC(priv), *first, *last_plus_one,
 				      (EV_SEL_PRIMARY | EV_SEL_PD_PRIMARY));
 	}
@@ -360,12 +331,7 @@ Pkg_private int textsw_match_selection_and_normalize(Textsw_view_private view, C
 		if ((last_plus_one - first) < MAX_STR_LENGTH)
 			str_length = (last_plus_one - first);
 
-#ifdef OW_I18N
-		xv_get(VIEW_PUBLIC(view), TEXTSW_CONTENTS_WCS, first, buf,
-				str_length);
-#else
 		xv_get(VIEW_PUBLIC(view), TEXTSW_CONTENTS, first, buf, str_length);
-#endif
 
 		if (str_length == MAX_STR_LENGTH)
 			str_length--;
@@ -404,19 +370,7 @@ Pkg_private int textsw_match_selection_and_normalize(Textsw_view_private view, C
  * If the pattern is matched, return the index where it is found, else return
  * -1.
  */
-Xv_public int
-#ifdef OW_I18N
-textsw_match_wcs(abstract, first, last_plus_one, start_sym, start_sym_len,
-		   end_sym, end_sym_len, field_flag)
-    Textsw          abstract;	/* find in this textsw */
-    Textsw_index   *first;	/* start here, return start of found pattern
-				 * here */
-    Textsw_index   *last_plus_one;	/* return end of found pattern */
-    CHAR            *start_sym, *end_sym;	/* begin and end pattern */
-    int             start_sym_len, end_sym_len;	/* patterns length */
-    unsigned        field_flag;
-#else
-textsw_match_bytes(Textsw abstract,	/* find in this textsw */
+Xv_public int textsw_match_bytes(Textsw abstract,	/* find in this textsw */
     Textsw_index *first,	/* start here, return start of found pattern here */
     Textsw_index *last_plus_one,	/* return end of found pattern */
     CHAR *start_sym, /* begin and end pattern */
@@ -424,7 +378,6 @@ textsw_match_bytes(Textsw abstract,	/* find in this textsw */
     CHAR *end_sym,	/* begin and end pattern */
     int end_sym_len,	/* patterns length */
     unsigned field_flag)
-#endif
 {
 	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(VIEW_ABS_TO_REP(abstract));
 	int save_first = *first;
@@ -454,77 +407,3 @@ textsw_match_bytes(Textsw abstract,	/* find in this textsw */
 		return *first;
 	}
 }
-
-#ifdef OW_I18N
-/*
- * If the pattern is matched, return the index where it is found, else return
- * -1.
- */
-Xv_public int
-textsw_match_bytes(abstract, first, last_plus_one, start_sym, start_sym_len,
-		   end_sym, end_sym_len, field_flag)
-    Textsw          abstract;	/* find in this textsw */
-    Textsw_index   *first;	/* start here, return start of found pattern
-				 * here */
-    Textsw_index   *last_plus_one;	/* return end of found pattern */
-    char           *start_sym, *end_sym;	/* begin and end pattern */
-    int             start_sym_len, end_sym_len;	/* patterns length */
-    unsigned        field_flag;
-{
-    Textsw_private    priv = TSWPRIV_FOR_VIEWPRIV(VIEW_ABS_TO_REP(abstract));
-    int             save_first = *first;
-    int             save_last_plus_one = *last_plus_one;
-    CHAR           *start_wsym, *end_wsym;	/* begin and end pattern */
-    int             start_wsym_len, end_wsym_len; /* patterns length */
-    int             big_len_flag;
-
-    start_wsym = MALLOC(start_sym_len + 1);
-    start_wsym_len = textsw_mbstowcs_by_mblen(start_wsym, start_sym,
-					      &start_sym_len, &big_len_flag);
-    start_wsym[start_wsym_len] = 0;
-    /*
-     * when original start_sym_len is bigger than length of string in
-     * start_sym, do error retrun as the generic textsw's behavior.
-     */
-    if (big_len_flag) {
-	free(start_wsym);
-	return -1;
-    }
-    end_wsym = MALLOC(end_sym_len + 1);
-    end_wsym_len = textsw_mbstowcs_by_mblen(end_wsym, end_sym,
-					    &end_sym_len, &big_len_flag);
-    end_wsym[end_wsym_len] = 0;
-    if (big_len_flag) {
-	free(start_wsym);
-	free(end_wsym);
-	return -1;
-    }
-
-    *first = textsw_wcpos_from_mbpos(priv, *first);
-    if ((field_flag == TEXTSW_DELIMITER_FORWARD) ||
-	(field_flag == TEXTSW_FIELD_FORWARD)) {
-	textsw_match_field(priv, first, last_plus_one,
-				  start_wsym, start_wsym_len,
-				  end_wsym, end_wsym_len, field_flag, TRUE);
-    } else {
-	textsw_match_field(priv, first, last_plus_one,
-				  end_wsym, end_wsym_len,
-				  start_wsym, start_wsym_len, field_flag,
-			       ((field_flag == TEXTSW_DELIMITER_BACKWARD) ||
-				(field_flag == TEXTSW_FIELD_BACKWARD)));
-    }
-    free(start_wsym);
-    free(end_wsym);
-
-    if ((*first == ES_CANNOT_SET) || (*last_plus_one == ES_CANNOT_SET)) {
-	*first = save_first;
-	*last_plus_one = save_last_plus_one;
-	return -1;
-    } else {
-	save_first = *first; /* save character based first */
-	*first = textsw_mbpos_from_wcpos(priv, *first);
-	*last_plus_one = textsw_mbpos_from_wcpos(priv, *last_plus_one);
-	return *first;
-    }
-}
-#endif /* OW_I18N */
