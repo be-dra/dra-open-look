@@ -1,4 +1,4 @@
-/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.12 2026/07/20 22:23:38 dra Exp $      */
+/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.13 2026/07/29 21:27:28 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -216,6 +216,8 @@ _XVFUNCPROTOBEGIN
 EXTERN_FUNCTION (void server_set_base_font, (Xv_opaque frame));
 EXTERN_FUNCTION (char *server_get_instance_appname, (void));
 EXTERN_FUNCTION (void server_appl_busy, (Xv_opaque fram, int busy, Xv_opaque except));
+
+EXTERN_FUNCTION (int xv_is_multibyte, (void));
 _XVFUNCPROTOEND
 
 #endif /* ~xview_server_DEFINED */
