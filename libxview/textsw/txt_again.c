@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_again_c_sccsid[] = "@(#)txt_again.c 20.43 93/06/28 DRA: $Id: txt_again.c,v 4.8 2026/03/22 09:25:44 dra Exp $";
+char     txt_again_c_sccsid[] = "@(#)txt_again.c 20.43 93/06/28 DRA: $Id: txt_again.c,v 4.9 2026/07/30 07:30:42 dra Exp $";
 #endif
 
 /*
@@ -29,10 +29,6 @@ string_t        null_string = {0, 0, 0};
 
 #define	TEXT_DELIMITER	"\\"
 static char *text_delimiter = TEXT_DELIMITER;
-
-#ifdef OW_I18N
-static CHAR text_delimiter_wc[2] = {'\\','\0'};
-#endif
 
 typedef enum {
     CARET_TOKEN,
@@ -76,11 +72,6 @@ static char *text_tokens[] = {
 #define	PIECES_TOKEN	0
 #define TRASH_TOKEN	1
 #define DELIMITER_TOKEN	2
-
-#ifdef OW_I18N
-#define		    MB_STR_BUFFER_LEN		100
-static char	    mb_str[MB_STR_BUFFER_LEN];
-#endif
 
 /* Modified from ucb/lpr/lpc.c */
 Pkg_private int match_in_table(char *to_match, char **table)
@@ -189,8 +180,6 @@ textsw_printf(ptr_to_string, fmt, va_alist)
 va_dcl
 #endif
 {
-#ifndef OW_I18N
-
 #ifdef __linux
     va_list         args;
 
@@ -224,40 +213,6 @@ va_dcl
 #endif
     return (result);
 #endif /* __linux */
-
-#else /* OW_I18N */
-
-/*
- * OW_I18N:  All the string in va_alist should be in multibyte and
- * textsw_printf() will convert it to wchar_t and write it into ptr_to_string.
- */
-    FILE            _strbuf;
-    int             result;
-    va_list         args;
-    int             num_char;
-
-    _strbuf._flag = _IOWRT | _IOSTRG;
-    mb_str[0] = NULL;
-#ifdef sun
-    _strbuf._base = (unsigned char *) mb_str;
-#else
-    _strbuf._base = (char *) mb_str;
-#endif
-    _strbuf._ptr = _strbuf._base;
-    _strbuf._cnt = MB_STR_BUFFER_LEN;
-    VA_START(args, fmt);
-    result = _doprnt(fmt, args, &_strbuf);
-    va_end(args);
-#ifndef lint
-    if (result >= 0)
-	putc('\0', &_strbuf);
-#endif
-    num_char = mbstowcs(TXTSW_STRING_FREE(ptr_to_string), mb_str,
-	(ptr_to_string->max_length - TXTSW_STRING_LENGTH(ptr_to_string)));
-    TXTSW_STRING_FREE(ptr_to_string) += num_char;
-    return (result);
-
-#endif /* OW_I18N */
 }
 
 #else /* SVR4 */
@@ -272,8 +227,6 @@ textsw_printf(ptr_to_string, fmt, va_alist)
 va_dcl
 #endif
 {
-#ifndef OW_I18N
-
     FILE            _strbuf;
     int             result;
     va_list         args;
@@ -293,38 +246,6 @@ va_dcl
         putc('\0', &_strbuf);
 #endif
     return (result);
-
-#else /* OW_I18N */
-
-/*
- * OW_I18N:  All the string in va_alist should be in multibyte and
- * textsw_printf() will convert it to wchar_t and write it into ptr_to_string.
- */
-    FILE            _strbuf;
-    int             result;
-    va_list         args;
-    int             num_char;
-
-    mb_str[0] = NULL;
-
-    _strbuf._flag = _IOREAD; /* distinguish dummy file descriptor */
-    _strbuf._base = (unsigned char *) mb_str;
-    _strbuf._ptr = _strbuf._base;
-    _strbuf._cnt = MB_STR_BUFFER_LEN;
-    _strbuf._file = _NFILE;
-    VA_START(args, fmt);
-    result = _doprnt(fmt, args, &_strbuf);
-    va_end(args);
-#ifndef lint
-    if (result >= 0)           
-        putc('\0', &_strbuf);
-#endif
-    num_char = mbstowcs(TXTSW_STRING_FREE(ptr_to_string), mb_str,
-	(ptr_to_string->max_length - TXTSW_STRING_LENGTH(ptr_to_string)));
-    TXTSW_STRING_FREE(ptr_to_string) += num_char;
-    return (result);
-
-#endif /* OW_I18N */
 }     
 
 #endif /* SVR4 */
@@ -448,28 +369,6 @@ Pkg_private void textsw_record_filter(Textsw_private textsw, Event *event)
 		      (int)(textsw->to_insert_next_free - textsw->to_insert));
 }
 
-#ifdef OW_I18N	    
-static int
-my_wstoi (num_string)
-    CHAR	*num_string;
-{
-    int		i = 0;
-    int		result = 0;
-    
-    while (((num_string + i) != NULL) &&
-           (*(num_string + i) == L' '))
-           i++;
-           
-    while (((num_string + i) != NULL) &&
-           (*(num_string + i) >= L'0')  &&
-           (*(num_string + i) <= L'9')) {
-           result = (result * 10) + (*(num_string + i) - L'0');
-           i++;
-    }
-    return(result);     
-}
-#endif /* OW_I18N */
-
 Pkg_private void textsw_record_input(Textsw_private textsw, CHAR *buffer,
 							long int buffer_length)
 {
@@ -484,12 +383,7 @@ Pkg_private void textsw_record_input(Textsw_private textsw, CHAR *buffer,
 	if (textsw->again_insert_length == 0) {
 		(void)textsw_printf(again, "%s ", cmd_tokens[ord(INSERT_TOKEN)]);
 		textsw->again_insert_length =
-
-#ifdef OW_I18N
-				TXTSW_STRING_LENGTH(again) + STRLEN(text_delimiter_wc) + 1;
-#else
 				TXTSW_STRING_LENGTH(again) + strlen(text_delimiter) + 1;
-#endif
 
 		textsw_record_buf(again, buffer, (int)buffer_length);
 	}
@@ -503,12 +397,7 @@ Pkg_private void textsw_record_input(Textsw_private textsw, CHAR *buffer,
 
 		insert_length = TXTSW_STRING_BASE(again) + textsw->again_insert_length;
 
-#ifdef OW_I18N
-		/*  Should use wstoi() when its performance problem is fixed */
-		old_length = my_wstoi(insert_length);
-#else /* OW_I18N */
 		old_length = atoi(insert_length);
-#endif /* OW_I18N */
 
 		ASSUME(old_length > 0);
 		(void)SPRINTF(new_length_buf, "%6ld", old_length + buffer_length);
@@ -516,12 +405,7 @@ Pkg_private void textsw_record_input(Textsw_private textsw, CHAR *buffer,
 			insert_length[i] = new_length_buf[i];
 		}
 
-#ifdef OW_I18N
-		TXTSW_STRING_FREE(again) -= STRLEN(text_delimiter_wc) + 2;
-#else
 		TXTSW_STRING_FREE(again) -= strlen(text_delimiter) + 2;
-#endif
-
 		textsw_string_append(again, buffer, (int)buffer_length);
 		(void)textsw_printf(again, "\n%s\n", text_delimiter);
 	}
@@ -530,9 +414,6 @@ Pkg_private void textsw_record_input(Textsw_private textsw, CHAR *buffer,
 Pkg_private void textsw_record_match(Textsw_private priv, unsigned flag, CHAR *start_marker)
 {
     register string_t *again = &priv->again[0];
-#ifdef OW_I18N
-    char	   *start_marker_mb;
-#endif
 
     if ((priv->func_state & TXTSW_FUNC_AGAIN) ||
                 (priv->state & TXTSW_NO_AGAIN_RECORDING))
@@ -545,14 +426,7 @@ Pkg_private void textsw_record_match(Textsw_private priv, unsigned flag, CHAR *s
     if (textsw_string_min_free(again, 15) != TRUE)
 	return;			/* Cannot guarantee enough space */
 
-#ifdef OW_I18N
-    start_marker_mb = _xv_wcstombsdup(start_marker);
-    (void) textsw_printf(again, "%s %x %s\n", cmd_tokens[ord(FIELD_TOKEN)], flag, start_marker_mb);
-    if(start_marker_mb)
-	free(start_marker_mb);
-#else
     (void) textsw_printf(again, "%s %x %s\n", cmd_tokens[ord(FIELD_TOKEN)], flag, start_marker);
-#endif
     priv->state |= TXTSW_AGAIN_HAS_MATCH;
 }
 
@@ -663,8 +537,6 @@ textsw_scanf(ptr_to_string, fmt, va_alist)
 va_dcl
 #endif
 {
-#ifndef OW_I18N
-
     FILE            _strbuf;
     int             result;
     va_list         args;
@@ -692,52 +564,6 @@ va_dcl
     va_end(args);
     TXTSW_STRING_BASE(ptr_to_string) = (char *) _strbuf._ptr;
     return (result);
-
-#else /* OW_I18N */
-
-/*
- *  OW_I18N:  The string within ptr_to_string is wchar_t,
- *  but the string in va_alist should be multibytes
- */
-    FILE            _strbuf;
-    int             result;
-    va_list         args;
-    int             num_char;
-    CHAR            dummy[MB_STR_BUFFER_LEN];
-
-    mb_str[0] = NULL;
-    (void) wcstombs(mb_str, TXTSW_STRING_BASE(ptr_to_string), MB_STR_BUFFER_LEN);
-
-#ifdef sun
-    _strbuf._base = (unsigned char *) mb_str;
-#else
-    _strbuf._base = (char *) mb_str;
-#endif
-#ifdef SVR4
-/*    _strbuf._flag = _IOWRT; */
-/*    clever way to insure no physread, but not POSIX compliant */
-/*    Posix won't allow doscan on IOWRT streams. Make it 0 instead */
-    _strbuf._flag = _IOREAD | _IOWRT;
-    _strbuf._base = (unsigned char *) mb_str;
-#else /* SVR4 */
-    _strbuf._flag = _IOREAD | _IOSTRG;
-#endif /* SVR4 */
-    _strbuf._ptr = _strbuf._base;
-#ifndef SVR4
-    _strbuf._bufsiz = _strbuf._cnt = strlen(mb_str);
-#else /* SVR4 */
-    _strbuf._cnt = strlen(mb_str);
-    _strbuf._file = _NFILE;
-#endif /* SVR4 */
-    VA_START(args, fmt);
-    result = _doscan(&_strbuf, fmt, args);
-    va_end(args);
-    mb_str[(_strbuf._ptr - _strbuf._base)] = NULL;
-    num_char = mbstowcs(dummy, mb_str, MB_STR_BUFFER_LEN);
-    TXTSW_STRING_BASE(ptr_to_string) += num_char;
-    return (result);
-
-#endif /* OW_I18N */
 }
 #endif /* __linux */
 
@@ -825,24 +651,10 @@ Pkg_private void textsw_free_again(Textsw_private textsw,	string_t *again)
 	CHAR *saved_base = TXTSW_STRING_BASE(again);
 	Es_handle pieces;
 
-#ifdef OW_I18N
-	CHAR text_tokens_wc[20];
-#endif
-
 	if (TXTSW_STRING_IS_NULL(again))
 		return;
 	ASSERT(allock());
 
-#ifdef OW_I18N
-	(void)mbstowcs(text_tokens_wc, text_tokens[PIECES_TOKEN], 20);
-	while ((TXTSW_STRING_BASE(again) =
-					token_index(TXTSW_STRING_BASE(again), text_tokens_wc))
-			!= NULL) {
-		TXTSW_STRING_BASE(again) += STRLEN(text_tokens_wc);
-		if (pieces = textsw_pieces_for_replay(again))
-			es_destroy(pieces);
-	}
-#else
 	while ((TXTSW_STRING_BASE(again) =
 					token_index(TXTSW_STRING_BASE(again),
 							text_tokens[PIECES_TOKEN]))
@@ -851,7 +663,6 @@ Pkg_private void textsw_free_again(Textsw_private textsw,	string_t *again)
 		if ((pieces = textsw_pieces_for_replay(again)))
 			es_destroy(pieces);	/* 31.7.2024: SIGSEGV (quick duplicate) */
 	}
-#endif /* OW_I18N */
 
 	free(saved_base);
 	ASSERT(allock());
@@ -1032,11 +843,7 @@ Pkg_private	void textsw_do_again(Textsw_view_private view, int x,int y)
 		/*
 		 * Finally, do the actual edit.
 		 */
-#ifdef OW_I18N
-		(void) textsw_do_edit(view, unit, direction, 0);
-#else
 		(void) textsw_do_edit(view, unit, direction);
-#endif
 		break;
 	    }
 
@@ -1057,21 +864,11 @@ Pkg_private	void textsw_do_again(Textsw_view_private view, int x,int y)
 	  case FIELD_TOKEN:{
 		unsigned        field_flag;
 		int             matched;
-#ifdef OW_I18N
-		CHAR            start_marker[4];
-		char            start_marker_mb[8];
-#else
 		char            start_marker[3];
-#endif
 
 		count = textsw_scanf(again, "%x", &field_flag);
 		CHECK_ERROR(count != 1);
-#ifdef OW_I18N
-		count = textsw_scanf(again, "%3s", start_marker_mb);
-		(void) mbstowcs(start_marker, start_marker_mb, 3);
-#else
 		count = textsw_scanf(again, "%3s", start_marker);
-#endif
 		CHECK_ERROR(count != 1);
 
 		textsw_flush_caches(view, TFC_STD);
