@@ -1,5 +1,5 @@
 #ifndef lint
-char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.6 2026/07/28 20:40:33 dra Exp $";
+char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.9 2026/07/30 06:58:37 dra Exp $";
 #endif
 
 /*
@@ -43,6 +43,7 @@ char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,
 #include <xview/server.h>
 
 #include <xview_private/tty_impl.h>
+#include <xview_private/svr_impl.h>
 
 #define	NEWLINE	'\n'
 #define	SPACE	' '
@@ -404,8 +405,8 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 
 	Run run_array[MAX_PER_BATCH + 1];
 	Run *run;
-	CHAR batch_array[MAX_PER_BATCH + 1];
-	CHAR *batch;
+	char batch_array[MAX_PER_BATCH + 1];
+	char *batch;
 	int ii;
 	Pixfont *tempPf;
 
@@ -444,12 +445,47 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 
 	if (private->x_font_info == (XFontStruct *) NULL)
 		private->x_font_info =
-							(XFontStruct *) xv_get((Xv_opaque) private->font,
-												   FONT_INFO);
+				(XFontStruct *) xv_get((Xv_opaque) private->font, FONT_INFO);
 
 	for (esi = esbuf->first; esi < esbuf->last_plus_one; esi++) {
+		if (_xv_is_multibyte) {
+			XFontSet fs = (XFontSet) xv_get(private->font, FONT_SET_ID);
+			int clen = mblen(buf_rep, MB_CUR_MAX);
+			if (clen <= 0) clen = 1;
 
-		c = (unsigned char)(*buf_rep++);  /* OW_I18N ++ ??? */
+			if (clen > 1) {
+				int cwidth = XmbTextEscapement(fs, buf_rep, clen);
+
+				/* a multibyte character! */
+				memcpy(batch, buf_rep, clen);
+				batch += clen;
+
+				/* adapt virtual bounds */
+				temp = (short)cwidth;
+				temp += result.pos.x;
+				if (temp > bounds_right) {
+					if (temp > rects_right) {
+						result.break_reason = EI_PR_HIT_RIGHT;
+						break;
+					}
+					bounds_right = temp;
+				}
+
+				/* increase positions */
+				result.pos.x += cwidth;
+				buf_rep += clen;
+				esi += (clen - 1);
+
+				continue;
+			}
+			else {
+				/* a single byte character in multi byte mode */
+				c = (unsigned char)(*buf_rep++);
+			}
+		}
+		else {
+			c = (unsigned char)(*buf_rep++);
+		}
 
 		/* BUG ALERT: The following 2 lines are so that inputting 8-bit 
 		 * characters using a 7-bit font doesn't cause a seg fault (bugid 
@@ -461,7 +497,7 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 		 * could be wreaked if we just ignore the character at this point!
 		 */
 		if (c > private->x_font_info->max_char_or_byte2) {
-fprintf(stderr, "in questionalble 'bug fix'\n");
+			fprintf(stderr, "in questionable 'bug fix'\n");
 			c = SPACE;
 		}
 
@@ -508,7 +544,7 @@ fprintf(stderr, "in questionalble 'bug fix'\n");
 			if (!(op & EI_OP_MEASURE)) {
 				if ((run == run_array && batch == batch_array) ||
 						(run > run_array &&
-						 (run[-1].len == (batch - run[-1].chars)))) {
+								(run[-1].len == (batch - run[-1].chars)))) {
 					/* Current run does not have any chars yet */
 				}
 				else {
@@ -562,7 +598,7 @@ fprintf(stderr, "in questionalble 'bug fix'\n");
 		}
 		if (pc->pc_pr &&
 				(!ISCNTRL(c) || in_white_space || c == NEWLINE ||
-				 (private->state & CONTROL_CHARS_USE_FONT))) {
+						(private->state & CONTROL_CHARS_USE_FONT))) {
 			*batch = (c == NEWLINE) ? ' ' : c;
 			temp = (short)pc->pc_home.x;
 			temp += result.pos.x;
@@ -665,14 +701,15 @@ c = 27, 033   ??????
 		FINALIZE_RUN(run, run_array, batch, batch_array);
 		run_length = run - run_array;	/* C does "/ sizeof(struct)" */
 		paint_batch(op, rop, pw, rect,
-					run_array, run_length, &result.bounds, private->font);
+				run_array, run_length, &result.bounds, private->font);
 	}
 	result.pos.x += private->font_home.x;
 	result.pos.y += private->font_home.y;
 	return (result);
 }
 
-static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *run, int run_length, struct rect *bounds, Xv_font font)
+static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect,
+				Run *run, int run_length, struct rect *bounds, Xv_font font)
 {
 #define EI_OP_CLEAR_ALL (EI_OP_CLEAR_FRONT|EI_OP_CLEAR_INTERIOR|EI_OP_CLEAR_BACK)
 	int temp;
@@ -701,8 +738,9 @@ static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect, Run *r
 	}
 	/* this outputs all the stuff! */
 	for (temp = 0; temp < run_length; temp++, run++) {
-		/* jcb */ tty_newtext(pw, run->x, run->y, rop, (Xv_opaque) font,
-				run->chars, run->len);
+		SERVERTRACE((877, "out '%*.*s'\n", run->len, run->len, run->chars));
+		tty_newtext(pw, run->x, run->y, rop, (Xv_opaque) font,
+								run->chars, run->len);
 	}
 
 	if (op & EI_OP_LIGHT_GRAY)
@@ -869,40 +907,45 @@ static void ei_classes_initialize(void)
     ei_classes_initialized = 1;
 }
 
+static int ei_utf8_is_in_class(SET *setp, unsigned char c, int in_class, int group_spec)
+{
+	if (!_xv_is_multibyte) {
+		return (setp != NULL) ? (int)IN(setp, c) : 0;
+	}
+
+	/* UTF-8 continuation byte (0x80..0xBF) retains current class status */
+	if (IS_UTF8_CONT(c)) {
+		return in_class;
+	}
+
+	/* UTF-8 lead byte (0xC0..0xFF) for WORD class is considered part of the word */
+	if (c >= 0xC0 && (group_spec & EI_SPAN_CLASS_MASK) == EI_SPAN_WORD) {
+		return 1;
+	}
+
+	/* Standard ASCII / single-byte check */
+	return (setp != NULL) ? (int)IN(setp, c) : 0;
+}
 
 /* ARGSUSED */
 	/* Currently unused eih */
 static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
-						Es_buf_handle esbuf, int group_spec, int indx)
+                        Es_buf_handle esbuf, int group_spec, int indx)
 {
-	Es_index index = (Es_index)indx;
+	Es_index index = (Es_index) indx;
 	register Es_index esi = index;
 	register int i, in_class;
 	struct ei_span_result result;
-
-	/*
-	 * WARNING: the code below that uses the SET macros, must not have
-	 * characters with the 8-th bit on be sign extended when converted to
-	 * larger storage classes.  Thus, buf_rep[i] and c must both be variables
-	 * of type unsigned char.
-	 */
+	SET *setp = NULL;	/* Declared at top for safety */
 
 	unsigned char *buf_rep = (unsigned char *)esbuf->buf;
 	unsigned char c;
 
-	/*
-	 * Invariants of this routine: i == esi - esbuf->first during left scan,
-	 * c == esbuf->buf[(--i)], (i++) during right
-	 */
-#define ESTABLISH_I_INVARIANT	i = esi - esbuf->first
-#define ESTABLISH_C_INVARIANT_LEFT	c = buf_rep[(--esi, --i)]
-#define ESTABLISH_C_INVARIANT_RIGHT	c = buf_rep[(esi++, i++)]
+#define ESTABLISH_I_INVARIANT   i = esi - esbuf->first
+#define ESTABLISH_C_INVARIANT_LEFT  c = buf_rep[(--esi, --i)]
+#define ESTABLISH_C_INVARIANT_RIGHT c = buf_rep[(esi++, i++)]
 
 	if (group_spec & EI_SPAN_LEFT_ONLY) {
-		/*
-		 * For a LEFT_ONLY span, the entity after esi should not be
-		 * considered, requiring us to backup esi before starting.
-		 */
 		if (esi <= 0) {
 			goto ErrorReturn;
 		}
@@ -912,10 +955,6 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 	if (esi < esbuf->first || esi >= esbuf->last_plus_one) {
 		if (es_make_buf_include_index(esbuf, esi, esbuf->sizeof_buf / 4)) {
 			goto ErrorReturn;
-			/*
-			 * BUG ALERT: this always fails at the end of the stream unless
-			 * EI_SPAN_LEFT_ONLY has already backed up esi.
-			 */
 		}
 	}
 	result.first = esi;
@@ -932,6 +971,7 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 
 	ESTABLISH_I_INVARIANT;
 	c = buf_rep[i];
+
 	/* treat LINE class special */
 	if ((group_spec & EI_SPAN_CLASS_MASK) == EI_SPAN_LINE) {
 		if ((in_class = EI_IS_LINE_CHAR(c)) == 0) {
@@ -948,13 +988,13 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 			}
 		}
 		if ((group_spec & EI_SPAN_RIGHT_ONLY) == 0) {
-			while (esi > 0) {	/* Scan left. */
+			while (esi > 0) {	/* Scan left */
 				if (i == 0) {
 					esi = es_backup_buf(esbuf);
 					if (esi == ES_CANNOT_SET) {
 						goto DoneLineScanLeft;
 					}
-					esi++;	/* ... because i is pre-decremented */
+					esi++;
 					ESTABLISH_I_INVARIANT;
 				}
 				ESTABLISH_C_INVARIANT_LEFT;
@@ -964,7 +1004,7 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 				else
 					result.first = esi;
 			}
-		  DoneLineScanLeft:	/* Fix the buffer up for the scan right */
+		  DoneLineScanLeft:
 			esi = index;
 			if (esi < esbuf->last_plus_one) {
 				ESTABLISH_I_INVARIANT;
@@ -987,11 +1027,10 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 			}
 		}
 	}
-	else {	/* Handle other classes uniformly */
-		SET *setp;	/* character class of interest */
-
+	else {	/* Handle other classes (WORD, PATH, SP_AND_TAB, etc.) */
 		if (!ei_classes_initialized)
 			ei_classes_initialize();
+
 		switch (group_spec & EI_SPAN_CLASS_MASK) {
 			case EI_SPAN_WORD:
 				setp = &ei_classes[EI_WORD_CLASS];
@@ -1011,7 +1050,11 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 			default:
 				goto ErrorReturn;
 		}
-		if ((in_class = IN(setp, c)) == 0) {
+
+		/* Initial check for start character */
+		in_class = ei_utf8_is_in_class(setp, c, 0, group_spec);
+
+		if (!in_class) {
 			result.flags |= EI_SPAN_NOT_IN_CLASS;
 			if (group_spec & EI_SPAN_IN_CLASS_ONLY)
 				goto ErrorReturn;
@@ -1020,20 +1063,24 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 			if (group_spec & EI_SPAN_NOT_CLASS_ONLY)
 				goto ErrorReturn;
 		}
+
+		/* --- SCHLEIFE 1: LINKS-SCAN --- */
 		if ((group_spec & EI_SPAN_RIGHT_ONLY) == 0) {
-			while (esi > 0) {	/* Scan left. */
+			while (esi > 0) {
 				if (i == 0) {
 					esi = es_backup_buf(esbuf);
 					if (esi == ES_CANNOT_SET) {
 						goto DoneClassScanLeft;
 					}
-					esi++;	/* ... because i is pre-decremented */
+					esi++;
 					ESTABLISH_I_INVARIANT;
 				}
 				ESTABLISH_C_INVARIANT_LEFT;
-				if (in_class != (int)IN(setp, c)) {
+
+				int char_in_class =
+						ei_utf8_is_in_class(setp, c, in_class, group_spec);
+				if (in_class != char_in_class) {
 					break;
-					/* Here we assume LINE is the next level for this class */
 				}
 				else if (EI_IS_LINE_CHAR(c)) {
 					result.flags |= EI_SPAN_LEFT_HIT_NEXT_LEVEL;
@@ -1042,15 +1089,18 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 				else
 					result.first = esi;
 			}
-		  DoneClassScanLeft:	/* Fix the buffer up for the scan right */
+		  DoneClassScanLeft:
 			esi = index;
 			if (esi < esbuf->last_plus_one) {
 				ESTABLISH_I_INVARIANT;
 			}
 		}
+
 		esi++;
 		i++;
-		if ((group_spec & EI_SPAN_LEFT_ONLY) == 0)
+
+		/* --- SCHLEIFE 2: RECHTS-SCAN --- */
+		if ((group_spec & EI_SPAN_LEFT_ONLY) == 0) {
 			for (;;) {
 				if (esi >= esbuf->last_plus_one) {
 					esbuf->last_plus_one = esi;
@@ -1060,9 +1110,11 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 					ESTABLISH_I_INVARIANT;
 				}
 				ESTABLISH_C_INVARIANT_RIGHT;
-				if (in_class != (int)IN(setp, c)) {
+
+				int char_in_class =
+						ei_utf8_is_in_class(setp, c, in_class, group_spec);
+				if (in_class != char_in_class) {
 					break;
-					/* Here we assume LINE is the next level for this class */
 				}
 				else if (EI_IS_LINE_CHAR(c)) {
 					result.flags |= EI_SPAN_RIGHT_HIT_NEXT_LEVEL;
@@ -1071,8 +1123,10 @@ static struct ei_span_result ei_plain_text_span_of_group(Ei_handle eih,
 				else
 					result.last_plus_one = esi;
 			}
+		}
 	}
 	goto Return;
+
   ErrorReturn:
 	result.first = result.last_plus_one = ES_CANNOT_SET;
   Return:
