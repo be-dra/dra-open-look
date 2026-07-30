@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_edit_c_sccsid[] = "@(#)ev_edit.c 20.27 93/06/28 DRA $Id: ev_edit.c,v 4.4 2026/07/29 04:15:21 dra Exp $";
+char     ev_edit_c_sccsid[] = "@(#)ev_edit.c 20.27 93/06/28 DRA $Id: ev_edit.c,v 4.5 2026/07/29 17:09:24 dra Exp $";
 #endif
 
 /*
@@ -33,18 +33,19 @@ char     ev_edit_c_sccsid[] = "@(#)ev_edit.c 20.27 93/06/28 DRA $Id: ev_edit.c,v
 Pkg_private unsigned ev_span(Ev_chain views, Es_index position,
 				Es_index *first, Es_index *last_plus_one, int group_spec)
 {
-    struct ei_span_result span_result;
-    CHAR            buf[EV_BUFSIZE];
-    struct es_buf_object esbuf;
-    esbuf.esh = views->esh;
-    esbuf.buf = buf;
-    esbuf.sizeof_buf = SIZEOF(buf);
-    esbuf.first = esbuf.last_plus_one = 0;
-    span_result = ei_span_of_group(views->eih, &esbuf, group_spec,
-									(int)position);
-    *first = span_result.first;
-    *last_plus_one = span_result.last_plus_one;
-    return (span_result.flags);
+	struct ei_span_result span_result;
+	char buf[EV_BUFSIZE];
+	struct es_buf_object esbuf;
+
+	esbuf.esh = views->esh;
+	esbuf.buf = buf;
+	esbuf.sizeof_buf = SIZEOF(buf);
+	esbuf.first = esbuf.last_plus_one = 0;
+	span_result = ei_span_of_group(views->eih, &esbuf, group_spec,
+										(int)position);
+	*first = span_result.first;
+	*last_plus_one = span_result.last_plus_one;
+	return (span_result.flags);
 }
 
 Pkg_private Es_index ev_line_start(Ev_handle view, Es_index position)
@@ -147,74 +148,74 @@ Pkg_private void ev_update_lt_after_edit(Ev_line_table *table, Es_index before_e
  */
 Pkg_private struct ei_span_result ev_span_for_edit(Ev_chain views, int edit_action)
 {
-    Ev_chain_pd_handle private = EV_CHAIN_PRIVATE(views);
-    struct ei_span_result span_result;
-    int             group_spec = 0;
-    CHAR            buf[EV_BUFSIZE];
-    struct es_buf_object esbuf;
+	Ev_chain_pd_handle private = EV_CHAIN_PRIVATE(views);
+	struct ei_span_result span_result;
+	int group_spec = 0;
+	CHAR buf[EV_BUFSIZE];
+	struct es_buf_object esbuf;
 
-    switch (edit_action) {
-      case EV_EDIT_BACK_CHAR:{
-	    group_spec = EI_SPAN_CHAR | EI_SPAN_LEFT_ONLY;
-	    break;
+	switch (edit_action) {
+		case EV_EDIT_BACK_CHAR:{
+				group_spec = EI_SPAN_CHAR | EI_SPAN_LEFT_ONLY;
+				break;
+			}
+		case EV_EDIT_BACK_WORD:{
+				group_spec = EI_SPAN_WORD | EI_SPAN_LEFT_ONLY;
+				break;
+			}
+		case EV_EDIT_BACK_LINE:{
+				group_spec = EI_SPAN_LINE | EI_SPAN_LEFT_ONLY;
+				break;
+			}
+		case EV_EDIT_CHAR:{
+				group_spec = EI_SPAN_CHAR | EI_SPAN_RIGHT_ONLY;
+				break;
+			}
+		case EV_EDIT_WORD:{
+				group_spec = EI_SPAN_WORD | EI_SPAN_RIGHT_ONLY;
+				break;
+			}
+		case EV_EDIT_LINE:{
+				group_spec = EI_SPAN_LINE | EI_SPAN_RIGHT_ONLY;
+				break;
+			}
+		default:{
+				span_result.flags = 1 << 16;
+				goto Return;
+			}
 	}
-      case EV_EDIT_BACK_WORD:{
-	    group_spec = EI_SPAN_WORD | EI_SPAN_LEFT_ONLY;
-	    break;
+	esbuf.esh = views->esh;
+	esbuf.buf = buf;
+	esbuf.sizeof_buf = SIZEOF(buf);
+	esbuf.first = esbuf.last_plus_one = 0;
+	span_result =
+			ei_span_of_group(views->eih, &esbuf, group_spec,
+			(int)private->insert_pos);
+	if (span_result.first == ES_CANNOT_SET) {
+		span_result.flags = 2 << 16;
+		goto Return;
 	}
-      case EV_EDIT_BACK_LINE:{
-	    group_spec = EI_SPAN_LINE | EI_SPAN_LEFT_ONLY;
-	    break;
+	if (((group_spec & EI_SPAN_CLASS_MASK) == EI_SPAN_WORD) &&
+			(span_result.flags & EI_SPAN_NOT_IN_CLASS) &&
+			(span_result.flags & EI_SPAN_HIT_NEXT_LEVEL) == 0) {
+		/*
+		 * On a FORWARD/BACK_WORD, skip over preceding/trailing white space
+		 * and delete the preceding word.
+		 */
+		struct ei_span_result span2_result;
+
+		span2_result = ei_span_of_group(views->eih, &esbuf, group_spec,
+				(int)((group_spec & EI_SPAN_LEFT_ONLY)
+						? span_result.first : span_result.last_plus_one));
+		if (span2_result.first != ES_CANNOT_SET) {
+			if (group_spec & EI_SPAN_LEFT_ONLY)
+				span_result.first = span2_result.first;
+			else
+				span_result.last_plus_one = span2_result.last_plus_one;
+		}
 	}
-      case EV_EDIT_CHAR:{
-	    group_spec = EI_SPAN_CHAR | EI_SPAN_RIGHT_ONLY;
-	    break;
-	}
-      case EV_EDIT_WORD:{
-	    group_spec = EI_SPAN_WORD | EI_SPAN_RIGHT_ONLY;
-	    break;
-	}
-      case EV_EDIT_LINE:{
-	    group_spec = EI_SPAN_LINE | EI_SPAN_RIGHT_ONLY;
-	    break;
-	}
-      default:{
-	    span_result.flags = 1 << 16;
-	    goto Return;
-	}
-    }
-    esbuf.esh = views->esh;
-    esbuf.buf = buf;
-    esbuf.sizeof_buf = SIZEOF(buf);
-    esbuf.first = esbuf.last_plus_one = 0;
-    span_result = ei_span_of_group(
-		       views->eih, &esbuf, group_spec, (int)private->insert_pos);
-    if (span_result.first == ES_CANNOT_SET) {
-	span_result.flags = 2 << 16;
-	goto Return;
-    }
-    if (((group_spec & EI_SPAN_CLASS_MASK) == EI_SPAN_WORD) &&
-	(span_result.flags & EI_SPAN_NOT_IN_CLASS) &&
-	(span_result.flags & EI_SPAN_HIT_NEXT_LEVEL) == 0) {
-	/*
-	 * On a FORWARD/BACK_WORD, skip over preceding/trailing white space
-	 * and delete the preceding word.
-	 */
-	struct ei_span_result span2_result;
-	span2_result = ei_span_of_group(
-					views->eih, &esbuf, group_spec,
-					(int)((group_spec & EI_SPAN_LEFT_ONLY)
-					? span_result.first
-					: span_result.last_plus_one));
-	if (span2_result.first != ES_CANNOT_SET) {
-	    if (group_spec & EI_SPAN_LEFT_ONLY)
-		span_result.first = span2_result.first;
-	    else
-		span_result.last_plus_one = span2_result.last_plus_one;
-	}
-    }
-Return:
-    return (span_result);
+  Return:
+	return (span_result);
 }
 
 Pkg_private int ev_delete_span(Ev_chain views, Es_index first, Es_index last_plus_one, Es_index *delta)
