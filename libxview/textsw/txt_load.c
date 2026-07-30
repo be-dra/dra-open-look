@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_load_c_sccsid[] = "@(#)txt_load.c 1.37 93/06/28 DRA: $Id: txt_load.c,v 4.6 2025/05/11 12:58:23 dra Exp $";
+char     txt_load_c_sccsid[] = "@(#)txt_load.c 1.37 93/06/28 DRA: $Id: txt_load.c,v 4.7 2026/07/30 07:52:26 dra Exp $";
 #endif
 
 /*
@@ -54,10 +54,6 @@ Pkg_private int textsw_open_cmd_proc(Frame fc, CHAR *path, CHAR *file, Xv_opaque
     Frame           frame = xv_get(TEXTSW_PUBLIC(priv), WIN_FRAME);
     Xv_Notice       text_notice;
     char            curr_dir[MAXPATHLEN];
-#ifdef OW_I18N
-    CHAR            curr_dir_ws[MAXPATHLEN];
-#endif
-
 
     if (textsw_has_been_modified(textsw)) {
         text_notice = xv_get(frame, XV_KEY_DATA, text_notice_key);
@@ -81,33 +77,12 @@ Load File will discard these edits. Please confirm."),
         if (result == NOTICE_NO || result == NOTICE_FAILED)
             return XV_OK;
     }
-#ifdef OW_I18N
-    dir_str = (CHAR *) xv_get(fc, FILE_CHOOSER_DIRECTORY_WCS);
-#else
     dir_str = (char *) xv_get(fc, FILE_CHOOSER_DIRECTORY);
-#endif
  
             locx = locy = 0;
-#ifdef OW_I18N
-    if (textsw_expand_filename(priv, dir_str, MAXPATHLEN, locx, locy)) {
-        /* error handled inside routine */
-        return TRUE;
-    }
-    if (textsw_expand_filename(priv, file, MAXPATHLEN, locx, locy)) {
-        /* error handled inside routine */
-        return TRUE;
-    }
-#else  
-#endif 
- 
     /* if "cd" is not disabled */
     (void) getcwd(curr_dir, (long)MAXPATHLEN);
-#ifdef OW_I18N
-    (void) mbstowcs(curr_dir_ws, curr_dir, MAXPATHLEN);
-    if (STRCMP(curr_dir_ws, dir_str) != 0) {    /* } for match */
-#else
     if (strcmp(curr_dir, dir_str) != 0) {
-#endif
         if (!(priv->state & TXTSW_NO_CD)) {
             if (textsw_change_directory(priv, dir_str, FALSE, locx, locy) != 0) {
                 /* error or directory does not exist */
@@ -182,11 +157,7 @@ Pkg_private int textsw_save_cmd_proc(Frame fc, CHAR *path, struct stat * exists)
 	priv->state &= ~TXTSW_CONFIRM_OVERWRITE;
 	confirm_state_changed = 1;
    }
-#ifdef OW_I18N
-   textsw_store_file_wcs(VIEW_PUBLIC(view),path,0,0);
-#else
    textsw_store_file(TEXTSW_PUBLIC(priv), path, 0, 0);
-#endif
     if (confirm_state_changed)
 	priv->state |= TXTSW_CONFIRM_OVERWRITE;
     return XV_OK;
