@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_event_c_sccsid[] = "@(#)txt_event.c 20.63 93/06/28 DRA: $Id: txt_event.c,v 4.7 2025/11/01 13:02:31 dra Exp $";
+char     txt_event_c_sccsid[] = "@(#)txt_event.c 20.63 93/06/28 DRA: $Id: txt_event.c,v 4.8 2026/07/29 06:15:18 dra Exp $";
 #endif
 
 /*
@@ -225,13 +225,6 @@ Pkg_private Notify_value textsw_view_event_internal(Textsw_view view_public,
 		case KBD_USE:
 			textsw_hide_caret(priv);	/* To get rid of ghost */
 
-#ifdef OW_I18N
-			if (priv->ic && priv->focus_view != view_public) {
-				DRAWABLE_INFO_MACRO(view_public, info);
-				window_set_ic_focus_win(view_public, priv->ic, xv_xid(info));
-			}
-#endif
-
 			priv->focus_view = view_public;
 			priv->state |= TXTSW_HAS_FOCUS;
 			if (priv->caret_state & TXTSW_CARET_FLASHING)
@@ -423,23 +416,13 @@ Pkg_private	int textsw_mouseless_misc_event(Textsw_view_private view, Event *eve
 					NULL);
 		}
 		else {
-
-#ifdef OW_I18N
-			textsw_implicit_commit(priv);
-#endif
-
 			/* Move the caret */
 			do {
 				old_position = EV_GET_INSERT(chain);
 				textsw_move_caret(view, dir);
 				new_position = EV_GET_INSERT(chain);
 			} while (--rep_cnt > 0 && new_position != old_position);
-
-#ifdef OW_I18N
-			textsw_possibly_normalize_wc(VIEW_PUBLIC(view), new_position);
-#else
 			textsw_possibly_normalize(VIEW_PUBLIC(view), new_position);
-#endif
 		}
 	}
 
@@ -537,42 +520,12 @@ Pkg_private void textsw_stop_blinker(Textsw_private priv)
 
 Pkg_private void textsw_show_caret(Textsw_private textsw)
 {
-#ifdef FULL_R5
-#ifdef OW_I18N
-    XPoint		loc;
-    int			x, y;
-    XVaNestedList	va_nested_list;
-    XIMStyle		xim_style = 0;
-#endif /* OW_I18N */	
-#endif /* FULL_R5 */	
-
-
     if ((textsw->caret_state & (TXTSW_CARET_ON | TXTSW_CARET_FROZEN)) ||
 	TXTSW_IS_READ_ONLY(textsw) ||
 	TXTSW_IS_BUSY(textsw))
 	return;
     ev_blink_caret(textsw->focus_view, textsw->views, 1);
     textsw->caret_state |= TXTSW_CARET_ON;
-#ifdef OW_I18N
-#ifdef FULL_R5
-
-    if (textsw->ic && (textsw->xim_style & XIMPreeditPosition) && textsw->focus_view) {
-        Textsw_view_private	view = VIEW_PRIVATE(textsw->focus_view);
-        if (ev_caret_to_xy(view->e_view, &x, &y)) {
-	    loc.x = (short)(x + (CARET_WIDTH/2) + 1);
-	    loc.y = (short)y;
-	    va_nested_list = XVaCreateNestedList(NULL, 
-					     XNSpotLocation, &loc, 
-					     NULL);
-	    XSetICValues(textsw->ic, XNPreeditAttributes, va_nested_list,
-        	     NULL);
-	    XFree(va_nested_list);
-	}
-
-    }
-#endif /* FULL_R5 */	    
-#endif /* OW_I18N */	
-    
 }
 
 Pkg_private void textsw_hide_caret(Textsw_private textsw)
