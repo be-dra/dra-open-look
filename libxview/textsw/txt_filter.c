@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_filter_c_sccsid[] = "@(#)txt_filter.c 20.48 93/06/28 DRA: $Id: txt_filter.c,v 4.8 2024/12/23 09:57:31 dra Exp $";
+char     txt_filter_c_sccsid[] = "@(#)txt_filter.c 20.48 93/06/28 DRA: $Id: txt_filter.c,v 4.9 2026/07/30 07:48:47 dra Exp $";
 #endif
 
 /*
@@ -228,21 +228,6 @@ static int talk_to_filter(Textsw_view_private view, int filter_input,
 	struct timeval tv;
 	Es_index insert, next_request[2];
 
-#ifdef OW_I18N
-	/* Number of unconverted bytes from last read */
-	int unconverted_mb_num = 0;
-
-	/* Unconverted bytes from last read */
-	char unconverted_mb_bytes[MB_LEN_MAX];
-
-	/* buffer for converting mb read from filter to wchar_t */
-	CHAR wc_buf[sizeof(buffer_and_slop) - SLOP_SIZE + 1];
-
-	char *mb_buf = 0;
-	int written_num, to_write_mb = 0;
-	Es_index next;
-#endif /* OW_I18N */
-
 	/*
 	 * buffer_and_slop is declared unsigned long in order to meet the most
 	 * restrictive of the alignment restrictions.
@@ -304,53 +289,9 @@ static int talk_to_filter(Textsw_view_private view, int filter_input,
 		if ((filter_output >= 0) && (FD_ISSET(filter_output, &readfds))) {
 			register int bytes_read;
 
-#ifdef OW_I18N
-			/*
-			 * As there is a set buffer size for reading from filter_output,
-			 * the last some bytes may be the portion of a multibyte character.
-			 * If so, the unconverted bytes are saved in unconverted_mb_bytes[]
-			 * and unconverted_mb_num is set to the number of bytes saved.
-			 * This unconverted bytes are tried to convert again with another
-			 * read.
-			 */
-			int wc_len = 0;
-
-			/*
-			 * If there is unconverted data left over, copy it into the read
-			 * buffer.
-			 */
-			if (unconverted_mb_num)
-				XV_BCOPY(unconverted_mb_bytes, buffer, unconverted_mb_num);
-
-			/* Read data from the filter into the buffer after the leftovers. */
-			bytes_read = read(filter_output,
-					(char *)buffer + unconverted_mb_num,
-					sizeof(buffer_and_slop) - SLOP_SIZE - unconverted_mb_num);
-
-			if (bytes_read) {
-				bytes_read += unconverted_mb_num;
-				unconverted_mb_num = bytes_read;
-				wc_len = textsw_error_skip_mbstowcs(wc_buf, buffer,
-						&unconverted_mb_num, MB_CUR_MAX);
-
-				if (unconverted_mb_num) {
-					ASSUME(unconverted_mb_num < MB_CUR_MAX);
-					XV_BCOPY(buffer + bytes_read - unconverted_mb_num,
-							unconverted_mb_bytes, unconverted_mb_num);
-				}
-			}
-			else if (unconverted_mb_num) {
-				wc_len = textsw_error_skip_mbstowcs(wc_buf, buffer,
-						&unconverted_mb_num, 0);
-			}
-
-			switch (wc_len) {	/* } for match */
-#else /* OW_I18N */
 			bytes_read = read(filter_output, (char *)buffer,
 					sizeof(buffer_and_slop) - SLOP_SIZE);
 			switch (bytes_read) {
-#endif /* OW_I18N */
-
 				case 0:
 					if (first >= last_plus_one)
 						goto NormalReturn;
@@ -361,13 +302,7 @@ static int talk_to_filter(Textsw_view_private view, int filter_input,
 					goto ErrorReturn;
 				default:
 					insert = EV_GET_INSERT(priv->views);
-
-#ifdef OW_I18N
-					status = interpret_reply(view, wc_buf, wc_len,
-#else
 					status = interpret_reply(view, (char *)buffer, bytes_read,
-#endif
-
 							&written[0]);
 					switch (status) {
 						case REPLY_ERROR:
@@ -394,56 +329,6 @@ static int talk_to_filter(Textsw_view_private view, int filter_input,
 		}
 
 		if ((filter_input >= 0) && (FD_ISSET(filter_input, &writefds)))
-
-#ifdef OW_I18N
-		{
-			int to_write;	/* number of characters */
-
-			if (to_write_mb) {	/* All bytes in mb_buf isn't written yet. */
-				written[0] = write(filter_input, mb_buf + written_num,
-						to_write_mb);
-				goto Write_check;
-			}
-			(void)es_set_position(priv->views->esh, first);
-			to_write = sizeof(buffer_and_slop) - SLOP_SIZE;
-			if (to_write > last_plus_one - first)
-				to_write = last_plus_one - first;
-
-			next = es_read(priv->views->esh, to_write, wc_buf, &to_write);
-			wc_buf[to_write] = NULL;
-			if (READ_AT_EOF(first, next, to_write)) {
-				first = last_plus_one;
-			}
-			else {
-				mb_buf = wcstombsdup(wc_buf);
-				to_write_mb = strlen(mb_buf);
-				written[0] = write(filter_input, mb_buf, to_write_mb);
-			  Write_check:
-				if (written[0] == -1) {
-					if (errno == EMSGSIZE) {
-						/* Go around and wait for filter to run */
-						written_num = 0;
-					}
-					else {
-						xv_free(mb_buf);
-						goto ErrorReturn;
-					}
-				}
-				else {
-					if (written[0] < to_write_mb) {
-						written_num = written[0];
-						to_write_mb -= written[0];
-						/* Retry to write the rest bytes in mb_buf. */
-					}
-					else {
-						xv_free(mb_buf);
-						to_write_mb = 0;
-						first = next;
-					}
-				}
-			}
-		}
-#else /* OW_I18N */
 		{
 			int to_write;
 			Es_index next;
@@ -475,7 +360,6 @@ static int talk_to_filter(Textsw_view_private view, int filter_input,
 				}
 			}
 		}
-#endif /* OW_I18N */
 
 		if (first >= last_plus_one) {
 			if (nr_valid != 0) {
@@ -569,11 +453,7 @@ static int smarter_interpret_filter_reply(Textsw_view_private view, register CHA
 	  case TEXTSW_FILTER_SET_SELECTION:
 	    if (buffer_last_plus_one - buffer < 4 * sizeof(int))
 		goto Deal_With_Slop;
-#ifdef OW_I18N
-	    textsw_set_selection_wcs(XV_PUBLIC(priv),
-#else
 	    textsw_set_selection(XV_PUBLIC(priv),
-#endif
 				 (Es_index) int_buffer[2],
 				 (Es_index) int_buffer[3],
 				 EV_SEL_PRIMARY);
@@ -611,11 +491,7 @@ Pkg_private int textsw_call_smart_filter(Textsw_view_private view, Event *event,
 	int filter_input, filter_output, max_fds = GETDTABLESIZE(), result = 0;
 	Textsw_filter_attribute filter_attribute;
 
-#ifdef OW_I18N
-	CHAR buffer[PIPSIZ];
-#else
 	unsigned char buffer[PIPSIZ];
-#endif
 
 	struct timeval tv;
 	Es_index insert, save_length = 0;
@@ -685,7 +561,6 @@ Pkg_private int textsw_call_smart_filter(Textsw_view_private view, Event *event,
 
 			if (state == FILTER_STARTED) {
 				filter_attribute = TEXTSW_FATTR_INPUT_EVENT;
-				/*  BIG BUG: Need to write in wchar OW_I18N */
 				if ((write(filter_input, (char *)&filter_attribute,
 										sizeof(filter_attribute)) == -1) ||
 						(write(filter_input, (char *)event,
