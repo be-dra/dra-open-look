@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_caret_c_sccsid[] = "@(#)txt_caret.c 20.28 93/06/28 DRA: $Id: txt_caret.c,v 4.2 2024/12/18 11:26:56 dra Exp $";
+char     txt_caret_c_sccsid[] = "@(#)txt_caret.c 20.28 93/06/28 DRA: $Id: txt_caret.c,v 4.3 2026/07/30 06:56:52 dra Exp $";
 #endif
 
 /*
@@ -100,7 +100,8 @@ static Es_index textsw_move_backward_a_word(Textsw_view_private view, Es_index p
 
 	while ((pos != 0) && (pos != ES_CANNOT_SET) &&
 			(span_result & EI_SPAN_NOT_IN_CLASS)) {
-		span_result = ev_span(chain, pos, &first, &last_plus_one, (int)span_flag);
+		span_result =
+				ev_span(chain, pos, &first, &last_plus_one, (int)span_flag);
 		pos = ((pos == first) ? pos - 1 : first);
 	}
 
@@ -108,50 +109,54 @@ static Es_index textsw_move_backward_a_word(Textsw_view_private view, Es_index p
 }
 
 
-static Es_index textsw_move_down_a_line(Textsw_view_private view, Es_index pos, Es_index file_length, int lt_index, struct rect rect)
+static Es_index textsw_move_down_a_line(Textsw_view_private view, Es_index pos,
+					Es_index file_length, int lt_index, struct rect rect)
 {
-    register Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
-    register Ev_handle ev_handle = view->e_view;
-    int             line_height = ei_line_height
-    (ev_handle->view_chain->eih);
-    int             new_x, new_y;
-    Es_index        new_pos;
-    int             lower_context, scroll_lines;
-    Ev_impl_line_seq line_seq = (Ev_impl_line_seq)
-    ev_handle->line_table.seq;
+	register Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
+	register Ev_handle ev_handle = view->e_view;
+	int line_height = ei_line_height(ev_handle->view_chain->eih);
+	int new_x, new_y;
+	Es_index new_pos;
+	int lower_context, scroll_lines;
+	Ev_impl_line_seq line_seq = (Ev_impl_line_seq)
+			ev_handle->line_table.seq;
 
 
-    if ((pos >= file_length) ||
-	(line_seq[lt_index + 1].pos == ES_INFINITY) ||
-	(line_seq[lt_index + 1].pos == file_length))
-	return (ES_CANNOT_SET);
+	if ((pos >= file_length) ||
+			(line_seq[lt_index + 1].pos == ES_INFINITY) ||
+			(line_seq[lt_index + 1].pos == file_length))
+		return (ES_CANNOT_SET);
 
 
-    if (pos >= line_seq[ev_handle->line_table.last_plus_one - 2].pos) {
-	int             lines_in_view = textsw_screen_line_count(VIEW_PUBLIC(view));
+	if (pos >= line_seq[ev_handle->line_table.last_plus_one - 2].pos) {
+		int lines_in_view = textsw_screen_line_count(VIEW_PUBLIC(view));
 
-	lower_context = (int) ev_get(ev_handle, EV_CHAIN_LOWER_CONTEXT, XV_NULL, XV_NULL, XV_NULL);
-	scroll_lines = ((lower_context > 0) && (lines_in_view > lower_context)) ? lower_context + 1 : 1;
-	ev_scroll_lines(ev_handle, scroll_lines, FALSE);
-	new_y = rect.r_top - (line_height * (scroll_lines - 1));
-	textsw_update_scrollbars(priv, view);
-    } else
-	new_y = rect.r_top + line_height;
+		lower_context =
+				(int)ev_get(ev_handle, EV_CHAIN_LOWER_CONTEXT, XV_NULL, XV_NULL,
+				XV_NULL);
+		scroll_lines = ((lower_context > 0)
+				&& (lines_in_view > lower_context)) ? lower_context + 1 : 1;
+		ev_scroll_lines(ev_handle, scroll_lines, FALSE);
+		new_y = rect.r_top - (line_height * (scroll_lines - 1));
+		textsw_update_scrollbars(priv, view);
+	}
+	else
+		new_y = rect.r_top + line_height;
 
-    new_x = textsw_get_recorded_x(view);
+	new_x = textsw_get_recorded_x(view);
 
-    if (new_x < rect.r_left)
-	new_x = rect.r_left;
+	if (new_x < rect.r_left)
+		new_x = rect.r_left;
 
-    (void) textsw_record_caret_motion(priv, TXTSW_NEXT_LINE, new_x);
+	(void)textsw_record_caret_motion(priv, TXTSW_NEXT_LINE, new_x);
 
-    new_pos = ev_resolve_xy(ev_handle, new_x, new_y);
+	new_pos = ev_resolve_xy(ev_handle, new_x, new_y);
 
-    return ((new_pos >= 0 && new_pos <= file_length) ?
-	    new_pos : ES_CANNOT_SET);
+	return ((new_pos >= 0 && new_pos <= file_length) ? new_pos : ES_CANNOT_SET);
 }
 
-static Es_index textsw_move_forward_a_word(Textsw_view_private view, Es_index pos, Es_index file_length)
+static Es_index textsw_move_forward_a_word(Textsw_view_private view,
+							Es_index pos, Es_index file_length)
 {
 	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
 	Ev_chain chain = priv->views;
@@ -170,10 +175,18 @@ static Es_index textsw_move_forward_a_word(Textsw_view_private view, Es_index po
 	while ((pos != ES_CANNOT_SET) && (span_result & EI_SPAN_NOT_IN_CLASS)) {
 		span_result = ev_span(chain, pos, &first, &last_plus_one, span_flag);
 
-		if (pos == last_plus_one)
-			pos = ((pos == file_length) ? ES_CANNOT_SET : pos + 1);
-		else
-			pos = last_plus_one;
+		if (pos == last_plus_one) {
+			/* Move to the next UTF-8 character boundary instead of raw byte
+			 * pos + 1
+			 */
+			if (_xv_is_multibyte) {
+				pos = ev_utf8_next_char_boundary(chain->esh, pos, file_length);
+			}
+			else {
+				pos++;
+			}
+		}
+		else pos = last_plus_one;
 	}
 
 
@@ -240,11 +253,7 @@ static Es_index textsw_move_to_line_end(Textsw_view_private view, Es_index pos, 
     else {
 	CHAR            buf[1];
 
-#ifdef OW_I18N
-	(void) textsw_get_contents_wcs(priv, --last_plus_one, buf, 1);
-#else
 	(void) textsw_get_contents(priv, --last_plus_one, buf, 1);
-#endif
 	return ((buf[0] == '\n') ? last_plus_one : file_length);
     }
 
@@ -336,10 +345,30 @@ Pkg_private void textsw_move_caret(Textsw_view_private view, Textsw_Caret_Direct
 
 	switch (direction) {
 		case TXTSW_CHAR_BACKWARD:
-			pos = ((old_pos == 0) ? ES_CANNOT_SET : (old_pos - 1));
+			if (old_pos == 0) {
+				pos = ES_CANNOT_SET;
+			}
+			else {
+				if (_xv_is_multibyte) {
+					pos = ev_utf8_prev_char_boundary(chain->esh, old_pos);
+				}
+				else {
+					pos = old_pos - 1;
+				}
+			}
 			break;
 		case TXTSW_CHAR_FORWARD:
-			pos = ((old_pos >= file_length) ? ES_CANNOT_SET : (old_pos + 1));
+			if (old_pos >= file_length) {
+				pos = ES_CANNOT_SET;
+			}
+			else {
+				if (_xv_is_multibyte) {
+					pos = ev_utf8_next_char_boundary(chain->esh, old_pos, file_length);
+				}
+				else {
+					pos = old_pos + 1;
+				}
+			}
 			break;
 		case TXTSW_DOCUMENT_END:
 
@@ -433,11 +462,7 @@ Pkg_private void textsw_move_caret(Textsw_view_private view, Textsw_Caret_Direct
 									&last_plus_one, EV_SEL_PRIMARY))
 					&& !(TXTSW_IS_READ_ONLY(priv)))
 
-#ifdef OW_I18N
-				(void)textsw_set_selection_wcs(
-#else
 				textsw_set_selection(
-#endif
 						TEXTSW_PUBLIC(priv), first, last_plus_one,
 						EV_SEL_PRIMARY);
 
