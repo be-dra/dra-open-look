@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_popup_c_sccsid[] = "@(#)txt_popup.c 1.54 93/06/28 DRA: $Id: txt_popup.c,v 4.12 2025/05/11 12:58:23 dra Exp $";
+char     txt_popup_c_sccsid[] = "@(#)txt_popup.c 1.54 93/06/28 DRA: $Id: txt_popup.c,v 4.13 2026/07/30 08:08:10 dra Exp $";
 #endif
 
 /*
@@ -119,7 +119,7 @@ static Notify_error textsw_popup_destroy_func(Notify_client client,
 				NULL);
 		}
 	}
-	return notify_next_destroy_func(client, status);
+	return (Notify_error)notify_next_destroy_func(client, status);
 }
 
 static void add_exten_item(File_chooser fc);
@@ -154,11 +154,6 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 	char *label = NULL;
 	Xv_server srv = XV_SERVER_FROM_WINDOW(tsw);
 
-#ifdef OW_I18N
-	int win_use_im = ((popup_type != TEXTSW_MENU_SEL_MARK_TEXT) &&
-			(popup_type != TEXTSW_MENU_NORMALIZE_LINE));
-#endif
-
 #ifdef BEFORE_DRA_CHANGED_IT
 	/* can lead to problems (jkwehrfjkwhef) */
 	base_frame = (xv_get(frame_parent, XV_IS_SUBTYPE_OF, FRAME_BASE) ?
@@ -175,15 +170,8 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 	switch (popup_type) {
 		case TEXTSW_MENU_STORE:
 			popup_frame = (Frame) xv_create(base_frame, FILE_CHOOSER,
-#ifdef OW_I18N
-					WIN_USE_IM, win_use_im,
-#endif
 					FILE_CHOOSER_TYPE, FILE_CHOOSER_SAVEAS,
-#ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_save_cmd_proc,
-#else
 					FILE_CHOOSER_NOTIFY_FUNC, textsw_save_cmd_proc,
-#endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
 					FILE_CHOOSER_ADD_UI_FUNC, add_exten_item,
@@ -198,15 +186,8 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 
 		case TEXTSW_MENU_LOAD:
 			popup_frame = (Frame) xv_create(base_frame, FILE_CHOOSER,
-#ifdef OW_I18N
-					WIN_USE_IM, win_use_im,
-#endif
 					FILE_CHOOSER_TYPE, FILE_CHOOSER_OPEN,
-#ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_open_cmd_proc,
-#else
 					FILE_CHOOSER_NOTIFY_FUNC, textsw_open_cmd_proc,
-#endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
 					FILE_CHOOSER_ADD_UI_FUNC, add_exten_item,
@@ -221,15 +202,8 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 
 		case TEXTSW_MENU_SAVE:
 			popup_frame = (Frame) xv_create(base_frame, FILE_CHOOSER,
-#ifdef OW_I18N
-					WIN_USE_IM, win_use_im,
-#endif
 					FILE_CHOOSER_TYPE, FILE_CHOOSER_SAVE,
-#ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_save_cmd_proc,
-#else
 					FILE_CHOOSER_NOTIFY_FUNC, textsw_save_cmd_proc,
-#endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
 					FILE_CHOOSER_ADD_UI_FUNC, add_exten_item,
@@ -246,18 +220,11 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 		case TEXTSW_MENU_FILE_STUFF:
 			popup_frame =
 					(Frame) xv_create(base_frame, FILE_CHOOSER_OPEN_DIALOG,
-#ifdef OW_I18N
-					WIN_USE_IM, win_use_im,
-#endif
 					FRAME_SHOW_LABEL, TRUE,
 					FILE_CHOOSER_CUSTOMIZE_OPEN,
 						XV_MSG("Include"), XV_MSG("Click Select to Include"),
 					FILE_CHOOSER_SELECT_FILES,
-#ifdef OW_I18N
-					FILE_CHOOSER_NOTIFY_FUNC_WCS, textsw_include_cmd_proc,
-#else
 					FILE_CHOOSER_NOTIFY_FUNC, textsw_include_cmd_proc,
-#endif
 					WIN_CLIENT_DATA, view,
 					FILE_CHOOSER_ADD_UI_FUNC, add_exten_item,
 					XV_KEY_DATA, fc_to_textsw_key, tsw,
@@ -282,9 +249,6 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 
 				popup_frame = xv_create(base_frame, FRAME_CMD,
 						XV_INSTANCE_NAME, instname(tsw, "findrepl"),
-#ifdef OW_I18N
-						WIN_USE_IM, win_use_im,
-#endif
 						FRAME_SHOW_LABEL, TRUE,
 						FRAME_CMD_DEFAULT_PIN_STATE,
 							pin_in ? FRAME_CMD_PIN_IN : FRAME_CMD_PIN_OUT,
@@ -307,9 +271,6 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 		case TEXTSW_MENU_SEL_MARK_TEXT:
 			popup_frame = (Frame) xv_create(base_frame, FRAME_CMD,
 					XV_INSTANCE_NAME, instname(tsw, "matchpairs"),
-#ifdef OW_I18N
-					WIN_USE_IM, win_use_im,
-#endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
 					XV_KEY_DATA, TEXTSW_POPUP_KEY, MATCH_POPUP_KEY,
@@ -326,9 +287,6 @@ Pkg_private void textsw_create_popup_frame(Textsw_view_private view, int popup_t
 		case TEXTSW_MENU_NORMALIZE_LINE:
 			popup_frame = (Frame) xv_create(base_frame, FRAME_CMD,
 					XV_INSTANCE_NAME, instname(tsw, "lineNum"),
-#ifdef OW_I18N
-					WIN_USE_IM, win_use_im,
-#endif
 					FRAME_SHOW_LABEL, TRUE,
 					WIN_CLIENT_DATA, view,
 					XV_KEY_DATA, TEXTSW_POPUP_KEY, SEL_LINE_POPUP_KEY,
