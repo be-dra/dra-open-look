@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_scroll_c_sccsid[] = "@(#)txt_scroll.c 20.41 93/06/28 DRA: $Id: txt_scroll.c,v 4.5 2025/01/28 21:34:38 dra Exp $";
+char     txt_scroll_c_sccsid[] = "@(#)txt_scroll.c 20.41 93/06/28 DRA: $Id: txt_scroll.c,v 4.6 2026/07/30 08:08:49 dra Exp $";
 #endif
 
 /*
@@ -29,13 +29,7 @@ Pkg_private void textsw_scroll(Scrollbar sb)
     ev_view_range(view->e_view, &first, &last_plus_one);
     new_start = (Es_index) xv_get(sb, SCROLLBAR_VIEW_START);
 
-    if (new_start != first)
-#ifdef OW_I18N
-	textsw_normalize_view_wc(VIEW_PUBLIC(view),
-			      new_start);
-#else
-	textsw_normalize_view(vp, new_start);
-#endif
+    if (new_start != first) textsw_normalize_view(vp, new_start);
 }
 
 
