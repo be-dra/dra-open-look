@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_gtty_c_sccsid[] = "@(#)tty_gtty.c 20.29 93/06/28 Copyr 1983 Sun Micro DRA: $Id: tty_gtty.c,v 4.2 2024/11/30 13:09:20 dra Exp $";
+char tty_gtty_c_sccsid[] = "@(#)tty_gtty.c 20.29 93/06/28 Copyr 1983 Sun Micro DRA: $Id: tty_gtty.c,v 4.3 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -91,8 +91,8 @@ static struct termios   default_modes = {
 		CINTR, CQUIT, CERASE, CKILL, CEOF, CTIME, CMIN, CSWTC, CNUL,
 		CSTART, CSTOP, CSUSP, CEOL, CREPRINT, CDISCARD, CWERASE, CLNEXT, CEOL2
 	},
-	0,
-	0
+	{ 0 },
+	{ 0 }
 };
 	
 #else /* __linux */
