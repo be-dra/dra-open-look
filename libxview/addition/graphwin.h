@@ -4,7 +4,7 @@
 #include <xview/xview.h>
 #include <xview/scrollw.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.11 2026/07/22 18:42:34 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.12 2026/07/30 19:46:03 dra Exp $" */
 
 extern const Xv_pkg xv_graphwin_pkg;
 #define GRAPHWIN &xv_graphwin_pkg
@@ -66,7 +66,7 @@ typedef enum {
 	/* for graphics painter */
 	GRAPH_USE_NORMAL_CONTEXT = GRAPH_ATTR(ATTR_NO_VALUE, 50),
 	GRAPH_USE_INVERS_CONTEXT = GRAPH_ATTR(ATTR_NO_VALUE, 51),
-	GRAPH_USE_NON_STANDARD_CONTEXT = GRAPH_ATTR(ATTR_OPAQUE, 52),
+	GRAPH_USE_NON_STANDARD_CONTEXT = GRAPH_ATTR(ATTR_OPAQUE_PAIR, 52),
 	GRAPH_DRAW_POINT = GRAPH_ATTR(ATTR_OPAQUE_PAIR, 53),
 	GRAPH_DRAW_LINE = GRAPH_ATTR(ATTR_OPAQUE_QUAD, 54),
 	GRAPH_DRAW_LINES = GRAPH_ATTR(ATTR_OPAQUE_PAIR, 55),
