@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.6 2025/03/31 19:38:57 dra Exp $";
+char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.7 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -26,9 +26,6 @@ char     ttytl_c_sccsid[] = "@(#)ttytl.c 20.42 93/06/28 DRA: $Id: ttytl.c,v 4.6 
 #include <xview/frame.h>
 #include <xview/ttysw.h>
 #include <xview_private/i18n_impl.h>
-#ifdef OW_I18N
-#include <xview/font.h>
-#endif
 #include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
 #include <xview_private/txt_impl.h>
@@ -47,10 +44,6 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, int c, int ac, int *a
 	char *p, *text;
 	struct rect rect, orect;
 	Ttysw_private ttysw, ttytlsw;
-
-#ifdef OW_I18N
-	Xv_Font font;
-#endif
 
 	ttytlsw = ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw_view_public);
 	ttysw_public = TTY_PUBLIC(ttysw);
@@ -121,23 +114,10 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, int c, int ac, int *a
 			if (ac < 3 || av[2] <= 0)
 				av[2] = (int)xv_get(frame_public, WIN_COLUMNS);
 
-#ifdef OW_I18N
-			/*
-			 * This is actually nothing to do with the I18N issue.  Just
-			 * get around the problem with xv_pf_sys.
-			 */
-			font = (Xv_Font) xv_get(ttysw_public, XV_FONT);
-			rect.r_width = (av[2] * (int)xv_get(font, FONT_DEFAULT_CHAR_WIDTH))
-					+ (2 * FRAME_BORDER_WIDTH);
-			rect.r_height =
-					(av[1] * (int)xv_get(font, FONT_DEFAULT_CHAR_HEIGHT))
-					+ FRAME_BORDER_WIDTH;
-#else
 			rect.r_width = frame_width_from_columns(av[2]);
 
 			rect.r_height = frame_height_from_lines(av[1],
 								(int)xv_get(frame_public, FRAME_SHOW_LABEL));
-#endif
 
 			if (!xv_get(frame_public, FRAME_CLOSED))
 				wmgr_completechangerect(frame_public, &rect, &orect, 0, 0);
@@ -240,16 +220,8 @@ Pkg_private int ttytlsw_string(Tty ttysw_public, int type, int c)
 		case HS_ICONFILE:
 		case HS_ICON:
 
-#ifdef OW_I18N
-			/*
-			 * wchar is used for the internal processing.
-			 */
-			if (iswprint(c))
-#else
 			/* jcb 6/1/90 -- change to let (all) eight bit charactes in */
 			if ((c >= ' ' && c <= '~') || ((c & 0x80) != 0))
-#endif
-
 			{
 				if (ttytlsw->nameptr <
 						&ttytlsw->namebuf[sizeof(ttytlsw->namebuf) - 1])
@@ -260,17 +232,10 @@ Pkg_private int ttytlsw_string(Tty ttysw_public, int type, int c)
 				switch (ttytlsw->hdrstate) {
 					case HS_HEADER:
 
-#ifdef OW_I18N
-						(void)STRNCPY(namestripe, ttytlsw->namebuf,
-								sizeof(namestripe) / sizeof(CHAR));
-						(void)xv_set(xv_get(TTY_PUBLIC(ttysw), WIN_FRAME),
-								XV_LABEL_WCS, namestripe, NULL);
-#else
 						(void)strncpy(namestripe, ttytlsw->namebuf,
 								sizeof(namestripe));
 						(void)xv_set(xv_get(TTY_PUBLIC(ttysw), WIN_FRAME),
 								FRAME_LABEL, namestripe, NULL);
-#endif
 
 						break;
 					case HS_ICONFILE:{
@@ -278,15 +243,7 @@ Pkg_private int ttytlsw_string(Tty ttysw_public, int type, int c)
 							struct pixrect *mpr;
 							Icon icon;
 
-#ifdef OW_I18N
-							char *mb_filename;
-
-							mb_filename = _xv_wcstombsdup(ttytlsw->namebuf);
-							if ((mpr = icon_load_mpr(mb_filename, err)) ==
-#else
 							if ((mpr = icon_load_mpr(ttytlsw->namebuf, err)) ==
-#endif
-
 									(struct pixrect *)0) {
 								xv_error((Xv_opaque) mpr,
 										ERROR_STRING, err,
@@ -310,27 +267,16 @@ Pkg_private int ttytlsw_string(Tty ttysw_public, int type, int c)
 								}
 							}
 
-#ifdef OW_I18N
-							free(mb_filename);
-#endif
-
 							break;
 						}
 					case HS_ICON:{
 							Frame frame = xv_get(TTY_PUBLIC(ttysw), WIN_FRAME);
 
-#ifdef OW_I18N
-							(void)STRNCPY(iconlabel, ttytlsw->namebuf,
-									sizeof(iconlabel) / sizeof(CHAR));
-							(void)xv_set(xv_get(frame, FRAME_ICON),
-									XV_LABEL_WCS, iconlabel, NULL);
-#else
 							strncpy(iconlabel, ttytlsw->namebuf,
 									sizeof(iconlabel)-1);
 							xv_set(xv_get(frame, FRAME_ICON),
 									ICON_LABEL, iconlabel,
 									NULL);
-#endif
 						}
 						break;
 					default:{
