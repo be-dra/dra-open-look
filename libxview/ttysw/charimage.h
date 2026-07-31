@@ -1,4 +1,4 @@
-/*	@(#)charimage.h 20.14 93/06/28 SMI RCS: $Id: charimage.h,v 4.3 2025/03/19 21:33:50 dra Exp $	*/
+/*	@(#)charimage.h 20.14 93/06/28 SMI RCS: $Id: charimage.h,v 4.4 2026/07/30 12:06:21 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -24,14 +24,7 @@ extern int	ttysw_top, ttysw_bottom, ttysw_left, ttysw_right;
 extern int	cursrow, curscol;
 #endif /* ONLY_ONE_TTY_PER_PROCESS */
 
-#ifdef OW_I18N
-#define LINE_LENGTH(line)     (((unsigned char)((unsigned char *)(line))[-1]))
-#define       TTY_NON_WCHAR   0xffff
-#define       TTY_LINE_INF_INDEX      0x7fffffff
-#else
 #define LINE_LENGTH(line)	((unsigned char)((line)[-1]))
-#endif
-
 #define MODE_CLEAR	0
 #define MODE_INVERT	1
 #define MODE_UNDERSCORE	2
