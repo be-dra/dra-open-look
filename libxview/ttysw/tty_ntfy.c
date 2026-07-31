@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.16 2025/05/29 14:52:10 dra Exp $";
+char     tty_ntfy_c_sccsid[] = "@(#)tty_ntfy.c 20.45 93/06/28 DRA: $Id: tty_ntfy.c,v 4.17 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -293,22 +293,9 @@ Xv_public Notify_value ttysw_event(Tty_view ttysw_view_public, Notify_event ev,
 
 	if ((*(ttysw_folio_private)->ttysw_eventop) (ttysw_view_public, event)
 											== TTY_DONE)
-#ifdef OW_I18N
-	{
-		/*
-		 * window pkg needs those two events to set/unset IC focus.
-		 */
-		if (event_action(event) == KBD_USE || event_action(event) == KBD_DONE)
-			return notify_next_event_func(ttysw_view_public, ev, arg, type);
-		else
-			return (NOTIFY_DONE);
-	}
-#else
 	{
 		return (NOTIFY_DONE);
 	}
-#endif
-
 	else {
 		return (NOTIFY_IGNORED);
 	}
