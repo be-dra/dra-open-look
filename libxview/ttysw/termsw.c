@@ -1,5 +1,5 @@
 #ifndef lint
-char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.21 2025/11/01 14:56:47 dra Exp $";
+char     termsw_c_sccsid[] = "@(#)termsw.c 1.59 93/06/28 DRA: $Id: termsw.c,v 4.22 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -223,12 +223,7 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	char *tmpfile_name = (char *)malloc(30L);
 	Textsw_status status;
 	int is_client_pane;
-
-#ifdef OW_I18N
-	Xv_opaque font = NULL;
-#else
-	Xv_opaque font;
-#endif
+	Xv_opaque font = XV_NULL;
 
 	char *def_str;
 
@@ -248,10 +243,6 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	Xv_opaque parent_font;
 	int scale, size;
 
-#ifdef OW_I18N
-	Textsw_folio txt_folio;
-#endif
-
 	Xv_opaque srv = XV_SERVER_FROM_WINDOW(termsw_public);
 
 	/* Generate a new temporary file name and open the file up. */
@@ -264,92 +255,90 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 
 	is_client_pane = (int)xv_get(termsw_public, WIN_IS_CLIENT_PANE);
 
-#ifdef OW_I18N
-	defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
-	font_name = xv_font_monospace();
-	defaults_set_locale(NULL, NULL);
+	if (_xv_is_multibyte) {
+		defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
+		font_name = xv_font_monospace();
+		defaults_set_locale(NULL, 0);
 
-	if (font_name)
-		font = xv_pf_open(font_name, srv);
-	else
-		font = (Xv_opaque) 0;
+		if (font_name)
+			font = (Xv_font)xv_pf_open(font_name, srv);
+		else
+			font = XV_NULL;
 
-	/*
-	 * if name is present, it has already been handled during the
-	 * creation of the "Window" superclass in window_init.
-	 */
-	if (font == NULL) {
-		parent_font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
-		scale = (int)xv_get(parent_font, FONT_SCALE);
-		if (scale > 0)
-			font = (Xv_opaque) xv_find(termsw_public, FONT,
-					FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-					FONT_SCALE, scale, NULL);
-		else {
-			size = (int)xv_get(parent_font, FONT_SIZE);
-			font = (Xv_opaque) xv_find(termsw_public, FONT,
-					FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-					FONT_SIZE, size, NULL);
-		}
-	}
-
-	if (font == NULL)
-		font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
-
-#else
-	font_name = xv_font_monospace();
-
-	if (font_name && (strlen(font_name) != 0)) {
-		font = (Xv_font) xv_pf_open(font_name, srv);
-	}
-	else
-		font = (Xv_opaque) 0;
-
-	if (is_client_pane) {
-		if (!font) {
+		/*
+		 * if name is present, it has already been handled during the
+		 * creation of the "Window" superclass in window_init.
+		 */
+		if (font == XV_NULL) {
 			parent_font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
 			scale = (int)xv_get(parent_font, FONT_SCALE);
-			if (scale > 0) {
-				font = (Xv_opaque) xv_find(termsw_public, FONT,
+			if (scale > 0)
+				font = xv_find(termsw_public, FONT,
 						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY,        FONT_FAMILY_SCREEN, */
-						FONT_SCALE, (scale > 0) ? scale : FONT_SCALE_DEFAULT,
+						FONT_SCALE, scale,
 						NULL);
-			}
 			else {
 				size = (int)xv_get(parent_font, FONT_SIZE);
-				font = (Xv_opaque) xv_find(termsw_public, FONT,
+				font = xv_find(termsw_public, FONT,
 						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY,        FONT_FAMILY_SCREEN,  */
-						FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT, NULL);
+						FONT_SIZE, size,
+						NULL);
 			}
 		}
+
+		if (font == XV_NULL) font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
 	}
 	else {
-		if (!font) {
-			parent_font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
-			scale = (int)xv_get(parent_font, FONT_SCALE);
+		font_name = xv_font_monospace();
 
-			if (scale > 0) {
-				font = (Xv_opaque) xv_find(termsw_public, FONT,
-						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY,        FONT_FAMILY_SCREEN, */
-						FONT_SCALE, (scale > 0) ? scale : FONT_SCALE_DEFAULT,
-						NULL);
-			}
-			else {
-				size = (int)xv_get(parent_font, FONT_SIZE);
+		if (font_name && (strlen(font_name) != 0)) {
+			font = (Xv_font) xv_pf_open(font_name, srv);
+		}
+		else
+			font = (Xv_opaque) 0;
 
-				font = (Xv_opaque) xv_find(termsw_public, FONT,
-						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY,        FONT_FAMILY_SCREEN, */
-						FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT, NULL);
+		if (is_client_pane) {
+			if (!font) {
+				parent_font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
+				scale = (int)xv_get(parent_font, FONT_SCALE);
+				if (scale > 0) {
+					font = xv_find(termsw_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							FONT_SCALE, (scale>0) ? scale : FONT_SCALE_DEFAULT,
+							NULL);
+				}
+				else {
+					size = (int)xv_get(parent_font, FONT_SIZE);
+					font = xv_find(termsw_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT,
+							NULL);
+				}
 			}
 		}
+		else {
+			if (!font) {
+				parent_font = xv_get(termsw_public, XV_FONT);
+				scale = (int)xv_get(parent_font, FONT_SCALE);
+
+				if (scale > 0) {
+					font = xv_find(termsw_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							FONT_SCALE, (scale> 0) ? scale : FONT_SCALE_DEFAULT,
+							NULL);
+				}
+				else {
+					size = (int)xv_get(parent_font, FONT_SIZE);
+
+					font = xv_find(termsw_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT,
+							NULL);
+				}
+			}
+		}
+		if (!font) font = xv_get(termsw_public, XV_FONT);
 	}
-	if (!font)
-		font = (Xv_opaque) xv_get(termsw_public, XV_FONT);
-#endif
 
 	xv_set(termsw_public,
 			XV_FONT, font,
@@ -434,8 +423,9 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	(void)ioctl(fd, TIOCREMOTE, &on);
 #else
 
-#    ifdef __linux
-#      ifdef NO_LONGER_TRY_OUT
+#ifdef __linux
+
+#ifdef NO_LONGER_TRY_OUT
 	/* I'm just trying out: */
 	/* INCOMPLETE - was ist mit dem Zeug hier - tried out enough ??? */
 /* 		ttysw_folio->termios.c_iflag |= INLCR; */
@@ -444,8 +434,8 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	(void)tcgetattr(ttysw_folio->ttysw_tty, &ttysw_folio->termios);
 	on = termsw_folio->cooked_echo =
 			(tty_isecho(ttysw_folio) && tty_iscanon(ttysw_folio));
-#      endif /* NO_LONGER_TRY_OUT */
-#    endif /* __linux */
+#endif /* NO_LONGER_TRY_OUT */
+#endif /* __linux */
 #endif
 
 	ttysw_folio->remote = ttysw_folio->pending_remote = on;
@@ -455,29 +445,6 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 	 */
 
 	termsw_object->parent_data.private_data = termsw_object->private_text;
-
-#ifdef OW_I18N
-	/*
-	 * Restore the preedit callbacks of textsw
-	 */
-
-	txt_folio = (Textsw_private) TEXTSW_PRIVATE_FROM_TERMSW(termsw_public);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_START,
-			(XIMProc) txt_folio->start_pecb_struct.callback,
-			(XPointer) txt_folio->start_pecb_struct.client_data, NULL);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_DRAW,
-			(XIMProc) txt_folio->draw_pecb_struct.callback,
-			(XPointer) txt_folio->draw_pecb_struct.client_data, NULL);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_DONE,
-			(XIMProc) txt_folio->done_pecb_struct.callback,
-			(XPointer) txt_folio->done_pecb_struct.client_data, NULL);
-#endif
 
 	/*
 	 * Build attribute list for textsw from /Tty defaults.
@@ -530,20 +497,17 @@ static int termsw_init_internal(Xv_Window parent, Termsw_folio termsw_folio,
 			TEXTSW_CLIENT_DATA, termsw_object->private_tty,
 			TEXTSW_STATUS, &status,
 			OPENWIN_VIEW_ATTRS,
-				TEXTSW_FILE, tmpfile_name,
-				NULL,
+			TEXTSW_FILE, tmpfile_name,
+			NULL,
 			TEXTSW_TEMP_FILENAME, tmpfile_name,
 			TEXTSW_NOTIFY_PROC, ttysw_textsw_changed,
-			WIN_LAYOUT_PROC, termsw_layout,
-			NULL);
+			WIN_LAYOUT_PROC, termsw_layout, NULL);
 	/*
 	 * (void)xv_set(termsw_public, TEXTSW_CLIENT_DATA, 0, 0);
 	 *
 	 */
 	xv_set(termsw_public,
-			OPENWIN_AUTO_CLEAR, FALSE,
-			WIN_BIT_GRAVITY, ForgetGravity,
-			NULL);
+			OPENWIN_AUTO_CLEAR, FALSE, WIN_BIT_GRAVITY, ForgetGravity, NULL);
 
 	if (status != TEXTSW_STATUS_OKAY) {
 		goto Error_Return;
