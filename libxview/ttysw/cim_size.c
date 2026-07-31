@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_size_c_sccsid[] = "@(#)cim_size.c 20.32 93/06/28 DRA: $Id: cim_size.c,v 4.3 2025/03/19 21:33:50 dra Exp $";
+char     cim_size_c_sccsid[] = "@(#)cim_size.c 20.32 93/06/28 DRA: $Id: cim_size.c,v 4.4 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -117,13 +117,7 @@ xv_tty_imagealloc(ttysw, for_temp)
 	newimage = (CHAR **) calloc(1L, (size_t)(ttysw->ttysw_bottom * sizeof(CHAR *)));
 	newmode = (char **)calloc(1L, ttysw->ttysw_bottom * sizeof(char *));
 	bold = (char *)calloc(1L, (size_t)(nchars + 2 * ttysw->ttysw_bottom));
-
-#ifdef OW_I18N
-	line = (CHAR *) calloc(1, (unsigned)((nchars + 2 * ttysw->ttysw_bottom) *
-					sizeof(CHAR)));
-#else
 	line = (char *)calloc(1L, (size_t)(nchars + 2 * ttysw->ttysw_bottom));
-#endif
 
 	for (i = 0; i < ttysw->ttysw_bottom; i++) {
 		newimage[i] = line + 1;
@@ -206,11 +200,7 @@ Pkg_private void ttysw_imagerepair(Ttysw_view_handle ttysw_view)
      * (void)ttysw_restoreCursor();
      *//* Find out where last line of text is (actual oldbottom). */
     for (row = oldbottom; row > ttysw->ttysw_top; row--) {
-#ifdef OW_I18N
-        if (LINE_LENGTH(ttysw->image[row - 1])) {
-#else
 	if (LINE_LENGTH(ttysw->image[row - 1])) {
-#endif
 	    oldbottom = row;
 	    break;
 	}
@@ -248,22 +238,12 @@ Pkg_private void ttysw_imagerepair(Ttysw_view_handle ttysw_view)
     for (oldrow = topstart, row = 0; oldrow < oldbottom; oldrow++, row++) {
 	register int    sl = STRLEN(ttysw->image[oldrow]);
 #ifdef	DEBUG_LINELENGTH_WHEN_WRAP
-#ifdef OW_I18N
-        if (sl != LINE_LENGTH(ttysw->image[oldrow]))
-            printf("real %ld saved %ld, l %ld, oldbottom %ld bottom %ld\n", sl,
-LINE_LENGTH(oldimage[l]), l, oldbottom, ttysw->ttysw_bottom);
-#else
 	if (sl != LINE_LENGTH(image[oldrow]))
 	    printf("real %ld saved %ld, l %ld, oldbottom %ld bottom %ld\n", sl, LINE_LENGTH(oldimage[l]), l, oldbottom, ttysw->ttysw_bottom);
-#endif /* OW_I18N */
 #endif /* DEBUG_LINELENGTH_WHEN_WRAP */
 	if (sl > ttysw->ttysw_right)
 	    sl = ttysw->ttysw_right;
-#ifdef OW_I18N
-	XV_BCOPY(ttysw->image[oldrow], temp_image[row], sl * sizeof(CHAR));
-#else
 	XV_BCOPY(ttysw->image[oldrow], temp_image[row], (size_t)sl);
-#endif
 	XV_BCOPY(ttysw->screenmode[oldrow], temp_mode[row], (size_t)sl);
 	setlinelength(ttysw, temp_image[row], sl);
     }
