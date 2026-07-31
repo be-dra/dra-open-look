@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.11 2025/04/04 20:13:10 dra Exp $";
+char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,v 4.12 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -8,9 +8,6 @@ char     ttyansi_c_sccsid[] = "@(#)ttyansi.c 20.43 93/06/28 DRA: $Id: ttyansi.c,
  *	file for terms of the license.
  */
 
-#ifdef OW_I18N
-#include <xview/xv_i18n.h>
-#endif
 #include <xview/ttysw.h>
 #include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
@@ -39,14 +36,6 @@ static CHAR     strtype;        /* type of ansi string sequence */
 static int send_input_to_textsw(Textsw textsw, register CHAR *buf, register long buf_len, Textsw_index end_transcript);
 static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len);
 static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen);
-
-#ifdef OW_I18N
-/* implement scroll region per Japanese users' requests */
-#define SCROLL(scroll_bottom, bottom)  \
-    ((scroll_bottom) ? scroll_bottom : bottom)
-int scroll_bottom = 0; /* to implement scroll region change */
-int pre_edit_rows_scrolled; /* updated in ansi_lf, used in ttysw callbacks */
-#endif
 
 /*
  * Interpret a string of characters of length <len>.  Stash and restore the
@@ -148,7 +137,7 @@ static int local_replace_bytes(Textsw textsw, Textsw_index pty_insert,
 	tmp_mark = textsw_add_mark_i18n(textsw, pty_insert,
 			TEXTSW_MARK_MOVE_AT_INSERT);
 
-	delta = textsw_replace_i18n(textsw, pty_insert, last_plus_one,
+	delta = textsw_replace(textsw, pty_insert, last_plus_one,
 			buf, buf_len);
 	if (!delta && (textsw_find_mark_i18n(textsw, tmp_mark) == pty_insert)) {
 		status = 1;
@@ -178,10 +167,6 @@ static int send_input_to_textsw(Textsw textsw, register CHAR *buf, register long
 	CHAR expand_buf[BUFSIZE];
 	Textsw_mark owe_newline_mark;
 	int status = 0;
-
-#ifdef  OW_I18N
-	static wchar_t wchar_newlin[2] = { (wchar_t) '\n', (wchar_t) '\0' };
-#endif
 
 	textsw_remove_mark(textsw, termsw->pty_mark);
 	last_plus_one = end_transcript;
@@ -234,13 +219,8 @@ static int send_input_to_textsw(Textsw textsw, register CHAR *buf, register long
 		add_newline = textsw_find_mark_i18n(textsw, owe_newline_mark);
 		textsw_remove_mark(textsw, owe_newline_mark);
 		termsw->pty_owes_newline =
-				textsw_replace_i18n(textsw, add_newline, add_newline,
-
-#ifdef OW_I18N
-				wchar_newlin, (long int)1);
-#else
+				textsw_replace(textsw, add_newline, add_newline,
 				"\n", (long int)1);
-#endif
 
 		if (!termsw->pty_owes_newline) {
 			status = 1;
@@ -417,12 +397,6 @@ static int do_backspace(Textsw textsw, CHAR *addr)
     CHAR            buf[BUFSIZE];
     register        Termsw_folio
                     termsw = TERMSW_FOLIO_FOR_VIEW(TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw));
-#ifdef  OW_I18N
-    CHAR            ctr_h[3];
-    ctr_h[0]    = (CHAR)' ';
-    ctr_h[1]    = (CHAR)'^H';
-    ctr_h[2]    = (CHAR)0;
-#endif
 
     pty_end = termsw->cmd_started ?
 	textsw_find_mark_i18n(textsw, termsw->user_mark) :
@@ -458,11 +432,7 @@ static int do_backspace(Textsw textsw, CHAR *addr)
 	/*
 	 * if at the end of transcript, interpret ' ' as delete a character.
 	 */
-#ifdef  OW_I18N
-        if (pty_end == pty_index && STRNCMP(addr + 1, ctr_h , 2) == 0) {
-#else
 	if (pty_end == pty_index && strncmp(addr + 1, " ", 2L) == 0) {
-#endif
 	    if (erase_chars(textsw, pty_index - 1, pty_index)) {
 		increment = -1;
 	    } else {
@@ -548,61 +518,8 @@ Xv_public int ttysw_output(Tty ttysw_public, char *addr, int len0)
 {
 	Ttysw_private ttysw_folio = TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw_public);
 
-#ifdef OW_I18N
-	char *mbp;
-	CHAR *addr_wc, *wcp;
-	int char_count0 = 0;
-	int char_out;
-	int i, j;
-
-	addr_wc = (CHAR *) malloc((len0 + 1) * sizeof(CHAR));
-	if (!addr_wc) {
-		perror(XV_MSG("TTYSW:ttysw_output: out of memory"));
-		return;
-	}
-
-	mbp = addr;
-	wcp = addr_wc;
-
-	for (i = 0; i < len0;) {
-		if (*mbp == '\0') {
-			*wcp = (CHAR) '\0';
-			j = 1;
-		}
-		else {
-			if ((j = mbtowc(wcp, mbp, MB_CUR_MAX)) < 0) {
-				mbp++;
-				i++;
-				continue;
-			}
-		}
-		mbp += j;
-		i += j;
-		wcp++;
-		char_count0++;
-	}
-
-	char_out = ttysw_output_it(ttysw_folio->view, addr_wc, char_count0);
-	if (addr_wc)
-		free(addr_wc);
-	return (char_out);
-#else
 	return ttysw_output_it(ttysw_folio->view, addr, len0);
-#endif
 }
-
-#ifdef OW_I18N
-Xv_public int
-ttysw_output_wcs(ttysw_public, addr, len0)
-    Tty                 ttysw_public;
-    CHAR                *addr;
-    int                 len0;
-{
-    Ttysw_private     ttysw_folio = TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw_public);
-    return (ttysw_output_it(ttysw_folio->view, addr, len0));
-}
-#endif
-
 
 Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 									register CHAR *addr, int len0)
@@ -625,11 +542,6 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 	int upper_context;
 	/* war frueher eine static-Variable, siehe DRA_NOT_USED */
 	int state = 0;
-
-#ifdef OW_I18N
-	/* implement save and restore cursor per Japanese users' requests */
-	static int saved_row, saved_col;	/* \E7 and \E8 */
-#endif
 
 	addr[len0] = '\0'; /* DAS HIER ist der Ueberschreiber - deswegen habe ich
 						* das Feld OVERWRITTEN eingebaut: hier wird dieses
@@ -688,19 +600,6 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 					*addr = DEL;
 					state &= ~S_ESC;
 					break;
-
-#ifdef OW_I18N
-				case '7':	/* \E7 is save cursor */
-					saved_row = ttysw->cursrow;
-					saved_col = ttysw->curscol;
-					state &= ~S_ESC;
-					continue;
-
-				case '8':	/* \E8 is restore cursor */
-					ttysw_pos(saved_col, saved_row);
-					state &= ~S_ESC;
-					continue;
-#endif
 
 				case '\\':	/* ANSI string terminator */
 					if (state == (S_STRING | S_ESC)) {
@@ -858,13 +757,7 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 									}
 								OPENWIN_END_EACH
 
-#ifdef OW_I18N
-								if (cp >= &buf[sizeof(buf) / sizeof(CHAR) - 1])
-#else
-								if (cp >= &buf[sizeof(buf) - 1])
-#endif
-
-								{
+								if (cp >= &buf[sizeof(buf) - 1]) {
 									/* spit out what we have so far and */
 									/* set buffered output flag         */
 									cp = from_pty_to_textsw(textsw, cp, buf);
@@ -1015,13 +908,7 @@ Pkg_private int ttysw_output_it(Ttysw_view_handle ttysw_view,
 								*cp++ = *addr++;
 								len++;
 
-#ifdef OW_I18N
-								if (cp == &buf[sizeof(buf) / sizeof(CHAR) - 1])
-#else
-								if (cp == &buf[sizeof(buf) - 1])
-#endif
-
-								{
+								if (cp == &buf[sizeof(buf) - 1]) {
 									/* spit out what we have so far and */
 									/* set insert point flag            */
 									cp = from_pty_to_textsw(textsw, cp, buf);
@@ -1141,22 +1028,13 @@ static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len)
 	register int lfs = scrlins;
 	extern int ttysw_delaypainting;
 
-#ifdef OW_I18N
-	if (ttysw->ttysw_lpp >= (SCROLL(scroll_bottom, ttysw->ttysw_bottom)))
-#else
-	if (ttysw->ttysw_lpp >= ttysw->ttysw_bottom)
-#endif
-	{
+	if (ttysw->ttysw_lpp >= ttysw->ttysw_bottom) {
 		if (ttysw_freeze(ttysw_view, 1))
 			return (0);
 	}
 
 
-#ifdef OW_I18N
-	if (ttysw->cursrow < (SCROLL(scroll_bottom, ttysw->ttysw_bottom) - 1))
-#else
 	if (ttysw->cursrow < ttysw->ttysw_bottom - 1)
-#endif
 	{
 		/* ttysw_pos(ttysw, ttysw->curscol, ttysw->cursrow+1); */
 		ttysw->cursrow++;
@@ -1189,15 +1067,8 @@ static int ansi_lf(Ttysw_view_handle ttysw_view, CHAR *addr, int len)
 				}
 			}
 
-#ifdef OW_I18N
-			if (lfs + ttysw->ttysw_lpp >
-					SCROLL(scroll_bottom, ttysw->ttysw_bottom))
-				lfs = SCROLL(scroll_bottom, ttysw->ttysw_bottom)
-						- ttysw->ttysw_lpp;
-#else
 			if (lfs + ttysw->ttysw_lpp > ttysw->ttysw_bottom)
 				lfs = ttysw->ttysw_bottom - ttysw->ttysw_lpp;
-#endif
 
 			ttysw_cim_scroll(ttysw, lfs);
 			if (ttysw->ttysw_opt & (1 << TTYOPT_PAGEMODE))
@@ -1216,32 +1087,14 @@ static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen)
     CHAR            buf[300];
     register CHAR   *cp = &buf[0];
     int             curscolstart = ttysw->curscol;
-#ifdef  OW_I18N
-    int             colwidth; /* column width of a char */
-#endif
 
     for (;;) {
 	*cp++ = *addr;
-#ifdef  OW_I18N
-        colwidth = tty_character_size( *addr );
-#endif
 	/* Update cursor position.  Inline for speed. */
-#ifdef  OW_I18N
-        if (ttysw->curscol < ttysw->ttysw_right - colwidth)
-            ttysw->curscol += colwidth;
-#else
 	if (ttysw->curscol < ttysw->ttysw_right - 1)
 	    ttysw->curscol++;
-#endif
 	else {
 	    /* Wrap to col 1 then pretend LF seen */
-#ifdef OW_I18N
-	    if ( ttysw->curscol + colwidth > ttysw->ttysw_right ) {
-		*cp--;
-		addr--;
-		len++;
-	    }
-#endif
             *cp = (CHAR)'\0';
 	    ttysw_writePartialLine(ttysw, buf, curscolstart);
 	    ttysw->curscol = 0;
@@ -1250,11 +1103,7 @@ static int ansi_char(Ttysw_view_handle ttysw_view, CHAR *addr, int olen)
 	}
 	if (len > 0) {
 	    if (notcontrol(*(addr + 1))
-#ifdef OW_I18N
-                && cp < &buf[sizeof(buf) / sizeof(CHAR) - 1]) {
-#else
 		&& cp < &buf[sizeof(buf) - 1]) {
-#endif
 		len--;
 		addr++;
 		continue;
@@ -1373,15 +1222,7 @@ Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, int c,
 				}
 				break;
 			case 'r':
-
-#ifdef OW_I18N
-				ttysw_cim_scroll(SCROLL(scroll_bottom, ttysw->ttysw_bottom) - av[1]);
-				scroll_bottom = av[1];
-				ttysw_pos(ttysw, ttysw->curscol, scroll_bottom - 1);
-#else
 				scrlins = av0;
-#endif
-
 				break;
 			case 's':
 				scrlins = 1;
