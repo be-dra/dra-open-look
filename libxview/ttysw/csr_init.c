@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.5 2025/04/06 08:05:25 dra Exp $";
+char     csr_init_c_sccsid[] = "@(#)csr_init.c 20.31 93/06/28 DRA: $Id: csr_init.c,v 4.6 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -90,85 +90,64 @@ Pkg_private int wininit(Ttysw *ttysw, Xv_object win, int *maximagewidth,int *max
     return (1);
 }
 
-Pkg_private void xv_new_tty_chr_font(Ttysw_private ttysw,
-#ifdef OW_I18N
-    Xv_opaque	font
-#else
-    Pixfont    	*font
-#endif
-)
+Pkg_private void xv_new_tty_chr_font(Ttysw_private ttysw, Xv_opaque	font)
 {
-#ifdef OW_I18N
-	wchar_t dummy_str[2];
-	XRectangle overall_ink_extents, overall_logical_extents;
-	XFontSet font_set = (XFontSet) xv_get(font, FONT_SET_ID);
+	if (_xv_is_multibyte) {
+		char dummy_str[2];
+		XRectangle overall_ink_extents, overall_logical_extents;
+		XFontSet font_set = (XFontSet) xv_get(font, FONT_SET_ID);
 
-#ifdef FULL_R5
-	Ttysw_private ttysw_folio;
-	XVaNestedList va_nested_list;
-#endif /* FULL_R5 */
+		ttysw->pixfont = font;
+		/*
+		 ** Alpha ONLY!!!
+		 ** We want a better mechanism for
+		 ** getting this info from XwcTextExtents
+		 */
+		dummy_str[0] = ' ';
+		dummy_str[1] = '\0';
+		XmbTextExtents(font_set, dummy_str, 1,
+				&overall_ink_extents, &overall_logical_extents);
 
-	ttysw->pixfont = (Pixfont *) font;
-	/*
-	 ** Alpha ONLY!!!
-	 ** We want a better mechanism for
-	 ** getting this info from XwcTextExtents
-	 */
-	dummy_str[0] = (wchar_t)' ';
-	dummy_str[1] = 0;
-	XwcTextExtents(font_set, dummy_str, 1,
-			&overall_ink_extents, &overall_logical_extents);
-	/*
-	 ** Alpha ONLY!!!
-	 ** Horrible hack that fixes single width
-	 ** character display ONLY!  Need a more
-	 ** general screen column management scheme!
-	 */
-	ttysw->chrwidth = overall_logical_extents.width;
-	ttysw->chrheight = overall_logical_extents.height;
-	ttysw->chrbase = -overall_logical_extents.y;
+		/* INCOMPLETE - what about 
+		 * defaults_get_integer("text.lineSpacing", "Text.LineSpacing", 0);
+		 * ????
+		 */
 
-#ifdef FULL_R5
-	if (csr_pixwin_get()) {
-		ttysw_folio = TTY_PRIVATE_FROM_ANY_VIEW(csr_pixwin_get());
-		if (ttysw_folio->ic
-				&& (ttysw_folio->
-						xim_style & (XIMPreeditArea | XIMPreeditPosition |
-								XIMPreeditNothing))) {
-			va_nested_list =
-					XVaCreateNestedList(NULL, XNLineSpace,
-					overall_logical_extents.y, NULL);
-			XSetICValues(ttysw_folio->ic, XNPreeditAttributes, va_nested_list,
-					NULL);
-			XFree(va_nested_list);
-		}
-	}
-#endif /* FULL_R5 */
-
-#else
-	int max_char_height;
-	int percent;
-	int spacing;
-	XFontStruct *x_font_info;
-
-	ttysw->pixfont = font;
-	x_font_info = (XFontStruct *) xv_get((Xv_opaque) font, FONT_INFO);
-	ttysw->chrwidth = xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_WIDTH);
-
-	percent = defaults_get_integer("text.lineSpacing", "Text.LineSpacing", 0);
-	if (percent > 0) {
-		max_char_height = x_font_info->max_bounds.ascent +
-				x_font_info->max_bounds.descent;
-		spacing = max_char_height * percent / 100;
-		if ((max_char_height * percent) % 100 > 0 || spacing == 0)
-			spacing++;	/* round up, or enforce a minimum of 1 pixel */
-		ttysw->chrheight = max_char_height + spacing;
+		/*
+		 ** Alpha ONLY!!!
+		 ** Horrible hack that fixes single width
+		 ** character display ONLY!  Need a more
+		 ** general screen column management scheme!
+		 */
+		ttysw->chrwidth = overall_logical_extents.width;
+		ttysw->chrheight = overall_logical_extents.height;
+		ttysw->chrbase = -overall_logical_extents.y;
 	}
 	else {
-		ttysw->chrheight =
-				(int)xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_HEIGHT);
-	}
+		int max_char_height;
+		int percent;
+		int spacing;
+		XFontStruct *x_font_info;
 
-	ttysw->chrbase = x_font_info->ascent;
-#endif
+		ttysw->pixfont = font;
+		x_font_info = (XFontStruct *) xv_get((Xv_opaque) font, FONT_INFO);
+		ttysw->chrwidth = xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_WIDTH);
+
+		percent = defaults_get_integer("text.lineSpacing", "Text.LineSpacing",
+													0);
+		if (percent > 0) {
+			max_char_height = x_font_info->max_bounds.ascent +
+					x_font_info->max_bounds.descent;
+			spacing = max_char_height * percent / 100;
+			if ((max_char_height * percent) % 100 > 0 || spacing == 0)
+				spacing++;	/* round up, or enforce a minimum of 1 pixel */
+			ttysw->chrheight = max_char_height + spacing;
+		}
+		else {
+			ttysw->chrheight =
+					(int)xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_HEIGHT);
+		}
+
+		ttysw->chrbase = x_font_info->ascent;
+	}
 }
