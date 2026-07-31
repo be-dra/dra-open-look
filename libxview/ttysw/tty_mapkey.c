@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_mapkey_c_sccsid[] = "@(#)tty_mapkey.c 20.41 93/06/28 DRA: $Id: tty_mapkey.c,v 4.10 2025/03/31 19:39:15 dra Exp $";
+char tty_mapkey_c_sccsid[] = "@(#)tty_mapkey.c 20.41 93/06/28 DRA: $Id: tty_mapkey.c,v 4.11 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -32,12 +32,9 @@ char tty_mapkey_c_sccsid[] = "@(#)tty_mapkey.c 20.41 93/06/28 DRA: $Id: tty_mapk
 
 /* static routines	 */
 
-static char    *str_index(char *domain, char *pat);
 static char *savestr(char *s);
 static char *tdecode(register char *src, char *dst);
 
-static void ttysw_add_caps(char *label, char *label_ptr);
-static void ttysw_remove_caps(char *label, char *label_ptr);
 static void ttysw_arrow_keys_to_string(unsigned xv_id, char *str);
 static void ttysw_doset(struct ttysubwindow *ttysw, char *var);
 static int ttysw_mapkey(Ttysw *ttysw, char *key, char *to, int output);
@@ -191,10 +188,6 @@ Pkg_private int ttysw_domap(Ttysw_private ttysw, Event *ie)
 	 */
 	switch (key) {
 		case ACTION_PASTE:
-
-#ifdef OW_I18N
-			ttysw_implicit_commit(ttysw, 1);
-#endif
 			if (event_is_up(ie)) ttysw_event_paste_up(ttysw, &event_time(ie));
 			return TTY_DONE;
 
@@ -236,37 +229,12 @@ Pkg_private int ttysw_domap(Ttysw_private ttysw, Event *ie)
 	if (event_is_down(ie)) {
 		for (kmt = ttysw->ttysw_kmt; kmt < ttysw->ttysw_kmtp; kmt++) {
 			if (kmt->kmt_key == unmapped_key) {
-
-#ifdef OW_I18N
-#define MAX_KMT_LEN	1024
-				int len_wcs;
-				CHAR *kmt_to_wcs, ktw_buf[MAX_KMT_LEN];
-#endif
-
 				len = strlen(kmt->kmt_to);
 
-#ifdef OW_I18N
-				if (len >= 256) {
-					kmt_to_wcs = (CHAR *) malloc(len * sizeof(CHAR));
-				}
-				else
-					kmt_to_wcs = ktw_buf;
-
-				len_wcs = mbstowcs(kmt_to_wcs, kmt->kmt_to, len);
-
-				if (kmt->kmt_output)
-					ttysw_output_it(ttysw->view, kmt_to_wcs, len_wcs);
-				else
-					ttysw_input_it_wcs(ttysw, kmt_to_wcs, len_wcs);
-
-				if (len >= 256)
-					free(kmt_to_wcs);
-#else
 				if (kmt->kmt_output)
 					ttysw_output_it(ttysw->view, kmt->kmt_to, len);
 				else
 					ttysw_input_it(ttysw, kmt->kmt_to, len);
-#endif
 
 				return (TTY_DONE);
 			}
@@ -280,22 +248,11 @@ Pkg_private int ttysw_domap(Ttysw_private ttysw, Event *ie)
 				|| (unmapped_key == KEY_RIGHT(12))) {
 			char str[5];
 
-#ifdef OW_I18N
-			ttysw_implicit_commit(ttysw, 1);
-#endif
-
 			(void)ttysw_arrow_keys_to_string(unmapped_key, str);
 			if ((int)strlen(str) > 0) {
 				ttysw_input_it(ttysw, str, (int)strlen(str));
 				return (TTY_DONE);
 			}
-		}
-		if (key == ACTION_CAPS_LOCK) {
-			ttysw->ttysw_capslocked =
-					(ttysw->
-					ttysw_capslocked & TTYSW_CAPSLOCKED) ? 0 : TTYSW_CAPSLOCKED;
-			ttysw_display_capslock(ttysw);
-			return (TTY_DONE);
 		}
 	}
 	return TTY_OK;
@@ -398,77 +355,6 @@ static char *tdecode(register char *src, char *dst)
 	*cp++ = 0;
 	return (dst);
 }
-
-Pkg_private void
-ttysw_display_capslock(ttysw)
-    struct ttysubwindow *ttysw;
-{
-    Frame           frame_public;
-    char            label[1024];
-    char           *label_ptr;
-
-
-    frame_public = (Frame) xv_get(TTY_PUBLIC(ttysw), WIN_FRAME);
-    label_ptr = (char *) xv_get(frame_public, FRAME_LABEL);
-    if (label_ptr == (char *) NULL)
-	return;
-    if (ttysw->ttysw_capslocked & TTYSW_CAPSLOCKED) {
-	ttysw_add_caps(label, label_ptr);
-    } else {
-	ttysw_remove_caps(label, label_ptr);
-    }
-    (void) xv_set(frame_public, FRAME_LABEL, label, NULL);
-    free(label_ptr);
-}
-
-#define CAPS_STRING	"[CAPS] "
-static char    *caps_flag = CAPS_STRING;
-
-#define CAPS_FLAG_LEN	(strlen(caps_flag))
-
-static char    *str_index(char *domain, char *pat)
-{
-    register int    i, patlen;
-
-    patlen = strlen(pat);
-    while (*domain != '\0') {
-	for (i = 0; i <= patlen; i++) {
-	    if (pat[i] == '\0')	/* exhausted pattern: win	 */
-		return domain;
-	    if (domain[i] == '\0')	/* exhausted domain: lose: 	 */
-		return (char *) NULL;
-	    if (pat[i] == domain[i])	/* partial match continues	 */
-		continue;
-	    break;		/* partial match failed	 */
-	}
-	domain++;
-    }
-    return (char *) NULL;
-}
-
-static void ttysw_add_caps(char *label, char *label_ptr)
-{
-    if (str_index(label_ptr, caps_flag) == (char *) NULL) {
-	XV_BCOPY(caps_flag, label, CAPS_FLAG_LEN);
-	label += CAPS_FLAG_LEN;
-    }
-    (void) strcpy(label, label_ptr);
-}
-
-static void ttysw_remove_caps(char *label, char *label_ptr)
-{
-    char           *flag_ptr;
-    register int    len;
-
-    if ((flag_ptr = str_index(label_ptr, caps_flag)) != (char *) NULL) {
-	len = flag_ptr - label_ptr;
-	XV_BCOPY(label_ptr, label, (size_t)len);
-	label_ptr = flag_ptr + CAPS_FLAG_LEN;
-	label += len;
-    }
-    (void) strcpy(label, label_ptr);
-}
-
 
 /*
  * BUG:  This is a quick workaround,  we might want to improve this when we
