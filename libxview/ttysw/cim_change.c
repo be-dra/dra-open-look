@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.6 2025/03/21 20:03:08 dra Exp $";
+char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.7 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -42,22 +42,13 @@ Pkg_private void ttysw_vpos(Ttysw_private ttysw, int row, int col)
     register char  *bold = ttysw->screenmode[row];
     register int    i;
 
-#ifdef OW_I18N
-    while ((int)LINE_LENGTH(line) <= col) {
-        bold[LINE_LENGTH(line)] = MODE_CLEAR;
-#else
     while ((int)LINE_LENGTH(line) <= col) {
 	bold[LINE_LENGTH(line)] = MODE_CLEAR;
-#endif
 	i = LINE_LENGTH(line);
 	line[-1]++;
 	line[i] = (CHAR)' ';
     }
-#ifdef OW_I18N
     setlinelength(ttysw, line, ((int)LINE_LENGTH(line)));
-#else
-    setlinelength(ttysw, line, ((int)LINE_LENGTH(line)));
-#endif
 }
 
 Pkg_private void ttysw_bold_mode(Ttysw_private ttysw)
@@ -94,19 +85,12 @@ Pkg_private void ttysw_writePartialLine(Ttysw_private ttysw, CHAR *s, int cursco
     register CHAR  *line = ttysw->image[ttysw->cursrow];
     register char  *bold = ttysw->screenmode[ttysw->cursrow];
     register int    curscolTmp = curscolStart;
-#ifdef  OW_I18N
-    int    c_sizefactor;
-#endif
 
     /*
      * Fix line length if start is past end of line length. This shouldn't
      * happen but does.
      */
-#ifdef OW_I18N
     if ((int)LINE_LENGTH(line) < curscolStart)
-#else
-    if ((int)LINE_LENGTH(line) < curscolStart)
-#endif
 	ttysw_vpos(ttysw, ttysw->cursrow, curscolStart);
     /*
      * Stick characters in line.
@@ -114,24 +98,12 @@ Pkg_private void ttysw_writePartialLine(Ttysw_private ttysw, CHAR *s, int cursco
     for (sTmp = s; *sTmp != '\0'; sTmp++) {
 	line[curscolTmp] = *sTmp;
 	bold[curscolTmp] = ttysw->boldify;
-#ifdef  OW_I18N
-        c_sizefactor = tty_character_size( *sTmp );
-        while( --c_sizefactor > 0 ) {
-                curscolTmp++;
-                line[curscolTmp] = TTY_NON_WCHAR;
-                bold[curscolTmp] = boldify;
-        }
-#endif
 	curscolTmp++;
     }
     /*
      * Set new line length.
      */
-#ifdef OW_I18N
     if ((int)LINE_LENGTH(line) < curscolTmp)
-#else
-    if ((int)LINE_LENGTH(line) < curscolTmp)
-#endif
 	setlinelength(ttysw, line, curscolTmp);
     /*
      * if (sTmp>(s+3)) printf("%d\n",sTmp-s);
@@ -264,38 +236,14 @@ Pkg_private void ttysw_deleteChar(Ttysw_private ttysw, int fromcol, int tocol, i
 {
     CHAR           *line = ttysw->image[row];
     char           *bold = ttysw->screenmode[row];
-#ifdef OW_I18N
 #ifndef SVR4
     int             len = LINE_LENGTH(line);
 #else
     int             len = (int)LINE_LENGTH(line);
 #endif /* ~SVR4 */
-#else
-#ifndef SVR4
-    int             len = LINE_LENGTH(line);
-#else
-    int             len = (int)LINE_LENGTH(line);
-#endif /* ~SVR4 */
-#endif /* OW_I18N */
 
     if (fromcol >= tocol)
 	return;
-
-#ifdef  OW_I18N
-/*
- *      Just in case , caller should take care that deletion occurs
- *      character by character instead of column by column
- */
-    if( line[fromcol] == TTY_NON_WCHAR ) {
-        while( fromcol > 0 && line[fromcol] == TTY_NON_WCHAR )
-                fromcol--;
-    }
-
-    if( line[tocol] == TTY_NON_WCHAR ) {
-        while( tocol < len - 1 && line[tocol] == TTY_NON_WCHAR )
-                tocol++;
-    }
-#endif
 
     if (tocol < len) {
 	/*
@@ -303,8 +251,8 @@ Pkg_private void ttysw_deleteChar(Ttysw_private ttysw, int fromcol, int tocol, i
 	 */
 	int             gap = tocol - fromcol;
 	{
-            register CHAR  *a = line + fromcol;
-            register CHAR  *b = line + tocol;
+		register CHAR  *a = line + fromcol;
+		register CHAR  *b = line + tocol;
 	    register char  *am = bold + fromcol;
 	    register char  *bm = bold + tocol;
 	    while ((*a++ = *b++)) *am++ = *bm++;
@@ -322,29 +270,9 @@ Pkg_private void ttysw_insertChar(Ttysw_private ttysw, int fromcol, int tocol, i
 {
     register CHAR  *line = ttysw->image[row];
     register char  *bold = ttysw->screenmode[row];
-#ifdef OW_I18N
     int             len = LINE_LENGTH(line);
-#else
-    int             len = LINE_LENGTH(line);
-#endif
     register int    i;
     int             delta, newlen, slug, rightextent;
-
-#ifdef  OW_I18N
-/*
- *      Just in case , caller should take care that deletion occurs
- *      character by character instead of column by column
- */
-    if( line[fromcol] == TTY_NON_WCHAR ) {
-        while( fromcol > 0 && line[fromcol] == TTY_NON_WCHAR )
-                fromcol--;
-    }
-
-    if( line[tocol] == TTY_NON_WCHAR ) {
-        while( tocol < len - 1 && line[tocol] == TTY_NON_WCHAR )
-                tocol++;
-    }
-#endif
 
     if (fromcol >= tocol || fromcol >= len)
 	return;
@@ -370,44 +298,3 @@ Pkg_private void ttysw_insertChar(Ttysw_private ttysw, int fromcol, int tocol, i
     ttysw_pcopyline(ttysw, tocol, fromcol, slug, row);
     ttysw_pclearline(ttysw, fromcol, tocol, row);
 }
-
-#ifdef OW_I18N
-Pkg_private void tty_column_wchar_type(int xChar, int yChar,
-		int *cwidth, /* character width (RETURN) */
-		int *offset) /* offset of charcter (RETURN) */
-{
-    CHAR               *line = image[yChar];
-    register CHAR       c = line[xChar];
-
-    *offset = 0;
-    if( c == TTY_NON_WCHAR ) {
-        while( c == TTY_NON_WCHAR ) {
-                c = line[--xChar];
-                (*offset) ++;
-        }
-    }
-
-    *cwidth = tty_character_size( c );
-
-}
-
-Pkg_private int tty_get_nchars(int colstart, int colend, int row)
-{
-    CHAR        *line = image[row];
-    register    int     nchar = 0;
-    int         i;
-
-    if( colend == TTY_LINE_INF_INDEX )   /* up to end of line */
-        colend = LINE_LENGTH( line ) - 1 ;
-
-    for( i = colstart; i<= colend ; i++ ) {
-        if( line[i] == TTY_NON_WCHAR )
-                continue;
-        nchar++;
-    }
-
-    return nchar;
-
-}
-
-#endif
