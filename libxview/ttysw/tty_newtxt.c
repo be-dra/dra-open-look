@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.6 2025/04/07 19:24:44 dra Exp $";
+char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.7 2026/07/30 08:33:05 dra Exp $";
 #endif
 
 /*
@@ -45,10 +45,6 @@ char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_n
 
 #define	BADVAL		-1
 #define	ALL		AllPlanes
-
-#ifdef OW_I18N
-extern void      XwcDrawString(), XwcDrawImageString();
-#endif
 
 typedef struct tty_gc_list {
     int depth;
@@ -148,37 +144,38 @@ static GC * get_gc_list(Xv_Drawable_info *info)
  */
 static void setup_font(Xv_opaque window, Xv_opaque pixfnt)
 {
-#ifdef OW_I18N
-    XFontSet            font_set;
-    XFontSetExtents     *font_set_extents;
+	if (_xv_is_multibyte) {
+		XFontSet font_set;
+		XFontSetExtents *font_set_extents;
 
-    font_set = (XFontSet)xv_get(pixfnt, FONT_SET_ID);
-    font_set_extents = (XFontSetExtents *)XExtentsOfFontSet(font_set);
-    font_height = font_set_extents->max_logical_extent.height;
-#else
-    Xv_Drawable_info *info;
-    Display        *display;
-    Font            font;
-    XFontStruct    *fontinfo;
-    GC		    *gc_list;
+		font_set = (XFontSet) xv_get(pixfnt, FONT_SET_ID);
+		font_set_extents = (XFontSetExtents *) XExtentsOfFontSet(font_set);
+		font_height = font_set_extents->max_logical_extent.height;
+	}
+	else {
+		Xv_Drawable_info *info;
+		Display *display;
+		Font font;
+		XFontStruct *fontinfo;
+		GC *gc_list;
 
-    DRAWABLE_INFO_MACRO(window, info);
-    display = xv_display(info);
-    font = (Font) xv_get(pixfnt, XV_XID);
+		DRAWABLE_INFO_MACRO(window, info);
+		display = xv_display(info);
+		font = (Font) xv_get(pixfnt, XV_XID);
 
-    /* it should always be valid, but be careful */
-    if (font != XV_NULL) {
-	gc_list = get_gc_list(info);
-	
-	XSetFont(display, gc_list[DEFAULT_GC], font);
-	XSetFont(display, gc_list[INVERTED_GC], font);
-	
-	/* determine font height -- don't trust globals!! */
-	fontinfo = (XFontStruct *)xv_get(pixfnt, FONT_INFO);
-	
-	font_height = fontinfo->ascent + fontinfo->descent;
-    }
-#endif
+		/* it should always be valid, but be careful */
+		if (font != XV_NULL) {
+			gc_list = get_gc_list(info);
+
+			XSetFont(display, gc_list[DEFAULT_GC], font);
+			XSetFont(display, gc_list[INVERTED_GC], font);
+
+			/* determine font height -- don't trust globals!! */
+			fontinfo = (XFontStruct *) xv_get(pixfnt, FONT_INFO);
+
+			font_height = fontinfo->ascent + fontinfo->descent;
+		}
+	}
 }
 
 /*
@@ -231,6 +228,18 @@ static void firsttime_init(void)
     if (!TTY_GC_LIST_KEY) TTY_GC_LIST_KEY = xv_unique_key();
 }
 
+static void dump_core(const char *s, int l)
+{
+	fprintf(stderr, "bad string '%*.*s'\n", l, l, s);
+	if (getenv("XVIEW_DESTROY_ABORT")) {
+/* 		if (fork() == 0) { */
+			abort();
+/* 		} */
+	}
+}
+
+#define IS_UTF8_CONT(c) (((unsigned char)(c) & 0xC0) == 0x80)
+
 /*
  * basic mechanism is to cache the information between use of this routine.
  * this assumes that certain of the attributes are not going to change.
@@ -240,7 +249,7 @@ static void firsttime_init(void)
  * the window XID for me to be happy...]
  */
 Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
-								Xv_opaque pixfnt, CHAR *string, int len)
+								Xv_opaque pixfnt, char *string, int len)
 {
 	static int old_op = BADVAL;
 	Xv_Drawable_info *info;
@@ -249,13 +258,12 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 	static GC *gc;
 	Xv_window paint_window;
 
-#ifdef OW_I18N
-	static void (*routine)();
-#else /* OW_I18N */
+	typedef void (*draw_mb_str_t)(Display *, Drawable, XFontSet, GC, int, int,
+									const char *, int);
+	static draw_mb_str_t mbroutine;
 	typedef int (*draw_str_t)(Display *, Drawable, GC, int, int, const char *,
 			int);
 	static draw_str_t routine;
-#endif /* OW_I18N */
 
 	Xv_Screen screen;
 	static Xv_Screen old_screen;
@@ -315,18 +323,14 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 			setup_GC(display, info, *gc, op);
 		}
 
-#ifdef OW_I18N
-		if (op == PIX_SRC || op == PIX_NOT(PIX_SRC))
-			routine = XwcDrawImageString;
-		else
-			routine = XwcDrawString;
-#else
-		if (op == PIX_SRC || op == PIX_NOT(PIX_SRC))
+		if (op == PIX_SRC || op == PIX_NOT(PIX_SRC)) {
+			mbroutine = XmbDrawImageString;
 			routine = XDrawImageString;
-		else
+		}
+		else {
+			mbroutine = XmbDrawString;
 			routine = XDrawString;
-#endif
-
+		}
 		old_op = op;
 	}
 	else {
@@ -362,12 +366,44 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 		XChangeGC(display, *gc, GCForeground | GCBackground, &gc_values);
 	}
 
-#ifdef OW_I18N
-	(void)(*routine) (display, drawable, xv_get(pixfnt, FONT_SET_ID),
+	if (_xv_is_multibyte) {
+		int i;
+
+		/* 1. Check if 'string' accidentally starts with a continuation byte */
+		if (IS_UTF8_CONT(string[0])) {
+			/* Handle or skip the orphaned byte */
+
+			/* for now I want to know where this happens */
+			dump_core(string, len);
+		}
+
+		/* 2. Walk through the string to ensure 'len' doesn't cut mid-character */
+		i = 0;
+		while (i < len) {
+			int char_len = mblen(string + i, MB_CUR_MAX);
+			if (char_len <= 0) {
+				/* Invalid byte sequence, fallback to safe handling */
+				dump_core(string+i, len - i);
+				break;
+			}
+			if (i + char_len > len) {
+				/* The last character is cut off! 'len' stops right in
+				 * the middle of a multi-byte sequence. We safely truncate
+				 * 'len' here.
+				 */
+				dump_core(string+i, len - i);
+				len = i;
+				break;
+			}
+			i += char_len;
+		}
+
+		(*mbroutine) (display, drawable, (XFontSet)xv_get(pixfnt, FONT_SET_ID),
 			*gc, xbasew, ybasew, string, len);
-#else
-	(*routine) (display, drawable, *gc, xbasew, ybasew, string, len);
-#endif
+	}
+	else {
+		(*routine) (display, drawable, *gc, xbasew, ybasew, string, len);
+	}
 }
 
 /*
@@ -375,7 +411,6 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
  *
  * takes the same parameters as pw_writebackground()
  */
-
 
 Xv_private void tty_background(Xv_opaque window, int x, int y, int w, int h, int op)
 {
