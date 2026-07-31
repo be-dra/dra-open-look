@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.50 2026/07/29 21:27:28 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.51 2026/07/31 06:46:46 dra Exp $";
 #endif
 #endif
 
@@ -79,18 +79,13 @@ static void destroy_atoms(Server_info *server);
 static Notify_value scheduler(int n, Notify_client *clients);
 static unsigned int string_to_modmask(Server_info *, char *str);
 static Server_atom_type save_atom(Server_info *server, Atom	atom, Server_atom_type type);
-static void server_yield_modifiers(Server_info	*server);
 static int xv_set_scheduler(void);
 
 Xv_private char	*xv_strtok(char *, char *);
 
 Xv_private void 	 xv_do_enqueued_input(char *, char *quatsch);
 Xv_private void	xv_merge_cmdline(XrmDatabase *);
-static void server_set_locale(Server_info  *server);
-static void server_setlocale_to_c(Ollc_item *ollc);
 static void server_warning(char *msg);
-static void server_setlocale_to_default(Server_info	*server);
-static void server_effect_locale(Server_info *server, char	*character_set);
 
 static Notify_scheduler_func default_scheduler;
 extern XrmDatabase  	 defaults_rdb;
@@ -251,6 +246,31 @@ static void load_kbd_cmds(Server_info *server, Key_binding *kb_table)
 						kb_table[i].action & 0xFF;
 		}	/* for each mapping */
 	}  /* for each key table entry */
+}
+
+static void server_yield_modifiers(Server_info	*server)
+{
+	char modifier_string[128], *returned_string, *modifier;
+
+	returned_string = defaults_get_string("ttysw.yieldModifiers",
+			"Ttysw.YieldModifiers", (char *)NULL);
+
+	server->pass_thru_modifiers = 0;
+
+	if (!returned_string)
+		return;
+
+	strcpy(modifier_string, returned_string);
+
+	modifier = xv_strtok(modifier_string, ", ");
+	do {
+		if (modifier) {
+			if (!strcmp(modifier, "Meta"))
+				server->pass_thru_modifiers += 0x200;
+			else if (!strcmp(modifier, "Alt"))
+				server->pass_thru_modifiers += 0x800;
+		}
+	} while ((modifier = xv_strtok(NULL, ", ")));
 }
 
 #define NIL 0
@@ -729,31 +749,6 @@ static void server_build_keymap_table(Server_info *server)
 	server->acceleration = defaults_get_boolean("openWindows.menuAccelerators",
 										"OpenWindows.MenuAccelerators", FALSE);
 	/* ACC_XVIEW */
-}
-
-static void server_yield_modifiers(Server_info	*server)
-{
-	char modifier_string[128], *returned_string, *modifier;
-
-	returned_string = defaults_get_string("ttysw.yieldModifiers",
-			"Ttysw.YieldModifiers", (char *)NULL);
-
-	server->pass_thru_modifiers = 0;
-
-	if (!returned_string)
-		return;
-
-	strcpy(modifier_string, returned_string);
-
-	modifier = xv_strtok(modifier_string, ", ");
-	do {
-		if (modifier) {
-			if (!strcmp(modifier, "Meta"))
-				server->pass_thru_modifiers += 0x200;
-			else if (!strcmp(modifier, "Alt"))
-				server->pass_thru_modifiers += 0x800;
-		}
-	} while ((modifier = xv_strtok(NULL, ", ")));
 }
 
 static int svr_parse_display(char *display_name)
@@ -4595,6 +4590,427 @@ Xv_private void server_update_aqt(Server_info *server, int count)
 					res_base + PERM_NUMBER(res_base) - 2, 1);
 	Permprop_res_store_db(inst->xvwp_xrmdb[PRC_U], inst->appfiles[PRC_U]);
 }
+
+/*
+ * server_get_locale_from_str: Get the translated version of the
+ * Ollc_from.  Table driven will not work with xgettext(1) command,
+ * therefor have to be function instead.
+ */
+static char *server_get_locale_from_str(Ollc_from	from)
+{
+    char	*msg;
+
+    switch (from) {
+	/*
+	 * STRING_EXTRACTION - Following five (include "Unknown")
+	 * messages are short description of the how or where locale
+	 * has been sets.
+	 */
+	case OLLC_FROM_ATTR:
+	    msg = XV_MSG_CONST("application (attributes)");
+	    break;
+
+	case OLLC_FROM_CMDLINE:
+	case OLLC_FROM_RESOURCE:
+	    msg = XV_MSG_CONST("command line option or X resources");
+	    break;
+
+	case OLLC_FROM_POSIX:
+	    msg = XV_MSG_CONST("environment variable(s)");
+	    break;
+
+	case OLLC_FROM_C:
+	    msg = XV_MSG_CONST("system default (C)");
+	    break;
+
+	default:
+	    msg = XV_MSG_CONST("Unknown");
+	    break;
+    }
+    return XV_MSG_VAR(msg);
+}
+
+
+/*
+ * server_get_locale_name_str: Get the translated version of the
+ * locale category name.  Table driven will not work with xgettext(1)
+ * command, therefor have to be function instead.
+ */
+static char *server_get_locale_name_str(int	id)
+{
+    char	*msg;
+
+    switch (id) {
+	/*
+	 * STRING_EXTRACTION - Following six (includes "Unknown")
+	 * messages are name of the OPEN LOOK locale categories.
+	 */
+	case OLLC_BASICLOCALE:
+	    msg = XV_MSG_CONST("Basic Locale");
+	    break;
+
+	case OLLC_DISPLAYLANG:
+	    msg = XV_MSG_CONST("Display Language");
+	    break;
+
+	case OLLC_INPUTLANG:
+	    msg = XV_MSG_CONST("Input Language");
+	    break;
+
+	case OLLC_NUMERIC:
+	    msg = XV_MSG_CONST("Numeric Format");
+	    break;
+
+	case OLLC_TIMEFORMAT:
+	    msg = XV_MSG_CONST("Time Format");
+	    break;
+
+	default:
+	    msg = XV_MSG_CONST("Unknown");
+	    break;
+    }
+    return XV_MSG_VAR(msg);
+}
+
+static void server_setlocale_to_c(Ollc_item *ollc)
+{
+	Ollc_item *oi;
+
+	for (oi = ollc; oi < &ollc[OLLC_MAX]; oi++) {
+		xv_free(oi->locale);
+		oi->locale = strdup("C");
+		oi->from = OLLC_FROM_C;
+	}
+}
+
+
+static void server_setlocale_to_default(Server_info	*server)
+{
+	char *def_locale;
+
+	server_setlocale_to_c(server->ollc);
+
+	/*
+	 * Because of the compatiblity with release prior to none locale
+	 * sensitive day of the XView (includes SunView), if XV_USE_LOCALE
+	 * not being used, we will still allow 8 bit characters.
+	 */
+	if ((def_locale = getenv("XVIEW_DEFAULT_LOCALE")) == NULL) {
+		/*
+		 * "iso_8859_1" locale is 8 bit (LC_CTYPE only) locale exist
+		 * in SunOS 4.x and 5.x.
+		 */
+		def_locale = "iso_8859_1";
+	}
+	xv_free(server->ollc[OLLC_BASICLOCALE].locale);
+	server->ollc[OLLC_BASICLOCALE].locale = strdup(def_locale);
+	(void)setlocale(LC_CTYPE, def_locale);
+
+	if (!XSupportsLocale()) {
+		char msg[256];
+		(void)sprintf(msg,
+				XV_MSG
+				("Xlib does not support locale \"%s\" (which is for non internationalized program) - Defaulting to \"C\""),
+				def_locale);
+		server_warning(msg);
+		xv_free(server->ollc[OLLC_BASICLOCALE].locale);
+		server->ollc[OLLC_BASICLOCALE].locale = strdup("C");
+		(void)setlocale(LC_CTYPE, "C");
+	}
+}
+
+
+static void server_set_locale(Server_info  *server)
+{
+	int i;
+	char *locale, *act_locale;
+	char actloc[500];
+	Ollc_item *oi;
+	char *type;
+	XrmValue xrm_value;
+	char inst[50], class[50];
+
+	/*
+	 * Set all locale categories that exist in the environment in a
+	 * POSIX compliant fashion prior to query it.
+	 */
+	act_locale = setlocale(LC_ALL, "");
+	if (act_locale) strcpy(actloc, act_locale);
+	else strcpy(actloc, "C");
+
+	/* plan is to replace "#ifdef O W _ I 1 8 N" by "if (_xv_is_multibyte)" */
+    if (XSupportsLocale()) {
+		XSetLocaleModifiers("");
+
+		if (strcasestr(actloc,"utf-8")!=NULL || strcasestr(actloc,"utf8")!=NULL)
+		{
+			_xv_is_multibyte = TRUE;
+		}
+		else {
+			_xv_is_multibyte = (strncmp(nl_langinfo(CODESET), "UTF", 3L) == 0);
+		}
+	}
+	else {
+		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
+			if (oi->locale != NULL)
+				continue;
+
+			if (Ollc_const[i].posix >= 0) {
+				setlocale(Ollc_const[i].posix, "C");
+			}
+		}
+		_xv_is_multibyte = FALSE;
+	}
+
+	SERVERTRACE((777, "%s: _xv_is_multibyte = %d\n", __FUNCTION__, 
+					_xv_is_multibyte));
+
+	/*
+	 * Traverse all the categories and fillin the data according to
+	 * the priority, if data has not being set yet.
+	 */
+	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
+		if (oi->locale != NULL) continue;
+
+		/*
+		 * Try Resources (defaults) firsts.
+		 */
+		xrm_value.size = 0;
+		xrm_value.addr = NULL;
+
+		sprintf(inst, "openWindows.%s", Ollc_const[i].inst);
+		sprintf(class, "OpenWindows.%s", Ollc_const[i].class);
+		if (XrmGetResource(server->db, inst, class, &type, &xrm_value)) {
+			char *result;
+
+			SERVERTRACE((777, "%s: %d: inst = %s -> %s\n", __FUNCTION__,
+						i, inst, (char *)xrm_value.addr));
+			oi->locale = strdup((char *)xrm_value.addr);
+			oi->from = OLLC_FROM_RESOURCE;
+
+			/* this was built in when I switched to the REAL dgettext and
+			 * the REAL msgfmt:
+			 */
+			if (Ollc_const[i].posix >= 0) {
+				if (_xv_is_multibyte && strcmp(oi->locale, "C") == 0) {
+					/* ignoring C-locale for category ... because of UTF-8 */
+					xv_free(oi->locale);
+					oi->locale = strdup(actloc);
+					SERVERTRACE((777, "%s: ignore, set to %s\n", __FUNCTION__,oi->locale));
+				}
+
+				result = setlocale(Ollc_const[i].posix, oi->locale);
+
+				SERVERTRACE((777, "%s: setlocale(%d, '%s') = '%s'\n",
+						__FUNCTION__, Ollc_const[i].posix, oi->locale, result));
+
+				if (!result) {
+					fprintf(stderr, "unsuccessfully tried to set %s to %s\n", 
+									Ollc_const[i].env , oi->locale);
+				}
+			}
+			else {
+				if (_xv_is_multibyte) {
+					SERVERTRACE((777, "%s: not posix, is %s\n", __FUNCTION__,oi->locale));
+					if (strcmp(oi->locale, "C") == 0) {
+						/* ignoring C-locale for category ... because of UTF-8 */
+						xv_free(oi->locale);
+						oi->locale = strdup(actloc);
+						SERVERTRACE((777, "%s: ignore, set to %s\n", __FUNCTION__,oi->locale));
+						setlocale(Ollc_const[i].posix, oi->locale);
+					}
+				}
+			}
+			continue;
+		}
+
+		/*
+		 * For 3.1 backwards compatibility of *numeric resource, need to
+		 * check if the old resource is being used.
+		 */
+		if (i == OLLC_NUMERIC && defaults_exists("numeric", "Numeric")) {
+			char *old_resource_value;
+
+			old_resource_value =
+					strdup(defaults_get_string("numeric", "Numeric", NULL));
+			if (old_resource_value) {
+				if (_xv_is_multibyte && strcmp(old_resource_value, "C") == 0) {
+					/* ignoring C-locale for category ... because of UTF-8 */
+					xv_free(old_resource_value);
+					old_resource_value = strdup(actloc);
+					setlocale(LC_NUMERIC, actloc);
+					SERVERTRACE((777, "%s: %d: ignore, set to %s\n", __FUNCTION__,i, actloc));
+				}
+				server->ollc[OLLC_NUMERIC].locale = old_resource_value;
+				server->ollc[OLLC_NUMERIC].from = OLLC_FROM_RESOURCE;
+				continue;
+			}
+		}
+
+		/*
+		 * fallback to setlocale(3).
+		 */
+		SERVERTRACE((777, "%s: %d: setlocale(%d) = '%s'\n", __FUNCTION__, i,
+						Ollc_const[i].posix, setlocale(Ollc_const[i].posix, NULL)));
+		if (Ollc_const[i].posix >= 0
+				&& (locale = setlocale(Ollc_const[i].posix, NULL)) != NULL) {
+			SERVERTRACE((777, "%s: setlocale(%d) = '%s'\n", __FUNCTION__, 
+						Ollc_const[i].posix, locale));
+			oi->locale = strdup(locale);
+			oi->from = OLLC_FROM_POSIX;
+			continue;
+		}
+
+		if (i == OLLC_BASICLOCALE) {
+			/*
+			 * This is actually almost like internal error!.
+			 */
+			server_warning(XV_MSG
+					("Could not obtain the Basic Locale settings! - Defaulting to \"C\""));
+			oi->locale = strdup("C");
+			oi->from = OLLC_FROM_C;
+			continue;
+		}
+
+		/*
+		 * Final fallback, Basic Locale
+		 */
+		oi->locale = strdup(server->ollc[OLLC_BASICLOCALE].locale);
+		oi->from = server->ollc[OLLC_BASICLOCALE].from;
+	}
+
+	if (_xv_is_multibyte) {
+		SERVERTRACE((777, "in server_set_locale:\n"));
+		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
+			SERVERTRACE((777, "\t%d. locale = '%s', set from %s\n",
+					i, oi->locale, server_get_locale_from_str(oi->from)));
+		}
+		SERVERTRACE((777, "%s: LC_CTYPE =%s\n",__FUNCTION__,setlocale( LC_CTYPE, NULL)));
+		SERVERTRACE((777, "%s: LC_MESSAGES =%s\n",__FUNCTION__,setlocale( LC_MESSAGES, NULL)));
+		SERVERTRACE((777, "%s: LC_NUMERIC =%s\n",__FUNCTION__,setlocale( LC_NUMERIC, NULL)));
+		SERVERTRACE((777, "%s: LC_TIME =%s\n",__FUNCTION__,setlocale( LC_TIME, NULL)));
+	}
+}
+
+static void server_effect_locale(Server_info *server, char	*character_set)
+{
+	int i;
+	Ollc_item *oi;
+	char *lc_all;
+	Bool is_8859_1_locale;
+	Bool is_c_locale;
+	char msg[200];
+
+
+	/*
+	 * Sets LC_ALL, so that we can cover the none OPEN LOOK locale
+	 * categories (such as LC_MONETARY).
+	 */
+	oi = &server->ollc[OLLC_BASICLOCALE];
+	if (oi->from != OLLC_FROM_POSIX && setlocale(LC_ALL, oi->locale) == NULL) {
+
+		/*
+		 * STRING_EXTRACTION - First %s is name of the locale, and
+		 * second %s is for where the locale setting was came from
+		 * (later in this file has a series of the message for second
+		 * %s.  Translater could use printf mechanism to switch the
+		 * order of the %s in SunOS 5.x, such as "%2$s" to specify the
+		 * second %s (see printf(3S) for more detail).
+		 */
+		(void)sprintf(msg,
+				XV_MSG
+				("Error when setting all locale categories to \"%s\" (set via %s)"),
+				oi->locale, server_get_locale_from_str(oi->from));
+		server_warning(msg);
+		lc_all = "";	/* need to set by indivisual category */
+	}
+	else
+		lc_all = oi->locale;
+
+	is_8859_1_locale = strcmp(character_set, ISO8859_1) == 0;
+	is_c_locale = strcmp(server->ollc[OLLC_BASICLOCALE].locale, "C") == 0;
+
+	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
+
+		/*
+		 * DEPEND_ON_EUC: Apply restriction for non latin1 locale (if
+		 * it non latin1 locale, all locale categories are should be
+		 * same as basic locale or "C").
+		 */
+		if ((oi != &server->ollc[OLLC_BASICLOCALE] && !is_8859_1_locale
+						&& strcmp(oi->locale,
+								server->ollc[OLLC_BASICLOCALE].locale) != 0
+						&& strcmp(oi->locale, "C") != 0)
+				|| (is_c_locale && strcmp(oi->locale, "C") != 0)) {
+			/*
+			 * STRING_EXTRACTION - first %s is name of the locale,
+			 * second %s is name of the locale category, third %s is
+			 * where the this locale setting was came from, fourth %s
+			 * is translated "Basic Locale", and fifth %s is name of
+			 * locale for basic locale.  Again, translater can change
+			 * the order of those %s by using "%4$s" nortion of printf
+			 * (3S) format in SunOS 5.x.
+			 */
+			(void)sprintf(msg,
+					XV_MSG("Can not use \"%s\" as locale category %s (set via %s) while %s is \"%s\" - Defaulting to \"C\""),
+					oi->locale, server_get_locale_name_str(i),
+					server_get_locale_from_str(oi->from),
+					server_get_locale_name_str(OLLC_BASICLOCALE),
+					server->ollc[OLLC_BASICLOCALE].locale);
+			server_warning(msg);
+			xv_free(oi->locale);
+			oi->locale = strdup("C");
+			oi->from = OLLC_FROM_C;
+		}
+
+		/*
+		 * Try not to set unless it is really necessary.
+		 */
+		if (Ollc_const[i].posix >= 0
+			&& oi->from != OLLC_FROM_POSIX
+			&& strcmp(oi->locale, lc_all) != 0
+			&& strcmp(oi->locale, setlocale(Ollc_const[i].posix, NULL)) != 0)
+		{
+			SERVERTRACE((777, "%s: %d: setlocale(%d) = '%s'\n", __FUNCTION__, i,
+						Ollc_const[i].posix, oi->locale));
+			if (setlocale(Ollc_const[i].posix, oi->locale) == NULL) {
+
+				/*
+				 * STRING_EXTRACTION - First %s name of the locale
+				 * category, second %s is troubled locale name, and third
+				 * %s is where this locale name was sets.
+				 */
+				(void)sprintf(msg,
+						XV_MSG
+					("Error when setting locale category (%s) to \"%s\" (set via %s"),
+						server_get_locale_name_str(i), oi->locale,
+						server_get_locale_from_str(oi->from));
+				server_warning(msg);
+				xv_free(oi->locale);
+				oi->locale = strdup(setlocale(Ollc_const[i].posix, NULL));
+			}
+		}
+	}
+
+
+	/*
+	 * Make sure, the supplied locale is supported, otherwise default
+	 * to C and continue.
+	 */
+	if (!XSupportsLocale()) {
+		oi = &server->ollc[OLLC_BASICLOCALE];
+		(void)sprintf(msg,
+				XV_MSG("Supplied locale \"%s\" (set via %s) is not supported by Xlib - Defaulting to \"C\""),
+				oi->locale, server_get_locale_from_str(oi->from));
+		server_warning(msg);
+		setlocale(LC_ALL, "C");
+		server_setlocale_to_c(server->ollc);
+	}
+
+	if (!XSetLocaleModifiers(""))
+		server_warning(XV_MSG("Error in setting Xlib locale Modifiers"));
+}
+
 static int server_init(Xv_opaque parent, Xv_server server_public,
 								Attr_avlist avlist, int *unused)
 {
@@ -4609,7 +5025,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	XrmDatabase new_db;
 	int first_server = FALSE;
 	int mopc, fev, fer;
-/* 	char *character_set; */
+	char *character_set;
 	extern int _xv_use_locale;
 	char **argv = NULL;
 	int need_im = FALSE;
@@ -4930,8 +5346,8 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 							(Xv_generic_attr)0);
 		need_im = defaults_get_boolean("xview.needIm", "Xview.NeedIm", 
 											_xv_is_multibyte);
-/* 		character_set = defaults_get_string("xview.characterSet", */
-/* 				"Xview.CharacterSet", ISO8859_1); */
+		character_set = defaults_get_string("xview.characterSet",
+				"Xview.CharacterSet", ISO8859_1);
 
 		defaults_set_locale(NULL, 0);
 
@@ -4939,7 +5355,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 		/*
 		 * Taking effect the locale setting to the system.
 		 */
-/* 		server_effect_locale(server, character_set); */
+		server_effect_locale(server, character_set);
 	}
 	else {	/* if (_xv_use_locale) */
 		server_setlocale_to_default(server);
@@ -5099,423 +5515,6 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	}
 	return XV_ERROR;
 }
-
-
-/*
- * server_get_locale_from_str: Get the translated version of the
- * Ollc_from.  Table driven will not work with xgettext(1) command,
- * therefor have to be function instead.
- */
-static char *server_get_locale_from_str(Ollc_from	from)
-{
-    char	*msg;
-
-    switch (from) {
-	/*
-	 * STRING_EXTRACTION - Following five (include "Unknown")
-	 * messages are short description of the how or where locale
-	 * has been sets.
-	 */
-	case OLLC_FROM_ATTR:
-	    msg = XV_MSG_CONST("application (attributes)");
-	    break;
-
-	case OLLC_FROM_CMDLINE:
-	case OLLC_FROM_RESOURCE:
-	    msg = XV_MSG_CONST("command line option or X resources");
-	    break;
-
-	case OLLC_FROM_POSIX:
-	    msg = XV_MSG_CONST("environment variable(s)");
-	    break;
-
-	case OLLC_FROM_C:
-	    msg = XV_MSG_CONST("system default (C)");
-	    break;
-
-	default:
-	    msg = XV_MSG_CONST("Unknown");
-	    break;
-    }
-    return XV_MSG_VAR(msg);
-}
-
-static void server_set_locale(Server_info  *server)
-{
-	int i;
-	char *locale, *act_locale;
-	char actloc[500];
-	Ollc_item *oi;
-	char *type;
-	XrmValue xrm_value;
-	char inst[50], class[50];
-
-	/*
-	 * Set all locale categories that exist in the environment in a
-	 * POSIX compliant fashion prior to query it.
-	 */
-	act_locale = setlocale(LC_ALL, "");
-	if (act_locale) strcpy(actloc, act_locale);
-	else strcpy(actloc, "C");
-
-	/* plan is to replace "#ifdef O W _ I 1 8 N" by "if (_xv_is_multibyte)" */
-    if (XSupportsLocale()) {
-		XSetLocaleModifiers("");
-
-		if (strcasestr(actloc,"utf-8")!=NULL || strcasestr(actloc,"utf8")!=NULL)
-		{
-			_xv_is_multibyte = TRUE;
-		}
-		else {
-			_xv_is_multibyte = (strncmp(nl_langinfo(CODESET), "UTF", 3L) == 0);
-		}
-	}
-	else {
-		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-			if (oi->locale != NULL)
-				continue;
-
-			if (Ollc_const[i].posix >= 0) {
-				setlocale(Ollc_const[i].posix, "C");
-			}
-		}
-		_xv_is_multibyte = FALSE;
-	}
-
-	SERVERTRACE((777, "%s: _xv_is_multibyte = %d\n", __FUNCTION__, 
-					_xv_is_multibyte));
-
-	/*
-	 * Traverse all the categories and fillin the data according to
-	 * the priority, if data has not being set yet.
-	 */
-	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-		if (oi->locale != NULL) continue;
-
-		/*
-		 * Try Resources (defaults) firsts.
-		 */
-		xrm_value.size = 0;
-		xrm_value.addr = NULL;
-
-		sprintf(inst, "openWindows.%s", Ollc_const[i].inst);
-		sprintf(class, "OpenWindows.%s", Ollc_const[i].class);
-		if (XrmGetResource(server->db, inst, class, &type, &xrm_value)) {
-			char *result;
-
-			SERVERTRACE((777, "%s: %d: inst = %s -> %s\n", __FUNCTION__,
-						i, inst, (char *)xrm_value.addr));
-			oi->locale = strdup((char *)xrm_value.addr);
-			oi->from = OLLC_FROM_RESOURCE;
-
-			/* this was built in when I switched to the REAL dgettext and
-			 * the REAL msgfmt:
-			 */
-			if (Ollc_const[i].posix >= 0) {
-				if (_xv_is_multibyte && strcmp(oi->locale, "C") == 0) {
-					/* ignoring C-locale for category ... because of UTF-8 */
-					xv_free(oi->locale);
-					oi->locale = strdup(actloc);
-					SERVERTRACE((777, "%s: ignore, set to %s\n", __FUNCTION__,oi->locale));
-				}
-
-				result = setlocale(Ollc_const[i].posix, oi->locale);
-
-				SERVERTRACE((777, "%s: setlocale(%d, '%s') = '%s'\n",
-						__FUNCTION__, Ollc_const[i].posix, oi->locale, result));
-
-				if (!result) {
-					fprintf(stderr, "unsuccessfully tried to set %s to %s\n", 
-									Ollc_const[i].env , oi->locale);
-				}
-			}
-			else {
-				if (_xv_is_multibyte) {
-					SERVERTRACE((777, "%s: not posix, is %s\n", __FUNCTION__,oi->locale));
-					if (strcmp(oi->locale, "C") == 0) {
-						/* ignoring C-locale for category ... because of UTF-8 */
-						xv_free(oi->locale);
-						oi->locale = strdup(actloc);
-						SERVERTRACE((777, "%s: ignore, set to %s\n", __FUNCTION__,oi->locale));
-						setlocale(Ollc_const[i].posix, oi->locale);
-					}
-				}
-			}
-			continue;
-		}
-
-		/*
-		 * For 3.1 backwards compatibility of *numeric resource, need to
-		 * check if the old resource is being used.
-		 */
-		if (i == OLLC_NUMERIC && defaults_exists("numeric", "Numeric")) {
-			char *old_resource_value;
-
-			old_resource_value =
-					strdup(defaults_get_string("numeric", "Numeric", NULL));
-			if (old_resource_value) {
-				if (_xv_is_multibyte && strcmp(old_resource_value, "C") == 0) {
-					/* ignoring C-locale for category ... because of UTF-8 */
-					xv_free(old_resource_value);
-					old_resource_value = strdup(actloc);
-					setlocale(LC_NUMERIC, actloc);
-					SERVERTRACE((777, "%s: %d: ignore, set to %s\n", __FUNCTION__,i, actloc));
-				}
-				server->ollc[OLLC_NUMERIC].locale = old_resource_value;
-				server->ollc[OLLC_NUMERIC].from = OLLC_FROM_RESOURCE;
-				continue;
-			}
-		}
-
-		/*
-		 * fallback to setlocale(3).
-		 */
-		SERVERTRACE((777, "%s: %d: setlocale(%d) = '%s'\n", __FUNCTION__, i,
-						Ollc_const[i].posix, setlocale(Ollc_const[i].posix, NULL)));
-		if (Ollc_const[i].posix >= 0
-				&& (locale = setlocale(Ollc_const[i].posix, NULL)) != NULL) {
-			SERVERTRACE((777, "%s: setlocale(%d) = '%s'\n", __FUNCTION__, 
-						Ollc_const[i].posix, locale));
-			oi->locale = strdup(locale);
-			oi->from = OLLC_FROM_POSIX;
-			continue;
-		}
-
-		if (i == OLLC_BASICLOCALE) {
-			/*
-			 * This is actually almost like internal error!.
-			 */
-			server_warning(XV_MSG
-					("Could not obtain the Basic Locale settings! - Defaulting to \"C\""));
-			oi->locale = strdup("C");
-			oi->from = OLLC_FROM_C;
-			continue;
-		}
-
-		/*
-		 * Final fallback, Basic Locale
-		 */
-		oi->locale = strdup(server->ollc[OLLC_BASICLOCALE].locale);
-		oi->from = server->ollc[OLLC_BASICLOCALE].from;
-	}
-
-	if (_xv_is_multibyte) {
-		SERVERTRACE((777, "in server_set_locale:\n"));
-		for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-			SERVERTRACE((777, "\t%d. locale = '%s', set from %s\n",
-					i, oi->locale, server_get_locale_from_str(oi->from)));
-		}
-		SERVERTRACE((777, "%s: LC_CTYPE =%s\n",__FUNCTION__,setlocale( LC_CTYPE, NULL)));
-		SERVERTRACE((777, "%s: LC_MESSAGES =%s\n",__FUNCTION__,setlocale( LC_MESSAGES, NULL)));
-		SERVERTRACE((777, "%s: LC_NUMERIC =%s\n",__FUNCTION__,setlocale( LC_NUMERIC, NULL)));
-		SERVERTRACE((777, "%s: LC_TIME =%s\n",__FUNCTION__,setlocale( LC_TIME, NULL)));
-	}
-}
-
-
-/*
- * server_get_locale_name_str: Get the translated version of the
- * locale category name.  Table driven will not work with xgettext(1)
- * command, therefor have to be function instead.
- */
-static char *server_get_locale_name_str(int	id)
-{
-    char	*msg;
-
-    switch (id) {
-	/*
-	 * STRING_EXTRACTION - Following six (includes "Unknown")
-	 * messages are name of the OPEN LOOK locale categories.
-	 */
-	case OLLC_BASICLOCALE:
-	    msg = XV_MSG_CONST("Basic Locale");
-	    break;
-
-	case OLLC_DISPLAYLANG:
-	    msg = XV_MSG_CONST("Display Language");
-	    break;
-
-	case OLLC_INPUTLANG:
-	    msg = XV_MSG_CONST("Input Language");
-	    break;
-
-	case OLLC_NUMERIC:
-	    msg = XV_MSG_CONST("Numeric Format");
-	    break;
-
-	case OLLC_TIMEFORMAT:
-	    msg = XV_MSG_CONST("Time Format");
-	    break;
-
-	default:
-	    msg = XV_MSG_CONST("Unknown");
-	    break;
-    }
-    return XV_MSG_VAR(msg);
-}
-
-static void server_effect_locale(Server_info *server, char	*character_set)
-{
-	int i;
-	Ollc_item *oi;
-	char *lc_all;
-	Bool is_8859_1_locale;
-	Bool is_c_locale;
-	char msg[200];
-
-
-	/*
-	 * Sets LC_ALL, so that we can cover the none OPEN LOOK locale
-	 * categories (such as LC_MONETARY).
-	 */
-	oi = &server->ollc[OLLC_BASICLOCALE];
-	if (oi->from != OLLC_FROM_POSIX && setlocale(LC_ALL, oi->locale) == NULL) {
-
-		/*
-		 * STRING_EXTRACTION - First %s is name of the locale, and
-		 * second %s is for where the locale setting was came from
-		 * (later in this file has a series of the message for second
-		 * %s.  Translater could use printf mechanism to switch the
-		 * order of the %s in SunOS 5.x, such as "%2$s" to specify the
-		 * second %s (see printf(3S) for more detail).
-		 */
-		(void)sprintf(msg,
-				XV_MSG
-				("Error when setting all locale categories to \"%s\" (set via %s)"),
-				oi->locale, server_get_locale_from_str(oi->from));
-		server_warning(msg);
-		lc_all = "";	/* need to set by indivisual category */
-	}
-	else
-		lc_all = oi->locale;
-
-	is_8859_1_locale = strcmp(character_set, ISO8859_1) == 0;
-	is_c_locale = strcmp(server->ollc[OLLC_BASICLOCALE].locale, "C") == 0;
-
-	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
-
-		/*
-		 * DEPEND_ON_EUC: Apply restriction for non latin1 locale (if
-		 * it non latin1 locale, all locale categories are should be
-		 * same as basic locale or "C").
-		 */
-		if ((oi != &server->ollc[OLLC_BASICLOCALE] && !is_8859_1_locale
-						&& strcmp(oi->locale,
-								server->ollc[OLLC_BASICLOCALE].locale) != 0
-						&& strcmp(oi->locale, "C") != 0)
-				|| (is_c_locale && strcmp(oi->locale, "C") != 0)) {
-			/*
-			 * STRING_EXTRACTION - first %s is name of the locale,
-			 * second %s is name of the locale category, third %s is
-			 * where the this locale setting was came from, fourth %s
-			 * is translated "Basic Locale", and fifth %s is name of
-			 * locale for basic locale.  Again, translater can change
-			 * the order of those %s by using "%4$s" nortion of printf
-			 * (3S) format in SunOS 5.x.
-			 */
-			(void)sprintf(msg,
-					XV_MSG("Can not use \"%s\" as locale category %s (set via %s) while %s is \"%s\" - Defaulting to \"C\""),
-					oi->locale, server_get_locale_name_str(i),
-					server_get_locale_from_str(oi->from),
-					server_get_locale_name_str(OLLC_BASICLOCALE),
-					server->ollc[OLLC_BASICLOCALE].locale);
-			server_warning(msg);
-			xv_free(oi->locale);
-			oi->locale = strdup("C");
-			oi->from = OLLC_FROM_C;
-		}
-
-		/*
-		 * Try not to set unless it is really necessary.
-		 */
-		if (Ollc_const[i].posix >= 0
-				&& oi->from != OLLC_FROM_POSIX
-				&& strcmp(oi->locale, lc_all) != 0
-				&& strcmp(oi->locale, setlocale(Ollc_const[i].posix, NULL)) != 0
-				&& setlocale(Ollc_const[i].posix, oi->locale) == NULL) {
-
-			/*
-			 * STRING_EXTRACTION - First %s name of the locale
-			 * category, second %s is troubled locale name, and third
-			 * %s is where this locale name was sets.
-			 */
-			(void)sprintf(msg,
-					XV_MSG
-					("Error when setting locale category (%s) to \"%s\" (set via %s"),
-					server_get_locale_name_str(i), oi->locale,
-					server_get_locale_from_str(oi->from));
-			server_warning(msg);
-			xv_free(oi->locale);
-			oi->locale = strdup(setlocale(Ollc_const[i].posix, NULL));
-		}
-	}
-
-
-	/*
-	 * Make sure, the supplied locale is supported, otherwise default
-	 * to C and continue.
-	 */
-	if (!XSupportsLocale()) {
-		oi = &server->ollc[OLLC_BASICLOCALE];
-		(void)sprintf(msg,
-				XV_MSG("Supplied locale \"%s\" (set via %s) is not supported by Xlib - Defaulting to \"C\""),
-				oi->locale, server_get_locale_from_str(oi->from));
-		server_warning(msg);
-		setlocale(LC_ALL, "C");
-		server_setlocale_to_c(server->ollc);
-	}
-
-	if (!XSetLocaleModifiers(""))
-		server_warning(XV_MSG("Error in setting Xlib locale Modifiers"));
-}
-
-static void server_setlocale_to_c(Ollc_item *ollc)
-{
-	Ollc_item *oi;
-
-	for (oi = ollc; oi < &ollc[OLLC_MAX]; oi++) {
-		xv_free(oi->locale);
-		oi->locale = strdup("C");
-		oi->from = OLLC_FROM_C;
-	}
-}
-
-
-static void server_setlocale_to_default(Server_info	*server)
-{
-	char *def_locale;
-
-	server_setlocale_to_c(server->ollc);
-
-	/*
-	 * Because of the compatiblity with release prior to none locale
-	 * sensitive day of the XView (includes SunView), if XV_USE_LOCALE
-	 * not being used, we will still allow 8 bit characters.
-	 */
-	if ((def_locale = getenv("XVIEW_DEFAULT_LOCALE")) == NULL) {
-		/*
-		 * "iso_8859_1" locale is 8 bit (LC_CTYPE only) locale exist
-		 * in SunOS 4.x and 5.x.
-		 */
-		def_locale = "iso_8859_1";
-	}
-	xv_free(server->ollc[OLLC_BASICLOCALE].locale);
-	server->ollc[OLLC_BASICLOCALE].locale = strdup(def_locale);
-	(void)setlocale(LC_CTYPE, def_locale);
-
-	if (!XSupportsLocale()) {
-		char msg[256];
-		(void)sprintf(msg,
-				XV_MSG
-				("Xlib does not support locale \"%s\" (which is for non internationalized program) - Defaulting to \"C\""),
-				def_locale);
-		server_warning(msg);
-		xv_free(server->ollc[OLLC_BASICLOCALE].locale);
-		server->ollc[OLLC_BASICLOCALE].locale = strdup("C");
-		(void)setlocale(LC_CTYPE, "C");
-	}
-}
-
 
 static int server_destroy(Xv_Server server_public, Destroy_status status)
 {
