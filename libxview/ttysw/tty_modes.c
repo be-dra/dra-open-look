@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.8 2025/04/04 20:16:04 dra Exp $";
+char tty_modes_c_sccsid[] = "@(#) tty_modes.c 20.54 93/06/28 DRA: $Id: tty_modes.c,v 4.9 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -81,11 +81,6 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 	int off = 0;
 	int fd;
 
-#ifdef OW_I18N
-	Termsw termsw_public;
-	int win_ic_stat;
-#endif
-
 	if (!ttysw_getopt(ttysw, TTYOPT_TEXT)) {
 		/* Already acting as a ttysw. */
 		return (-1);
@@ -95,10 +90,6 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 	textsw_view = ttysw->current_view_public;	/* Textsw really need the
 											 	 * public view handle */
 	termsw = TERMSW_PRIVATE(TTY_PUBLIC(ttysw));
-
-#ifdef OW_I18N
-	win_ic_stat = (int)xv_get(textsw_view, WIN_IC_ACTIVE, 0);
-#endif
 
 	/* If this is invoked by vi, ttysw_ansi_escape() will reset it to false */
 	termsw->ok_to_enable_scroll = TRUE;
@@ -167,34 +158,6 @@ Pkg_private int ttysw_be_ttysw(Ttysw_view_handle ttysw_view)
 
 	termsw->ttysw_resized = 0;
 
-#ifdef OW_I18N
-	termsw_public = TERMSW_PUBLIC(termsw);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_START,
-			(XIMProc) ttysw->start_pecb_struct.callback,
-			(XPointer) ttysw->start_pecb_struct.client_data, NULL);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_DRAW,
-			(XIMProc) ttysw->draw_pecb_struct.callback,
-			(XPointer) ttysw->draw_pecb_struct.client_data, NULL);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_DONE,
-			(XIMProc) ttysw->done_pecb_struct.callback,
-			(XPointer) ttysw->done_pecb_struct.client_data, NULL);
-
-	/*
-	 * WIN_IC_ACTIVE is set to FALSE in setting TEXTSW_READ_ONLY
-	 * to TRUE. Now set back to TRUE if it was TRUE.
-	 */
-	if (win_ic_stat)
-		(void)xv_set(textsw_view, WIN_IC_ACTIVE, TRUE, NULL);
-
-	(void)xv_set(textsw_view, WIN_IC, ttysw->ic, 0);
-#endif
-
 	SERVERTRACE((44, "SERVER_JOURNALLING?\n"));
 	if (xv_get(XV_SERVER_FROM_WINDOW(TTY_PUBLIC(ttysw)), SERVER_JOURNALLING)) {
 		SERVERTRACE((44, " YES \n"));
@@ -232,11 +195,6 @@ Pkg_private int ttysw_be_termsw(Ttysw_view_handle ttysw_view)
 	Textsw textsw = TEXTSW_FROM_TTY(ttysw);
 	Textsw_view textsw_view;
 	Termsw_folio termsw;
-
-#ifdef OW_I18N
-	Termsw termsw_public;
-	Textsw_folio text_folio;
-#endif
 
 	if ((!TTY_IS_TERMSW(ttysw)) || ttysw_getopt(ttysw, TTYOPT_TEXT))
 		return (-1);
@@ -322,28 +280,6 @@ Pkg_private int ttysw_be_termsw(Ttysw_view_handle ttysw_view)
 	else {
 		win_post_id(textsw_view, KBD_DONE, NOTIFY_IMMEDIATE);
 	}
-
-#ifdef OW_I18N
-	termsw_public = TERMSW_PUBLIC(termsw);
-	text_folio = (Textsw_folio) TEXTSW_PRIVATE_FROM_TERMSW(termsw_public);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_START,
-			(XIMProc) text_folio->start_pecb_struct.callback,
-			(XPointer) text_folio->start_pecb_struct.client_data, NULL);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_DRAW,
-			(XIMProc) text_folio->draw_pecb_struct.callback,
-			(XPointer) text_folio->draw_pecb_struct.client_data, NULL);
-
-	xv_set(termsw_public,
-			WIN_IC_PREEDIT_DONE,
-			(XIMProc) text_folio->done_pecb_struct.callback,
-			(XPointer) text_folio->done_pecb_struct.client_data, NULL);
-
-	(void)xv_set(textsw_view, WIN_IC, text_folio->ic, 0);
-#endif
 
 	if (xv_get(XV_SERVER_FROM_WINDOW(TTY_PUBLIC(ttysw)), SERVER_JOURNALLING))
 		xv_set(XV_SERVER_FROM_WINDOW(TTY_PUBLIC(ttysw)),
