@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.66 2026/07/29 06:13:53 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.67 2026/07/30 08:42:29 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -41,7 +41,6 @@
 #include <xview_private/ev.h>
 #				endif
 #include <sys/stat.h>
-#include <xview_private/convpos.h>
 
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
