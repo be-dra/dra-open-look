@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_es_c_sccsid[] = "@(#)tty_es.c 20.23 93/06/28 DRA: $Id: tty_es.c,v 4.3 2024/12/16 22:55:27 dra Exp $";
+char     tty_es_c_sccsid[] = "@(#)tty_es.c 20.23 93/06/28 DRA: $Id: tty_es.c,v 4.4 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -28,11 +28,7 @@ char     tty_es_c_sccsid[] = "@(#)tty_es.c 20.23 93/06/28 DRA: $Id: tty_es.c,v 4
 #include <xview_private/i18n_impl.h>
 
 static Es_index ts_replace(Es_handle esh, Es_index last_plus_one, int count,
-#ifdef  OW_I18N
-    CHAR            *buf,
-#else
     char  *buf,
-#endif
 	int *count_used);
 static int ts_set(Es_handle esh, Attr_attribute *attr_argv);
 
@@ -76,11 +72,7 @@ ts_create(ttysw, original, scratch)
 	==  textsw_find_mark_i18n((_textsw), (_termsw)->pty_mark) )))
 
 static Es_index ts_replace(Es_handle esh, Es_index last_plus_one, int count,
-#ifdef  OW_I18N
-    CHAR            *buf,
-#else
     char  *buf,
-#endif
 	int *count_used)
 
 {
@@ -97,11 +89,7 @@ static Es_index ts_replace(Es_handle esh, Es_index last_plus_one, int count,
      */
     if (NO_LOCAL_ECHO(folio, textsw, esh, count)) {
 	/* copy buf into iwbp */
-#ifdef  OW_I18N
-        XV_BCOPY(buf, iwbp, MIN(count*sizeof(CHAR), (iebp - iwbp)*sizeof(CHAR)));
-#else
 	XV_BCOPY(buf, iwbp, (size_t)MIN(count, iebp - iwbp));
-#endif
 	iwbp += MIN(count, iebp - iwbp);
 	ttysw_reset_conditions(ttysw_view);
 	(void) es_set(esh, ES_STATUS, ES_REPLACE_DIVERTED, NULL);
