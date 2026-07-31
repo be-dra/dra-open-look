@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.15 2026/03/22 08:31:30 dra Exp $";
+char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.16 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -195,7 +195,7 @@ Pkg_private Xv_opaque ttysw_init_view_internal(Tty parent, Tty_view tty_view_pub
 Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 {
 	Ttysw_private ttysw;
-	Xv_opaque font = XV_NULL;
+	Xv_font font = XV_NULL;
 	int is_client_pane;
 	char *font_name = NULL;
 	Xv_opaque srv = XV_SERVER_FROM_WINDOW(tty_public);
@@ -226,24 +226,12 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 	ttysw->ttysw_ibuf.cb_rbp = ttysw->ttysw_ibuf.cb_buf;
 	ttysw->ttysw_ibuf.cb_wbp = ttysw->ttysw_ibuf.cb_buf;
 	ttysw->ttysw_ibuf.cb_ebp =
-
-#ifdef OW_I18N
-			&ttysw->ttysw_ibuf.cb_buf[sizeof(ttysw->ttysw_ibuf.cb_buf) /
-			sizeof(CHAR)];
-#else
 			&ttysw->ttysw_ibuf.cb_buf[sizeof(ttysw->ttysw_ibuf.cb_buf)];
-#endif
 
 	ttysw->ttysw_obuf.cb_rbp = ttysw->ttysw_obuf.cb_buf;
 	ttysw->ttysw_obuf.cb_wbp = ttysw->ttysw_obuf.cb_buf;
 	ttysw->ttysw_obuf.cb_ebp =
-
-#ifdef OW_I18N
-			&ttysw->ttysw_obuf.cb_buf[sizeof(ttysw->ttysw_obuf.cb_buf) /
-			sizeof(CHAR)];
-#else
 			&ttysw->ttysw_obuf.cb_buf[sizeof(ttysw->ttysw_obuf.cb_buf)];
-#endif
 
 	ttysw->ttysw_kmtp = ttysw->ttysw_kmt;
 
@@ -268,107 +256,100 @@ Pkg_private Xv_opaque ttysw_init_folio_internal(Tty tty_public)
 
 	is_client_pane = (int)xv_get((Xv_object) tty_public, WIN_IS_CLIENT_PANE);
 
-#ifdef OW_I18N
-	defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
-	font_name = xv_font_monospace();
-	defaults_set_locale(NULL, NULL);
-	if (font_name)
-		font = xv_pf_open(font_name, srv);
-	else
-		font = (Xv_opaque) 0;
+	if (_xv_is_multibyte) {
+		defaults_set_locale(NULL, XV_LC_BASIC_LOCALE);
+		font_name = xv_font_monospace();
+		defaults_set_locale(NULL, 0);
+		if (font_name)
+			font = xv_pf_open(font_name, srv);
+		else
+			font = (Xv_opaque) 0;
 
-	/*
-	 * if name is present, it has already been handled during the
-	 * creation of the "Window" superclass in window_init.
-	 */
-	if (!font) {
-		Xv_opaque parent_font;
-		int scale, size;
-
-		parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
-		scale = (int)xv_get(parent_font, FONT_SCALE);
-		if (scale > 0)
-			font = (Xv_opaque) xv_find(tty_public, FONT,
-					FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-					FONT_SCALE, scale, NULL);
-		else {
-			size = (int)xv_get(parent_font, FONT_SIZE);
-			font = (Xv_opaque) xv_find(tty_public, FONT,
-					FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-					FONT_SIZE, size, NULL);
-		}
-	}
-
-	if (font == NULL)
-		font = (Xv_opaque) xv_get(tty_public, XV_FONT);
-#else
-	font_name = xv_font_monospace();
-	if (font_name)
-		font = xv_pf_open(font_name, srv);
-	else
-		font = (Xv_opaque) 0;
-
-	if (is_client_pane) {
-		Xv_opaque parent_font;
-		int scale, size;
-
+		/*
+		 * if name is present, it has already been handled during the
+		 * creation of the "Window" superclass in window_init.
+		 */
 		if (!font) {
+			Xv_opaque parent_font;
+			int scale, size;
+
 			parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
 			scale = (int)xv_get(parent_font, FONT_SCALE);
-			if (scale > 0) {
+			if (scale > 0)
 				font = (Xv_opaque) xv_find(tty_public, FONT,
 						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
-						FONT_SCALE, (scale > 0) ? scale : FONT_SCALE_DEFAULT,
-						NULL);
-			}
+						FONT_SCALE, scale, NULL);
 			else {
 				size = (int)xv_get(parent_font, FONT_SIZE);
 				font = (Xv_opaque) xv_find(tty_public, FONT,
 						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
-						FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT, NULL);
+						FONT_SIZE, size, NULL);
 			}
 		}
+
+		if (font == XV_NULL) font = (Xv_opaque) xv_get(tty_public, XV_FONT);
+
+		xv_set(tty_public, XV_FONT, font, NULL);
 	}
 	else {
-		if (!font) {
-			Xv_opaque parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
-			int scale = (int)xv_get(parent_font, FONT_SCALE);
+		font_name = xv_font_monospace();
+		if (font_name)
+			font = xv_pf_open(font_name, srv);
+		else
+			font = (Xv_opaque) 0;
 
-			if (scale > 0) {
-				font = (Xv_opaque) xv_find(tty_public, FONT,
-						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
-						FONT_SCALE, (scale > 0) ? scale : FONT_SCALE_DEFAULT,
-						NULL);
-			}
-			else {
-				int size = (int)xv_get(parent_font, FONT_SIZE);
+		if (is_client_pane) {
+			Xv_opaque parent_font;
+			int scale, size;
 
-				font = (Xv_opaque) xv_find(tty_public, FONT,
-						FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
-						/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
-						FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT, NULL);
+			if (!font) {
+				parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
+				scale = (int)xv_get(parent_font, FONT_SCALE);
+				if (scale > 0) {
+					font = (Xv_opaque) xv_find(tty_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
+							FONT_SCALE,
+							(scale > 0) ? scale : FONT_SCALE_DEFAULT, NULL);
+				}
+				else {
+					size = (int)xv_get(parent_font, FONT_SIZE);
+					font = (Xv_opaque) xv_find(tty_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
+							FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT,
+							NULL);
+				}
 			}
 		}
+		else {
+			if (!font) {
+				Xv_opaque parent_font = (Xv_opaque) xv_get(tty_public, XV_FONT);
+				int scale = (int)xv_get(parent_font, FONT_SCALE);
+
+				if (scale > 0) {
+					font = (Xv_opaque) xv_find(tty_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
+							FONT_SCALE,
+							(scale > 0) ? scale : FONT_SCALE_DEFAULT, NULL);
+				}
+				else {
+					int size = (int)xv_get(parent_font, FONT_SIZE);
+
+					font = (Xv_opaque) xv_find(tty_public, FONT,
+							FONT_FAMILY, FONT_FAMILY_DEFAULT_FIXEDWIDTH,
+							/* FONT_FAMILY, FONT_FAMILY_SCREEN, */
+							FONT_SIZE, (size > 0) ? size : FONT_SIZE_DEFAULT,
+							NULL);
+				}
+			}
+		}
+		if (!font)
+			font = (Xv_opaque) xv_get(tty_public, XV_FONT);
 	}
-	if (!font)
-		font = (Xv_opaque) xv_get(tty_public, XV_FONT);
-#endif
 
-#ifdef OW_I18N
-	xv_set(tty_public, XV_FONT, font, NULL);
-
-	ttysw->im_store = (CHAR *) NULL;
-	ttysw->im_attr = (XIMFeedback *) NULL;
-
-	ttysw->preedit_state = FALSE;
-	ttysw->im_len = 0;
-	ttysw->implicit_commit = 0;
-#endif
-
-	xv_new_tty_chr_font(ttysw, (Pixfont *)font);
+	xv_new_tty_chr_font(ttysw, font);
 
 	/* Set WIN_ROW_HEIGHT so that xv_set of WIN_ROWS will work when
 	 * Text.LineSpacing is set to a nonzero value.
@@ -634,16 +615,6 @@ Pkg_private void ttysw_done(Ttysw_private ttysw_folio_private)
 	close(ttysw_folio_private->ttysw_pty);
     if (ttysw_folio_private->ttysw_tty)
 	close(ttysw_folio_private->ttysw_tty);
-
-#ifdef OW_I18N
-    /*
-     * Free the memory allocated for pre-edit text and attribute.
-     */
-    if ( ttysw_folio_private->im_store )
-	free((char *) ttysw_folio_private->im_store);
-    if ( ttysw_folio_private->im_attr )
-	free((char *) ttysw_folio_private->im_attr);
-#endif
 
     free((char *) ttysw_folio_private);
 }
