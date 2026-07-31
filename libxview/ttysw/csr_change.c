@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.13 2025/04/07 19:25:34 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.14 2026/07/30 12:06:21 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -44,29 +44,12 @@ char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: 
 #include <xview/font.h>
 Xv_private char *xv_shell_prompt;
 
-#ifdef OW_I18N
-#define NULL_CHARP      (CHAR *) 0
-#endif
-
 #define TTYSW_HOME_CHAR	'A'
 
-#ifdef OW_I18N
-/* static */ void ttysw_convert_string();
-#endif
 static void ttysw_paintCursor(Ttysw_private ttysw, int op);
 
 static int      caretx, carety, lxhome;
 static short    charcursx, charcursy;
-
-
-#ifdef  OW_I18N
-/*
- *      To save the width of cursor that has been most recently
- *      drawn , so that when deleting the cursor , we can construct
- *      the reversed image easily.
- */
-static  int     curs_width;
-#endif
 
 static int      boldstyle, inverse_mode, underline_mode;
 
@@ -145,14 +128,6 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 				int col, int row, int op)
 /* PIX_SRC | PIX_DST (faster), or PIX_SRC (safer) */
 {
-#ifdef OW_I18N
-	register CHAR *cp;
-#define BUFSIZE 1024
-	/*
-	 *  ttysw_pstring() is called a line at a time
-	 */
-	CHAR buf[BUFSIZE];
-#endif
 	Xv_window csrwin = csr_pixwin_get();
 
 	register int x_home;
@@ -161,16 +136,11 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 			(XFontStruct *) xv_get((Xv_opaque) ttysw->pixfont, FONT_INFO);
 	char mode = (char)parmode;
 
-#ifdef OW_I18N
-	x_home = x_font_info->min_bounds.lbearing;
-	y_home = -ttysw->chrbase;
-#else
 	x_home = x_font_info->per_char ?
 			x_font_info->per_char[TTYSW_HOME_CHAR -
 			x_font_info->min_char_or_byte2].lbearing
 			: x_font_info->min_bounds.lbearing;
 	y_home = -x_font_info->ascent;
-#endif
 
 	/* this is needed for correct caret rendering */
 	lxhome = x_home;
@@ -198,56 +168,6 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 		return;
 	ttysw_fixup_display_mode(&mode);
 
-#ifdef  OW_I18N
-	ttysw_convert_string(buf, s);
-	if (mode & MODE_BOLD) {
-		/* Clean up first */
-		ttysw_pclearline(ttysw, col, col + STRLEN(s), row);
-
-		/* render the first one, the potential offset of the others */
-		tty_newtext(csrwin,
-				col_to_x(col) - x_home,
-				row_to_y(row) - y_home,
-				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op,
-				ttysw->pixfont, buf, STRLEN(buf));
-
-		if (boldstyle & TTYSW_BOLD_OFFSET_X)
-			tty_newtext(csrwin,
-					col_to_x(col) - x_home + 1,
-					row_to_y(row) - y_home,
-					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
-		if (boldstyle & TTYSW_BOLD_OFFSET_Y)
-			tty_newtext(csrwin,
-					col_to_x(col) - x_home,
-					row_to_y(row) - y_home + 1,
-					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
-		if (boldstyle & TTYSW_BOLD_OFFSET_XY)
-			tty_newtext(csrwin,
-					col_to_x(col) - x_home + 1,
-					row_to_y(row) - y_home + 1,
-					(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) & PIX_DST :
-					PIX_SRC | PIX_DST, ttysw->pixfont, buf, STRLEN(buf));
-	}
-	else {
-		tty_newtext(csrwin,
-				col_to_x(col) - x_home,
-				row_to_y(row) - y_home,
-				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : op, ttysw->pixfont, buf,
-				STRLEN(buf));
-	}
-	if (mode & MODE_UNDERSCORE) {
-		struct pr_size str_size;
-		struct pr_size xv_pf_textwidth_wc();
-
-		str_size = xv_pf_textwidth_wc(STRLEN(buf), ttysw->pixfont, buf);
-		tty_background(csrwin,
-				col_to_x(col), row_to_y(row) + ttysw->chrheight - 1,
-				str_size.x, 1,
-				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : PIX_SRC);
-	}
-#else
 	if (mode & MODE_BOLD) {
 		/* Clean up first */
 		ttysw_pclearline(ttysw, col, col + (int)strlen(s), row);
@@ -291,11 +211,6 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 				(int)strlen(s) * ttysw->chrwidth, 1,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : PIX_SRC);
 	}
-#endif /*  OW_I18N */
-
-#ifdef  OW_I18N
-#undef  BUFSIZE
-#endif
 }
 
 Pkg_private void ttysw_pclearline(Ttysw_private ttysw, int fromcol, int tocol, int row)
@@ -353,11 +268,7 @@ static int ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 	colstart = leftcol;
 
 	if ((unsigned char)leftcol < LINE_LENGTH(ttysw->image[row])) {
-#ifdef OW_I18N
-		strfirst = NULL_CHARP;
-#else
 		strfirst = (caddr_t) 0;
-#endif
 		modefirst = MODE_CLEAR;
 		blanks = 1;
 		for (strstart = ttysw->image[row] + leftcol,
@@ -378,12 +289,7 @@ static int ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 				continue;
 		  Flush:
 
-#ifdef OW_I18N
-			if (strfirst != NULL_CHARP)
-#else
 			if (strfirst != (caddr_t) 0)
-#endif
-
 			{
 				csave = *strstart;
 				*strstart = '\0';
@@ -397,11 +303,7 @@ static int ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 			blanks = 0;
 		}
 
-#ifdef OW_I18N
-		if (strfirst != NULL_CHARP)
-#else
 		if (strfirst != (caddr_t) 0)
-#endif
 		{
 			ttysw_pstring(ttysw, strfirst, modefirst, colfirst,
 					row, PIX_SRC /* | PIX_DST -- jcb */ );
@@ -562,74 +464,22 @@ Pkg_private void ttysw_prepair(XEvent *eventp)
 Pkg_private void ttysw_drawCursor(Ttysw_private ttysw, int yChar, int xChar)
 {
 	Xv_window csrwin = csr_pixwin_get();
-#ifdef  OW_I18N
-    int         offset;
-#ifdef FULL_R5
-    XPoint		loc;
-    XVaNestedList	va_nested_list;
-#endif /* FULL_R5 */
 
-    /*
-     *  OW_I18N needs to check whether the target character is
-     *  ascii or not , so we cannot put cursor out of range.
-     */
-
-    if( xChar >= ttysw->ttysw_right )
-        xChar = ttysw->ttysw_right-1;
-    if( xChar < ttysw->ttysw_left )
-        xChar = ttysw->ttysw_left;
-    if( yChar >= ttysw->ttysw_bottom )
-        yChar = ttysw->ttysw_bottom-1;
-    if( yChar < ttysw->ttysw_top )
-        yChar = ttysw->ttysw_top;
-#endif
-    charcursx = xChar;
-    charcursy = yChar;
-    caretx = col_to_x(xChar);
-    carety = row_to_y(yChar);
-    if (ttysw_delaypainting || ttysw->cursor == NOCURSOR) return;
-#ifdef  OW_I18N
-/*
- *    Setup appropriate Cursor-width and originated pixrect address
- *    according as the character size
- */
-    tty_column_wchar_type( xChar , yChar , &curs_width , &offset );
-    curs_width *= ttysw->chrwidth;
-    caretx     -= offset*ttysw->chrwidth;
-    (void) tty_background(csrwin,
-             caretx-lxhome, carety, curs_width, ttysw->chrheight, PIX_NOT(PIX_DST));
-#else
-    (void) tty_background(csrwin,
-		     caretx-lxhome, carety, ttysw->chrwidth, ttysw->chrheight, PIX_NOT(PIX_DST));
-#endif
-    if (ttysw->cursor & LIGHTCURSOR) {
-#ifdef  OW_I18N
-        (void) tty_background(csrwin,
-                              caretx - lxhome - 1, carety - 1, curs_width + 2,
-                              ttysw->chrheight + 2, PIX_NOT(PIX_DST));
-#else
-	(void) tty_background(csrwin,
-			      caretx - lxhome - 1, carety - 1, ttysw->chrwidth + 2,
-			      ttysw->chrheight + 2, PIX_NOT(PIX_DST));
-#endif
-	ttysw_pos(ttysw, xChar, yChar);
-    }
-#ifdef FULL_R5
-#ifdef OW_I18N
-    if (ttysw->ic && (ttysw->xim_style & XIMPreeditPosition)) {
-        /*loc.x = (short)caretx + (curs_width/2);*/
-        loc.x = (short)caretx;
-        loc.y = (short)(carety + ttysw->chrbase);
-        va_nested_list = XVaCreateNestedList(NULL,
-					     XNSpotLocation, &loc,
-					     NULL);
-        XSetICValues(ttysw->ic, XNPreeditAttributes, va_nested_list,
-        	     NULL);
-        XFree(va_nested_list);
-    }
-#endif /* OW_I18N */
-#endif /* FULL_R5 */
-
+	charcursx = xChar;
+	charcursy = yChar;
+	caretx = col_to_x(xChar);
+	carety = row_to_y(yChar);
+	if (ttysw_delaypainting || ttysw->cursor == NOCURSOR)
+		return;
+	tty_background(csrwin,
+			caretx - lxhome, carety, ttysw->chrwidth, ttysw->chrheight,
+			PIX_NOT(PIX_DST));
+	if (ttysw->cursor & LIGHTCURSOR) {
+		(void)tty_background(csrwin,
+				caretx - lxhome - 1, carety - 1, ttysw->chrwidth + 2,
+				ttysw->chrheight + 2, PIX_NOT(PIX_DST));
+		ttysw_pos(ttysw, xChar, yChar);
+	}
 }
 
 static void ttysw_paintCursor(Ttysw_private ttysw, int op)
@@ -649,14 +499,8 @@ static void ttysw_paintCursor(Ttysw_private ttysw, int op)
 		height--;
 	}
 
-#ifdef  OW_I18N
-        (void) tty_background(csrwin,
-                              caretx - lxhome - 1, y, curs_width + 2, height,
-			      op);
-#else
 	tty_background(csrwin, caretx - lxhome - 1, y, ttysw->chrwidth + 2,
 							height, op);
-#endif
 }
 
 Pkg_private void ttysw_removeCursor(Ttysw_private ttysw)
@@ -664,17 +508,8 @@ Pkg_private void ttysw_removeCursor(Ttysw_private ttysw)
 	Xv_window csrwin = csr_pixwin_get();
 
     if (ttysw_delaypainting || ttysw->cursor == NOCURSOR) return;
-#ifdef  OW_I18N
-/*
- *      caretx and curs_width are stored in global and those values
- *      represent the location and width of the cursor.
- */
-    tty_background(csrwin,
-             caretx-lxhome, carety, curs_width, ttysw->chrheight, PIX_NOT(PIX_DST));
-#else
     (void) tty_background(csrwin,
 		     caretx-lxhome, carety, ttysw->chrwidth, ttysw->chrheight, PIX_NOT(PIX_DST));
-#endif
     if (ttysw->cursor & LIGHTCURSOR) ttysw_paintCursor(ttysw, PIX_NOT(PIX_DST));
 }
 
@@ -698,54 +533,3 @@ Pkg_private void ttysw_blinkscreen(Xv_window window)
 		lastblink = now;
 	}
 }
-
-#ifdef OW_I18N
-
-/*
- *      Tty-subwindow stores screen image in a global CHAR **image.
- *      This array treats characters in a tricky way.
- *      For a character which has larger size than ascii characters,
- *      image data array is padded with TTY_NON_WCHAR so that
- *      image data array and the actual screen get coincident.
- *      This function converts image arrary to a normal wchar array
- *      by eliminating TTY_NON_WCHAR.
- */
-/* static */ void
-ttysw_convert_string( str , ttystr )
-    CHAR        *str;
-    CHAR        *ttystr;
-{
-    register    CHAR *strtmp = str;
-    register    CHAR *ttystrtmp  = ttystr;
-
-    while( *ttystrtmp ) {
-        if( *ttystrtmp != TTY_NON_WCHAR )
-                *strtmp++ = *ttystrtmp++;
-        else
-                ttystrtmp++;
-    }
-    *strtmp = (CHAR)'\0';
-}
-
-
-/*
- *      Get the size of a character.
- */
-Pkg_private int tty_character_size(CHAR c)
-{
-
-    /*
-     *  Warning!!
-     *  To get the charcter-width , this function calls wscol()
-     *  which may cause a problem in portability.
-     */
-    static wchar_t      str[2] = {(wchar_t)'\0',(wchar_t)'\0'};
-
-    if( c == (wchar_t)'\0' )
-        return 1;
-
-    str[0] = c;
-    return( wscol(str) );
-
-}
-#endif
