@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.17 2026/03/22 08:31:30 dra Exp $";
+char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.18 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*****************************************************************/
@@ -29,7 +29,7 @@ char     tty_c_sccsid[] = "@(#)tty.c 20.64 93/06/28 DRA: $Id: tty.c,v 4.17 2026/
 static void tty_quit_on_death(Notify_client client, int pid, int *status, struct rusage *rusage);
 static void tty_handle_death(Notify_client , int pid, int *status, struct rusage *rusage);
 
-static Pixfont* change_font;
+static Xv_font change_font;
 
 /* deswegen inkludiere ich doch nicht term_impl.h */
 extern int tty_notice_key;
@@ -44,12 +44,6 @@ static int tty_folio_init(Xv_Window parent, Tty tty_public,
 {
 	Ttysw_private ttysw;	/* Private object data */
 
-#ifdef OW_I18N
-	Xv_private void tty_text_start();
-	Xv_private void tty_text_done();
-	Xv_private void tty_text_draw();
-#endif
-
 	if (!tty_notice_key) {
 		tty_notice_key = xv_unique_key();
 	}
@@ -58,32 +52,6 @@ static int tty_folio_init(Xv_Window parent, Tty tty_public,
 	if (!ttysw) {
 		return (XV_ERROR);
 	}
-
-#ifdef OW_I18N
-	if (xv_get(tty_public, WIN_USE_IM)) {
-		/* Set preedit callbacks */
-		xv_set(tty_public,
-				WIN_IC_PREEDIT_START,
-				(XIMProc) tty_text_start, (XPointer) tty_public, NULL);
-
-		xv_set(tty_public,
-				WIN_IC_PREEDIT_DRAW,
-				(XIMProc) tty_text_draw, (XPointer) tty_public, NULL);
-
-		xv_set(tty_public,
-				WIN_IC_PREEDIT_DONE,
-				(XIMProc) tty_text_done, (XPointer) tty_public, NULL);
-
-		ttysw->start_pecb_struct.client_data = (XPointer) tty_public;
-		ttysw->start_pecb_struct.callback = (XIMProc) tty_text_start;
-
-		ttysw->draw_pecb_struct.client_data = (XPointer) tty_public;
-		ttysw->draw_pecb_struct.callback = (XIMProc) tty_text_draw;
-
-		ttysw->done_pecb_struct.client_data = (XPointer) tty_public;
-		ttysw->done_pecb_struct.callback = (XIMProc) tty_text_done;
-	}
-#endif
 
 	ttysw->pass_thru_modifiers = (int)xv_get(XV_SERVER_FROM_WINDOW(parent),
 			SERVER_CLEAR_MODIFIERS);
@@ -106,46 +74,45 @@ static int tty_folio_init(Xv_Window parent, Tty tty_public,
 }
 
 /*ARGSUSED*/
-static int tty_view_init(Xv_Window parent,	Tty_view tty_view_public, Attr_attribute avlist[], int *u)
+static int tty_view_init(Xv_Window parent,	Tty_view tty_view_public,
+							Attr_attribute avlist[], int *u)
 {
-    Ttysw_view_handle ttysw_view;	/* Private object data */
+	Ttysw_view_handle ttysw_view;	/* Private object data */
 
-    if (!tty_notice_key)  {
-	tty_notice_key = xv_unique_key();
-    }
-
-    /*
-     * BUG ALERT!  Re-arrange code to pass this pixwin into the appropriate
-     * layer instead of just smashing it set from here!
-     */
-    csr_pixwin_set(tty_view_public);
-
-    ttysw_view = (Ttysw_view_handle) (ttysw_init_view_internal(parent, tty_view_public));
-
-    if (!ttysw_view)
-	return (XV_ERROR);
-
-
-    /* ttysw_walkmenu() can only be called after public self linked to */
-    (void) xv_set(tty_view_public,
-		  WIN_NOTIFY_SAFE_EVENT_PROC, ttysw_event,
-		  WIN_NOTIFY_IMMEDIATE_EVENT_PROC, ttysw_event,
-		  NULL);
-
-    /* ttysw_interpose(ttysw_view); */
-
-    /* Draw cursor on the screen and retained portion */
-#ifdef OW_I18N
-#ifdef FULL_R5
-    if (IS_TTY_VIEW(tty_view_public))
-#endif
-#endif
-	{
-		Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(parent);
-        ttysw_drawCursor(ttysw, 0, 0);
+	if (!tty_notice_key) {
+		tty_notice_key = xv_unique_key();
 	}
 
-    return (XV_OK);
+	/*
+	 * BUG ALERT!  Re-arrange code to pass this pixwin into the appropriate
+	 * layer instead of just smashing it set from here!
+	 */
+	csr_pixwin_set(tty_view_public);
+
+	ttysw_view =
+			(Ttysw_view_handle) (ttysw_init_view_internal(parent,
+					tty_view_public));
+
+	if (!ttysw_view)
+		return (XV_ERROR);
+
+
+	/* ttysw_walkmenu() can only be called after public self linked to */
+	(void)xv_set(tty_view_public,
+			WIN_NOTIFY_SAFE_EVENT_PROC, ttysw_event,
+			WIN_NOTIFY_IMMEDIATE_EVENT_PROC, ttysw_event, NULL);
+
+	/* ttysw_interpose(ttysw_view); */
+
+	/* Draw cursor on the screen and retained portion */
+
+	{
+		Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(parent);
+
+		ttysw_drawCursor(ttysw, 0, 0);
+	}
+
+	return (XV_OK);
 }
 
 
@@ -154,15 +121,7 @@ static int tty_view_init(Xv_Window parent,	Tty_view tty_view_public, Attr_attrib
 /***************************************************************************
 ttysw_set_internal
 *****************************************************************************/
-#ifdef OW_I18N
-static          Xv_opaque
-ttysw_set_internal(tty_public, avlist, is_folio)
-    Tty             tty_public;
-    Attr_attribute  avlist[];
-    int			is_folio;
-#else
 static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
-#endif
 {
 	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(tty_public);
 	register Attr_avlist attrs;
@@ -175,10 +134,6 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 	int buf_len;
 	int m;
 	Xv_Drawable_info *info;
-
-#ifdef OW_I18N
-	Tty ttysw_pub;
-#endif
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
@@ -283,12 +238,12 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 					 * down
 					 */
 					ttysw_removeCursor(ttysw);
-					xv_new_tty_chr_font(ttysw, (Pixfont *) attrs[1]);
+					xv_new_tty_chr_font(ttysw, (Xv_font)attrs[1]);
 					/* after changing font size, cursor needs to be re-drawn */
 					(void)ttysw_drawCursor(ttysw, 0, 0);
 				}
 				else if (attrs[1])
-					change_font = (Pixfont *) attrs[1];
+					change_font = (Xv_font) attrs[1];
 				break;
 
 			case TTY_LEFT_MARGIN:
@@ -313,20 +268,6 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 					return (XV_ERROR);
 				}
 
-#ifdef OW_I18N
-			case WIN_IC_ACTIVE:
-				ttysw_pub = TTY_PUBLIC(ttysw);
-				if (is_folio && (int)xv_get(ttysw_pub, WIN_USE_IM)) {
-					Ttysw_view_handle view;
-					Tty_view view_public;
-
-					view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw);
-					view_public = TTY_VIEW_PUBLIC(view);
-					xv_set(view_public, WIN_IC_ACTIVE, attrs[1], 0);
-				}
-				break;
-#endif
-
 			case XV_END_CREATE:
 				/*
 				 * xv_create(0, TTY, 0) should fork a default shell, but
@@ -341,43 +282,11 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 
 				if (change_font) {
 					ttysw_removeCursor(ttysw);
-					xv_new_tty_chr_font(ttysw, (Pixfont *) change_font);
+					xv_new_tty_chr_font(ttysw, change_font);
 					/* after changing font size, cursor needs to be re-drawn */
 					ttysw_drawCursor(ttysw, 0, 0);
-					change_font = NULL;
+					change_font = XV_NULL;
 				}
-
-#ifdef OW_I18N
-				ttysw->ic = NULL;
-				ttysw_pub = TTY_PUBLIC(ttysw);
-
-				if (xv_get(ttysw_pub, WIN_USE_IM)) {
-					ttysw->ic = (XIC) xv_get(ttysw_pub, WIN_IC);
-
-#ifdef FULL_R5
-					if (ttysw->ic)
-						XGetICValues(ttysw->ic, XNInputStyle, &ttysw->xim_style,
-								NULL);
-#endif /* FULL_R5 */
-
-				}
-
-				if (TTY_IS_TERMSW(ttysw))
-					break;
-
-				if (ttysw->ic) {
-					Ttysw_view_handle view;
-					Tty_view view_public;
-
-					view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw);
-					view_public = TTY_VIEW_PUBLIC(view);
-
-					xv_set(view_public, WIN_IC, ttysw->ic, 0);
-
-					if (xv_get(ttysw_pub, WIN_IC_ACTIVE) == FALSE)
-						xv_set(view_public, WIN_IC_ACTIVE, FALSE, 0);
-				}
-#endif
 
 				break;
 
@@ -417,22 +326,12 @@ static Xv_opaque ttysw_set_internal(Tty tty_public, Attr_attribute avlist[])
 
 static Xv_opaque ttysw_folio_set(Tty ttysw_folio_public, Attr_attribute avlist[])
 {
-#ifdef OW_I18N
-    return (ttysw_set_internal(ttysw_folio_public, avlist, 1));
-#else
     return (ttysw_set_internal(ttysw_folio_public, avlist));
-#endif
-
 }
 
 static Xv_opaque ttysw_view_set(Tty_view ttysw_view_public, Attr_attribute avlist[])
 {
-#ifdef OW_I18N
-    return (ttysw_set_internal(ttysw_view_public, avlist, 0));
-#else
     return (ttysw_set_internal(ttysw_view_public, avlist));
-#endif
-
 }
 
 
