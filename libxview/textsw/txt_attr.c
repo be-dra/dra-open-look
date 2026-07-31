@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.17 2026/07/30 07:42:41 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.18 2026/07/30 15:04:56 dra Exp $";
 #endif
 
 /*
@@ -13,11 +13,9 @@ char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_att
  */
 
 #include <xview/pkg.h>
-#include <xview/attrol.h>
 #include <xview_private/primal.h>
 #include <xview_private/attr_impl.h>
 #include <xview_private/txt_impl.h>
-#include <xview_private/txt_18impl.h>
 #ifdef SVR4
 #include <dirent.h>
 #include <string.h>
@@ -25,8 +23,6 @@ char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_att
 #include <sys/dir.h>
 #endif /* SVR4 */
 #include <pixrect/pixfont.h>
-#include <xview/window.h>
-#include <xview/openmenu.h>
 #include <xview/defaults.h>
 #include <xview_private/ev_impl.h>
 #include <xview_private/windowimpl.h>
@@ -192,137 +188,141 @@ static void textsw_set_internal_tier2(Textsw_private textsw,
  * on the textsw_view
  */
 {
-    int    temp;
-    unsigned long read_only_start;
+	int temp;
+	unsigned long read_only_start;
+
 #ifndef LEFT_HAND_SIDE_CAST
-    int            *int_ptr;
+	int *int_ptr;
 #endif /* LEFT_HAND_SIDE_CAST */
 
-    switch (*attrs) {
-          case TEXTSW_FOR_ALL_VIEWS:
-            *all_views = TRUE;
-            break;
-          case TEXTSW_END_ALL_VIEWS:
-            *all_views = FALSE;
-            break;
+	switch (*attrs) {
+		case TEXTSW_FOR_ALL_VIEWS:
+			*all_views = TRUE;
+			break;
+		case TEXTSW_END_ALL_VIEWS:
+			*all_views = FALSE;
+			break;
 
-          case TEXTSW_ADJUST_IS_PENDING_DELETE:
-            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_ADJUST_IS_PD);
-            break;
-          case TEXTSW_BROWSING:
-            read_only_start = TXTSW_IS_READ_ONLY(textsw);
-            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_READ_ONLY_SW);
-            *read_only_changed = (read_only_start!=TXTSW_IS_READ_ONLY(textsw));            break;
+		case TEXTSW_ADJUST_IS_PENDING_DELETE:
+			SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_ADJUST_IS_PD);
+			break;
+		case TEXTSW_BROWSING:
+			read_only_start = TXTSW_IS_READ_ONLY(textsw);
+			SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_READ_ONLY_SW);
+			*read_only_changed =
+					(read_only_start != TXTSW_IS_READ_ONLY(textsw));
+			break;
 
-          case TEXTSW_CONFIRM_OVERWRITE:
-            SET_BOOL_FLAG(textsw->state, attrs[1],
-                          TXTSW_CONFIRM_OVERWRITE);
-            break;
-          case TEXTSW_CONTENTS:
-            temp = (textsw->state & TXTSW_NO_AGAIN_RECORDING);
-            if (!(textsw->state & TXTSW_INITIALIZED))
-                textsw->state |= TXTSW_NO_AGAIN_RECORDING;
-            textsw_replace(VIEW_PUBLIC(view), 0,
-                   TEXTSW_INFINITY, (char *)attrs[1],
-				   (long)strlen((char *)attrs[1]));
+		case TEXTSW_CONFIRM_OVERWRITE:
+			SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_CONFIRM_OVERWRITE);
+			break;
+		case TEXTSW_CONTENTS:
+			temp = (textsw->state & TXTSW_NO_AGAIN_RECORDING);
+			if (!(textsw->state & TXTSW_INITIALIZED))
+				textsw->state |= TXTSW_NO_AGAIN_RECORDING;
+			textsw_replace(VIEW_PUBLIC(view), 0,
+					TEXTSW_INFINITY, (char *)attrs[1],
+					(long)strlen((char *)attrs[1]));
 			if (!(textsw->state & TXTSW_INITIALIZED)) {
-                SET_BOOL_FLAG(textsw->state, temp, TXTSW_NO_AGAIN_RECORDING);
+				SET_BOOL_FLAG(textsw->state, temp, TXTSW_NO_AGAIN_RECORDING);
 			}
-            break;
-          case TEXTSW_DESTROY_ALL_VIEWS:
-            SET_BOOL_FLAG(textsw->state, attrs[1],
-                          TXTSW_DESTROY_ALL_VIEWS);
-            break;
-          case TEXTSW_DIFFERENTIATE_CR_LF: /*1030878*/
-            SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_DIFF_CR_LF);
-            break;
-          case TEXTSW_STORE_CHANGES_FILE:
-            SET_BOOL_FLAG(textsw->state, attrs[1],
-                          TXTSW_STORE_CHANGES_FILE);
-            break;
-          case TEXTSW_EDIT_BACK_CHAR:
-            textsw->edit_bk_char = (char) (attrs[1]);
-            break;
-          case TEXTSW_EDIT_BACK_WORD:
-            textsw->edit_bk_word = (char) (attrs[1]);
-            break;
-          case TEXTSW_EDIT_BACK_LINE:
-            textsw->edit_bk_line = (char) (attrs[1]);
-            break;
-          case TEXTSW_ERROR_MSG:
-            *error_msg_addr = (char *) (attrs[1]);
-            (*error_msg_addr)[0] = '\0';
-            break;
-          case TEXTSW_INSERT_FROM_FILE:{
-                *status_ptr = textsw_get_from_file(view, (CHAR *) (attrs[1]),
-                                             TRUE);
-                if (*status_ptr == TEXTSW_STATUS_OKAY)
-                    *update_scrollbar = 2;
-                break;
-            };
-          case TEXTSW_INSERT_MAKES_VISIBLE:
-            switch ((Textsw_enum) attrs[1]) {
-              case TEXTSW_ALWAYS:
-              case TEXTSW_IF_AUTO_SCROLL:
-                textsw->insert_makes_visible = (Textsw_enum) attrs[1];
-                break;
-              default:
-                *status_ptr = TEXTSW_STATUS_BAD_ATTR_VALUE;
-                break;
-            }
-            break;
+			break;
+		case TEXTSW_DESTROY_ALL_VIEWS:
+			SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_DESTROY_ALL_VIEWS);
+			break;
+		case TEXTSW_DIFFERENTIATE_CR_LF:	/*1030878 */
+			SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_DIFF_CR_LF);
+			break;
+		case TEXTSW_STORE_CHANGES_FILE:
+			SET_BOOL_FLAG(textsw->state, attrs[1], TXTSW_STORE_CHANGES_FILE);
+			break;
+		case TEXTSW_EDIT_BACK_CHAR:
+			textsw->edit_bk_char = (char)(attrs[1]);
+			break;
+		case TEXTSW_EDIT_BACK_WORD:
+			textsw->edit_bk_word = (char)(attrs[1]);
+			break;
+		case TEXTSW_EDIT_BACK_LINE:
+			textsw->edit_bk_line = (char)(attrs[1]);
+			break;
+		case TEXTSW_ERROR_MSG:
+			*error_msg_addr = (char *)(attrs[1]);
+			(*error_msg_addr)[0] = '\0';
+			break;
+		case TEXTSW_INSERT_FROM_FILE:{
+				*status_ptr = textsw_get_from_file(view, (CHAR *) (attrs[1]),
+						TRUE);
+				if (*status_ptr == TEXTSW_STATUS_OKAY)
+					*update_scrollbar = 2;
+				break;
+			};
+		case TEXTSW_INSERT_MAKES_VISIBLE:
+			switch ((Textsw_enum) attrs[1]) {
+				case TEXTSW_ALWAYS:
+				case TEXTSW_IF_AUTO_SCROLL:
+					textsw->insert_makes_visible = (Textsw_enum) attrs[1];
+					break;
+				default:
+					*status_ptr = TEXTSW_STATUS_BAD_ATTR_VALUE;
+					break;
+			}
+			break;
 
-          case TEXTSW_MULTI_CLICK_SPACE:
-            if ((int) (attrs[1]) != -1)
-                textsw->multi_click_space = (int) (attrs[1]);
-            break;
-          case TEXTSW_MULTI_CLICK_TIMEOUT:
-            if ((int) (attrs[1]) != -1)
-                textsw->multi_click_timeout = (int) (attrs[1]);
-            break;
-          case TEXTSW_NO_REPAINT_TIL_EVENT:
-            ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, (int) (attrs[1]),
-                   NULL);
-            break;
-           case TEXTSW_RESET_MODE:
-            *reset_mode = (int) (attrs[1]);
-            break;
-          case TEXTSW_RESET_TO_CONTENTS:
-            textsw_reset_2(TEXTSW_PUBLIC(textsw), 0, 0, TRUE, FALSE);
-            break;
-           case TEXTSW_TAB_WIDTHS:
+		case TEXTSW_MULTI_CLICK_SPACE:
+			if ((int)(attrs[1]) != -1)
+				textsw->multi_click_space = (int)(attrs[1]);
+			break;
+		case TEXTSW_MULTI_CLICK_TIMEOUT:
+			if ((int)(attrs[1]) != -1)
+				textsw->multi_click_timeout = (int)(attrs[1]);
+			break;
+		case TEXTSW_NO_REPAINT_TIL_EVENT:
+			ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, (int)(attrs[1]),
+					NULL);
+			break;
+		case TEXTSW_RESET_MODE:
+			*reset_mode = (int)(attrs[1]);
+			break;
+		case TEXTSW_RESET_TO_CONTENTS:
+			textsw_reset_2(TEXTSW_PUBLIC(textsw), 0, 0, TRUE, FALSE);
+			break;
+		case TEXTSW_TAB_WIDTHS:
+
 #ifdef LEFT_HAND_SIDE_CAST
-            /* XXX cheat here */
-            *(int *) attrs = (int) EI_TAB_WIDTHS;
+			/* XXX cheat here */
+			*(int *)attrs = (int)EI_TAB_WIDTHS;
 #else
-            int_ptr = (int *) attrs;
-            *int_ptr = (int) EI_TAB_WIDTHS;
+			int_ptr = (int *)attrs;
+			*int_ptr = (int)EI_TAB_WIDTHS;
 #endif /* LEFT_HAND_SIDE_CAST */
-            ei_plain_text_set(textsw->views->eih, attrs);
-            /* (void) ei_set(textsw->views->eih, EI_TAB_WIDTHS, attrs[1], 0); */            break;
-          case TEXTSW_UPDATE_SCROLLBAR:
-            *update_scrollbar = (all_views) ? 2 : 1;
-            break;
 
-          case WIN_CMS_CHANGE:
-            if (is_folio) {
-                Xv_Window       textsw_public = TEXTSW_PUBLIC(textsw);
-                Xv_Window       view_public;
+			ei_plain_text_set(textsw->views->eih, attrs);
+			/* (void) ei_set(textsw->views->eih, EI_TAB_WIDTHS, attrs[1], 0); */
+					break;
+		case TEXTSW_UPDATE_SCROLLBAR:
+			*update_scrollbar = (all_views) ? 2 : 1;
+			break;
+
+		case WIN_CMS_CHANGE:
+			if (is_folio) {
+				Xv_Window textsw_public = TEXTSW_PUBLIC(textsw);
+				Xv_Window view_public;
+
 /*                 Textsw_view_private view_next; */
-                Xv_Drawable_info *info;
-                Cms             cms;
+				Xv_Drawable_info *info;
+				Cms cms;
 
-                DRAWABLE_INFO_MACRO(textsw_public, info);
-                cms = xv_cms(info);
+				DRAWABLE_INFO_MACRO(textsw_public, info);
+				cms = xv_cms(info);
 				OPENWIN_EACH_VIEW(textsw_public, view_public)
-                    window_set_cms(view_public, cms,
-									xv_cms_bg(info), xv_cms_fg(info));
-				OPENWIN_END_EACH
-            } else {
-                textsw_view_cms_change(textsw, view);
-            }
-            break;
-    }
+						window_set_cms(view_public, cms,
+						xv_cms_bg(info), xv_cms_fg(info));
+			OPENWIN_END_EACH}
+			else {
+				textsw_view_cms_change(textsw, view);
+			}
+			break;
+	}
 }
 
 
@@ -351,12 +351,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 	Es_handle ps_esh, scratch_esh, mem_esh;
 	Es_status es_status;
 	Es_index tmp;
-
-/*
- * NOTE: This line of code  is no longer used
- * Remove it after a suitable grace period
-    int    consume_attrs = 0;
- */
 
 	error_dummy[0] = '\0';
 
@@ -699,14 +693,6 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 				break;
 #endif
 
-/*
- * NOTE: This code no longer used.
- * Remove after suitable grace period
-	  case TEXTSW_CONSUME_ATTRS:
-	    consume_attrs = (attrs[1] ? 1 : 0);
-	    break;
- */
-
 				/* Super-class attributes that we monitor. */
 			case XV_FONT:
 				if (attrs[1]) {
@@ -889,14 +875,14 @@ static Defaults_pairs line_break_pairs[] = {
 
 static	void textsw_view_cms_change(Textsw_private textsw, Textsw_view_private view)
 {
-    ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, FALSE, NULL);
-    textsw_repaint(view);
-    /* if caret was up and we took it down, put it back */
-    if ((textsw->caret_state & TXTSW_CARET_ON)
-	&& (textsw->caret_state & TXTSW_CARET_ON) == 0) {
-	textsw_remove_timer(textsw);
-	textsw_timer_expired(textsw, 0);
-    }
+	ev_set(view->e_view, EV_NO_REPAINT_TIL_EVENT, FALSE, NULL);
+	textsw_repaint(view);
+	/* if caret was up and we took it down, put it back */
+	if ((textsw->caret_state & TXTSW_CARET_ON)
+			&& (textsw->caret_state & TXTSW_CARET_ON) == 0) {
+		textsw_remove_timer(textsw);
+		textsw_timer_expired(textsw, 0);
+	}
 }
 
 Pkg_private long textsw_get_from_defaults(Attr32_attribute attribute, Xv_opaque srv)
@@ -1432,20 +1418,19 @@ Pkg_private void textsw_notify_replaced(Textsw_view_private view, Es_index inser
 	priv->state &= ~TXTSW_IN_NOTIFY_PROC;
 }
 
-Pkg_private     Es_index textsw_get_contents(Textsw_private textsw,
+Pkg_private Es_index textsw_get_contents(Textsw_private textsw,
 						Es_index position, char *buffer, int buffer_length)
 {
-    Es_index        next_read_at;
-    int darllenwyd;
+	Es_index next_read_at;
+	int darllenwyd;
 
-    es_set_position(textsw->views->esh, position);
-    next_read_at = es_read(textsw->views->esh, buffer_length, buffer,
-			   &darllenwyd);
-    if AN_ERROR
-	(darllenwyd != buffer_length) {
-	XV_BZERO(buffer + darllenwyd, (size_t)(buffer_length - darllenwyd));
+	es_set_position(textsw->views->esh, position);
+	next_read_at = es_read(textsw->views->esh, buffer_length, buffer,
+			&darllenwyd);
+	if (AN_ERROR (darllenwyd != buffer_length)) {
+		XV_BZERO(buffer + darllenwyd, (size_t)(buffer_length - darllenwyd));
 	}
-    return (next_read_at);
+	return (next_read_at);
 }
 
 /* originally, TEXTSW (a subclass of OPENWIN) had views and performed
