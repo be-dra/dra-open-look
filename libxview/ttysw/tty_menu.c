@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.12 2025/04/04 20:13:02 dra Exp $";
+char     tty_menu_c_sccsid[] = "@(#)tty_menu.c 20.68 93/06/28 DRA: $Id: tty_menu.c,v 4.13 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -244,10 +244,6 @@ static void ttysw_menu_paste(Menu menu, Menu_item mi)
 	Tty ttysw_public = xv_get(mi, MENU_CLIENT_DATA);
 	Ttysw_private ttysw = TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw_public);
 	Xv_Notice tty_notice;
-
-#ifdef OW_I18N
-	ttysw_implicit_commit(ttysw, 1);
-#endif
 
 	if (!ttysw_do_paste(ttysw)) {
 		Frame frame = xv_get(ttysw_public, WIN_FRAME);
@@ -741,11 +737,6 @@ static void ttysw_enable_scrolling(Menu menu, Menu_item mi)
 	Ttysw_private ttysw_folio = TTY_PRIVATE_FROM_ANY_PUBLIC(textsw);
 
 	if (termsw_folio->ok_to_enable_scroll) {
-
-#ifdef OW_I18N
-		ttysw_implicit_commit(ttysw_folio, 0);
-#endif
-
 		ttysw_setopt(ttysw_folio, TTYOPT_TEXT, 1);
 	}
 	else {
@@ -791,9 +782,6 @@ static void ttysw_disable_scrolling(Menu cmd_menu, Menu_item cmd_item)
 	Xv_Notice tty_notice;
 
 	if (ttysw_getopt(ttysw_folio, TTYOPT_TEXT)) {
-#ifdef OW_I18N
-		textsw_implicit_commit(TEXTSW_PRIVATE(textsw));
-#endif
 		ttysw_setopt(ttysw_folio, TTYOPT_TEXT, 0);
 	}
 	else {
