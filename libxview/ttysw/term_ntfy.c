@@ -1,5 +1,5 @@
 #ifndef lint
-char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.7 2026/02/11 21:26:01 dra Exp $";
+char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.8 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -188,8 +188,8 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 		return (nv);
 	}
 	if (termsw->cooked_echo && down_event) {
-		insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT_I18N);
-		length = (int)xv_get(tsw, TEXTSW_LENGTH_I18N);
+		insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT);
+		length = (int)xv_get(tsw, TEXTSW_LENGTH);
 		if (termsw->cmd_started) {
 			/*
 			 * Process pending literal next insertion at end of buffer.
@@ -220,7 +220,7 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 			&& event_id(event) == (short)termsw->erase_line
 			&& down_event && !event_shift_is_down(event)
 			&& termsw->cmd_started != 0
-			&& ((insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT_I18N))) >
+			&& ((insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT))) >
 			(cmd_start =
 					(int)textsw_find_mark_i18n(tsw, termsw->user_mark))) {
 		Textsw_index pattern_start = cmd_start;
@@ -255,13 +255,13 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 		 * this function for us.
 		 */
 		if (!termsw->append_only_log)
-			(void)xv_set(tsw, TEXTSW_INSERTION_POINT_I18N,
+			(void)xv_set(tsw, TEXTSW_INSERTION_POINT,
 					textsw_find_mark_i18n(tsw, termsw->pty_mark), NULL);
 	}
 	else if (!termsw->cooked_echo
 			&& action <= ASCII_LAST
 			&& (iscntrl((char)action) || (char)action == '\177')
-			&& (insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT_I18N))
+			&& (insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT))
 			== textsw_find_mark_i18n(tsw, termsw->pty_mark)) {
 		/* In !cooked_echo, ensure termsw_view doesn't gobble up control chars */
 		char input_char = (char)action;
@@ -279,7 +279,7 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 
 #ifndef __linux
 		if (action == tty_getintrc(ttysw)) {
-			(void)xv_set(tsw, TEXTSW_INSERTION_POINT_I18N,
+			(void)xv_set(tsw, TEXTSW_INSERTION_POINT,
 					TEXTSW_INFINITY, 0);
 		}
 #endif
@@ -411,9 +411,9 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 
 			if (action == tty_geteofc(ttysw)) {
 				if (insert == TEXTSW_INFINITY)
-					insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT_I18N);
+					insert = (int)xv_get(tsw, TEXTSW_INSERTION_POINT);
 				if (length == TEXTSW_INFINITY)
-					length = (int)xv_get(tsw, TEXTSW_LENGTH_I18N);
+					length = (int)xv_get(tsw, TEXTSW_LENGTH);
 				if (length == insert) {
 					/*
 					 * The EOF was entered at the end of the buffer.  Handle it
@@ -551,7 +551,7 @@ Pkg_private int ttysw_scan_for_completed_commands(Ttysw_view_handle ttysw_view,
 	register Termsw_folio termsw =
 			TERMSW_FOLIO_FOR_VIEW(TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw));
 	register CHAR *cp;
-	int length = (int)xv_get(textsw, TEXTSW_LENGTH_I18N);
+	int length = (int)xv_get(textsw, TEXTSW_LENGTH);
 	int cmd_length;
 
 	/*
@@ -583,7 +583,7 @@ Pkg_private int ttysw_scan_for_completed_commands(Ttysw_view_handle ttysw_view,
 	}
 
 	/* Copy these commands into the buffer for pty */
-	(void)xv_get(textsw, TEXTSW_CONTENTS_I18N, start_from, iwbp, cmd_length);
+	(void)xv_get(textsw, TEXTSW_CONTENTS, start_from, iwbp, cmd_length);
 	if (maybe_partial) {
 		/*
 		 * Discard partial commands.
@@ -658,8 +658,8 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 	register Termsw_folio termsw =
 			TERMSW_FOLIO_FOR_VIEW(TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw));
 	Textsw_index insert = (Textsw_index) xv_get(textsw,
-			TEXTSW_INSERTION_POINT_I18N);
-	int length = (Textsw_index) xv_get(textsw, TEXTSW_LENGTH_I18N);
+			TEXTSW_INSERTION_POINT);
+	int length = (Textsw_index) xv_get(textsw, TEXTSW_LENGTH);
 	Textsw_index insert_at;
 	Textsw_mark insert_mark = TEXTSW_NULL_MARK;
 
@@ -686,7 +686,7 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 		insert_at = length;
 	}
 	if (insert != insert_at) {
-		(void)xv_set(textsw, TEXTSW_INSERTION_POINT_I18N, insert_at, NULL);
+		(void)xv_set(textsw, TEXTSW_INSERTION_POINT, insert_at, NULL);
 	}
 	textsw_checkpoint_undo(textsw, termsw->next_undo_point);
 	/* Stop this insertion from triggering the cmd scanner! */
@@ -695,7 +695,7 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 	ttysw_doing_pty_insert(textsw, termsw, FALSE);
 	ttysw_scan_for_completed_commands(ttysw_view, (int)insert_at, TRUE);
 	if (termsw->cmd_started) {
-		insert_at = (Textsw_index) xv_get(textsw, TEXTSW_INSERTION_POINT_I18N);
+		insert_at = (Textsw_index) xv_get(textsw, TEXTSW_INSERTION_POINT);
 		if (insert_at == TEXTSW_INFINITY)
 			ERROR_RETURN(-1);
 		termsw->user_mark =
@@ -711,14 +711,14 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 			insert = find_and_remove_mark(textsw, insert_mark);
 			if (insert == TEXTSW_INFINITY)
 				ERROR_RETURN(-1);
-			xv_set(textsw, TEXTSW_INSERTION_POINT_I18N, insert, NULL);
+			xv_set(textsw, TEXTSW_INSERTION_POINT, insert, NULL);
 		}
 	}
 	else {
 		if (insert < length)
-			(void)xv_set(textsw, TEXTSW_INSERTION_POINT_I18N, insert, NULL);
+			(void)xv_set(textsw, TEXTSW_INSERTION_POINT, insert, NULL);
 		if (termsw->append_only_log) {
-			length = (int)xv_get(textsw, TEXTSW_LENGTH_I18N);
+			length = (int)xv_get(textsw, TEXTSW_LENGTH);
 			termsw->read_only_mark =
 					textsw_add_mark_i18n(textsw,
 					(Textsw_index) (termsw->
@@ -730,98 +730,78 @@ Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, i
 }
 
 /* ARGSUSED */
-static void ttysw_textsw_changed_handler(Textsw textsw, int insert_before, int length_before, int replaced_from, int replaced_to, int count_inserted)
+static void ttysw_textsw_changed_handler(Textsw textsw, int insert_before,
+				int length_before, int replaced_from, int replaced_to,
+				int count_inserted)
 {
-    CHAR            last_inserted;
-#ifdef OW_I18N
-    char            last_inserted_mbs[4];
-    int             mbs_len;
-#endif
-    Termsw_view_handle view = TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw);
-    Termsw_folio    termsw = TERMSW_FOLIO_FOR_VIEW(view);
-    Ttysw_private     ttysw = TTY_FROM_TERMSW(termsw->public_self);
-    Ttysw_view_handle ttysw_view = TTY_VIEW_PRIVATE_FROM_TERMSW_VIEW(TERMSW_VIEW_PUBLIC(view));
+	char last_inserted;
+	Termsw_view_handle view = TERMSW_VIEW_PRIVATE_FROM_TEXTSW(textsw);
+	Termsw_folio termsw = TERMSW_FOLIO_FOR_VIEW(view);
+	Ttysw_private ttysw = TTY_FROM_TERMSW(termsw->public_self);
+	Ttysw_view_handle ttysw_view =
+			TTY_VIEW_PRIVATE_FROM_TERMSW_VIEW(TERMSW_VIEW_PUBLIC(view));
 
-    if (insert_before != length_before)
-	return;
-    if (termsw->cmd_started == 0) {
-	if ((termsw->cmd_started = (count_inserted > 0))) {
-	    (void) textsw_checkpoint_undo(textsw, termsw->next_undo_point);
-	    ttysw_move_mark(textsw, &termsw->user_mark,
-			    (Textsw_index) length_before,
-			    TEXTSW_MARK_DEFAULTS);
+	if (insert_before != length_before)
+		return;
+	if (termsw->cmd_started == 0) {
+		if ((termsw->cmd_started = (count_inserted > 0))) {
+			(void)textsw_checkpoint_undo(textsw, termsw->next_undo_point);
+			ttysw_move_mark(textsw, &termsw->user_mark,
+					(Textsw_index) length_before, TEXTSW_MARK_DEFAULTS);
+		}
 	}
-    }
-    if (!termsw->cmd_started)
-	termsw->next_undo_point =
-	    (caddr_t) textsw_checkpoint_undo(textsw,
-					     (caddr_t) TEXTSW_INFINITY);
-    if (count_inserted >= 1) {
-	/* Get the last inserted character. */
-        (void) xv_get(textsw, TEXTSW_CONTENTS_I18N,
-		      replaced_from + count_inserted - 1,
-		      &last_inserted, 1);
-#ifdef OW_I18N
-        mbs_len = wctomb( last_inserted_mbs , last_inserted );
-        if ( mbs_len == 1  &&
-                /* last_inserted_mbs[0] == ttysw->ltchars.t_rprntc ) {*/
-                last_inserted_mbs[0] == tty_getrprntc(ttysw)) {
-#else
-	if (last_inserted == tty_getrprntc(ttysw)) {
-#endif
+	if (!termsw->cmd_started)
+		termsw->next_undo_point =
+				(caddr_t) textsw_checkpoint_undo(textsw,
+				(caddr_t) TEXTSW_INFINITY);
+	if (count_inserted >= 1) {
+		/* Get the last inserted character. */
+		xv_get(textsw, TEXTSW_CONTENTS,
+				replaced_from + count_inserted - 1, &last_inserted, 1);
+		if (last_inserted == tty_getrprntc(ttysw)) {
+
 #ifndef	BUFSIZE
 #define	BUFSIZE 1024
-#endif	/* BUFSIZE */
-	    CHAR            buf[BUFSIZE + 1];
-	    CHAR            cr_nl[3];
-	    int             buflen = 0;
-	    Textsw_index    start_from;
-	    Textsw_index    length = (int) xv_get(textsw, TEXTSW_LENGTH_I18N);
+#endif /* BUFSIZE */
 
-	    cr_nl[0] = (CHAR)'\r';
-	    cr_nl[1] = (CHAR)'\n';
-	    cr_nl[2] = (CHAR)'\0';
-	    start_from = textsw_find_mark_i18n(textsw, termsw->user_mark);
-	    if (start_from == (length - 1)) {
-		*buf = (CHAR)'\0';
-	    } else {
-                (void) xv_get(textsw, TEXTSW_CONTENTS_I18N, start_from, buf,
-			  (buflen = MIN(BUFSIZE, length - 1 - start_from)));
-	    }
-	    termsw->pty_owes_newline = 0;
-	    termsw->cmd_started = 0;
-	    ttysw_move_mark(textsw, &termsw->pty_mark, length,
-			    TEXTSW_MARK_DEFAULTS);
-	    if (termsw->append_only_log) {
-		ttysw_move_mark(textsw, &termsw->read_only_mark, length,
-				TEXTSW_MARK_READ_ONLY);
-	    }
-	    ttysw_output_it(ttysw_view, cr_nl, 2);
-	    if (buflen > 0)
-#ifdef OW_I18N
-                ttysw_input_it_wcs(ttysw, buf, buflen);
-        } else if ( mbs_len == 1 &&
-                /* last_inserted_mbs[0] == ttysw->ltchars.t_lnextc) { */
-                last_inserted_mbs[0] == tty_getlnextc(ttysw)) {
-            termsw->literal_next = TRUE;
-        } else if ( mbs_len == 1 &&
-                   /* ( last_inserted_mbs[0] == ttysw->tchars.t_brkc */
-                   ( last_inserted_mbs[0] == tty_geteolc(ttysw)
-		   || last_inserted_mbs[0] == tty_geteol2c(ttysw)
-                   || last_inserted_mbs[0] == (wchar_t)'\n'
-                   || last_inserted_mbs[0] == (wchar_t)'\r' )) {
-#else
-		ttysw_input_it(ttysw, buf, buflen);
-	} else if (last_inserted == tty_getlnextc(ttysw)) {
-	    termsw->literal_next = TRUE;
-	} else if (last_inserted == tty_geteolc(ttysw)
-		   || last_inserted == tty_geteol2c(ttysw)
-		   || last_inserted == '\n'
-		   || last_inserted == '\r') {
-#endif
-	    (void) ttysw_scan_for_completed_commands(ttysw_view, -1, 0);
+			CHAR buf[BUFSIZE + 1];
+			CHAR cr_nl[3];
+			int buflen = 0;
+			Textsw_index start_from;
+			Textsw_index length = (int)xv_get(textsw, TEXTSW_LENGTH);
+
+			cr_nl[0] = (CHAR) '\r';
+			cr_nl[1] = (CHAR) '\n';
+			cr_nl[2] = (CHAR) '\0';
+			start_from = textsw_find_mark_i18n(textsw, termsw->user_mark);
+			if (start_from == (length - 1)) {
+				*buf = (CHAR) '\0';
+			}
+			else {
+				(void)xv_get(textsw, TEXTSW_CONTENTS, start_from, buf,
+						(buflen = MIN(BUFSIZE, length - 1 - start_from)));
+			}
+			termsw->pty_owes_newline = 0;
+			termsw->cmd_started = 0;
+			ttysw_move_mark(textsw, &termsw->pty_mark, length,
+					TEXTSW_MARK_DEFAULTS);
+			if (termsw->append_only_log) {
+				ttysw_move_mark(textsw, &termsw->read_only_mark, length,
+						TEXTSW_MARK_READ_ONLY);
+			}
+			ttysw_output_it(ttysw_view, cr_nl, 2);
+			if (buflen > 0)
+				ttysw_input_it(ttysw, buf, buflen);
+		}
+		else if (last_inserted == tty_getlnextc(ttysw)) {
+			termsw->literal_next = TRUE;
+		}
+		else if (last_inserted == tty_geteolc(ttysw)
+				|| last_inserted == tty_geteol2c(ttysw)
+				|| last_inserted == '\n' || last_inserted == '\r') {
+			(void)ttysw_scan_for_completed_commands(ttysw_view, -1, 0);
+		}
 	}
-    }
 }
 
 Pkg_private void ttysw_textsw_changed(Textsw textsw, Attr_avlist attributes)
@@ -839,10 +819,6 @@ Pkg_private void ttysw_textsw_changed(Textsw textsw, Attr_avlist attributes)
 
 	for (attrs = attributes; *attrs; attrs = attr_next(attrs)) {
 		switch ((Textsw_action) (*attrs)) {
-			case TEXTSW_ACTION_CAPS_LOCK:
-				ttysw->ttysw_capslocked = (attrs[1]) ? TTYSW_CAPSLOCKED : 0;
-				ttysw_display_capslock(ttysw);
-				break;
 			case TEXTSW_ACTION_REPLACED:
 				if (!termsw->doing_pty_insert)
 					ttysw_textsw_changed_handler(textsw,
@@ -854,11 +830,11 @@ Pkg_private void ttysw_textsw_changed(Textsw textsw, Attr_avlist attributes)
 					Textsw_index length;
 
 					insert = (Textsw_index) xv_get(textsw,
-							TEXTSW_INSERTION_POINT_I18N);
-					length = (Textsw_index) xv_get(textsw, TEXTSW_LENGTH_I18N);
+							TEXTSW_INSERTION_POINT);
+					length = (Textsw_index) xv_get(textsw, TEXTSW_LENGTH);
 					if (length == insert + 1) {
-						(void)xv_set(textsw,
-								TEXTSW_INSERTION_POINT_I18N, length, NULL);
+						xv_set(textsw,
+								TEXTSW_INSERTION_POINT, length, NULL);
 						ttysw_reset_column(ttysw);
 					}
 					else if (length == 0) {
