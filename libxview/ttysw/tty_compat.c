@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_compat_c_sccsid[] = "@(#)tty_compat.c 20.21 93/06/28 RCS: $Id: tty_compat.c,v 4.3 2025/03/31 19:38:59 dra Exp $";
+char     tty_compat_c_sccsid[] = "@(#)tty_compat.c 20.21 93/06/28 RCS: $Id: tty_compat.c,v 4.4 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -17,10 +17,6 @@ char     tty_compat_c_sccsid[] = "@(#)tty_compat.c 20.21 93/06/28 RCS: $Id: tty_
 #include <xview_private/i18n_impl.h>
 #include <xview_private/tty_impl.h>
 #include <xview_private/term_impl.h>
-
-#ifdef OW_I18N
-#include <xview/xv_i18n.h>
-#endif
 
 extern void ttysw_becomeconsole(Tty ttysw0);
 
@@ -46,15 +42,3 @@ Xv_public int ttysw_input(caddr_t ttysw0, char *addr, int len)
 {
     return (ttysw_input_it(TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw0), addr, len));
 }
-
-#ifdef OW_I18N
-Xv_public int
-ttysw_input_wcs(ttysw0, addr, len)
-    caddr_t           ttysw0;
-    wchar_t           *addr;
-    int               len;
-{
-    return (ttysw_input_it_wcs(TTY_PRIVATE_FROM_ANY_PUBLIC(ttysw0), addr, len));
-}
-#endif
-
