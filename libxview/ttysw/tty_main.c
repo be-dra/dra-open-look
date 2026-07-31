@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.20 2026/03/22 08:31:30 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.21 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -40,36 +40,9 @@ char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v
 #include <xview_private/svr_impl.h>
 #include <xview_private/term_impl.h>
 
-#ifdef OW_I18N
-#ifdef sun
-#  include <widec.h>
-#else
-#  include <wchar.h>
-#endif
-#include <wctype.h>
-#include <stdlib.h>
-#ifdef FULL_R5
-#include <X11/Xlib.h>
-#endif /* FULL_R5 */
-#endif
-
 #if defined(__linux)
 /* martin.buck@bigfoot.com */
 #  include <sys/ioctl.h>
-#endif
-
-#ifdef OW_I18N
-/*
- * If there are committed chars and pre_edit chars returned by XIM,
- * we should display the echo'ed committed chars before display pre_edit chars.
- * Thus, tty callback will not display pre_edit chars until all committed chars
- * are echoed.
- */
-int     committed_left = 0;
-#endif
-
-#ifdef OW_I18N
-extern Textsw_index textsw_insert_wcs();
 #endif
 
 /*
@@ -194,149 +167,6 @@ ttysw_pty_output_ok(ttysw)
  * make sure that, when in canonical mode, we don't present partial input
  * lines to the application reading from the slave side of the pty.
  */
-#ifdef  OW_I18N
-#define MB_BUF_MAX	8192
-Pkg_private int ttysw_pty_output(ttysw, pty)
-    register Ttysw_private ttysw;
-    int             pty;
-{
-        register int    cc;
-        char		mb_irbp[MB_BUF_MAX + 1];/* multi-byte copy of irbp */
-        int		mb_nbytes;		/* number of bytes converted */
-        CHAR		save_char;
-
-    if (ttysw_getopt(ttysw, TTYOPT_TEXT)) {
-        Termsw_folio    termsw =
-                TERMSW_FOLIO_FOR_VIEW(TERMSW_VIEW_PRIVATE_FROM_TTY_PRIVATE(ttysw));
-
-        if (termsw->pty_eot > -1) {
-            CHAR           *eot_bp = ibuf + termsw->pty_eot;
-            CHAR            nullc = (CHAR)'\0';
-
-            /* write everything up to pty_eot */
-            if (eot_bp >= irbp) {
-                /* convert CHAR to char and calls write() */
-                save_char = *eot_bp;
-                *eot_bp   = nullc;
-                mb_nbytes = wcstombs_with_null(mb_irbp, irbp, eot_bp - irbp);
-                *eot_bp   = save_char;
-                if( mb_nbytes == -1 ) {
-                    perror(XV_MSG("TTYSW:ttysw_pty_output: invalid wide character"));
-                    return;
-                }
-                cc = ttysw_mbs_write(pty, mb_irbp, mb_nbytes);
-                if (cc > 0) {
-                    irbp += cc;
-                } else if (cc < 0) {
-                    perror(XV_MSG("TTYSW pty write failure"));
-#ifdef __linux
-					if (errno == EBADF) {
-						fprintf(stderr, "1: pty = %d, ttysw_pty=%d, ttysw_tty=%d\n",
-							pty, ttysw->ttysw_pty, ttysw->ttysw_tty);
-						abort();
-					}
-#endif
-                }
-                termsw->pty_eot = -1;
-            }
-        }                       /* termsw->pty_eot > -1 */
-        /* only write the rest of the buffer if it doesn't have an eot in it */
-        if (termsw->pty_eot > -1)
-            return;
-    }
-    if (iwbp > irbp) {
-        /*
-         * Bail out if we need to present a complete input line but don't have
-         * one yet.
-         *
-         * XXX: Need to consider buffer overflows here.
-         * XXX: Tests made and actions taken elsewhere should ensure that this
-         *      test never succeeds; we're just being paranoid here.
-         */
-        if (!ttysw_pty_output_ok(ttysw))
-            return;
-        /* convert CHAR to char and call write() */
-        save_char = *iwbp;
-        *iwbp = '\0';
-        mb_nbytes = wcstombs_with_null(mb_irbp, irbp, iwbp - irbp );
-        *iwbp = save_char;
-        if( mb_nbytes == -1 ) {
-            perror(XV_MSG("TTYSW:ttysw_pty_output: invalid wide character"));
-            return;
-        }
-        cc = ttysw_mbs_write(pty, mb_irbp, mb_nbytes);
-        if (cc > 0) {
-            irbp += cc;
-            if (irbp == iwbp)
-                 irbp = iwbp = ibuf;
-        } else if (cc < 0) {
-            perror(XV_MSG("TTYSW pty write failure"));
-#ifdef __linux
-			if (errno == EBADF) {
-				fprintf(stderr, "2: pty = %d, ttysw_pty=%d, ttysw_tty=%d\n",
-								pty, ttysw->ttysw_pty, ttysw->ttysw_tty);
-				abort();
-			}
-#endif
-        }
-    }
-}
-#undef MB_BUF_MAX
-
-/*
- *    write() system call does not guarantee that all data you have passed
- *    is actually written. This kind of paranoia occurs when you are
- *    writing to a channel to another process such as a pipe.
- *    This function takes care that some data may remain unwritten and also,
- *    the boundary is within one multibyte character.
- */
-/* static */ int
-ttysw_mbs_write(pty, mbs, nbytes)
-    int         pty;
-    char        *mbs;
-    int         nbytes;
-{
-    int         nchars = 0;
-    int         write_flag = 0;
-    int         charlen,len;
-    register char *tmp = mbs ;
-    static int  nbytes_left;
-    static char mbs_left[10];
-
-    if (nbytes_left > 0) {
-        len = write(pty, mbs_left, nbytes_left);
-        if (len < 0)
-                return -1;
-        else if (len == nbytes_left) {
-                nbytes_left = 0;
-                write_flag = 1;
-        } else {
-                nbytes_left -= len;
-                XV_BCOPY(&mbs_left[len], mbs_left, nbytes_left);
-                return 0;
-        }
-    }
-
-    len = write(pty, mbs, nbytes);
-    if (len < 0)
-        return ((write_flag == 1) ? 0 : -1);
-
-    while (len > 0) {
-        charlen = euclen( tmp );
-        tmp += charlen;
-        len -= charlen;
-        nchars++;
-    }
-    if (len < 0) {
-        tmp += len;
-        XV_BCOPY(tmp, mbs_left, -len);
-        nbytes_left = -len;
-    }
-
-    return nchars;
-}
-#else
-
 #ifdef DEBUG
 static void ttysw_print_debug_string(char *cp, int len)
 {
@@ -438,7 +268,6 @@ Pkg_private void ttysw_pty_output(Ttysw_private ttysw, int pty)
 #endif
 	}
 }
-#endif
 
 static void ttysw_process_STI(register Ttysw_private ttysw, register char *cp,
 											register int cc)
@@ -524,27 +353,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 	int flags = 0;
 	register int rv;
 
-#ifdef OW_I18N
-#define MB_BUF_SIZE     12
-#define MB_BUF_MAX      8192
-	register int mb_nbyte;	/* # of bytes to be converted */
-	register int wc_nchar;	/* # of wide characters converted */
-	unsigned char mb_buf_p[MB_BUF_MAX];
-	unsigned char *a_mb_buf_p = mb_buf_p;
-	unsigned char mb_data[MB_BUF_MAX];
-	static unsigned char rest_of_char[MB_BUF_SIZE];
-	static int rest_of_nchar = 0;
-	int mb_buf_length = 0;
-
-
-	if ((rest_of_nchar > 0) && (rest_of_nchar <= MB_BUF_MAX)) {
-		XV_BCOPY(rest_of_char, mb_buf_p, rest_of_nchar);
-		a_mb_buf_p += rest_of_nchar;
-		mb_buf_length += rest_of_nchar;
-		rest_of_nchar = 0;
-	}
-#endif
-
 	ctlbuf.maxlen = sizeof ctlbyte;
 	ctlbuf.len = 0;	/* redundant */
 	ctlbuf.buf = (char *)&ctlbyte;
@@ -552,15 +360,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
   get_some_more:
 
 	databuf.len = 0;	/* redundant */
-
-#ifdef OW_I18N
-	/*
-	 * The minus one is important for NULL terminating character
-	 * will not write outside of the buffer.
-	 */
-	databuf.maxlen = ((oebp - owbp) - mb_buf_length) - 1;
-	databuf.buf = (char *)mb_data;
-#else /* OW_I18N */
 
 	/* Looks like the databuffer ttysw->ttysw_obuf.cb_buf
 	 * is totally filled under certain cirumstances and
@@ -584,7 +383,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 	databuf.maxlen = oebp - owbp - 1;
 
 	databuf.buf = owbp;
-#endif /* OW_I18N */
 
 	rv = getmsg(pty, &ctlbuf, &databuf, &flags);
 
@@ -628,80 +426,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 		case M_DATA:
 		  m_data:
 			if (databuf.len > 0) {
-
-#ifdef OW_I18N
-				register unsigned char *p, *q;
-				register wchar_t *w;
-				register int i, j;
-
-				XV_BCOPY(mb_data, a_mb_buf_p, databuf.len);
-				a_mb_buf_p += databuf.len;
-				mb_buf_length += databuf.len;
-
-				if ((oebp - owbp) - mb_buf_length <= 4)
-					goto process_mb_buf;
-
-				{
-					struct strpeek peek;
-					char byte;
-
-					peek.ctlbuf.maxlen = sizeof byte;
-					peek.ctlbuf.buf = &byte;
-					peek.databuf.buf = NULL;	/* no data info */
-					peek.flags = 0;
-					if (ioctl(pty, I_PEEK, &peek) <= 0)
-						goto process_mb_buf;
-					if (byte == M_DATA)
-						goto get_some_more;
-				}
-
-			  process_mb_buf:
-				i = mb_nbyte = mb_buf_length;
-
-				mb_buf_p[i] = NULL;
-
-				wc_nchar = 0;
-				for (p = mb_buf_p, w = owbp; i > 0;) {
-					if (*p >= 0 && *p <= 0x7f) {
-						/* It includes NULL char */
-
-#ifdef sun
-						/*
-						 * This direct casting depends on the wchar_t
-						 * implementation. It's Sun specific. The main reason
-						 * to do so here is to get better performance.
-						 */
-						*w = (wchar_t) (*p);
-#endif
-
-						j = 1;
-					}
-					else {
-						if ((j = mbtowc(w, (char *)p, MB_CUR_MAX)) < 0) {
-							if (i < (int)MB_CUR_MAX)
-								break;
-							p++;
-							i--;
-							continue;
-						}
-					}
-					p += j;
-					i -= j;
-					w++;
-					wc_nchar++;
-				}
-
-				*w = 0;
-				if ((i > 0) && (i < MB_BUF_SIZE)) {
-					q = rest_of_char;
-					XV_BCOPY(p, q, i);
-					rest_of_nchar = i;
-				}
-#undef  MB_BUF_SIZE
-
-				owbp += wc_nchar;
-#else /* OW_I18N */
-
 				owbp += databuf.len;
 
 				/*
@@ -728,8 +452,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 					if (byte == M_DATA)
 						goto get_some_more;
 				}
-#endif /* OW_I18N */
-
 				return;
 			}
 			/*
@@ -767,11 +489,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 				}
 #endif /* DEBUG */
 
-
-#ifdef OW_I18N
-				if (!TTY_IS_TERMSW(ttysw))
-					break;
-#endif
 
 				/*
 				 * Process the ioctl by switching on it and handling all interesting
@@ -845,14 +562,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 		default:
 			break;
 	}
-
-#ifdef OW_I18N
-	rest_of_nchar = 0;
-
-#ifdef notdef
-	free(mb_buf_p);
-#endif /* notdef */
-#endif
 }
 
 #else	/* XV_USE_SVR4_PTYS */
@@ -864,87 +573,13 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 	char ucntl;
 	register unsigned int_ucntl;
 
-#ifdef OW_I18N
-#define MB_BUF_SIZE     12
-	register int wc_nchar;	/* number of wide characters converted */
-	unsigned char *mb_buf_p;
-	unsigned char mb_buf[MB_BUF_SIZE];
-	static unsigned char rest_of_char[MB_BUF_SIZE];
-	static int rest_of_nchar = 0;
-
-	/* readv to a buffer and convert it to CHAR */
-	/* readv avoids need to shift packet header out of owbp. */
-	iov[0].iov_base = &ucntl;
-	iov[0].iov_len = 1;
-	iov[1].iov_len = oebp - owbp;
-#else
 	/* readv avoids need to shift packet header out of owbp. */
 	iov[0].iov_base = &ucntl;
 	iov[0].iov_len = 1;
 	iov[1].iov_base = owbp;
 	iov[1].iov_len = oebp - owbp;
-#endif
-
-#ifdef OW_I18N
-	if (!(mb_buf_p = (unsigned char *)malloc((iov[1].iov_len * sizeof(CHAR))
-							+ sizeof(rest_of_char)))) {
-		perror(XV_MSG("TTYSW:ttysw_pty_input: out of memory"));
-		return;
-	}
-	if (rest_of_nchar != 0)
-		XV_BCOPY(rest_of_char, mb_buf_p, rest_of_nchar);
-	iov[1].iov_base = (char *)mb_buf_p + rest_of_nchar;	/* yuck */
-#endif
 
 	cc = readv(pty, iov, 2);
-
-#ifdef OW_I18N
-	mb_buf_p[cc - 1 + rest_of_nchar] = 0;
-	{
-		register unsigned char *p;
-		register wchar_t *w;
-		register int i, j;
-
-		wc_nchar = 0;
-		i = cc - 1 + rest_of_nchar;
-		rest_of_nchar = 0;
-		for (p = mb_buf_p, w = owbp; i > 0;) {
-			if (*p == '\0') {
-				*w = (wchar_t) '\0';
-				j = 1;
-			}
-			else {
-				if ((j = mbtowc(w, p, MB_CUR_MAX)) < 0) {
-					if (i < MB_CUR_MAX) {
-						break;
-					}
-					p++;
-					i--;
-					continue;
-				}
-			}
-			p += j;
-			i -= j;
-			w++;
-			wc_nchar++;
-		}
-		if (i >= MB_CUR_MAX) {
-			perror(XV_MSG
-					("TTYSW:ttysw_pty_input: invalid multi-byte character"));
-			if (mb_buf_p != mb_buf)
-				free(mb_buf_p);
-			return;
-		}
-		*w = 0;
-		if (i != 0) {
-			XV_BCOPY(p, rest_of_char, i);
-			rest_of_nchar = i;
-		}
-	}
-	if (mb_buf_p != mb_buf) {
-		free(mb_buf_p);
-	}
-#endif
 
 	if (cc < 0 && errno == EWOULDBLOCK)
 		cc = 0;
@@ -987,13 +622,7 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 			ttysw_getp(ttysw->view);	/* jcb for nng */
 		}
 		else
-
-#ifdef OW_I18N
-			owbp += wc_nchar;
-#undef  MB_BUF_SIZE
-#else
 			owbp += cc - 1;
-#endif
 	}
 }
 
@@ -1015,39 +644,14 @@ Pkg_private void ttysw_consume_output(Ttysw_view_handle ttysw_view)
 	}
 	while (owbp > orbp && !(ttysw->ttysw_flags & TTYSW_FL_FROZEN)) {
 		if (is_not_text) {
-
-#ifdef OW_I18N
-			if (ttysw->implicit_commit == 0) {
-#endif
-
-				if (ttysw->sels[TTY_SEL_PRIMARY].sel_made) {
-					ttysel_deselect(ttysw, ttysw->sels+TTY_SEL_PRIMARY, TTY_SEL_PRIMARY);
-				}
-				if (ttysw->sels[TTY_SEL_SECONDARY].sel_made) {
-					ttysel_deselect(ttysw, ttysw->sels+TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
-				}
-
-#ifdef OW_I18N
+			if (ttysw->sels[TTY_SEL_PRIMARY].sel_made) {
+				ttysel_deselect(ttysw, ttysw->sels+TTY_SEL_PRIMARY, TTY_SEL_PRIMARY);
 			}
-			else
-				ttysw->implicit_commit = 0;	/* turn off the flag */
-#endif
+			if (ttysw->sels[TTY_SEL_SECONDARY].sel_made) {
+				ttysel_deselect(ttysw, ttysw->sels+TTY_SEL_SECONDARY, TTY_SEL_SECONDARY);
+			}
 		}
 		cc = ttysw_output_it(ttysw_view, orbp, (int)(owbp - orbp));
-
-#ifdef OW_I18N
-		/*
-		 * Display the pre_edit region after committed string is echoed.
-		 * In case of non-echo mode, we don't guarantee the echoing of
-		 * the preedit region either.
-		 */
-		if (committed_left > 0) {
-			committed_left -= cc;
-			if (committed_left <= 0) {
-				committed_left = 0;
-			}
-		}
-#endif
 
 		orbp += cc;
 		if (orbp == owbp)
@@ -1058,19 +662,6 @@ Pkg_private void ttysw_consume_output(Ttysw_view_handle ttysw_view)
 		(void)ttysw_drawCursor(ttysw, ttysw->tty_new_cursor_row, ttysw->tty_new_cursor_col);
 		ttysw->do_cursor_draw = TRUE;
 
-#ifdef  OW_I18N
-		if (ttysw->im_store) {
-			int len;
-
-			ttysw->im_first_col = ttysw->curscol;
-			ttysw->im_first_row = ttysw->cursrow;
-			if ((len = wslen(ttysw->im_store)) > 0) {
-				tty_preedit_put_wcs(ttysw, ttysw->im_store, ttysw->im_attr,
-						ttysw->im_first_col, ttysw->im_first_row,
-						&(ttysw->im_len));
-			}
-		}
-#endif
 	}
 }
 
@@ -1124,104 +715,16 @@ then retype the missing characters."),
 Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 										register int len)
 {
-#ifdef OW_I18N
-	CHAR *wcs_buf;
-	register CHAR *wc;
-	register int wc_nchar;
-	static int rest_of_nchar = 0;
-	register char *mbc;
-	register int new_len;
-	int mb_len;
-	register int i;
-	char *save_char;
-
-#define MB_BUF_SIZE	24
-	static char rest_of_char[MB_BUF_SIZE];
-#endif
-
-#ifdef OW_I18N
-	/* convert char to CHAR: allocate to worst case (ascii) */
-	if (!(wcs_buf = (CHAR *) malloc((len + 2) * sizeof(CHAR)))) {
-		perror(XV_MSG("TTYSW:ttysw_input_it: out of memory"));
-		return 0;
-	}
-
-	if (!(save_char = (char *)malloc(len + MB_BUF_SIZE))) {
-		perror(XV_MSG("TTYSW:ttysw_input_it: out of memory"));
-		free(wcs_buf);
-		return (0);
-	}
-#undef  MB_BUF_SIZE
-
-	if (rest_of_nchar != 0)
-		XV_BCOPY(rest_of_char, save_char, rest_of_nchar);
-	strncpy(save_char + rest_of_nchar, addr, len);
-	new_len = rest_of_nchar + len;
-	save_char[new_len] = '\0';
-
-	mbc = save_char;
-	wc = wcs_buf;
-	wc_nchar = 0;
-
-	for (i = 0; i < new_len;) {
-		if (*mbc == '\0') {
-			mb_len = 1;
-			*wc = (wchar_t)'\0';
-		}
-		else {
-			mb_len = mbtowc(wc, mbc, MB_CUR_MAX);
-			if (mb_len < 0) {
-				if (new_len - i < (int)MB_CUR_MAX) {
-					if ((new_len - i) > 1 && mbc[1] <= 0x7f) {
-						mbc++;
-						i++;
-						continue;
-					}
-					break;
-				}
-				mbc++;
-				i++;
-				continue;
-			}
-		}
-		wc++;
-		mbc += mb_len;
-		i += mb_len;
-		wc_nchar++;
-	}
-
-	if (i < new_len) {
-		XV_BCOPY(mbc, rest_of_char, new_len - i);
-		rest_of_char[new_len - i] = '\0';
-		rest_of_nchar = new_len - i;
-	}
-	else
-		rest_of_nchar = 0;
-
-	free(save_char);
-#endif /* OW_I18N */
-
 	if (ttysw_getopt(ttysw, TTYOPT_TEXT)) {
 		Textsw textsw = TEXTSW_FROM_TTY(ttysw);
 
-#ifdef OW_I18N
-		(void)textsw_insert_wcs(textsw, wcs_buf, (long int)wc_nchar);
-		free(wcs_buf);
-		return (wc_nchar);
-#else
 		textsw_insert(textsw, addr, len);
 		return (len);
-#endif
 	}
 	else {
 		int bytes_copied;
 
-#ifdef OW_I18N
-		bytes_copied = ttysw_copy_to_input_buffer(ttysw, wcs_buf, wc_nchar);
-		free(wcs_buf);
-#else
 		bytes_copied = ttysw_copy_to_input_buffer(ttysw, addr, len);
-#endif
 
 		if (bytes_copied > 0) {
 			/*
@@ -1243,40 +746,6 @@ Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 		return (bytes_copied);
 	}
 }
-
-#ifdef OW_I18N
-/*
- * Add the wide character string to the input queue.
- */
-Pkg_private int ttysw_input_it_wcs(Ttysw_private ttysw, CHAR *addr, register int len)
-{
-    if (ttysw_getopt(ttysw, TTYOPT_TEXT)) {
-        Textsw	textsw = TEXTSW_FROM_TTY(ttysw);
-
-        (void) textsw_insert_wcs(textsw, addr, (long int) len);
-	return (len);
-    } else {
-	int	bytes_copied = ttysw_copy_to_input_buffer(ttysw, addr, len);
-
-	if (bytes_copied > 0) {
-	    /*
-	     * The ttysw's input state actually changed.  Arrange to flush the
-	     * input out through the pty after updating state relating to page
-	     * mode.
-	     */
-	    Ttysw_view_handle ttysw_view;
-
-	    ttysw->ttysw_lpp = 0;	/* reset page mode counter */
-	    ttysw_view = TTY_VIEW_HANDLE_FROM_TTY_FOLIO(ttysw);
-	    if (ttysw->ttysw_flags & TTYSW_FL_FROZEN)
-		(void) ttysw_freeze(ttysw_view, 0);
-	    if (!(ttysw->ttysw_flags & TTYSW_FL_IN_PRIORITIZER))
-		ttysw_reset_conditions(ttysw_view);
-	}
-	return (bytes_copied);
-    }
-}
-#endif /* OW_I18N */
 
 
 /* #ifndef TERMSW */
@@ -1306,17 +775,6 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 			frame_public = (Frame) xv_get(tty_public, WIN_OWNER);
 			switch (event_action(ie)) {
 				case KBD_USE:
-
-#ifdef  OW_I18N
-					if (xv_get(tty_public, WIN_USE_IM) && ttysw->ic) {
-						Xv_Drawable_info *info;
-
-						DRAWABLE_INFO_MACRO(ttysw_view_public, info);
-						window_set_ic_focus_win(ttysw_view_public, ttysw->ic,
-								xv_xid(info));
-					}
-#endif
-
 					ttysw_restore_cursor(ttysw);
 					frame_kbd_use(frame_public, tty_public, tty_public);
 					return TTY_DONE;
@@ -1337,14 +795,6 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 			}
 			ttysw_display(ttysw, ie);
 
-#ifdef  OW_I18N
-			if (ttysw->preedit_state) {
-				tty_preedit_put_wcs(ttysw, ttysw->im_store, ttysw->im_attr,
-						ttysw->im_first_col, ttysw->im_first_row,
-						&(ttysw->im_len));
-			}
-#endif
-
 			return (TTY_DONE);
 		case WIN_VISIBILITY_NOTIFY:
 			ttysw_view_obscured = event_xevent(ie)->xvisibility.state;
@@ -1352,40 +802,6 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 
 		case WIN_RESIZE:
 			ttysw_resize(vpriv);
-
-#ifdef  OW_I18N
-			if (ttysw->preedit_state) {
-				ttysw_preedit_resize_proc(ttysw);
-			}
-
-#ifdef FULL_R5
-			if (ttysw->ic) {
-				XRectangle x_rect;
-				Rect *xv_rect;
-				XVaNestedList preedit_nested_list;
-
-				preedit_nested_list = NULL;
-
-				if (ttysw->xim_style & (XIMPreeditPosition | XIMPreeditArea)) {
-
-					xv_rect = (Rect *) xv_get(ttysw_view_public, WIN_RECT);
-					x_rect.x = xv_rect->r_left;
-					x_rect.y = xv_rect->r_top;
-					x_rect.width = xv_rect->r_width;
-					x_rect.height = xv_rect->r_height;
-
-					preedit_nested_list = XVaCreateNestedList(NULL,
-							XNArea, &x_rect, NULL);
-				}
-
-				if (preedit_nested_list) {
-					XSetICValues(ttysw->ic,
-							XNPreeditAttributes, preedit_nested_list, NULL);
-					XFree(preedit_nested_list);
-				}
-			}
-#endif /* FULL_R5 */
-#endif /* OW_I18N */
 
 			return (TTY_DONE);
 		case ACTION_SELECT:
@@ -1423,9 +839,6 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 static int ttysw_process_select(Ttysw_private priv, Event *ev)
 {
 	if (event_is_down(ev)) {
-#ifdef OW_I18N
-		ttysw_implicit_commit(priv, 1);
-#endif
 		priv->ttysw_butdown = ACTION_SELECT;
 		SERVERTRACE((500, "%s: ACTION_SELECT down\n", __FUNCTION__));
 		ttysel_make(priv, ev, 1);
@@ -1483,53 +896,14 @@ static int ttysw_process_keyboard(Ttysw_private ttysw, Event *ev)
 			return (ttysw_domap(ttysw, ev));
 	}
 
-#ifdef  OW_I18N
-	if (event_is_string(ev) && event_is_down(ev)) {
-		/*
-		 *    This is a committed string or a string generated from a non-English
-		 *    keyboard.  For example, a kana string from the Nihongo keyboard.
-		 *    This string should only be displayed once on the down event.
-		 */
-		wchar_t *ws_char;
-
-		ws_char = _xv_mbstowcsdup(ev->ie_string);
-		committed_left = wslen(ws_char);
-		(void)ttysw_input_it_wcs(ttysw, ws_char, committed_left);
-		free(ws_char);
-		return TTY_DONE;
-	}
-#endif
-
+	/* INCOMPLETE  event_is_string(ev) ??? */
 	if ((id >= ASCII_FIRST && id <= ISO_LAST) && (event_is_down(ev))) {
-		char c = (char)id;
-
-		/*
-		 * State machine for handling logical caps lock, ``F1'' key.
-		 * Capitalize characters except when an ESC goes by.  Then go into a
-		 * state where characters are passed uncapitalized until an
-		 * alphabetic character is passed.  We presume that all ESC sequences
-		 * end with an alphabetic character.
-		 *
-		 * Used to solve the function key problem where the final `z' is is
-		 * being capitalized. (Bug id: 1005033)
-		 */
-		if (ttysw->ttysw_capslocked & TTYSW_CAPSLOCKED) {
-			if (ttysw->ttysw_capslocked & TTYSW_CAPSSAWESC) {
-				if (isalpha(c))
-					ttysw->ttysw_capslocked &= ~TTYSW_CAPSSAWESC;
-			}
-			else {
-				if (islower(c))
-					c = toupper(c);
-				else if (c == '\033')
-					ttysw->ttysw_capslocked |= TTYSW_CAPSSAWESC;
-			}
-		}
 		if (event_is_string(ev)) {
 			ttysw_input_it(ttysw, event_string(ev),
 								(int)strlen(event_string(ev)));
 		}
 		else {
+			char c = (char)id;
 			ttysw_input_it(ttysw, &c, 1);
 		}
 
@@ -1732,131 +1106,3 @@ ttysw_flush_input(ttysw)
     /* Flush ttysw input pending buffer */
     irbp = iwbp = ibuf;
 }
-
-#ifdef  OW_I18N
-/*
- *      This function converts a wide-character-string to a multibyte
- *      string without any regard to null-characters.
- */
-/* BUG ALERT: No XView prefix */
-/* static */ int
-wcstombs_with_null(mbs, wcs, nchar)
-    char        *mbs;
-    wchar_t     *wcs;
-    register int        nchar;
-{
-    register char       *mbs_tmp = mbs;
-    register wchar_t    *wcs_tmp = wcs;
-    register int        i,mb_len;
-
-    for( i = 0 ; i < nchar ; i++ ) {
-        if( iswascii(*wcs_tmp) ) {
-		/* It includes NULL char. */
-                mb_len = 1;
-#ifdef sun
-		/*
-		 * This direct casting depends on the wchar_t implementation.
-		 * It's Sun specific. The main reason to do so here is to
-		 * get better performance.
-		 */
-                *mbs_tmp = (char)*wcs_tmp;
-#endif
-        }
-        else {
-                mb_len = wctomb( mbs_tmp, *wcs_tmp );
-        }
-        wcs_tmp++;
-        mbs_tmp += mb_len;
-    }
-
-    return( (int)(mbs_tmp - mbs) );
-
-}
-
-/*
- *	The function is called for drawing implicit commit text.
- */
-Pkg_private void
-ttysw_implicit_commit(folio, as_input)
-Ttysw_private	folio;
-int		as_input;
-{
-
-    if (folio->ic) {
-	register Tty    ttysw_public = TTY_PUBLIC(folio);
-	int		conv_on;
-
-	conv_on = (int)xv_get(ttysw_public, WIN_IC_CONVERSION, NULL);
-
-	/*
-	 * WIN_IC_CONVERSION is a Sun extension attribute which is not
-	 * supported in htt (xim server). Thus, force it be true now.
-	 */
-	conv_on = 1;
-
-	if ( conv_on != 0 ) {
-	    CHAR	*commit_text;
-	    int		len;
-
-	    /*
-	     * Just in case when (im_store == NULL). It's true in CLE
-	     * which has a Cnversion_On mode without any preedit.
-	     */
-	    if ( !folio->im_store )
-		return;
-
-	    len = wslen(folio->im_store);
-	    if ( len == 0 )
-		return;
-
-	    xv_set(ttysw_public, WIN_IC_RESET, NULL);
-	    commit_text = (CHAR *)xv_get(ttysw_public,
-						WIN_IC_COMMIT_STRING_WCS, NULL);
-
-	    /*
-	     * Clean up preedit. It should be done by preedit callback.
-	     * But since the callbacks will be switched in term mode
-	     * switch, ttysw preedit callbacks will sit in event queue
-	     * until switch back to tty mode. Anyway, preedit should be
-	     * erased for IC reset.
-	     */
-	    folio->im_store[0] = 0;
-	    folio->im_len = 0;
-
-	    xv_set(ttysw_public, WIN_IC_CONVERSION, TRUE, NULL);
-
-	    /*
-	     * temporary code due to the libxim problem(s) in turning on
-	     * conversion after RESET.
-	     */
-
-	    /*
-	     * This is an extension attribute.
-	     *
-	    conv_on = (int)xv_get(ttysw_public, WIN_IC_CONVERSION, NULL);
-	    if ( conv_on == 0 )
-		xv_set(ttysw_public, WIN_IC_CONVERSION, TRUE, NULL);
-	     *
-	     */
-
-	    /*
-	     * if (as_input == 0), not send the committed string out
-	     * as the ttysw input. It only happens when enabling scrolling
-	     * (shelltool => cmdtool).
-	     */
-	    if ( ( commit_text != (CHAR *)NULL ) && as_input ) {
-		len = wslen(commit_text);
-		if ( len > 0 )
-		    /*
-		     * Turn on the flag, tell ttysw_consume_output()
-		     * not erase any selection.
-		     */
-		    folio->implicit_commit = 1;
-
-		    ttysw_input_it_wcs(folio, commit_text, len);
-	    }
-	}
-    }
-}
-
-#endif
