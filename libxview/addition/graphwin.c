@@ -5,7 +5,7 @@
 #include <xview/help.h>
 #include <xview/font.h>
 
-char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.37 2026/07/23 20:04:00 dra Exp $";
+char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.38 2026/07/30 19:48:18 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -2250,9 +2250,14 @@ static Xv_opaque graphpaint_set(Xv_opaque self, Attr_avlist avlist)
 		case GRAPH_USE_NON_STANDARD_CONTEXT:
 			if (! (priv->state & ST_XOR)) {
 				priv->current_gc = (GC)A1;
-				priv->current_fs = 
-					(XFontSet)xv_get(xv_get(GRAPHPUB(priv->ownerpriv),XV_FONT),
+				if (A2) {
+					priv->current_fs = (XFontSet)xv_get(A2, FONT_SET_ID);
+				}
+				else {
+					priv->current_fs = (XFontSet)xv_get(xv_get(
+											GRAPHPUB(priv->ownerpriv),XV_FONT),
 											FONT_SET_ID);
+				}
 			}
 			ADONE;
 		case GRAPH_DRAW_POINT:
