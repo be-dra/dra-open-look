@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.43 2026/01/13 09:26:17 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.44 2026/07/30 12:06:21 dra Exp $";
 #endif
 
 /*
@@ -27,11 +27,6 @@ char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttysele
 extern char *xv_app_name;
 
 typedef void (*tty_enumeration_t)(Ttysw_private ttysw, int start,int finish, int row, void *count, struct ttyselection *);
-
-#ifdef  OW_I18N
-static void     ttycountbytes();
-static Seln_result ttysel_copy_out_wchar();
-#endif
 
 #define	SEL_NULLPOS	-1
 
@@ -111,128 +106,6 @@ static	void init_delim_table(void)
 }
 
 
-#ifdef OW_I18N
-static void ttysel_resolve(Ttysw_private ttysw, tb, te, level, event)
-    register struct textselpos *tb, *te;
-    int             level;
-    struct inputevent *event;
-{
-    register CHAR  *line;
-    int             cwidth;
-    int             offset;
-
-    tb->tsp_row = y_to_row(event->ie_locy);
-    if (tb->tsp_row >= ttysw->ttysw_bottom)
-        tb->tsp_row = MAX(0, ttysw->ttysw_bottom - 1);
-    else
-    if( tb->tsp_row < 0 )
-        tb->tsp_row = 0;
-
-    line = image[tb->tsp_row];
-    tb->tsp_col = x_to_col(event->ie_locx);
-
-    if (tb->tsp_col > (int)LINE_LENGTH(line))
-        tb->tsp_col = LINE_LENGTH(line);
-
-    *te = *tb;
-    switch (level) {
-      case SEL_CHAR:
-            tty_column_wchar_type( tb->tsp_col, tb->tsp_row, &cwidth, &offset );
-            tb->tsp_col -= offset;
-            tty_column_wchar_type( te->tsp_col, te->tsp_row, &cwidth, &offset );
-            te->tsp_col +=( cwidth - offset -1 );
-        break;
-      case SEL_WORD:{
-            register int     chr,col;
-            CHAR             wchr;
-            register unsigned char match_mode;
-               /*
-                *    It is no use if we start at second or latter column of a
-                *    character. So we adjust the starting position to
-                *    get a correct match_mode.
-                */
-            tty_column_wchar_type( te->tsp_col, te->tsp_row, &cwidth, &offset );
-            te->tsp_col -= offset;
-#ifdef  DELIM_TABLE_USE
-        /*
-         *      SUNDAE;  This compile switch is used if you want to
-         *      use delim_table which is created ininit_delim_table
-         *      to distinguish a word. When this switch is off,
-         *      you use wchar_type() to distinguish a word.
-         */
-            if( delim_init == FALSE )
-                    init_delim_table();
-            match_mode  = delim_table[line[te->tsp_col]];
-#else
-            match_mode  = (unsigned char)wchar_type( &line[te->tsp_col] );
-#endif
-
-            for (col = te->tsp_col; col < (int)LINE_LENGTH(line); col++) {
-#ifdef  DELIM_TABLE_USE
-                chr = (int)line[col];
-                if( (CHAR)chr == TTY_NON_WCHAR )
-                        continue;
-                if ( delim_table[chr] != match_mode )
-                        break;
-#else
-                wchr = line[col];
-                if( wchr == TTY_NON_WCHAR )
-                        continue;
-                if ( wchar_type(&wchr) != match_mode )
-                        break;
-#endif
-            }
-            /*
-             *  Here, col surely points to the 1st column of a character.
-             *  So we can just step one column backwards to get to the
-             *  word boundary.
-             */
-            te->tsp_col = MAX(col - 1, tb->tsp_col);
-            for (col = tb->tsp_col; col >= 0; col--) {
-#ifdef  DELIM_TABLE_USE
-                chr = (int)line[col];
-                if( (CHAR)chr == TTY_NON_WCHAR )
-                        continue;
-                if ( delim_table[chr] != match_mode )
-                        break;
-#else
-                wchr = line[col];
-                if( wchr == TTY_NON_WCHAR )
-                        continue;
-                if ( wchar_type(&wchr) != match_mode )
-                        break;
-#endif
-            }
-            /*
-             *  We can be sure that current position is the first column
-             *  of a character. So offset must be zero.
-             */
-            tty_column_wchar_type( col, tb->tsp_row, &cwidth, &offset );
-            tb->tsp_col = MIN(col + cwidth, te->tsp_col);
-            break;
-        }
-      case SEL_LINE:
-        tb->tsp_col = 0;
-        te->tsp_col = LINE_LENGTH(line) - 1;
-        break;
-      case SEL_PARA:{
-            register int    row;
-
-            for (row = tb->tsp_row; row >= ttysw->ttysw_top; row--)
-                if (LINE_LENGTH(image[row]) == 0)
-                    break;
-            tb->tsp_row = MIN(tb->tsp_row, row + 1);
-            tb->tsp_col = 0;
-            for (row = te->tsp_row; row < ttysw->ttysw_bottom; row++)
-                if (LINE_LENGTH(image[row]) == 0)
-                    break;
-            te->tsp_row = MAX(te->tsp_row, row - 1);
-            te->tsp_col = LINE_LENGTH(image[te->tsp_row]) - 1;
-            break;
-        }
-    }
-}
-#else	/* OW_I18N */
 static void ttysel_resolve(Ttysw_private ttysw, struct textselpos *tb, struct textselpos *te,
 						int level, Event *event)
 {
@@ -300,7 +173,6 @@ static void ttysel_resolve(Ttysw_private ttysw, struct textselpos *tb, struct te
 			}
 	}
 }
-#endif
 
 static void tvsub(struct timeval *tdiff, struct timeval *t1, struct timeval *t0)
 {
@@ -529,11 +401,7 @@ static void ttyenumerateselection(Ttysw_private ttysw,
 	    /*
 	     * Partial line hilite from beginning
 	     */
-#ifdef OW_I18N
-            proc(ttysw, begin->tsp_col, LINE_LENGTH(ttysw->image[row]), row, data, ttysel);
-#else
 	    proc(ttysw, begin->tsp_col, LINE_LENGTH(ttysw->image[row]), row, data, ttysel);
-#endif
 	} else if (row == end->tsp_row) {
 	    /*
 	     * Partial line hilite not to end
@@ -543,72 +411,11 @@ static void ttyenumerateselection(Ttysw_private ttysw,
 	    /*
 	     * Full line hilite
 	     */
-#ifdef OW_I18N
-            proc(ttysw, 0, LINE_LENGTH(ttysw->image[row]), row, data, ttysel);
-#else
 	    proc(ttysw, 0, LINE_LENGTH(ttysw->image[row]), row, data, ttysel);
-#endif
 	}
     }
 }
 
-#ifdef OW_I18N
-static void
-ttycountchars(Ttysw_private ttysw, start, finish, row, count)
-/*
- * Since it does not use the selection rank, it is not include in the
- * argument list
- */
-    register int                        row, *count;
-    register int                        start, finish;
-{
-    register int        i;
-    register int        char_conut = 0;
-    CHAR                *line = ttysw->image[row];
-
-    for( i = start; i<= finish; i++ ) {
-        if( line[i] != TTY_NON_WCHAR )
-                char_conut++;
-    }
-    *count += char_conut;
-    if (LINE_LENGTH(ttysw->image[row]) == finish &&
-            finish == ttysw->ttysw_right) {
-        *count -= 1;            /* no CR on wrapped lines        */
-    }
-}
-static void
-ttycountbytes(start, finish, row, count)
-/*
- * Since it does not use the selection rank, it is not include in the
- * argument list
- */
-    register int                        row, *count;
-    register int                        start, finish;
-{
-    register int        i;
-    register int        byte_count = 0;
-    register int        len;
-    CHAR                *line = ttysw->image[row];
-    char                dummy[10];
-
-    for( i = start; i<= finish; i++ ) {
-        if( line[i] == TTY_NON_WCHAR )
-                continue;
-        len = wctomb( dummy, line[i] );
-        /*
-         *       Take care the case of null character
-         */
-        if( len == 0 )
-                len = 1;
-        byte_count += len;
-    }
-    *count += byte_count;
-    if (LINE_LENGTH(ttysw->image[row]) == finish &&
-            finish == ttysw->ttysw_right) {
-        *count -= 1;            /* no CR on wrapped lines        */
-    }
-}
-#else /* OW_I18N */
 static void ttycountchars(Ttysw_private ttysw, int start,int finish, int row,void *xcount, struct ttyselection *u)
 /*
  * Since it does not use the selection rank, it is not include in the
@@ -622,7 +429,6 @@ static void ttycountchars(Ttysw_private ttysw, int start,int finish, int row,voi
 	*count -= 1;		/* no CR on wrapped lines	 */
     }
 }
-#endif
 
 static int ttysel_eq(struct textselpos *t1, struct textselpos *t2)
 {
@@ -849,16 +655,6 @@ static void my_write_string(Ttysw_private ttysw, int start,int end,int row)
 {
 	CHAR *str = ttysw->image[row];
 	CHAR temp_char = (CHAR) '\0';
-
-#ifdef OW_I18N
-	int cwidth;
-	int offset;
-
-	tty_column_wchar_type(start, row, &cwidth, &offset);
-	start -= offset;
-	tty_column_wchar_type(end, row, &cwidth, &offset);
-	end += (cwidth - offset - 1);
-#endif
 
 	if ((end + 1) < (int)STRLEN(str)) {	/* This is a very dirty trick for
 										 * speed */
