@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.35 2026/06/22 09:06:37 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.36 2026/07/30 12:06:21 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -27,6 +27,7 @@
 #include <pixrect/pixrect.h>
 #include <pixrect/pixfont.h>
 #include <xview/textsw.h>
+#include <xview/font.h>
 #include <xview_private/i18n_impl.h>
 #include <xview_private/es.h>
 #include <xview/sel_pkg.h>
@@ -85,9 +86,6 @@ struct keymaptab {
 struct textselpos {
     int			tsp_row;
     int			tsp_col;
-#ifdef  OW_I18N
-    int			tsp_charpos;
-#endif
 };
 
 struct ttyselection {
@@ -154,10 +152,6 @@ typedef struct ttysubwindow {
     int                 ttysw_lpp;		/* page mode: lines per page */
     /* subprocess */
     int                 ttysw_pidchild;		/* pid of the child */
-    /* Caps Lock */
-    int                 ttysw_capslocked;
-#define TTYSW_CAPSLOCKED	0x01	/* capslocked on mask bit */
-#define TTYSW_CAPSSAWESC	0x02	/* saw escape while caps locked */
     /* stuff from old ttytlsw */
     enum ttysw_hdrstate	hdrstate;		/* string trying to load */
     CHAR		*nameptr;               /* namebuf ptr */
@@ -173,23 +167,6 @@ typedef struct ttysubwindow {
     struct keymaptab    ttysw_kmt[3 * 16 + 2];	/* Key map list */
     struct keymaptab   *ttysw_kmtp;		/* next empty ttysw_kmt slot */
     window_layout_proc_t layout_proc; /* interposed window layout proc */
-#ifdef  OW_I18N
-    int                 im_first_col;
-    int                 im_first_row;
-    int                 im_len;
-    wchar_t             *im_store;
-    XIMFeedback         *im_attr;
-    Bool                preedit_state;
-    XIC                 ic;
-    int			implicit_commit;
-
-    XIMCallback     	start_pecb_struct;
-    XIMCallback     	draw_pecb_struct;
-    XIMCallback     	done_pecb_struct;
-#ifdef FULL_R5
-    XIMStyle	xim_style;
-#endif /* FULL_R5 */
-#endif
     int			pass_thru_modifiers;  /* Modifiers we don't interpret */
     int			eight_bit_output; /* Print eight bit characters? */
 
@@ -218,7 +195,7 @@ typedef struct ttysubwindow {
 	int	winheightp, winwidthp;
 	int	chrleftmargin;
 	char boldify;
-	struct pixfont *pixfont;
+	Xv_font pixfont;
 	int tty_new_cursor_row, tty_new_cursor_col;
 }   Ttysw;
 
@@ -230,7 +207,7 @@ typedef struct ttysw_view_object {
     Ttysw_private	folio;
 	Xv_Cursor       ttysw_stop_cursor;	/* stop sign cursor (i.e., CTRL-S) */
 	Xv_Cursor       ttysw_cursor;	/* stop sign cursor (i.e., CTRL-S) */
-	struct pixfont *pixfont;
+	Xv_font pixfont;
 } Ttysw_view_object;
 
 typedef Ttysw_view_object* 	Ttysw_view_handle;
@@ -378,7 +355,6 @@ Pkg_private void ttysw_flush_input(Ttysw_private ttysw);
 Pkg_private void termsw_menu_set(void);
 Pkg_private void termsw_menu_clr(void);
 Pkg_private void ttysw_readrc(struct ttysubwindow *ttysw);
-Pkg_private void ttysw_display_capslock(struct ttysubwindow *ttysw);
 Pkg_private void ttysw_getp(Ttysw_view_handle ttysw_view);
 Pkg_private void ttysw_doing_pty_insert(Textsw textsw, struct _Termsw_folio_object *commandsw, int toggle);
 Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie);
@@ -416,13 +392,7 @@ Pkg_private void
 	xv_tty_free_image_and_mode(Ttysw_private ttysw),
 	xv_tty_imagealloc(Ttysw *ttysw, int for_temp);
 
-Pkg_private void xv_new_tty_chr_font(Ttysw_private ttysw,
-#ifdef OW_I18N
-    Xv_opaque	font
-#else
-    Pixfont    	*font
-#endif
-);
+Pkg_private void xv_new_tty_chr_font(Ttysw_private ttysw, Xv_opaque	font);
 
 Pkg_private void ttysw_textsw_changed(Textsw textsw, Attr_avlist attributes);
 Pkg_private void ttysw_show_walkmenu(Tty_view anysw_view_public, Event *event);
@@ -442,12 +412,6 @@ Pkg_private void ttysw_writePartialLine(Ttysw_private ttysw, CHAR *s, int cursco
 Pkg_private void ttysw_underscore_mode(Ttysw_private ttysw);
 Pkg_private void ttysw_vpos(Ttysw_private ttysw, int row, int col);
 Pkg_private void xv_tty_new_size(Ttysw_private ttysw, int cols, int lines);
-
-#ifdef OW_I18N
-Pkg_private void tty_column_wchar_type(int xChar, int yChar,
-		int *cwidth, /* character width (RETURN) */
-		int *offset); /* offset of charcter (RETURN) */
-#endif
 
 Pkg_private int ttysw_freeze(Ttysw_view_handle ttysw_view, int on);
 Pkg_private int ttysw_ansi_escape(Tty_view ttysw_view_public, int c, int ac, int *av);
@@ -488,13 +452,6 @@ Pkg_private int ttytlsw_escape(Tty_view ttysw_view_public, int c, int ac, int *a
 Pkg_private void ttysw_pty_output(Ttysw_private ttysw, int pty);
 Pkg_private Notify_value ttysw_pty_input_pending(Tty tty_public, int pty);
 Pkg_private int ttysw_cooked_echo_cmd(Ttysw_view_handle ttysw_view, char *buf, int buflen);
-
-#ifdef OW_I18N
-Pkg_private int
-	tty_character_size(CHAR),
-	tty_get_nchars(int colstart, int colend, int row),
-	ttysw_input_it_wcs(Ttysw_private ttysw, CHAR *addr, register int len);
-#endif
 
 /* Pkg_private void ttyhiliteselection(struct ttyselection *ttysel, */
 /* 										enum __seln_rank rank); */
