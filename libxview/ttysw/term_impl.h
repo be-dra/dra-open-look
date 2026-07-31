@@ -1,4 +1,4 @@
-/* @(#)term_impl.h 20.32 93/06/28 SMI dra: $Id: term_impl.h,v 4.8 2025/05/29 08:12:48 dra Exp $ */
+/* @(#)term_impl.h 20.32 93/06/28 SMI dra: $Id: term_impl.h,v 4.9 2026/07/30 12:06:21 dra Exp $ */
 
 /****************************************************************************/
 /*
@@ -203,11 +203,6 @@ typedef struct _Termsw_folio_object {
     /* For Textedit */
     Textsw		textedit;
     Panel		textedit_panel;
-
-#ifdef OW_I18N
-    XIC                 ic;             /* This IC is created by textsw */
-#endif
-
 } Termsw_folio_object;
 typedef Termsw_folio_object	*Termsw_folio;
 
@@ -231,19 +226,6 @@ Pkg_private Notify_value termsw_text_event(Termsw_view view, Notify_event ev,
 Pkg_private int	tty_notice_key;
 
 /* to obviate #ifdefs elsewhere... */
-#ifdef	OW_I18N
-#define	TEXTSW_LENGTH_I18N		TEXTSW_LENGTH_WC
-/* This attribute dosen't do implicit commit. */
-#define	TEXTSW_CONTENTS_I18N		TEXTSW_CONTENTS_WCS_NO_COMMIT
-#define	textsw_replace_i18n		textsw_replace_wcs
-#define	textsw_find_i18n		textsw_find_wcs
-#define	TEXTSW_FIRST_I18N		TEXTSW_FIRST_WC
-#define	TEXTSW_INSERTION_POINT_I18N	TEXTSW_INSERTION_POINT_WC
-#define	textsw_find_mark_i18n		textsw_find_mark_wc
-#define	textsw_add_mark_i18n		textsw_add_mark_wc
-#define	textsw_erase_i18n		textsw_erase_wcs
-#define	textsw_delete_i18n		textsw_delete_wcs
-#else /* OW_I18N */
 #define	TEXTSW_LENGTH_I18N		TEXTSW_LENGTH
 #define	TEXTSW_CONTENTS_I18N		TEXTSW_CONTENTS
 #define	textsw_replace_i18n		textsw_replace_bytes
@@ -254,7 +236,6 @@ Pkg_private int	tty_notice_key;
 #define	textsw_add_mark_i18n		textsw_add_mark
 #define	textsw_erase_i18n		textsw_erase
 #define	textsw_delete_i18n		textsw_delete
-#endif /* OW_I18N */
 
 Pkg_private Termsw_view_handle termsw_first_view_private(Termsw_folio priv);
 ;
