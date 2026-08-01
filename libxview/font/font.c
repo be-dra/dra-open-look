@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.17 2026/07/24 22:01:23 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.19 2026/08/01 07:57:09 dra Exp $ ";
 #endif
 #endif
 
@@ -778,6 +778,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 	 * initialization
 	 */
 	my_attrs.linfo = linfo;
+	my_attrs.type = FONT_TYPE_TEXT;
 	font_init_create_attrs(&my_attrs);
 	SERVERTRACE((777, "%s: %ld: type=%d, multibyte=%d\n", __FUNCTION__,selfpub,
 								my_attrs.type, _xv_is_multibyte));
@@ -935,6 +936,8 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 							+ ((XFontStruct *) x_font_info)->descent;
 		font->column_width = font->def_char_width;
 	}
+	SERVERTRACE((577, "%s: default char w %d, h %d\n", __FUNCTION__,
+					font->def_char_width, font->def_char_height));
 	(void)xv_set((Xv_opaque) font_public, XV_RESET_REF_COUNT, NULL);
 	font->type = my_attrs.type;
 
@@ -1568,7 +1571,7 @@ Xv_private char *xv_font_scale()
 static char *font_determine_font_name(Font_return_attrs my_attrs)
 {
 	char name[512];
-	char sizestr[11];
+	char sizestr[12];
 
 	/*
 	 * Return null if no family/style specified
@@ -2150,6 +2153,7 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 
 	/* Attribute initialization */
 	my_attrs.linfo = linfo;
+	my_attrs.type = FONT_TYPE_TEXT;
 	font_init_create_attrs(&my_attrs);
 
 	font_attrs_exist = font_read_attrs(&my_attrs, FALSE, avlist);
@@ -3833,51 +3837,57 @@ static XID font_try_misc_name(Font_return_attrs	font_attrs, Display *display,
 
 Pkg_private void font_setup_pixfont(Xv_font_struct	*font_public)
 {
-    register struct pixchar *pfc;
-    Font_info		*xv_font_info = FONT_PRIVATE(font_public);
-	XFontStruct     *x_font_info;
-    Pixfont	*pixfont;
-    int	i, default_x, default_y, max_char, min_char;
+	register struct pixchar *pfc;
+	Font_info *xv_font_info = FONT_PRIVATE(font_public);
+	XFontStruct *x_font_info;
+	Pixfont *pixfont;
+	int i, default_x, default_y, max_char, min_char;
 
 	if (_xv_is_multibyte) {
 		x_font_info = xv_font_info->font_structs
-								? xv_font_info->font_structs[0] : NULL;
+				? xv_font_info->font_structs[0] : NULL;
 	}
 	else {
 		x_font_info = (XFontStruct *)xv_font_info->x_font_info;
 	}
+
+	SERVERTRACE((777, "%s: fs[0]=%p, fi=%p for %s\n", __FUNCTION__,
+						xv_font_info->font_structs ?
+									xv_font_info->font_structs[0] : NULL,
+						xv_font_info->x_font_info, 
+						xv_font_info->name));
 
 	/* this is just "hiding the problem" instead of finding the reason */
 #ifdef STUPID_PROBLEM_HIDING
 	/* Safety check: If we still don't have a valid XFontStruct,
 	 * we must bail out
 	 */
-    if (!x_font_info) return;
+	if (!x_font_info)
+		return;
 #endif
+
 	assert(x_font_info != NULL);
 
-    pixfont = (Pixfont *)xv_get((Xv_opaque)font_public, FONT_PIXFONT);
+	pixfont = (Pixfont *) xv_get((Xv_opaque) font_public, FONT_PIXFONT);
 
-    default_x = xv_font_info->def_char_width;
-    default_y = xv_font_info->def_char_height;
+	default_x = xv_font_info->def_char_width;
+	default_y = xv_font_info->def_char_height;
 
-    /*
-     * Pixfont compat
-     */
-    max_char = MIN(255, x_font_info->max_char_or_byte2);
-    min_char = MIN(255, x_font_info->min_char_or_byte2);
+	/*
+	 * Pixfont compat
+	 */
+	max_char = MIN(255, x_font_info->max_char_or_byte2);
+	min_char = MIN(255, x_font_info->min_char_or_byte2);
 
-    pixfont->pf_defaultsize.x = default_x;
-    pixfont->pf_defaultsize.y = default_y;
-    for (i = min_char, pfc = &(pixfont->pf_char[i]);
-	 i <= MIN(255, max_char);	/* "i" cannot ever be >255 - pixfont
-					 * compat */
-	 i++, pfc++) {
-	    xv_x_char_info((XFontStruct *) x_font_info, i - min_char,
-		       &pfc->pc_home.x, &pfc->pc_home.y,
-		       &pfc->pc_adv.x, &pfc->pc_adv.y,
-		       &pfc->pc_pr);
-    }
+	pixfont->pf_defaultsize.x = default_x;
+	pixfont->pf_defaultsize.y = default_y;
+	/* "i" cannot ever be >255 - pixfont compat */
+	for (i = min_char, pfc = &(pixfont->pf_char[i]); i <= MIN(255, max_char);	
+			i++, pfc++) {
+		xv_x_char_info((XFontStruct *) x_font_info, i - min_char,
+				&pfc->pc_home.x, &pfc->pc_home.y,
+				&pfc->pc_adv.x, &pfc->pc_adv.y, &pfc->pc_pr);
+	}
 }
 
 Pkg_private void font_check_var_height (int	*variable_height_font, XFontStruct	*x_font_info)
@@ -4030,14 +4040,24 @@ static Xv_opaque font_set_avlist(Xv_Font font_public, Attr_attribute avlist[])
 				/* In single-byte mode, we adjust the default character width 
                  * based on the dimensions of the character 'n'.
 				 */
-				if (!_xv_is_multibyte) {
-					Font_string_dims dims;
-																	      
-					xv_get(font_public, FONT_STRING_DIMS, "n", &dims, 0);
-					if ((dims.width>0) && (dims.width<font->def_char_width)) {
-						font->def_char_width = dims.width;
-					}
+
+				/* and why shouldn't we do this also in multibyte mode???
+				 * PANEL_CHOICE boxes were a little to wide....
+				 */
+				Font_string_dims dims;
+
+				xv_get(font_public, FONT_STRING_DIMS, "n", &dims, 0);
+				if ((dims.width>0) && (dims.width<font->def_char_width)) {
+					font->def_char_width = dims.width;
+
+					/* in single byte mode, there was no difference here -
+					 * in multibyte mode, let's see what happens:
+					 * At least, the PANEL_CHOICEs look better...
+					 */
+					font->def_char_height = dims.height;
 				}
+				SERVERTRACE((577, "%s: default char w %d, h %d\n",
+						__FUNCTION__, font->def_char_width, dims.height));
 #ifdef CHECK_OVERLAPPING_CHARS
 					if (font->overlapping_chars && font->type == FONT_TYPE_TEXT) {
 						char dummy[128];
