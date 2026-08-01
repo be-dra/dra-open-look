@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.19 2026/07/27 19:28:16 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.20 2026/07/31 16:04:29 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -126,8 +126,8 @@ Pkg_private struct pr_size panel_make_image( Xv_Font font, Panel_image *dest,
 	int line_start;	/* char index of the beginning of a new line */
 	int max_width;
 	struct pr_size size;
-	CHAR *str;
-	CHAR *value_str;
+	char *str;
+	char *value_str;
 
 	/* REF (hklesbrfhklbserf) */
 	if (is_string(dest)) {
@@ -141,7 +141,7 @@ Pkg_private struct pr_size panel_make_image( Xv_Font font, Panel_image *dest,
 	switch (type_code) {
 		case PIT_STRING:
 			if (value)
-				value_str = (CHAR *) value;
+				value_str = (char *) value;
 			else
 				value_str = "";
 			if (!(str = (char *)panel_strsave(value_str)))
@@ -459,7 +459,7 @@ Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
 	Xv_Window pw;	/* paint window */
 	Xv_Screen screen;
 	struct pr_size size;
-	CHAR *str;
+	char *str;
 
 	chrht = xv_get(image_font(image), FONT_DEFAULT_CHAR_HEIGHT);
 	PANEL_EACH_PAINT_WINDOW(panel, pw)
@@ -635,22 +635,10 @@ Pkg_private int panel_fonthome(Xv_Font font)
 {
     register int    max_home = 0;
     int			pc_home_y;
+	XFontStruct		*x_font_info;
 
-	if (_xv_is_multibyte) {
-    	XFontSet        font_set;
-    	XFontSetExtents *font_set_extents;
-
-
-    	font_set = (XFontSet)xv_get(font, FONT_SET_ID);
-    	font_set_extents = XExtentsOfFontSet(font_set);
-    	pc_home_y = font_set_extents->max_logical_extent.y;
-	}
-	else {
-    	XFontStruct		*x_font_info;
-
-    	x_font_info = (XFontStruct *)xv_get(font, FONT_INFO);
-    	pc_home_y = -x_font_info->ascent;
-	}
+	x_font_info = (XFontStruct *)xv_get(font, FONT_INFO);
+	pc_home_y = -x_font_info->ascent;
 
 	if (pc_home_y < max_home)
 		max_home = pc_home_y;
