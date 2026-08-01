@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.19 2026/07/29 04:32:15 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.20 2026/07/31 08:30:50 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -72,6 +72,7 @@ typedef enum ollc_from {
 typedef struct ollc_item {
 	char		*locale;
 	Ollc_from	from;
+	int multibyte;
 } Ollc_item;
 
 struct _xvwp;
