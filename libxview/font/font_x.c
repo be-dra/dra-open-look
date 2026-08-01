@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.5 2026/07/20 22:22:11 dra Exp $ ";
+static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.7 2026/07/31 08:41:04 dra Exp $ ";
 #endif
 #endif
 
@@ -38,7 +38,7 @@ Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale,
 #define		TEMP_NAME_BUF_SIZE	1024
     char                save_locale[125];
     XFontSet            font_set = NULL;
-    char                **miss_list = NULL;
+    char                **missing_charsets = NULL;
     char		*font_name_list;
     int			missing_charset_count;
     char		*def_string;
@@ -65,7 +65,7 @@ Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale,
     fs_list = temp_fs_list;
 
     font_name_list = temp_list = (str_len > TEMP_NAME_BUF_SIZE) ?
-    				      (char *)malloc(str_len + 1) :
+    				      (char *)malloc(str_len + 10) :
     				      temp_name_buf;
     font_name_list[0] = '\0';
     for (;;) {
@@ -77,9 +77,11 @@ Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale,
         *temp_list++ = ',';
         *temp_list = '\0';
     }
+	/* when this ",*" was added, no more missing_charsets were reported */
+	strcat(font_name_list, ",*");
 	SERVERTRACE((777, "%s: '%s', locale=%s\n", __FUNCTION__, font_name_list,
 								locale));
-	font_set = XCreateFontSet(dpy, font_name_list, &miss_list,
+	font_set = XCreateFontSet(dpy, font_name_list, &missing_charsets,
 						&missing_charset_count, &def_string);
 
    	if ((font_name_list) && (font_name_list != temp_name_buf))
@@ -87,13 +89,13 @@ Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale,
 
     setlocale(LC_CTYPE, (char *)save_locale);
 
-    if (miss_list && (missing_charset_count > 0)) {
+    if (missing_charsets && (missing_charset_count > 0)) {
 		int i;
 		SERVERTRACE((777, "  Fehlende Charsets: %d\n", missing_charset_count));
 		for (i = 0; i < missing_charset_count; i++) {
-			SERVERTRACE((777, "    - %s\n", miss_list[i]));
+			SERVERTRACE((777, "    - %s\n", missing_charsets[i]));
 		}
-        XFreeStringList(miss_list);
+        XFreeStringList(missing_charsets);
 	}
 
 #undef	TEMP_NAME_BUF_SIZE
