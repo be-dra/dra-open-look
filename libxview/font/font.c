@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.19 2026/08/01 07:57:09 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.20 2026/08/02 06:59:34 dra Exp $ ";
 #endif
 #endif
 
@@ -921,7 +921,14 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 		SERVERTRACE((777, "%s: %ld: names[0]=%s\n", __FUNCTION__,selfpub, font->names[0]));
 		font_set_extents = XExtentsOfFontSet(font_set);
 		font->def_char_width = font_set_extents->max_logical_extent.width;
+
+#ifdef BEFORE_DRA_CHANGED
+		/* in my opinion, this is a bit too high */
 		font->def_char_height = font_set_extents->max_logical_extent.height;
+#else /* BEFORE_DRA_CHANGED */
+		x_font_info = font->font_structs[0];
+		font->def_char_height = x_font_info->ascent + x_font_info->descent;
+#endif /* BEFORE_DRA_CHANGED */
 		/*
 		 * Using "n" to determining the columns width is solely based
 		 * on the historical reason (read compatibility).
