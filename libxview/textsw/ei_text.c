@@ -1,5 +1,5 @@
 #ifndef lint
-char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.9 2026/07/30 06:58:37 dra Exp $";
+char     ei_text_c_sccsid[] = "@(#)ei_text.c 20.79 93/06/28 DRA: $Id: ei_text.c,v 4.12 2026/08/02 06:50:59 dra Exp $";
 #endif
 
 /*
@@ -56,7 +56,7 @@ typedef struct ei_plain_text_object {
     unsigned        state;
     struct pr_pos   font_home;	/* == MIN all homes(font) */
     int             font_flags;
-    int		    height;
+    int		    	l_height;
     short           tab_width;	/* tab width in 'm's, used when */
     /* more tabs than num_tab_stops */
     short           tab_pixel;	/* tab width in pixels, used ... */
@@ -116,7 +116,7 @@ static void ei_plain_text_set_tab_width(Ei_handle eih, register int tab_width)
 
 /*    XFontStruct		*x_font_info;
 
-    x_font_info = (XFontStruct *)xv_get((Xv_opaque)private->font, FONT_INFO);
+    x_font_info = (XFontStruct *)xv_get(private->font, FONT_INFO);
 */
 	private->tab_width = tab_width;
 	if (private->x_font_info->per_char) {
@@ -170,7 +170,7 @@ static int ei_plain_text_set_tab_widths(Ei_handle eih, Attr_attribute *widths, i
     } else if (!adjust_for_font) {
 	private->num_tab_stops = 0;
     }
-/*    x_font_info = (XFontStruct *)xv_get((Xv_opaque)private->font, FONT_INFO);*/
+/*    x_font_info = (XFontStruct *)xv_get(private->font, FONT_INFO);*/
     if (private->x_font_info->per_char)  {
         factor = private->x_font_info->per_char['m' - private->x_font_info->min_char_or_byte2].width;
     }
@@ -189,39 +189,38 @@ static void ei_plain_text_set_font(Ei_handle eih, Xv_font font)
 	Pixfont *tempPf;
 	struct pixchar *pc;
 	register short i, height, home, adv_x;
-
-/*    XFontStruct		*x_font_info;*/
 	int max_char, min_char;
-	XFontSetExtents *font_set_extents;
+	XFontSetExtents *font_set_extents = NULL;
 
 	if (_xv_is_multibyte) {
 		font_set_extents =
-				XExtentsOfFontSet((XFontSet) xv_get((Xv_opaque) font,
-						FONT_SET_ID));
+				XExtentsOfFontSet((XFontSet) xv_get(font, FONT_SET_ID));
 	}
-	tempPf = (Pixfont *) xv_get((Xv_opaque) font, FONT_PIXFONT);
+	tempPf = (Pixfont *) xv_get(font, FONT_PIXFONT);
 	pc = &tempPf->pf_char[SPACE];
 	/* if Xfont does not have a glyph for space */
 	if (pc->pc_pr->pr_size.x == 0 && pc->pc_pr->pr_size.y == 0)
 		pc = &tempPf->pf_char['n'];
 	private->font = font;
 	private->font_home.x = 0;
-	private->x_font_info = (XFontStruct *) xv_get((Xv_opaque) font, FONT_INFO);
-	private->height = xv_get((Xv_opaque) font, FONT_DEFAULT_CHAR_HEIGHT);
+	private->x_font_info = (XFontStruct *) xv_get(font, FONT_INFO);
 	ei_plain_text_set_tab_width(eih, private->tab_width);
 	ei_plain_text_set_tab_widths(eih, (Attr_attribute *) 0, TRUE);
 	private->pf_font = tempPf;
-	if (_xv_is_multibyte) {
-		height = font_set_extents->max_logical_extent.height;
-		home = font_set_extents->max_logical_extent.y;
+	if (_xv_is_multibyte && font_set_extents) {
+		height = (int)xv_get(font, FONT_DEFAULT_CHAR_HEIGHT);
+/* 		home = font_set_extents->max_logical_extent.y; */
+		home = pc->pc_home.y;
 		private->tab_delta_y = home + height;
 		adv_x = font_set_extents->max_logical_extent.width;	/* Assume that this is >= 0 */
+		private->l_height = height;
 	}
 	else {
 		height = pc->pc_pr->pr_size.y;
 		home = pc->pc_home.y;
 		private->tab_delta_y = home + height;
 		adv_x = pc->pc_adv.x;	/* Assume that this is >= 0 */
+		private->l_height = xv_get(font, FONT_DEFAULT_CHAR_HEIGHT);
 	}
 	private->font_flags = FF_ALL;
 	max_char = MIN(255, private->x_font_info->max_char_or_byte2);
@@ -297,25 +296,25 @@ static Ei_handle ei_plain_text_destroy( Ei_handle eih)
 
 Pkg_private int ei_plain_text_line_height( Ei_handle eih)
 {
-    register Eipt_handle private = ABS_TO_REP(eih);
-    XFontStruct	   *font_info;
-    int		    max_char_height;
-    int		    percent;
-    int		    spacing;
+	register Eipt_handle private = ABS_TO_REP(eih);
+	XFontStruct *font_info;
+	int max_char_height;
+	int percent;
+	int spacing;
 
-    percent = defaults_get_integer("text.lineSpacing", "Text.LineSpacing", 0);
-    if (percent > 0) {
-	font_info = (XFontStruct *) xv_get((Xv_opaque) private->font,
-	    FONT_INFO);
-	max_char_height = font_info->max_bounds.ascent +
-	    font_info->max_bounds.descent;
-	spacing = max_char_height*percent/100;
-	if ((max_char_height*percent)%100 > 0 || spacing == 0)
-	    spacing++;  /* round up, or enforce a minimum of 1 pixel */
-	return (max_char_height + spacing);
-    } else {
- 	return (private->height);
-    }
+	percent = defaults_get_integer("text.lineSpacing", "Text.LineSpacing", 0);
+	if (percent > 0) {
+		font_info = (XFontStruct *) xv_get(private->font, FONT_INFO);
+		max_char_height = font_info->max_bounds.ascent +
+				font_info->max_bounds.descent;
+		spacing = max_char_height * percent / 100;
+		if ((max_char_height * percent) % 100 > 0 || spacing == 0)
+			spacing++;	/* round up, or enforce a minimum of 1 pixel */
+		return (max_char_height + spacing);
+	}
+	else {
+		return (private->l_height);
+	}
 }
 
 static int ei_plain_text_lines_in_rect(Ei_handle eih, struct rect *rect)
@@ -396,7 +395,7 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 	unsigned char c = 0;
 	short temp;
 	Es_index esi;
-	CHAR *buf_rep = (CHAR *) esbuf->buf;
+	unsigned char *buf_rep = (unsigned char *) esbuf->buf;
 	struct ei_process_result result;
 	short bounds_right, rects_right;
 	short bounds_bottom, rects_bottom;
@@ -423,7 +422,7 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 	 * the current "ink" for the batch. Make sure that clear|invert|pattern
 	 * in paint_batch affects the entire height of the line.
 	 */
-	bounds_bottom = SSub(SAdd(temp, private->height), 1);
+	bounds_bottom = SSub(SAdd(temp, private->l_height), 1);
 	result.pos.y = SSub(temp, private->font_home.y);
 	rects_right = SRect_edge(rect->r_left, rect->r_width);
 	rects_bottom = SRect_edge(rect->r_top, rect->r_height);
@@ -445,19 +444,24 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 
 	if (private->x_font_info == (XFontStruct *) NULL)
 		private->x_font_info =
-				(XFontStruct *) xv_get((Xv_opaque) private->font, FONT_INFO);
+				(XFontStruct *) xv_get(private->font, FONT_INFO);
 
 	for (esi = esbuf->first; esi < esbuf->last_plus_one; esi++) {
 		if (_xv_is_multibyte) {
-			XFontSet fs = (XFontSet) xv_get(private->font, FONT_SET_ID);
-			int clen = mblen(buf_rep, MB_CUR_MAX);
-			if (clen <= 0) clen = 1;
+			if (*buf_rep < 32) {
+				c = (unsigned char)(*buf_rep++);
+				/* Let these fall through to the classic handling below */
+			}
+			else {
+				XFontSet fs = (XFontSet) xv_get(private->font, FONT_SET_ID);
+				int cwidth;
+				int clen = mblen((const char *)buf_rep, MB_CUR_MAX);
+				if (clen <= 0) clen = 1;
 
-			if (clen > 1) {
-				int cwidth = XmbTextEscapement(fs, buf_rep, clen);
+				cwidth = XmbTextEscapement(fs, (const char *)buf_rep, clen);
 
-				/* a multibyte character! */
-				memcpy(batch, buf_rep, clen);
+				/* a multibyte (or singlebyte) character! */
+				memcpy(batch, buf_rep, (size_t)clen);
 				batch += clen;
 
 				/* adapt virtual bounds */
@@ -477,10 +481,6 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 				esi += (clen - 1);
 
 				continue;
-			}
-			else {
-				/* a single byte character in multi byte mode */
-				c = (unsigned char)(*buf_rep++);
 			}
 		}
 		else {
@@ -592,7 +592,6 @@ static struct ei_process_result ei_plain_text_process(Ei_handle eih, int op,
 				pc = &tempPf->pf_char['n'];
 		}
 		else {
-
 			in_white_space = 0;
 			pc = &tempPf->pf_char[c];
 		}
@@ -738,9 +737,8 @@ static void paint_batch(int op, int rop, Xv_Window pw, struct rect *rect,
 	}
 	/* this outputs all the stuff! */
 	for (temp = 0; temp < run_length; temp++, run++) {
-		SERVERTRACE((877, "out '%*.*s'\n", run->len, run->len, run->chars));
-		tty_newtext(pw, run->x, run->y, rop, (Xv_opaque) font,
-								run->chars, run->len);
+/* 		SERVERTRACE((877, "out '%*.*s'\n", run->len, run->len, run->chars)); */
+		tty_newtext(pw, run->x, run->y, rop, font, run->chars, run->len);
 	}
 
 	if (op & EI_OP_LIGHT_GRAY)
@@ -1204,7 +1202,7 @@ static struct ei_process_result ei_plain_text_expand(Ei_handle eih, Es_buf_handl
 							ei_plain_text_process(eih, (int)EI_OP_MEASURE,
 							&process_esbuf, x, rect->r_top, PIX_SRC,
 							(Xv_Window) 0, rect, tab_origin);
-					/*x_font_info = (XFontStruct *)xv_get((Xv_opaque)private->font, FONT_INFO); */
+					/*x_font_info = (XFontStruct *)xv_get(private->font, FONT_INFO); */
 					if (private->x_font_info->per_char) {
 						spaces_in_tab = (tmp_x - process_result.pos.x) /
 								private->x_font_info->per_char['m' -
