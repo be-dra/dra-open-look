@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.42 2026/07/30 07:19:53 dra Exp $";
+char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.43 2026/08/01 08:42:47 dra Exp $";
 #endif
 
 /*
@@ -302,10 +302,10 @@ Pkg_private int textsw_process_event(Textsw_view view_public, Event *ev, Notify_
 						while (*p) {
 							*textsw->to_insert_next_free++ = *p++;
 						}
-						SERVERTRACE((505, "ins '%s'\n", event_string(ev)));
+						SERVERTRACE((888, "ins '%s'\n", event_string(ev)));
 					}
 					else {
-						SERVERTRACE((505, "ins '%c'\n", event_action(ev)));
+						SERVERTRACE((888, "ins '%c'\n", event_action(ev)));
 						*textsw->to_insert_next_free++ = (char)event_action(ev);
 					}
 
