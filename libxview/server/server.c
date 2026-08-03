@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.53 2026/07/31 19:40:24 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.55 2026/08/03 08:13:28 dra Exp $";
 #endif
 #endif
 
@@ -4748,8 +4748,16 @@ static void server_set_locale(Server_info  *server)
 	char *type;
 	XrmValue xrm_value;
 	char inst[50], class[50];
+	int force_using_locale = FALSE;
 
 	setlocale(LC_ALL, "");
+
+	if (defaults_exists("openWindows.forceUsingLocale",
+						"OpenWindows.ForceUsingLocale"))
+	{
+		force_using_locale =defaults_get_boolean("openWindows.forceUsingLocale",
+						"OpenWindows.ForceUsingLocale", FALSE);
+	}
 
 	/*
 	 * Traverse all the categories and fillin the data according to
@@ -4758,38 +4766,44 @@ static void server_set_locale(Server_info  *server)
 	for (i = 0, oi = server->ollc; i < OLLC_MAX; i++, oi++) {
 		if (oi->locale != NULL) continue;
 
-		/*
-		 * Try Resources (defaults) firsts.
+		/* if force_using_locale, don't query the resource DB, but
+		 * query the system
 		 */
-		xrm_value.size = 0;
-		xrm_value.addr = NULL;
+		if (! force_using_locale) {
 
-		sprintf(inst, "openWindows.%s", Ollc_const[i].inst);
-		sprintf(class, "OpenWindows.%s", Ollc_const[i].class);
-		if (XrmGetResource(server->db, inst, class, &type, &xrm_value)) {
-/* 			char *result; */
+			/*
+			 * Try Resources (defaults) firsts.
+			 */
+			xrm_value.size = 0;
+			xrm_value.addr = NULL;
 
-			SERVERTRACE((777, "%s: %d: inst = %s -> %s\n", __FUNCTION__,
-						i, inst, (char *)xrm_value.addr));
-			oi->locale = strdup((char *)xrm_value.addr);
-			init_ollc(oi, OLLC_FROM_RESOURCE);
+			sprintf(inst, "openWindows.%s", Ollc_const[i].inst);
+			sprintf(class, "OpenWindows.%s", Ollc_const[i].class);
+			if (XrmGetResource(server->db, inst, class, &type, &xrm_value)) {
+	/* 			char *result; */
 
-			continue;
-		}
+				SERVERTRACE((777, "%s: %d: inst = %s -> %s\n", __FUNCTION__,
+							i, inst, (char *)xrm_value.addr));
+				oi->locale = strdup((char *)xrm_value.addr);
+				init_ollc(oi, OLLC_FROM_RESOURCE);
 
-		/*
-		 * For 3.1 backwards compatibility of *numeric resource, need to
-		 * check if the old resource is being used.
-		 */
-		if (i == OLLC_NUMERIC && defaults_exists("numeric", "Numeric")) {
-			char *old_resource_value;
-
-			old_resource_value =
-					strdup(defaults_get_string("numeric", "Numeric", NULL));
-			if (old_resource_value) {
-				server->ollc[OLLC_NUMERIC].locale = old_resource_value;
-				init_ollc(server->ollc + OLLC_NUMERIC, OLLC_FROM_RESOURCE);
 				continue;
+			}
+
+			/*
+			 * For 3.1 backwards compatibility of *numeric resource, need to
+			 * check if the old resource is being used.
+			 */
+			if (i == OLLC_NUMERIC && defaults_exists("numeric", "Numeric")) {
+				char *old_resource_value;
+
+				old_resource_value =
+						strdup(defaults_get_string("numeric", "Numeric", NULL));
+				if (old_resource_value) {
+					server->ollc[OLLC_NUMERIC].locale = old_resource_value;
+					init_ollc(server->ollc + OLLC_NUMERIC, OLLC_FROM_RESOURCE);
+					continue;
+				}
 			}
 		}
 
@@ -4798,13 +4812,21 @@ static void server_set_locale(Server_info  *server)
 		 */
 		SERVERTRACE((777, "%s: %d: setlocale(%d) = '%s'\n", __FUNCTION__, i,
 						Ollc_const[i].posix, setlocale(Ollc_const[i].posix, NULL)));
-		if (Ollc_const[i].posix >= 0
-				&& (locale = setlocale(Ollc_const[i].posix, NULL)) != NULL) {
-			SERVERTRACE((777, "%s: setlocale(%d) = '%s'\n", __FUNCTION__, 
-						Ollc_const[i].posix, locale));
-			oi->locale = strdup(locale);
+		if (Ollc_const[i].posix >= 0) {
+			locale = setlocale(Ollc_const[i].posix, NULL);
+
+			if (locale != NULL) {
+				SERVERTRACE((777, "%s: setlocale(%d) = '%s'\n", __FUNCTION__, 
+							Ollc_const[i].posix, locale));
+				oi->locale = strdup(locale);
+				init_ollc(oi, OLLC_FROM_POSIX);
+				continue;
+			}
+		}
+		else {
+			/* inputLang ??? no such posix category... */
+			oi->locale = strdup(server->ollc[OLLC_BASICLOCALE].locale);
 			init_ollc(oi, OLLC_FROM_POSIX);
-			continue;
 		}
 
 		if (i == OLLC_BASICLOCALE) {
@@ -5300,8 +5322,8 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 		 */
 		defaults_set_locale(server->ollc[OLLC_BASICLOCALE].locale, 
 							(Xv_generic_attr)0);
-		need_im = defaults_get_boolean("xview.needIm", "Xview.NeedIm", 
-											_xv_is_multibyte);
+		need_im = defaults_get_boolean("xview.needIm",
+								"Xview.NeedIm", TRUE);
 		character_set = defaults_get_string("xview.characterSet",
 				"Xview.CharacterSet", ISO8859_1);
 
