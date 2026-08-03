@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.10 2026/07/19 13:49:11 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.11 2026/08/02 18:40:00 dra Exp $";
 #endif
 #endif
 
@@ -298,8 +298,10 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	/** FIX ME! this needs to be generalized beyond the C locale
      **  since many locales may not use an IM */
 	/* if input lang is C, cannot have an IM */
-	if (strcmp((char *)xv_get(server, XV_LC_INPUT_LANG), "C") == 0)
-		win_use_im = FALSE;
+
+	/* why not? */
+/* 	if (strcmp((char *)xv_get(server, XV_LC_INPUT_LANG), "C") == 0) */
+/* 		win_use_im = FALSE; */
 	win->win_use_im = win_use_im;
 	win->ic_created = FALSE;
 	win->xic = (XIC) NULL;
