@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_parse.c 20.59 93/06/28  DRA: $Id: xv_parse.c,v 4.3 2026/07/18 19:37:11 dra Exp $";
+static char     sccsid[] = "@(#)xv_parse.c 20.59 93/06/28  DRA: $Id: xv_parse.c,v 4.4 2026/08/03 08:13:09 dra Exp $";
 #endif
 #endif
 
@@ -102,6 +102,7 @@ typedef enum {
     FLAG_DISABLE_PASSIVE_GRAB_SELECT,
     FLAG_NO_SECURITY,
     FLAG_NAME,
+	FLAG_FORCE_USING_LOCALE,
     FLAG_LC_BASICLOCALE,
     FLAG_LC_DISPLAYLANG,
     FLAG_LC_INPUTLANG,
@@ -158,6 +159,7 @@ static Cmd_line_flag cmd_line_flags[] = {
     { "-Wdpgs", "-disable_pass_grab_select", { "window.passiveGrab.select", 0 }, 0 },
     { "-WS", "-defeateventsecurity", { 0, 0 }, 0 },
     { "-name", "-name", { 0, 0 }, 1 },
+    { "-Wu", "-force_using_locale", { "openWindows.forceUsingLocale", 0 }, 0 },
     { "-lc_basiclocale", "-lc_basiclocale", { "openWindows.basicLocale", 0 }, 1 },
     { "-lc_displaylang", "-lc_displaylang", { "openWindows.displayLang", 0 }, 1 },
     { "-lc_inputlang", "-lc_inputlang", { "openWindows.inputLang", 0 }, 1 },
@@ -474,6 +476,10 @@ static int xv_parse_one(char *app_name, int argc, char **argv)
 			xv_add_cmdline_entry(slot, NULL, NULL, NULL, argv);
 			break;
 
+		case FLAG_FORCE_USING_LOCALE:
+			xv_add_cmdline_entry(slot, NULL, "True", NULL, argv);
+			break;
+
 		case FLAG_LC_BASICLOCALE:
 		case FLAG_LC_DISPLAYLANG:
 		case FLAG_LC_INPUTLANG:
@@ -600,38 +606,38 @@ xv_generic_debug_help(fd)
  */
 Xv_private void xv_merge_cmdline(XrmDatabase *db)
 {
-    Cmd_line_entry	*cur = cmdline_entered_first;
-    Cmd_line_flag	*flag_info;
+	Cmd_line_entry *cur = cmdline_entered_first;
+	Cmd_line_flag *flag_info;
 
-    if (db)  {
-        while (cur)  {
-	    if (cur->resource_name)  {
-		if (cur->values[0])  {
-                    XrmPutStringResource(db, cur->resource_name,
-					 cur->values[0]);
+	if (db) {
+		while (cur) {
+			if (cur->resource_name) {
+				if (cur->values[0]) {
+					XrmPutStringResource(db, cur->resource_name,
+							cur->values[0]);
+				}
+			}
+			else {
+				flag_info = cur->cmdline_flag;
+
+				if (flag_info->def_name[0]) {
+					if (cur->values[0]) {
+						XrmPutStringResource(db, flag_info->def_name[0],
+								cur->values[0]);
+					}
+				}
+
+				if (flag_info->def_name[1]) {
+					if (cur->values[1]) {
+						XrmPutStringResource(db, flag_info->def_name[1],
+								cur->values[1]);
+					}
+				}
+			}
+
+			cur = cur->next;
 		}
-	    }
-	    else  {
-		flag_info = cur->cmdline_flag;
-
-		if (flag_info->def_name[0])  {
-		    if (cur->values[0])  {
-                        XrmPutStringResource(db, flag_info->def_name[0],
-					     cur->values[0]);
-		    }
-		}
-
-		if (flag_info->def_name[1])  {
-		    if (cur->values[1])  {
-                        XrmPutStringResource(db, flag_info->def_name[1],
-					     cur->values[1]);
-		    }
-		}
-	    }
-
-	    cur = cur->next;
-        }
-    }
+	}
 }
 
 /*
