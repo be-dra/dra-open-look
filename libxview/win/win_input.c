@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.55 2026/07/22 06:06:48 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.56 2026/08/02 18:49:20 dra Exp $";
 #endif
 #endif
 
@@ -996,11 +996,9 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					SERVER_COMPOSE_STATUS);
 		}
 
-	 	if (_xv_is_multibyte) {
-			if (XFilterEvent(xevent, None)) {
-				*pwindow = XV_NULL;
-				return FALSE;
-			}
+		if (XFilterEvent(xevent, None)) {
+			*pwindow = XV_NULL;
+			return FALSE;
 		}
 
 		/*
@@ -1057,7 +1055,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				Status ret_status;
 				XIC ic = NULL;
 
-				if (_xv_is_multibyte && event_type == KeyPress) {
+				if (event_type == KeyPress) {
 					Window_info *win = WIN_PRIVATE(window);
 
 					/*
@@ -1076,14 +1074,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					/* Num Lock is on.  For the keycode, if it has a key pad
 					 * keysym in its row, then send event as keypad key. 
 					 */
-	 				if (_xv_is_multibyte) {
-						goto DoLookup;
-					}
-					else {
-						ksym = NoSymbol;
-						buf_length = XLookupString(ek, buffer, BUFFERSIZE,
-												&ksym, compose_status);
-					}
+					goto DoLookup;
 				}
 				else {
 					/*
@@ -1106,7 +1097,6 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 							break;
 						default:
 
-	 						if (_xv_is_multibyte) {
 				DoLookup:
 								if (ic) {	/* then keyPress case */
 									ksym = NoSymbol;
@@ -1147,12 +1137,6 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 									case XLookupBoth:
 										break;
 								}
-							}
-							else {
-								buf_length =
-										XLookupString(ek, buffer, BUFFERSIZE,
-													&ksym, compose_status);
-							}
 							break;
 					}
 				}
@@ -1357,24 +1341,11 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 						return (TRUE);
 					}
 				}
-	 			if (_xv_is_multibyte) {
-					if (!status ||
-
-						((ret_status == XLookupNone) &&
-						(sem_action == ACTION_NULL_EVENT)))
-					{
-						*pwindow = 0;
-						return (TRUE);
-					}
-				}
-				else {
-					if (!status ||
-						((ksym == NoSymbol) &&
-						(sem_action == ACTION_NULL_EVENT)))
-					{
-						*pwindow = 0;
-						return TRUE;
-					}
+				if (!status || ((ret_status == XLookupNone) &&
+					(sem_action == ACTION_NULL_EVENT)))
+				{
+					*pwindow = 0;
+					return (TRUE);
 				}
 				/*
 				 * Make sure the keystroke is sent to the appropriate window.  In
@@ -2360,7 +2331,7 @@ static void initialize_ol_trans_utf8(char **utf, char *utfbuf)
 	size_t insiz, outsiz;
 
 	/* actually, this is only needed in a UTF-8 locale.... */
-	 if (! _xv_is_multibyte) return;
+	if (! _xv_is_multibyte) return;
 	if (utf[0] != NULL) return;
 
 	ic = iconv_open("UTF8", "LATIN1");
