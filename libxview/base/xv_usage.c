@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_usage.c 1.18 93/06/28  DRA: $Id: xv_usage.c,v 4.1 2024/03/28 19:35:11 dra Exp $";
+static char     sccsid[] = "@(#)xv_usage.c 1.18 93/06/28  DRA: $Id: xv_usage.c,v 4.2 2026/08/03 08:13:14 dra Exp $";
 #endif
 #endif
 
@@ -71,20 +71,23 @@ FLAG\t(LONG FLAG)\t\tARGS\t\tNOTES\n\
 -Wfsdbk\t(-fullscreendebugkbd)\t\n\
 -Wdpgs\t(-disable_pass_grab_select)\t\n"));
 
-    (void) fprintf(stderr, 
+    fprintf(stderr, 
     XV_MSG("-WS\t(-defeateventsecurity)\t\n\
 -sync\t(-synchronous)\t\t\t\t(Force a synchronous connection)\n\
 +sync\t(+synchronous)\t\t\t\t(Make an asynchronous connection)\n\
 -Wd\t(-default)\t\tresource value\t(Set the X resource to value)\n\
 -xrm\t\t\t\tresource:value\t(Set the X resource to value)\n"));
 
-    (void) fprintf(stderr, 
+    fprintf(stderr, 
     XV_MSG("-name\t\t\t\tstring\t(Set application instance name to string)\n\
 -lc_basiclocale\t\t\tlocale\t(Set basic locale of application to locale)\n\
 -lc_displaylang\t\t\tlocale\t(Set display language of application to locale)\n\
 -lc_inputlang\t\t\tlocale\t(Set input language of application to locale)\n\
 -lc_numeric\t\t\tlocale\t(Set numeric format of application to locale)\n\
 -lc_timeformat\t\t\tlocale\t(Set time format of application to locale)\n"));
+
+    fprintf(stderr, 
+    XV_MSG("-Wu\t\t\t\tstring\t(Force the application to used the system locale(s))\n"));
 
     (void) fprintf(stderr,
     XV_MSG("-preedit_style\t\t\tonTheSpot | overTheSpot | rootWindow | none\n\
