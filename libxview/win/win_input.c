@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.56 2026/08/02 18:49:20 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.58 2026/08/03 15:23:39 dra Exp $";
 #endif
 #endif
 
@@ -929,7 +929,7 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				}
 			}
 			if (!window) {
-				if (XFilterEvent(xevent, None) == True) {
+				if (XFilterEvent(xevent, None)) {
 					*pwindow = XV_NULL;
 					return FALSE;
 				}
@@ -996,7 +996,13 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 					SERVER_COMPOSE_STATUS);
 		}
 
+		/* before we did this, a Multi_key sequence didn't work if
+		 * it was the first KeyPress event in that window
+		 */
+		if (event_type == KeyPress) xv_get(window, WIN_IC);
+
 		if (XFilterEvent(xevent, None)) {
+			SERVERTRACE((477, "%s filtered out\n", evtypes[xevent->type]));
 			*pwindow = XV_NULL;
 			return FALSE;
 		}
@@ -1056,13 +1062,14 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				XIC ic = NULL;
 
 				if (event_type == KeyPress) {
-					Window_info *win = WIN_PRIVATE(window);
-
 					/*
 					 * Doesn't use xv_get() for the performance reason.
 					 * If false, ic value is NULL.
+					 * dra: Idiots again? the xic will be created only
+					 * in the get-method....
 					 */
-					if (win->win_use_im) ic = win->xic;
+/* 					if (win->win_use_im) ic = win->xic; */
+					ic = (XIC)xv_get(window, WIN_IC);
 				}
 
 				/*
