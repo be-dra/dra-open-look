@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.36 2026/07/30 12:06:21 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.37 2026/08/03 19:26:28 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -185,7 +185,7 @@ typedef struct ttysubwindow {
 	short dnd_last_click_x, dnd_last_click_y;
 
 	/* formerly GLOBAL variables */
-	CHAR **image;
+	char **image;
 	char **screenmode;
 	int	ttysw_top, ttysw_bottom, ttysw_left, ttysw_right;
 	int	cursrow, curscol;
