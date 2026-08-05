@@ -1,4 +1,4 @@
-/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.4 2026/07/19 15:16:59 dra Exp $      */
+/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.5 2026/08/04 20:20:01 dra Exp $      */
 
 /***********************************************************************/
 /*	                      window_impl.h			       */
@@ -162,7 +162,7 @@ typedef struct window_info {
     unsigned		 win_use_im:1; 	 /* does window need an input method? */
     unsigned		 ic_created:1;                       /* is IC created */
     XIC			 xic;			      /* X Input Context (IC) */
-	char             *win_ic_committed;/* Optional: Falls Pufferung nötig */
+	char             *win_ic_committed;/* Optional: if buffering needed */
 
 #ifdef NO_XDND
 #else /* NO_XDND */
