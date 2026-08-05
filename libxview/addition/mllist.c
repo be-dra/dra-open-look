@@ -34,13 +34,13 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.37 2026/07/27 19:27:45 dra Exp $";
+char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.38 2026/08/04 20:21:31 dra Exp $";
 #endif
 
 /*******************************************************************
  Achtung: NICHT nochmal versuchen, den TITLE von der Liste selber
  machen zu lassen: man kriegt dann KEIN Level-Menue zu sehen,
- da diese Events dann im Rect der Liste waeren, ausserdem würde die
+ da diese Events dann im Rect der Liste waeren, ausserdem wuerde die
  Hoehe fuer die Level-Marker nicht ausreichen
 ********************************************************************/
 
