@@ -5,7 +5,7 @@
 #include <xview/help.h>
 #include <xview/font.h>
 
-char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.38 2026/07/30 19:48:18 dra Exp $";
+char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.39 2026/08/04 21:18:01 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -91,6 +91,7 @@ static void repaint_obj(Graphwin_private *priv, graphlist it)
 {
 	Xv_opaque pw;
 	Scrollpw_info vi;
+	Graph_private_info gi;
 	Graphobj_repaint_struct grs;
 
 	if (priv->no_redisplay) return;
@@ -99,13 +100,14 @@ static void repaint_obj(Graphwin_private *priv, graphlist it)
 	grs.rect = it->rect;
 	grs.image_rect = it->image_rect;
 	grs.state = it->state;
-	grs.gc = it->state.selected ? priv->sel_draw_gc : priv->draw_gc;
-	grs.xor_gc = priv->frame_gc;
-	grs.normal_gc = priv->draw_gc;
-	grs.invers_gc = priv->sel_draw_gc;
-	grs.fs = priv->fs;
+	gi.gc = it->state.selected ? priv->sel_draw_gc : priv->draw_gc;
+	gi.xor_gc = priv->frame_gc;
+	gi.normal_gc = priv->draw_gc;
+	gi.invers_gc = priv->sel_draw_gc;
+	gi.fs = priv->fs;
 	grs.vinfo = &vi;
-	grs.painter = GRPAINTPUB(priv->painter);
+	gi.painter = GRPAINTPUB(priv->painter);
+	grs.gi = &gi;
 	priv->painter->vi = &vi;
 
 	OPENWIN_EACH_PW(GRAPHPUB(priv), pw)
@@ -122,26 +124,32 @@ static void graphwin_repaint_from_expose(Graphwin_private *priv,
 							Scrollwin_repaint_struct *rs)
 {
 	graphlist it;
-	Graphobj_repaint_struct grs;
+	Graph_private_info gi;
+	Graphwin_repaint_struct grs;
+	Graphobj_repaint_struct gors;
 
 	if (priv->no_redisplay) return;
 
-	grs.vinfo = rs->vinfo;
-	if (priv->painter) priv->painter->vi = grs.vinfo;
-	grs.painter = GRPAINTPUB(priv->painter);
-	grs.xor_gc = priv->frame_gc;
-	grs.normal_gc = priv->draw_gc;
-	grs.invers_gc = priv->sel_draw_gc;
-	grs.fs = priv->fs;
+	gors.vinfo = rs->vinfo;
+	if (priv->painter) priv->painter->vi = gors.vinfo;
+	gi.painter = GRPAINTPUB(priv->painter);
+	gi.xor_gc = priv->frame_gc;
+	gi.normal_gc = priv->draw_gc;
+	gi.invers_gc = priv->sel_draw_gc;
+	gi.fs = priv->fs;
 
+	grs.sr = rs;
+	grs.gi = &gi;
+	xv_set(GRAPHPUB(priv), GRAPH_REPAINT, &grs, NULL);
+	gors.gi = &gi;
 	for (it = priv->first; it; it = it->next) {
 		if (! it->no_redisplay && it->state.visible) {
 			if (rect_intersectsrect(&rs->virt_rect, &it->rect)) {
-				grs.rect = it->rect;
-				grs.image_rect = it->image_rect;
-				grs.state = it->state;
-				grs.gc = it->state.selected ? priv->sel_draw_gc :priv->draw_gc;
-				xv_set(GROBJPUB(it), GRAPH_DRAW, &grs, NULL);
+				gors.rect = it->rect;
+				gors.image_rect = it->image_rect;
+				gors.state = it->state;
+				gi.gc = it->state.selected ? priv->sel_draw_gc :priv->draw_gc;
+				xv_set(GROBJPUB(it), GRAPH_DRAW, &gors, NULL);
 			}
 		}
 	}
@@ -214,16 +222,18 @@ static void internal_drag_objects(Graphwin_private *priv, Scrollpw_info *vinfo)
 	graphlist it;
 	int deltax = priv->vlast_x - priv->vdown_x;
 	int deltay = priv->vlast_y - priv->vdown_y;
+	Graph_private_info gi;
 	Graphobj_repaint_struct grs;
 
-	grs.gc = priv->frame_gc;
-	grs.xor_gc = priv->frame_gc;
-	grs.normal_gc = priv->draw_gc;
-	grs.invers_gc = priv->sel_draw_gc;
-	grs.fs = priv->fs;
+	gi.gc = priv->frame_gc;
+	gi.xor_gc = priv->frame_gc;
+	gi.normal_gc = priv->draw_gc;
+	gi.invers_gc = priv->sel_draw_gc;
+	gi.fs = priv->fs;
+	gi.painter = GRPAINTPUB(priv->painter);
+	grs.gi = &gi;
 	grs.vinfo = vinfo;
 	if (priv->painter) priv->painter->vi = vinfo;
-	grs.painter = GRPAINTPUB(priv->painter);
 
 
 	for (it = priv->first; it; it = it->next) {
@@ -1364,6 +1374,10 @@ static Xv_opaque graphwin_set(Xv_opaque self, Attr_avlist avlist)
 			graphwin_repaint_from_expose(priv, (Scrollwin_repaint_struct *)A1);
 			ADONE;
 
+		case GRAPH_REPAINT:
+			/* for subclasses */
+			ADONE;
+
 		case SCROLLWIN_HANDLE_DROP:
 			ADONE;
 
@@ -1535,18 +1549,19 @@ static void graphobj_draw(Graphobj_private *priv, Graphobj_repaint_struct *grs,
 								int ascent)
 {
 	Scrollpw_info *vi = grs->vinfo;
+	Graph_private_info *gi = grs->gi;
 
 	if (! priv->label || ! *priv->label) return;
 
-	if (_xv_is_multibyte && grs->fs) {
-		XmbDrawImageString(vi->dpy, vi->xid, grs->fs, grs->gc,
+	if (_xv_is_multibyte && gi->fs) {
+		XmbDrawImageString(vi->dpy, vi->xid, gi->fs, gi->gc,
 			SCR_WIN_X(vi, grs->rect.r_left + priv->label_rect.r_left),
 			SCR_WIN_Y(vi, grs->rect.r_top + priv->label_rect.r_top +ascent),
 			priv->label,
 			(int)strlen(priv->label));
 	}
 	else {
-		XDrawImageString(vi->dpy, vi->xid, grs->gc,
+		XDrawImageString(vi->dpy, vi->xid, gi->gc,
 			SCR_WIN_X(vi, grs->rect.r_left + priv->label_rect.r_left),
 			SCR_WIN_Y(vi, grs->rect.r_top + priv->label_rect.r_top +ascent),
 			priv->label,
