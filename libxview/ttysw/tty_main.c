@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.21 2026/07/30 12:06:21 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.23 2026/08/04 19:19:43 dra Exp $";
 #endif
 
 /*
@@ -566,6 +566,29 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 
 #else	/* XV_USE_SVR4_PTYS */
 
+static void dump_hex_stream(const char *tag, const char *buf, int len)
+{
+	int i;
+
+	if (tag) return;
+
+	fprintf(stderr, "--- TRACE [%s] (len=%d) ---\n", tag, len);
+	for (i = 0; i < len; i++) {
+		unsigned char c = (unsigned char)buf[i];
+
+		if (c >= 32 && c <= 126) {
+			fprintf(stderr, "%c", c);
+		}
+		else if (c == 0x1b) fprintf(stderr, "<ESC>");
+		else if (c == '\n') fprintf(stderr, "<NL>");
+		else if (c == '\r') fprintf(stderr, "<CR>");
+		else {
+			fprintf(stderr, "\\x%02X", c);
+		}
+	}
+	fprintf(stderr, "\n--------------------------\n");
+}
+
 Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 {
 	static struct iovec iov[2];
@@ -588,6 +611,7 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 	if (cc > 0) {
 		int_ucntl = (unsigned)ucntl;
 
+		SERVERTRACE((888, "\n\n%s: cc=%d, ucntl=%d\n", __FUNCTION__, cc, int_ucntl));
 		if (int_ucntl != 0 && ttysw_getopt(ttysw, TTYOPT_TEXT)) {
 			unsigned tiocsti = TIOCSTI;
 
@@ -605,6 +629,7 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 				 * and this switched to tty mode.
 				 * So let us try to do the same as in the int_ucntl==0 case:
 				 */
+				dump_hex_stream("PTY_READ2", owbp, cc-1);
 				owbp += cc - 1;
 				return;
 			}
@@ -621,8 +646,10 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 /* END DRA_CHANGED according to linux patch */
 			ttysw_getp(ttysw->view);	/* jcb for nng */
 		}
-		else
+		else {
+			dump_hex_stream("PTY_READ", owbp, cc-1);
 			owbp += cc - 1;
+		}
 	}
 }
 
@@ -910,6 +937,19 @@ static int ttysw_process_keyboard(Ttysw_private ttysw, Event *ev)
 		return TTY_DONE;
 	}
 	if (id > ISO_LAST) {
+/* BEGIN only for testing: */
+		if (event_action(ev) == KEY_TOP(5)) {
+			int i;
+			for (i = 0; i < ttysw->ttysw_bottom; i++) {
+				char *line = ttysw->image[i];
+
+				if (line) {
+					fprintf(stderr, "%d: chars=%d, bytes=%d '%.50s\n",
+							i, line[-2], line[-1], line);
+				}
+			}
+		}
+/* END only for testing: */
 		return ttysw_domap(ttysw, ev);
 	}
 	return TTY_OK;
