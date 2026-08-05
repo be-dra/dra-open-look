@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.7 2026/07/30 08:33:05 dra Exp $";
+char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.8 2026/08/04 18:21:38 dra Exp $";
 #endif
 
 /*
@@ -228,13 +228,13 @@ static void firsttime_init(void)
     if (!TTY_GC_LIST_KEY) TTY_GC_LIST_KEY = xv_unique_key();
 }
 
-static void dump_core(const char *s, int l)
+static void dump_core(const unsigned char *s, int l, int idx)
 {
-	fprintf(stderr, "bad string '%*.*s'\n", l, l, s);
+	fprintf(stderr, "bad string '%*.*s' at %d\n", l, l, s, idx);
+	fprintf(stderr, "\\%03o \\%03o \\%03o ('%c' '%c' '%c')\n",
+							s[0], s[1], s[2], s[0], s[1], s[2]);
 	if (getenv("XVIEW_DESTROY_ABORT")) {
-/* 		if (fork() == 0) { */
-			abort();
-/* 		} */
+		abort();
 	}
 }
 
@@ -367,14 +367,15 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 	}
 
 	if (_xv_is_multibyte) {
+		unsigned char *ustr = (unsigned char *)string;
 		int i;
 
-		/* 1. Check if 'string' accidentally starts with a continuation byte */
-		if (IS_UTF8_CONT(string[0])) {
+		/* 1. Check if 'ustr' accidentally starts with a continuation byte */
+		if (IS_UTF8_CONT(ustr[0])) {
 			/* Handle or skip the orphaned byte */
 
 			/* for now I want to know where this happens */
-			dump_core(string, len);
+			dump_core(ustr, len, 0);
 		}
 
 		/* 2. Walk through the string to ensure 'len' doesn't cut mid-character */
@@ -383,7 +384,7 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 			int char_len = mblen(string + i, MB_CUR_MAX);
 			if (char_len <= 0) {
 				/* Invalid byte sequence, fallback to safe handling */
-				dump_core(string+i, len - i);
+				dump_core(ustr+i, len - i, i);
 				break;
 			}
 			if (i + char_len > len) {
@@ -391,7 +392,7 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 				 * the middle of a multi-byte sequence. We safely truncate
 				 * 'len' here.
 				 */
-				dump_core(string+i, len - i);
+				dump_core(ustr+i, len - i, i);
 				len = i;
 				break;
 			}
