@@ -4,7 +4,7 @@
 #include <xview/xview.h>
 #include <xview/scrollw.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.12 2026/07/30 19:46:03 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.13 2026/08/04 20:56:54 dra Exp $" */
 
 extern const Xv_pkg xv_graphwin_pkg;
 #define GRAPHWIN &xv_graphwin_pkg
@@ -54,6 +54,7 @@ typedef enum {
 	GRAPH_NOTIFY_PROC   = GRAPH_ATTR(ATTR_FUNCTION_PTR, 28),       /* CSG */
 	GRAPH_MARGIN        = GRAPH_ATTR(ATTR_INT, 29),                /* CSG */
 	GRAPH_NITEMS        = GRAPH_ATTR(ATTR_INT, 30),                /* --G */
+	GRAPH_REPAINT       = GRAPH_ATTR(ATTR_OPAQUE, 31),             /* CSG */
 
 	/* for graphics object  */
 	GRAPH_SELECTED      = GRAPH_ATTR(ATTR_BOOLEAN, 41),            /* CSG */
@@ -113,14 +114,23 @@ typedef struct {
 } Graphobj_state;
 
 typedef struct {
-	Rect rect, image_rect;
-	Graphobj_state state;
 	GC gc;
 	GC normal_gc, xor_gc, invers_gc;
 	XFontSet fs;
-	Scrollpw_info *vinfo;
 	Graphpainter painter;
+} Graph_private_info;
+
+typedef struct {
+	Rect rect, image_rect;
+	Graphobj_state state;
+	Graph_private_info *gi;
+	Scrollpw_info *vinfo;
 } Graphobj_repaint_struct;
+
+typedef struct {
+	Scrollwin_repaint_struct *sr;
+	Graph_private_info *gi;
+} Graphwin_repaint_struct;
 
 typedef void (*Graphwin_notify_proc_t)(Graphwin, Graphwin_notification, Event *);
 ;
