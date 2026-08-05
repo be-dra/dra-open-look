@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_view_c_sccsid[] = "@(#)txt_view.c 1.32 93/06/28 DRA: $Id: txt_view.c,v 4.7 2025/11/01 14:56:37 dra Exp $";
+char     txt_view_c_sccsid[] = "@(#)txt_view.c 1.32 93/06/28 DRA: $Id: txt_view.c,v 4.8 2026/08/04 20:19:05 dra Exp $";
 #endif
 
 /*
@@ -116,7 +116,7 @@ Pkg_private	void textsw_split_init_proc(Textsw_view oldview,
 		textsw_notify(oldviewpriv, TEXTSW_ACTION_SPLIT_VIEW, newview, NULL);
 
 
-	/* wieso war das eigentlich nötig ???? supertoll ist es nicht ... */
+	/* why was this necessary??? it is not exactly phantastic ... */
 	textsw_file_lines_visible(oldview, &top, &bottom);
 	xv_set(newview,
 			TEXTSW_FIRST, textsw_index_for_file_line(TEXTSW_PUBLIC(priv),
