@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.55 2026/08/03 08:13:28 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.56 2026/08/04 20:24:56 dra Exp $";
 #endif
 #endif
 
@@ -3059,11 +3059,11 @@ static void internal_register_ui(Xv_opaque obj, const char *name, Frame base)
 	}
 }
 
-/* Das ist die Default-Funktion fuer das Attribut SERVER_UI_REGISTRATION_PROC.
- * Derzeit (15.7.23) setzt keine Applikation dieses Attribut.
- * Man kommt also hierher über die Funktion server_register_ui.
- * Die wiederum ist Xv_private und wird (auch derzeit) nur aus txt_popup.c
- * aufgerufen.
+/* This is the default function for the attribute SERVER_UI_REGISTRATION_PROC.
+ * At the moment (15.7.23) no application sets this attribute.
+ * You come here via the function server_register_ui.
+ * This, in turn, is Xv_private and is called (at the moment) only from
+ * txt_popup.c.
  */
 static void server_note_register_ui(Xv_server srv, Xv_opaque obj, const char *name)
 {
