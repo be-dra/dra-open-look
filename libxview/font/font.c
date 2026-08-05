@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.20 2026/08/02 06:59:34 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.21 2026/08/04 20:26:31 dra Exp $ ";
 #endif
 #endif
 
@@ -1797,7 +1797,6 @@ static char *font_rescale_from_font(Font_info *font, int scale,
 	SERVERTRACE((777, "%s: rescale %s to %d\n", __FUNCTION__,font->name,scale));
 	linfo = attrs->linfo;
 
-	/* Plausibilitätsprüfung für die Skalierung */
 	if ((scale < (int)WIN_SCALE_SMALL) ||
 			(scale > (int)WIN_SCALE_EXTRALARGE) || (scale == FONT_NO_SCALE)) {
 		char dummy[128];
@@ -1854,7 +1853,6 @@ static char *font_rescale_from_font(Font_info *font, int scale,
 			(attrs->addstylename ? attrs->addstylename : "*"));
 
 	SERVERTRACE((777, "%s: prepare %s\n", __FUNCTION__, name));
-	/* Ziel-Größe ermitteln */
 	switch (scale) {
 		case WIN_SCALE_SMALL:
 			desired_scale = font->small_size;
@@ -1873,7 +1871,7 @@ static char *font_rescale_from_font(Font_info *font, int scale,
 	}
 
 	if (desired_scale == -1)
-		return (char *)font_name;	/* Keine passende Skalierung gefunden */
+		return (char *)font_name;
 	new_name[0] = '\0';
 
 	/* Fallback to the locale's standard size */
@@ -1912,7 +1910,6 @@ static char *font_rescale_from_font(Font_info *font, int scale,
 		}
 	}
 
-	/* Attribute zurückschreiben */
 	attrs->name = xv_strsave(new_name);
 	attrs->free_name = 1;
 	attrs->size = desired_scale;
