@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.7 2026/02/27 08:27:56 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.8 2026/08/04 20:19:16 dra Exp $ ";
 #endif
 #endif
 
@@ -946,15 +946,15 @@ static void update_pagewin(Xv_scrollbar_info *sb)
 	if (sb->current_page == 0) { /* appl compute_scroll_proc set nothing */
 		unsigned int line = sb->view_start;
 
-		/* view_start ist  nicht immer eine Zeilenzahl -
-		 * zumindest bei TEXTSW und TERMSW ist es eine 'Pixelzahl', weil
-		 * dort SCROLLBAR_PIXELS_PER_UNIT = 1 setzen.
-		 * Das ist ein konzeptioneller Mist, denn jetzt habe ich keine
-		 * Möglichkeit, die Zeilenzahl zu bestimmen.
-		 * Dagegen wird page_height = SCROLLBAR_PAGE_HEIGHT immer
-		 * als Zahl von Zeilen verstanden. D.h. man braucht bei
-		 * TEXTSW und TERMSW immer eine compute_scroll_proc, die
-		 * current_page = SCROLLBAR_PAGE setzt.
+		/* view_start is not always a "line number" -
+		 * at least in TEXTSW and TERMSW ist is a "pixel number"
+		 * because they set SCROLLBAR_PIXELS_PER_UNIT = 1.
+		 * This is a comceptional misfit - now I have no way to determine
+		 * the number of lines.
+		 * On the other hand, page_height = SCROLLBAR_PAGE_HEIGHT is always
+		 * understood as a number of lines. That means, in TEXTSW and
+		 * TERMSW, we always need a compute_scroll_proc which sets
+		 * current_page = SCROLLBAR_PAGE.
 		 */
 
 		new_pagenumber = 1 + line / sb->page_height;
