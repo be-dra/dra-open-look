@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.37 2026/08/03 19:26:28 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.38 2026/08/04 18:21:38 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -64,17 +64,17 @@
  */
 
 struct cbuf {
-    CHAR               *cb_rbp;    /* read pointer */
-    CHAR               *cb_wbp;    /* write pointer */
-    CHAR               *cb_ebp;    /* end of buffer */
-    CHAR                cb_buf[8192];
+    char               *cb_rbp;    /* read pointer */
+    char               *cb_wbp;    /* write pointer */
+    char               *cb_ebp;    /* end of buffer */
+    char                cb_buf[8192];
 };
 
 struct input_cbuf {
-    CHAR               *cb_rbp;    /* read pointer */
-    CHAR               *cb_wbp;    /* write pointer */
-    CHAR               *cb_ebp;    /* end of buffer */
-    CHAR                cb_buf[8192];
+    char               *cb_rbp;    /* read pointer */
+    char               *cb_wbp;    /* write pointer */
+    char               *cb_ebp;    /* end of buffer */
+    char                cb_buf[8192];
 };
 
 struct keymaptab {
@@ -121,7 +121,7 @@ typedef struct ttysubwindow {
 	long unsigned	magic;
     struct ttysw_view_object 			/* View window */
     			*view;			/* (Pure tty has only one view) */
-    Tty_view	current_view_public; /* This keep trace of the view become ttysw */
+    Tty_view current_view_public; /* This keep trace of the view become ttysw */
     unsigned	ttysw_flags;
     /* common */
     int                 ttysw_opt;		/* option mask; see ttysw.h */
@@ -154,8 +154,8 @@ typedef struct ttysubwindow {
     int                 ttysw_pidchild;		/* pid of the child */
     /* stuff from old ttytlsw */
     enum ttysw_hdrstate	hdrstate;		/* string trying to load */
-    CHAR		*nameptr;               /* namebuf ptr */
-    CHAR		namebuf[256];           /* accumulates esc string */
+    char		*nameptr;               /* namebuf ptr */
+    char		namebuf[256];           /* accumulates esc string */
     /* selection */
     int                 ttysw_butdown;		/* which button is down */
     struct ttyselection	sels[NBR_TTY_SELECTIONS];
@@ -184,10 +184,18 @@ typedef struct ttysubwindow {
 	int point_down_within_selection;
 	short dnd_last_click_x, dnd_last_click_y;
 
+/*
+ * Screen is maintained as an array of characters.
+ * Screen is bottom lines and right columns.
+ * Each line has length and array of characters.
+ * Characters past length position are undefined.
+ * Line is otherwise null terminated.
+ */
 	/* formerly GLOBAL variables */
 	char **image;
 	char **screenmode;
-	int	ttysw_top, ttysw_bottom, ttysw_left, ttysw_right;
+	int	ttysw_top, ttysw_bottom; /* in rows */
+	int ttysw_left, ttysw_right; /* in columns - not bytes */
 	int	cursrow, curscol;
 	int do_cursor_draw;
 	int cursor;
@@ -312,7 +320,7 @@ typedef struct sgttyb	tty_mode_t;
 Xv_private void
 	tty_background(Xv_opaque window,int x,int y,int w,int h,int op),
 	tty_copyarea(Xv_opaque window, int sX, int sY, int W, int H, int dX,int dY),
-	tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op, Xv_opaque pixfont, CHAR *string, int len)
+	tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op, Xv_opaque pixfont, char *string, int len)
 	;
 
 Xv_private void tty_clear_clip_rectangles(Xv_opaque window);
@@ -408,7 +416,7 @@ Pkg_private void ttysw_sigwinch(Ttysw_private ttysw);
 Pkg_private void ttysw_setopt(Ttysw_private ttysw_folio_or_view, int opt, int on);
 Pkg_private void ttysw_lighten_cursor(Ttysw_private ttysw);
 
-Pkg_private void ttysw_writePartialLine(Ttysw_private ttysw, CHAR *s, int curscolStart);
+Pkg_private void ttysw_writePartialLine(Ttysw_private ttysw, char *s, int curscolStart);
 Pkg_private void ttysw_underscore_mode(Ttysw_private ttysw);
 Pkg_private void ttysw_vpos(Ttysw_private ttysw, int row, int col);
 Pkg_private void xv_tty_new_size(Ttysw_private ttysw, int cols, int lines);
@@ -433,7 +441,7 @@ Pkg_private int
 	ttytlsw_string(Tty ttysw_public, int type, int c),
 	wininit(Ttysw *, Xv_object win, int *,int *);
 
-Pkg_private int ttysw_copy_to_input_buffer(Ttysw_private ttysw, CHAR *addr, int len);
+Pkg_private int ttysw_copy_to_input_buffer(Ttysw_private ttysw, char *addr, int len);
 Xv_public Notify_value ttysw_event(Tty_view ttysw_view_public, Notify_event ev, Notify_arg arg, Notify_event_type type);
 Pkg_private void ttysw_mapsetim(Ttysw_private ttysw);
 
@@ -442,7 +450,7 @@ Pkg_private int ttysw_saveparms(int ttyfd);
 Pkg_private int ttysw_restoreparms(int ttyfd);
 Pkg_private void ttysw_done(Ttysw_private ttysw_folio_private);
 Pkg_private int ttysw_getopt(Ttysw_private ttysw, int opt);
-Pkg_private int ttysw_output_it (Ttysw_view_handle ttysw_view, CHAR *addr, int len0);
+Pkg_private int ttysw_output_it (Ttysw_view_handle ttysw_view, char *addr, int len0);
 Pkg_private int ttysw_ansi_string (Tty data, int type, int c);
 
 Pkg_private int xv_tty_imageinit(Ttysw *ttysw, Xv_object window);
@@ -474,6 +482,8 @@ Pkg_private void ttysw_new_sel_init(Ttysw_private priv);
 Pkg_private void ttysw_event_paste_up(Ttysw_private priv, struct timeval *t);
 Pkg_private void ttysw_event_cut_up(Ttysw_private priv, Event *ev);
 Pkg_private int ttysw_event_copy_down(Ttysw_private priv, struct timeval *t);
+
+Pkg_private int ttysw_strlenchar(const char *s);
 
 #ifdef	cplus
 /*
