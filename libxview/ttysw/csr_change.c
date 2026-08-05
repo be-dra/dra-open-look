@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.14 2026/07/30 12:06:21 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.15 2026/08/04 18:21:38 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -119,8 +119,24 @@ static void ttysw_fixup_display_mode(char *mode)
 	}
 }
 
+Pkg_private int ttysw_strlenchar(const char *s)
+{
+	int num_chars = 0;
+
+	if (! s) return 0;
+
+	while (*s) {
+		int l = mblen(s, MB_CUR_MAX);
+
+		if (l <= 0) l = 1;
+		++num_chars;
+		s += l;
+	}
+	return num_chars;
+}
+
 /* Note: whole string will be diplayed with mode. */
-Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
+Pkg_private void ttysw_pstring(Ttysw_private ttysw, char *s,
 				/* dieser Compiler warnt immer ueber 'different width'
 				 * bei formalen Parametern von Typ char....
 				 */
@@ -136,6 +152,7 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 			(XFontStruct *) xv_get((Xv_opaque) ttysw->pixfont, FONT_INFO);
 	char mode = (char)parmode;
 
+	SERVERTRACE((888, "%s: '%s', len %d\n", __FUNCTION__, s, strlen(s)));
 	x_home = x_font_info->per_char ?
 			x_font_info->per_char[TTYSW_HOME_CHAR -
 			x_font_info->min_char_or_byte2].lbearing
@@ -156,6 +173,7 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 		}
 	}
 
+	SERVERTRACE((888, "%s: delay=%d\n", __FUNCTION__, ttysw_delaypainting));
 	if (ttysw_delaypainting) {
 		if (row == ttysw->ttysw_bottom)
 			/*
@@ -164,13 +182,13 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 			ttysw_pdisplayscreen(ttysw, TRUE, FALSE);
 		return;
 	}
-	if (s == 0)
-		return;
+	if (!s) return;
+
 	ttysw_fixup_display_mode(&mode);
 
 	if (mode & MODE_BOLD) {
 		/* Clean up first */
-		ttysw_pclearline(ttysw, col, col + (int)strlen(s), row);
+		ttysw_pclearline(ttysw, col, col + (int)ttysw_strlenchar(s), row);
 
 		/* render the first one, the potential offset of the others */
 		tty_newtext(csrwin,
@@ -199,6 +217,8 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 					PIX_SRC | PIX_DST, (Xv_opaque) ttysw->pixfont, s, (int)strlen(s));
 	}
 	else {
+		SERVERTRACE((888, "%s: before tty_newtext(%s), len %d\n", __FUNCTION__,
+									s, strlen(s)));
 		tty_newtext(csrwin,
 				col_to_x(col) - x_home,
 				row_to_y(row) - y_home,
@@ -208,12 +228,13 @@ Pkg_private void ttysw_pstring(Ttysw_private ttysw, CHAR *s,
 	if (mode & MODE_UNDERSCORE) {
 		tty_background(csrwin,
 				col_to_x(col), row_to_y(row) + ttysw->chrheight - 1,
-				(int)strlen(s) * ttysw->chrwidth, 1,
+				(int)ttysw_strlenchar(s) * ttysw->chrwidth, 1,
 				(mode & MODE_INVERT) ? PIX_NOT(PIX_SRC) : PIX_SRC);
 	}
 }
 
-Pkg_private void ttysw_pclearline(Ttysw_private ttysw, int fromcol, int tocol, int row)
+Pkg_private void ttysw_pclearline(Ttysw_private ttysw, int fromcol, int tocol,
+							int row)
 {
     int	klu1284	= (fromcol == 0 ? 1 : 0 );
 	Xv_window csrwin = csr_pixwin_get();
@@ -259,15 +280,17 @@ Pkg_private void ttysw_pcopyscreen(Ttysw_private ttysw, int fromrow, int torow, 
 static int ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 {
 	register int colstart, blanks, colfirst;
-	register CHAR *strstart, *strfirst;
+	register char *strstart, *strfirst;
 	register char modefirst;
 	register char *modestart;
-	CHAR csave;
+	char csave;
 
 	colfirst = 0;
 	colstart = leftcol;
 
-	if ((unsigned char)leftcol < LINE_LENGTH(ttysw->image[row])) {
+	/* here the "ue" is already broken */
+	SERVERTRACE((888, "%s: whole row '%s'\n", __FUNCTION__, ttysw->image[row]));
+	if ((unsigned char)leftcol < LINE_LENGTH_CHARS(ttysw->image[row])) {
 		strfirst = (caddr_t) 0;
 		modefirst = MODE_CLEAR;
 		blanks = 1;
@@ -293,6 +316,8 @@ static int ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 			{
 				csave = *strstart;
 				*strstart = '\0';
+				SERVERTRACE((888, "%s: before pstring(%s)\n", __FUNCTION__,
+								strfirst));
 				ttysw_pstring(ttysw, strfirst, modefirst, colfirst, row,
 						PIX_SRC /* | PIX_DST - jcb */ );
 				*strstart = csave;
@@ -305,13 +330,15 @@ static int ttysw_displayrow(Ttysw_private ttysw, int row, int leftcol)
 
 		if (strfirst != (caddr_t) 0)
 		{
+			SERVERTRACE((888, "%s: before pstring(%s)\n", __FUNCTION__,
+								strfirst));
 			ttysw_pstring(ttysw, strfirst, modefirst, colfirst,
 					row, PIX_SRC /* | PIX_DST -- jcb */ );
 		}
 
 		return FALSE;
 	}
-	return (LINE_LENGTH(ttysw->image[row]) == 0);
+	return (LINE_LENGTH_BYTES(ttysw->image[row]) == 0);
 }
 
 Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw,
@@ -326,7 +353,7 @@ Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw,
 	 * refresh the entire image.
 	 */
 	SERVERTRACE((567, "%s: view clearing\n", __FUNCTION__));
-#ifdef THIS_CLEARS_THE_WHOLE_WINDOW_WICH_CAN_BE_DONE_EASIER
+#ifdef THIS_CLEARS_THE_WHOLE_WINDOW_WHICH_CAN_BE_DONE_EASIER
 	rect = (struct rect *)xv_get(view, WIN_RECT);
 	tty_background(view, 0, 0,
 			rect->r_width + 1, rect->r_height, PIX_CLR);
