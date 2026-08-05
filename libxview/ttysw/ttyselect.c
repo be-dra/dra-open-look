@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.44 2026/07/30 12:06:21 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.45 2026/08/04 18:21:38 dra Exp $";
 #endif
 
 /*
@@ -26,7 +26,8 @@ char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttysele
 
 extern char *xv_app_name;
 
-typedef void (*tty_enumeration_t)(Ttysw_private ttysw, int start,int finish, int row, void *count, struct ttyselection *);
+typedef void (*tty_enumeration_t)(Ttysw_private ttysw, int startcol,
+					int finishcol, int row, void *count, struct ttyselection *);
 
 #define	SEL_NULLPOS	-1
 
@@ -120,8 +121,8 @@ static void ttysel_resolve(Ttysw_private ttysw, struct textselpos *tb, struct te
 	line = ttysw->image[tb->tsp_row];
 	tb->tsp_col = x_to_col(event->ie_locx);
 
-	if (tb->tsp_col > (int)LINE_LENGTH(line))
-		tb->tsp_col = LINE_LENGTH(line);
+	if (tb->tsp_col > (int)LINE_LENGTH_CHARS(line))
+		tb->tsp_col = LINE_LENGTH_CHARS(line);
 
 	*te = *tb;
 	switch (level) {
@@ -137,7 +138,7 @@ static void ttysel_resolve(Ttysw_private ttysw, struct textselpos *tb, struct te
 
 				match_mode = delim_table[(int)line[te->tsp_col]];
 
-				for (col = te->tsp_col; col < (int)LINE_LENGTH(line); col++) {
+				for (col = te->tsp_col; col < (int)LINE_LENGTH_CHARS(line); col++) {
 					chr = line[col];
 					if (delim_table[chr] != match_mode)
 						break;
@@ -153,22 +154,22 @@ static void ttysel_resolve(Ttysw_private ttysw, struct textselpos *tb, struct te
 			}
 		case SEL_LINE:
 			tb->tsp_col = 0;
-			te->tsp_col = LINE_LENGTH(line) - 1;
+			te->tsp_col = LINE_LENGTH_CHARS(line) - 1;
 			break;
 		case SEL_PARA:
 			{
 				register int row;
 
 				for (row = tb->tsp_row; row >= ttysw->ttysw_top; row--)
-					if (LINE_LENGTH(ttysw->image[row]) == 0)
+					if (LINE_LENGTH_CHARS(ttysw->image[row]) == 0)
 						break;
 				tb->tsp_row = MIN(tb->tsp_row, row + 1);
 				tb->tsp_col = 0;
 				for (row = te->tsp_row; row < ttysw->ttysw_bottom; row++)
-					if (LINE_LENGTH(ttysw->image[row]) == 0)
+					if (LINE_LENGTH_CHARS(ttysw->image[row]) == 0)
 						break;
 				te->tsp_row = MAX(te->tsp_row, row - 1);
-				te->tsp_col = LINE_LENGTH(ttysw->image[te->tsp_row]);
+				te->tsp_col = LINE_LENGTH_CHARS(ttysw->image[te->tsp_row]);
 				break;
 			}
 	}
@@ -309,7 +310,7 @@ static void supply_sel_item(Ttysw_private priv)
 	}
 	while (curr_row < last_row) {
 		/* LINE_LENGHT is (priv->image[curr_row])[-1]   */
-		row_len = (int)LINE_LENGTH(priv->image[curr_row]) - curr_col;
+		row_len = (int)LINE_LENGTH_CHARS(priv->image[curr_row]) - curr_col;
 		if (i + row_len >= priv->bufsize) dest = extend_selbuffer(priv);
 		index = row_len;
 		src = priv->image[curr_row] + curr_col;
@@ -345,7 +346,7 @@ static void supply_sel_item(Ttysw_private priv)
 	while (index--) {
 		dest[i++] = *src++;   /* sometimes crashes here */
 	}
-	if (end_col==LINE_LENGTH(priv->image[curr_row]) && end_col<priv->ttysw_right) {
+	if (end_col==LINE_LENGTH_CHARS(priv->image[curr_row]) && end_col<priv->ttysw_right) {
 		dest[i-1] = '\n';
 	}
 	dest[i] = '\0';
@@ -401,7 +402,7 @@ static void ttyenumerateselection(Ttysw_private ttysw,
 	    /*
 	     * Partial line hilite from beginning
 	     */
-	    proc(ttysw, begin->tsp_col, LINE_LENGTH(ttysw->image[row]), row, data, ttysel);
+	    proc(ttysw, begin->tsp_col, LINE_LENGTH_CHARS(ttysw->image[row]), row, data, ttysel);
 	} else if (row == end->tsp_row) {
 	    /*
 	     * Partial line hilite not to end
@@ -411,12 +412,13 @@ static void ttyenumerateselection(Ttysw_private ttysw,
 	    /*
 	     * Full line hilite
 	     */
-	    proc(ttysw, 0, LINE_LENGTH(ttysw->image[row]), row, data, ttysel);
+	    proc(ttysw, 0, LINE_LENGTH_CHARS(ttysw->image[row]), row, data, ttysel);
 	}
     }
 }
 
-static void ttycountchars(Ttysw_private ttysw, int start,int finish, int row,void *xcount, struct ttyselection *u)
+static void ttycountchars(Ttysw_private ttysw, int startcol,int finishcol,
+							int row,void *xcount, struct ttyselection *u)
 /*
  * Since it does not use the selection rank, it is not include in the
  * argument list
@@ -424,9 +426,11 @@ static void ttycountchars(Ttysw_private ttysw, int start,int finish, int row,voi
 {
 	int *count = (int *)xcount;
 
-    *count += finish + 1 - start;
-    if (LINE_LENGTH(ttysw->image[row]) == finish && finish == ttysw->ttysw_right) {
-	*count -= 1;		/* no CR on wrapped lines	 */
+    *count += finishcol + 1 - startcol;
+    if (LINE_LENGTH_CHARS(ttysw->image[row]) == finishcol
+		&& finishcol == ttysw->ttysw_right)
+	{
+		*count -= 1;		/* no CR on wrapped lines	 */
     }
 }
 
@@ -651,23 +655,26 @@ Pkg_private void ttysel_deselect(Ttysw_private ttysw, struct ttyselection *ttyse
 		ttysel_empty(ttysel);
 }
 
-static void my_write_string(Ttysw_private ttysw, int start,int end,int row)
+static void my_write_string(Ttysw_private ttysw,int startcol,int endcol,int row)
 {
-	CHAR *str = ttysw->image[row];
-	CHAR temp_char = (CHAR) '\0';
+	char *str = ttysw->image[row];
+	char temp_char = '\0';
+	int endbyte = column_to_byteoffset(str, endcol);
+	int startbyte = column_to_byteoffset(str, startcol);
 
-	if ((end + 1) < (int)STRLEN(str)) {	/* This is a very dirty trick for
+	if ((endbyte + 1) < (int)strlen(str)) {	/* This is a very dirty trick for
 										 * speed */
-		temp_char = str[end + 1];
-		str[end + 1] = (CHAR) '\0';
-		ttysw_pclearline(ttysw, start, (int)strlen(str), row);
+		temp_char = str[endbyte + 1];
+		str[endbyte + 1] = '\0';
+		ttysw_pclearline(ttysw, startcol, (int)strlen(str), row);
 	}
 	else
-		ttysw_pclearline(ttysw, start, (int)strlen(str) + 1, row);
+		ttysw_pclearline(ttysw, startcol, (int)strlen(str) + 1, row);
 
-	ttysw_pstring(ttysw, (str + start), ttysw->boldify, start, row, PIX_SRC);
+	SERVERTRACE((888, "%s: before pstring(%s)\n", __FUNCTION__, str+startcol));
+	ttysw_pstring(ttysw, (str + startbyte), ttysw->boldify, startbyte, row, PIX_SRC);
 
-	if (temp_char != '\0') str[end + 1] = temp_char;
+	if (temp_char != '\0') str[endbyte + 1] = temp_char;
 }
 
 static void ttysw_pselectionhilite(struct rect *r, int sel_rank)
@@ -688,19 +695,19 @@ static void ttysw_pselectionhilite(struct rect *r, int sel_rank)
 	}
 }
 
-static void ttyhiliteline(Ttysw_private ttysw, int start, int finish, int row, void *xc, struct ttyselection *ttysel)
+static void ttyhiliteline(Ttysw_private ttysw, int startcol, int finishcol, int row, void *xc, struct ttyselection *ttysel)
 {
 	struct pr_size *offsets = (struct pr_size *)xc;
 	struct rect r;
 
-	rect_construct(&r, col_to_x(start), row_to_y(row) + offsets->x,
-			col_to_x(finish + 1) - col_to_x(start), offsets->y);
+	rect_construct(&r, col_to_x(startcol), row_to_y(row) + offsets->x,
+			col_to_x(finishcol + 1) - col_to_x(startcol), offsets->y);
 	if (r.r_width == 0) return;
 
-	if (ttysel->dehilite_op) my_write_string(ttysw, start, finish, row);
+	if (ttysel->dehilite_op) my_write_string(ttysw, startcol, finishcol, row);
 	else {
 		if (ttysel->selrank == TTY_SEL_SECONDARY)
-			my_write_string(ttysw, start, finish, row);
+			my_write_string(ttysw, startcol, finishcol, row);
 
 		(void)ttysw_pselectionhilite(&r, ttysel->selrank);
 	}
