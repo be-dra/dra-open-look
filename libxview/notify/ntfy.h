@@ -1,4 +1,4 @@
-/*      @(#)ntfy.h 20.22 93/06/28 SMI   DRA: $Id: ntfy.h,v 4.3 2025/03/29 21:01:15 dra Exp $      */
+/*      @(#)ntfy.h 20.22 93/06/28 SMI   DRA: $Id: ntfy.h,v 4.4 2026/08/05 21:38:16 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -514,7 +514,11 @@ void	ntfy_assert_debug(int code);
 void	ntfy_fatal_error(const char *msg);
 
 #define	pkg_private	extern
+#ifdef __GNUC__
+#define	pkg_private_data __attribute__((visibility("hidden")))
+#else /* __GNUC__ */
 #define	pkg_private_data
+#endif /* __GNUC__ */
 
 #ifdef DRA_IRIX
 #  define OVERLOAD_SYSCALLS 1
