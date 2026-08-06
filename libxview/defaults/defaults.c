@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)defaults.c 20.33 93/06/28 DRA: RCS $Id: defaults.c,v 4.2 2026/07/15 16:44:29 dra Exp $  ";
+static char     sccsid[] = "@(#)defaults.c 20.33 93/06/28 DRA: RCS $Id: defaults.c,v 4.3 2026/08/05 21:31:54 dra Exp $  ";
 #endif
 #endif
 
@@ -45,7 +45,7 @@ static char     defaults_returned_value[DEFAULTS_MAX_VALUE_SIZE];
  * last server that was created. This is extremely ugly and must 
  * be fixed.
  */
-XrmDatabase defaults_rdb;/* merged defaults database */
+Xv_private_data XrmDatabase defaults_rdb;/* merged defaults database */
 
 static Bool symbol_equal(char  *symbol1, char  *symbol2);
 static char	*defaults_locale = NULL;
