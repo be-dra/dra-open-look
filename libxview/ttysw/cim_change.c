@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.11 2026/08/04 20:07:41 dra Exp $";
+char     cim_change_c_sccsid[] = "@(#)cim_change.c 20.19 93/06/28 DRA: $Id: cim_change.c,v 4.12 2026/08/05 09:04:12 dra Exp $";
 #endif
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -299,6 +299,8 @@ Pkg_private void ttysw_deleteChar(Ttysw_private ttysw, int fromcol, int tocol,
 		 * There's a fragment left at the end
 		 */
 		int gap = tocol - fromcol;
+/* 		SERVERTRACE((888, "%s: from %d to %d\n", __FUNCTION__, */
+/* 							fromcol, tocol)); */
 
 		{
 			int fb, tb;
@@ -315,8 +317,18 @@ Pkg_private void ttysw_deleteChar(Ttysw_private ttysw, int fromcol, int tocol,
 		ttysw_pclearline(ttysw, len - gap, len, row);
 	}
 	else if (fromcol < len) {
+/* 		SERVERTRACE((888, "%s: from %d to %d\n", __FUNCTION__, */
+/* 							fromcol, tocol)); */
 		setlinelength(ttysw, line, fromcol);
-		ttysw_pclearline(ttysw, fromcol, len, row);
+		if (tocol == ttysw->ttysw_right) {
+			/* dra: if the caller asks us to clear to the end 
+			 *      (ttysw->ttysw_right) - why shouldn't we do so????
+			 */
+			ttysw_pclearline(ttysw, fromcol, tocol, row);
+		}
+		else {
+			ttysw_pclearline(ttysw, fromcol, len, row);
+		}
 	}
 }
 
