@@ -1,5 +1,5 @@
 #ifndef lint
-char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.15 2026/08/04 18:21:38 dra Exp $";
+char     csr_change_c_sccsid[] = "@(#)csr_change.c 20.51 93/06/28 DRA: RCS $Id: csr_change.c,v 4.16 2026/08/05 09:01:49 dra Exp $";
 #endif
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -240,6 +240,7 @@ Pkg_private void ttysw_pclearline(Ttysw_private ttysw, int fromcol, int tocol,
 	Xv_window csrwin = csr_pixwin_get();
 
     if (ttysw_delaypainting) return;
+/* 	SERVERTRACE((888, "%s: from %d to %d\n", __FUNCTION__, fromcol, tocol)); */
     tty_background(csrwin,
 			  col_to_x(fromcol)-klu1284, row_to_y(row),
 			  col_to_x(tocol) - col_to_x(fromcol)+klu1284,
@@ -353,14 +354,8 @@ Pkg_private void ttysw_pdisplayscreen(Ttysw_private ttysw,
 	 * refresh the entire image.
 	 */
 	SERVERTRACE((567, "%s: view clearing\n", __FUNCTION__));
-#ifdef THIS_CLEARS_THE_WHOLE_WINDOW_WHICH_CAN_BE_DONE_EASIER
-	rect = (struct rect *)xv_get(view, WIN_RECT);
-	tty_background(view, 0, 0,
-			rect->r_width + 1, rect->r_height, PIX_CLR);
-#else
 	XClearArea((Display *)xv_get(view, XV_DISPLAY),
 					xv_get(view, XV_XID), 0, 0, 0, 0, TRUE);
-#endif
 
 	SERVERTRACE((567, "%s: top %d to bottom %d\n", __FUNCTION__,
 							ttysw->ttysw_top, ttysw->ttysw_bottom));
