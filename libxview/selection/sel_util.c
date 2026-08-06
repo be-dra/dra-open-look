@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.39 2026/07/21 06:27:29 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.40 2026/08/05 21:33:00 dra Exp $";
 #endif
 #endif
 
@@ -31,7 +31,7 @@ static void tvdiff(struct timeval *t1, struct timeval *t2, struct timeval *diff)
 static int SelFindReply(Sel_reply_info *r1, Sel_reply_info *r2);
 static Sel_req_list *SelMatchReqTbl( Sel_reply_info  *reply);
 
-XContext  selCtx;
+Xv_private_data XContext  selCtx;
 
 Pkg_private void xv_sel_cvt_xtime_to_timeval(Time  XTime, struct timeval *tv)
 {
@@ -157,7 +157,7 @@ int xv_sel_add_prop_notify_mask(Display *dpy, Window win,XWindowAttributes *winA
 }
 
 
-XContext  targetCtx;
+Xv_private_data XContext  targetCtx;
 
 /* REMEMBER TO FREE THE ALLOCATED MEM */
 Pkg_private Sel_atom_list *xv_sel_find_atom_list(Display *dpy, Window xid)
@@ -193,7 +193,7 @@ Pkg_private Sel_atom_list *xv_sel_find_atom_list(Display *dpy, Window xid)
 	return list;
 }
 
-XContext  propCtx;
+Xv_private_data XContext  propCtx;
 
 /* Pkg_private */
 static Sel_prop_list * xv_sel_get_prop_list(Xv_server srv, Display *dpy)
