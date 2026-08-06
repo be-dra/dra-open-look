@@ -1,6 +1,6 @@
 #ifndef	lint
 #ifdef sccs
-static char     sccsid[] = "@(#)ndisdispch.c 20.22 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ndisdispch.c,v 4.3 2025/03/29 21:01:10 dra Exp $ ";
+static char     sccsid[] = "@(#)ndisdispch.c 20.22 93/06/28 Copyr 1985 Sun Micro  DRA: $Id: ndisdispch.c,v 4.4 2026/08/05 21:38:21 dra Exp $ ";
 #endif
 #endif
 
@@ -25,7 +25,7 @@ static char     sccsid[] = "@(#)ndisdispch.c 20.22 93/06/28 Copyr 1985 Sun Micro
 #endif  /* SVR4 */
 
 /* performance: global cache of getdtablesize() */
-int             dtablesize_cache = 0;
+Xv_private_data int dtablesize_cache = 0;
 #if defined(SVR4) || defined(__linux)
 #define GETDTABLESIZE() \
 (dtablesize_cache?dtablesize_cache:(dtablesize_cache=(int)sysconf(_SC_OPEN_MAX)))
