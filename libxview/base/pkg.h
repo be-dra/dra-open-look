@@ -1,4 +1,4 @@
-/*      @(#)pkg.h 20.22 91/03/19 SMI   DRA: $Id: pkg.h,v 4.3 2025/03/08 12:52:02 dra Exp $      */
+/*      @(#)pkg.h 20.22 91/03/19 SMI   DRA: $Id: pkg.h,v 4.4 2026/08/05 21:43:14 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -61,14 +61,23 @@
  */
 #define	XV_SET_DONE	((Xv_opaque) 2)
 
+#ifdef __GNUC__
+#define Xv_public_data		/* Part of the client interface */
+#define Xv_private_data	__attribute__((visibility("hidden")))
+#define Xv_public	extern	/* Part of the client interface */
+#define Xv_private	extern __attribute__((visibility("hidden")))
+#define Pkg_private	extern __attribute__((visibility("hidden")))
+#else /* __GNUC__ */
 #define Xv_public_data		/* Part of the client interface */
 #define Xv_private_data		/* Should only be used by the XView toolkit */
-#define Sv1_public	extern /* SunView1 compatibility only; part of the 
-				* client interface 
-				*/
 #define Xv_public	extern	/* Part of the client interface */
 #define Xv_private	extern	/* Should only be used by the XView toolkit */
 #define Pkg_private	extern	/* Should only be used by same pkg */
+#endif /* __GNUC__ */
+
+#define Sv1_public	Xv_public  /* SunView1 compatibility only; part of the 
+								* client interface 
+								*/
 
 typedef struct _xview_pkg {
     char                *name;
