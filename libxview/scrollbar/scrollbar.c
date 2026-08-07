@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.8 2026/08/04 20:19:16 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.9 2026/08/07 05:18:18 dra Exp $ ";
 #endif
 #endif
 
@@ -902,7 +902,12 @@ static void get_page_window(Xv_scrollbar_info *sb)
     pn->ginfo = sb->ginfo;
 
 	pn->yoff = AbbScrollbar_Height(pn->ginfo) / 2;
-	pn->digitwidth = XTextWidth(TextFont_Struct(pn->ginfo), "0", 1);
+	if (_xv_is_multibyte) {
+		pn->digitwidth = XmbTextEscapement(TextFont_Set(pn->ginfo), "0", 1);
+	}
+	else {
+		pn->digitwidth = XTextWidth(TextFont_Struct(pn->ginfo), "0", 1);
+	}
 	pn->height = Ascent_of_TextFont(pn->ginfo) +
 								Descent_of_TextFont(pn->ginfo) +
 								2 * pn->vmargin;
