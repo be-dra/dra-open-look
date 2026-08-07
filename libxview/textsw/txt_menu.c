@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_menu_c_sccsid[] = "@(#)txt_menu.c 20.90 93/06/28 DRA: $Id: txt_menu.c,v 4.35 2026/07/30 07:54:31 dra Exp $";
+char     txt_menu_c_sccsid[] = "@(#)txt_menu.c 20.90 93/06/28 DRA: $Id: txt_menu.c,v 4.37 2026/08/06 14:10:31 dra Exp $";
 #endif
 
 /*
@@ -56,8 +56,6 @@ typedef struct local_menu_object {
     Menu_item      *menu_items /* [TEXTSW_MENU_LAST_CMD] */ ;
 }               Local_menu_object;
 
-int TXT_MENU_ITEMS_KEY, TXT_FILE_MENU_KEY, TXT_SET_DEF_KEY;
-
 Xv_private void textsw_file_do_menu_action(Menu, Menu_item);
 
 int             STORE_FILE_POPUP_KEY = 0;
@@ -67,12 +65,12 @@ int             FILE_STUFF_POPUP_KEY;
 int             SEARCH_POPUP_KEY;
 int             MATCH_POPUP_KEY;
 int             SEL_LINE_POPUP_KEY;
-int             EXTRASMENU_FILENAME_KEY;
-int             TEXTSW_MENU_DATA_KEY;
-int             TEXTSW_HANDLE_KEY;
-int             TEXTSW_CURRENT_POPUP_KEY;
-int             FC_PARENT_KEY;
-int             FC_EXTEN_ITEM_KEY;
+Xv_private_data int EXTRASMENU_FILENAME_KEY;
+Xv_public_data int TEXTSW_MENU_DATA_KEY;
+static int TEXTSW_HANDLE_KEY;
+Xv_private_data int TEXTSW_CURRENT_POPUP_KEY;
+Xv_private_data int FC_PARENT_KEY;
+/* int             FC_EXTEN_ITEM_KEY; */
 
 /* Menu strings for File sub menu */
 #define	SAVE_FILE	"Save "
@@ -1267,12 +1265,9 @@ static void textsw_new_menu(Textsw_private priv)
 		EXTRASMENU_FILENAME_KEY = xv_unique_key();
 		TEXTSW_MENU_DATA_KEY = xv_unique_key();
 		TEXTSW_HANDLE_KEY = xv_unique_key();
-		TXT_MENU_ITEMS_KEY = xv_unique_key();
-		TXT_FILE_MENU_KEY = xv_unique_key();
-		TXT_SET_DEF_KEY = xv_unique_key();
 		TEXTSW_CURRENT_POPUP_KEY = xv_unique_key();
 		FC_PARENT_KEY = xv_unique_key();
-		FC_EXTEN_ITEM_KEY = xv_unique_key();
+/* 		FC_EXTEN_ITEM_KEY = xv_unique_key(); */
 	}
 
 	menu_items = (Menu_item *) calloc((size_t)TEXTSW_MENU_LAST_CMD,
