@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.7 2026/07/27 19:26:01 dra Exp $";
+static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.8 2026/08/06 08:46:08 dra Exp $";
 #endif
 #endif
 
@@ -82,7 +82,7 @@ Xv_private Cms xv_set_control_cms(Xv_Window window_public,
 
 
 /* three_d:     TRUE: 3D, FALSE: 2D.  May be modified. */
-Xv_private Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
+Xv_public Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 									Xv_Font text_font)
 {
 	static Attr_attribute screen_ginfo = 0;
