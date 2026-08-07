@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.24 2026/08/04 20:26:01 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.25 2026/08/06 08:47:37 dra Exp $";
 #endif
 
 /*
@@ -62,7 +62,6 @@ Pkg_private int             SEARCH_POPUP_KEY;
 Pkg_private int             MATCH_POPUP_KEY;
 Pkg_private int             SEL_LINE_POPUP_KEY;
 Pkg_private int             TEXTSW_CURRENT_POPUP_KEY;
-Pkg_private int             TEXTSW_MENU_DATA_KEY;
 
 /* BUG ALERT:  Is a "duplicate" cursor ever used? */
 /*
