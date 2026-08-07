@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.1 2024/03/28 19:28:19 dra Exp $";
+static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.2 2026/08/06 09:02:52 dra Exp $";
 #endif
 #endif
 
@@ -116,11 +116,8 @@ Xv_private int win_get_retained(Xv_object window)
 }
 
 /* translate coordinates */
-Xv_private int
-win_translate_xy(src, dst, src_x, src_y, dst_x, dst_y)
-    Xv_object       src, dst;
-    int             src_x, src_y;
-    int            *dst_x, *dst_y;
+Xv_public int win_translate_xy(Xv_object src, Xv_object dst,
+					int src_x, int src_y, int *dst_x, int *dst_y)
 {
     register Xv_Drawable_info *src_info;
     register Xv_Drawable_info *dst_info;
