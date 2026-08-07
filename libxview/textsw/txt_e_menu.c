@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_e_menu_c_sccsid[] = "@(#)txt_e_menu.c 20.50 93/06/28 DRA: $Id: txt_e_menu.c,v 4.11 2026/07/30 07:45:47 dra Exp $";
+char     txt_e_menu_c_sccsid[] = "@(#)txt_e_menu.c 20.50 93/06/28 DRA: $Id: txt_e_menu.c,v 4.12 2026/08/06 14:10:20 dra Exp $";
 #endif
 
 /*
@@ -70,7 +70,7 @@ static int walk_getmenu(Textsw_view textsw_view, Menu m, char *file,
     									FILE *mfd, int *lineno);
 static	int      Nargs;
 
-extern int      EXTRASMENU_FILENAME_KEY;
+Xv_private int EXTRASMENU_FILENAME_KEY;
 
 Pkg_private char *textsw_get_extras_filename(Xv_server srv, Menu_item mi)
 {
