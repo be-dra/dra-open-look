@@ -47,12 +47,11 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.22 2026/05/05 17:43:12 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.23 2026/08/06 15:05:00 dra Exp $";
 #endif
 
 /* Xv_private : */
 extern void server_set_timestamp(Xv_Server, struct timeval *, unsigned long);
-extern Xv_opaque server_get_timestamp(Xv_Server);
 
 typedef struct _loadfile {
 	struct _loadfile *next;
