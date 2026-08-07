@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.52 2026/05/02 14:35:59 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.53 2026/08/06 14:09:53 dra Exp $";
 #endif
 #endif
 
@@ -22,7 +22,7 @@ static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.5
 #endif  /* SVR4 */
 
 static int (*OldErrorHandler)(Display *, XErrorEvent *);
-XContext  reqCtx;
+Xv_private_data XContext  reqCtx;
 
 static int SelLoseOwnership( Sel_owner_info *sel_owner)
 {
