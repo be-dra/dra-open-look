@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_tool_c_sccsid[] = "@(#)txt_tool.c 20.26 93/06/28 DRA: $Id: txt_tool.c,v 4.2 2025/01/01 20:35:21 dra Exp $";
+char     txt_tool_c_sccsid[] = "@(#)txt_tool.c 20.26 93/06/28 DRA: $Id: txt_tool.c,v 4.3 2026/08/06 08:47:37 dra Exp $";
 #endif
 
 /*
@@ -25,7 +25,7 @@ char     txt_tool_c_sccsid[] = "@(#)txt_tool.c 20.26 93/06/28 DRA: $Id: txt_tool
 
 #include <xview/win_struct.h>
 
-Pkg_private int textsw_default_notify(Textsw abstract, Attr_attribute *attrs)
+Xv_public int textsw_default_notify(Textsw abstract, Attr_attribute *attrs)
 {
 	register Frame frame = xv_get(abstract, WIN_FRAME);
 	Xv_Notice text_notice;
