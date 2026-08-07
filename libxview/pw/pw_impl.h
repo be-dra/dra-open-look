@@ -1,4 +1,4 @@
-/*	@(#)pw_impl.h 20.17 89/08/18 SMI  DRA: RCS $Id: pw_impl.h,v 2.3 2025/01/09 09:18:40 dra Exp $	*/
+/*	@(#)pw_impl.h 20.17 89/08/18 SMI  DRA: RCS $Id: pw_impl.h,v 2.4 2026/08/06 08:46:08 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -58,7 +58,7 @@ Xv_private int xv_rop_internal(Display *display, Drawable d, GC gc, int x, int y
 
 struct graphics_info;
 
-Xv_private struct graphics_info *xv_init_olgx(Xv_Window win, int *three_d,
+Xv_public struct graphics_info *xv_init_olgx(Xv_Window win, int *three_d,
 									Xv_opaque text_font);
 Xv_private Cms xv_set_control_cms(Xv_Window window_public, Xv_Drawable_info *info, int cms_status);
 
