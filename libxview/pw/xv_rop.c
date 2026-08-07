@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_rop.c 20.55 89/07/31 DRA: RCS $Id: xv_rop.c,v 2.7 2025/01/06 19:10:56 dra Exp $";
+static char     sccsid[] = "@(#)xv_rop.c 20.55 89/07/31 DRA: RCS $Id: xv_rop.c,v 2.8 2026/08/06 11:53:38 dra Exp $";
 #endif
 #endif
 
@@ -31,8 +31,6 @@ static char     sccsid[] = "@(#)xv_rop.c 20.55 89/07/31 DRA: RCS $Id: xv_rop.c,v
 #include <xview_private/svr_impl.h>
 #include <xview_private/i18n_impl.h>
 #include <xview_private/scrn_impl.h>
-
-int   GC_CHAIN_KEY;
 
 #include <xview/xv_xrect.h>
 
@@ -379,6 +377,8 @@ Pkg_private void xv_to_x_convert_image(XImage *ximage, int val)
 
 Pkg_private GC xv_find_proper_gc(Display *display, Xv_Drawable_info *info, int op)
 {
+	static int GC_CHAIN_KEY = 0;
+
 	int depth = xv_depth(info), i;
 	Drawable xid = xv_xid(info);
 	XGCValues gv;
