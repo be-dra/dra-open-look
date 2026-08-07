@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.56 2026/07/22 19:00:37 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.57 2026/08/06 15:04:53 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -103,8 +103,6 @@ typedef Scrollwin_event_struct *dir_event_ptr;
 typedef enum {
   SELECT_DOWN, SELECT_UP, ADJUST_DOWN, ADJUST_UP, DRAG, STOP, UNKNOWN_INPUT
 } dir_events;
-
-extern Xv_opaque server_get_timestamp(Xv_Server server_public);
 
 static int dirpw_key = 0;
 
