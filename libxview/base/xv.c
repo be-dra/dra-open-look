@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.8 2026/07/15 18:33:04 dra Exp $";
+static char     sccsid[] = "@(#)xv.c 20.47 91/01/30  DRA: $Id: xv.c,v 4.9 2026/08/06 08:42:21 dra Exp $";
 #endif
 #endif
 
@@ -288,7 +288,7 @@ Xv_public Xv_object xv_create(Xv_opaque parent, const Xv_pkg *pkg, ...)
     return xv_create_avlist(parent, pkg, avlist);
 }
 
-Xv_private Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
+Xv_public Xv_object xv_create_avlist(Xv_opaque parent, const Xv_pkg *pkg,
 								Attr_attribute *avlist)
 {
 	Xv_object object = XV_NULL;
@@ -471,7 +471,7 @@ static Xv_opaque xv_set_pkg_avlist(Xv_object object, const Xv_pkg *pkg,
 	return XV_OK;
 }
 
-Xv_private Xv_opaque xv_set_avlist(Xv_opaque passed_object, Attr_avlist avlist)
+Xv_public Xv_opaque xv_set_avlist(Xv_opaque passed_object, Attr_avlist avlist)
 {
 	register Xv_opaque object;
 
@@ -744,7 +744,7 @@ Xv_public int xv_destroy_status(Xv_object passed_object, Destroy_status status)
 	return XV_OK;
 }
 
-Xv_private int xv_check_bad_attr(const Xv_pkg *pkg, Attr_attribute attr)
+Xv_public int xv_check_bad_attr(const Xv_pkg *pkg, Attr_attribute attr)
 /*
  * At first glance the return values seem to be backwards. However, if the
  * specified package was meant to handle the attribute, it wants to return a
