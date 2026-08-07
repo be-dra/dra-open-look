@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.20 2026/07/31 16:04:29 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.21 2026/08/06 08:45:21 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -77,7 +77,7 @@ Pkg_private void panel_update_extent(Panel_info *panel, Rect rect)
 /* font char/pixel conversion routines                                      */
 /****************************************************************************/
 
-Pkg_private int panel_col_to_x(Xv_Font font, int col)
+Xv_public int panel_col_to_x(Xv_Font font, int col)
 {
 	int chrwth;
 
@@ -736,13 +736,9 @@ Pkg_private void panel_paint_text(Xv_opaque	pw, XFontSet fs, Font	font_xid,
 }
 
 
-Pkg_private void panel_paint_svrim(
-    Xv_Window pw,
-    Pixrect *pr,
-    int x,
-    int y,
-    int color_index,
-    Pixrect *mask_pr)
+/* subclasses might want to use it..., originally Pkg_private... */
+Xv_public void panel_paint_svrim(Xv_Window pw, Pixrect *pr, int x, int y,
+    int color_index, Pixrect *mask_pr)
 {
     Display	   *display;
     GC             *gc_list;
