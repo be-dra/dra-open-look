@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.67 2026/07/30 08:42:29 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.68 2026/08/06 08:47:37 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -656,8 +656,8 @@ Pkg_private void textsw_destroy_esh(Textsw_private priv, Es_handle esh);
 Pkg_private int textsw_load_selection(Textsw_private priv, int locx, int locy, int no_cd);
 Pkg_private int textsw_does_index_not_show(Textsw_view vpub, Es_index index, int *line_index);	/* output only.  if index does not show, not set. */
 Pkg_private int textsw_screen_column_count(Textsw abstract);
-Pkg_private Textsw_mark textsw_add_glyph_on_line(Textsw abstract, int line, struct pixrect *pr, int op, int offset_x, int offset_y, int flags);
-Pkg_private void textsw_remove_glyph(Textsw abstract, Textsw_mark mark, int flags);
+Xv_public Textsw_mark textsw_add_glyph_on_line(Textsw abstract, int line, struct pixrect *pr, int op, int offset_x, int offset_y, int flags);
+Xv_public void textsw_remove_glyph(Textsw abstract, Textsw_mark mark, int flags);
 Pkg_private void textsw_real_update_scrollbars(Textsw_private priv);
 Pkg_private void textsw_do_resize(Textsw_view abstract);
 Pkg_private Textsw_index textsw_start_of_display_line(Textsw abstract, Textsw_index pos);
