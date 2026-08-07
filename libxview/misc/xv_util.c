@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_util.c 1.6 93/06/28 DRA: RCS $Id: xv_util.c,v 4.2 2024/09/15 09:26:16 dra Exp $ ";
+static char     sccsid[] = "@(#)xv_util.c 1.6 93/06/28 DRA: RCS $Id: xv_util.c,v 4.3 2026/08/06 09:02:34 dra Exp $ ";
 #endif
 #endif
 
@@ -83,7 +83,7 @@ Xv_private int xv_get_hostname(char *buf, int maxlen)
  *
  */
 
-Xv_private void *xv_alloc_func(size_t s)
+Xv_public void *xv_alloc_func(size_t s)
 {
   if (!(save = calloc(1L, s)))
     xv_alloc_error();
@@ -91,7 +91,7 @@ Xv_private void *xv_alloc_func(size_t s)
   return(save);
 }
 
-Xv_private void *xv_alloc_n_func(size_t s,size_t n)
+Xv_public void *xv_alloc_n_func(size_t s,size_t n)
 {
   if(!(save = calloc(n, s)))
     xv_alloc_error();
@@ -99,7 +99,7 @@ Xv_private void *xv_alloc_n_func(size_t s,size_t n)
   return(save);
 }
 
-Xv_private void *xv_malloc_func(size_t s)
+Xv_public void *xv_malloc_func(size_t s)
 {
   if(!(save = malloc(s)))
     xv_alloc_error();
@@ -107,7 +107,7 @@ Xv_private void *xv_malloc_func(size_t s)
   return(save);
 }
 
-Xv_private void *xv_realloc_func(void *p, size_t s)
+Xv_public void *xv_realloc_func(void *p, size_t s)
 {
   if(!(save = realloc(p, s)))
     xv_alloc_error();
@@ -115,7 +115,7 @@ Xv_private void *xv_realloc_func(void *p, size_t s)
   return(save);
 }
 
-Xv_private void *xv_valloc_func(size_t s)
+Xv_public void *xv_valloc_func(size_t s)
 {
   if(!(save = valloc(s)))
     xv_alloc_error();
