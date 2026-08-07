@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.6 2026/07/18 19:37:04 dra Exp $";
+static char     sccsid[] = "@(#)xv_init.c 20.62 92/07/07  DRA: $Id: xv_init.c,v 4.8 2026/08/06 17:52:36 dra Exp $";
 #endif
 #endif
 
@@ -41,9 +41,9 @@ Xv_private void xv_init_x_pr(void);
 static int xv_handle_xio_errors(Display *display);
 static char *xv_base_name(char *fullname);
 
-Xv_private_data char *xv_app_name;
+Xv_public_data char *xv_app_name;
 Xv_private_data char 	*xv_instance_app_name = NULL;
-Xv_private_data int	_xv_use_locale;
+Xv_private_data int	_xv_use_locale = TRUE;
 Xv_private_data int	_xv_is_multibyte;
 Xv_private int	notify_exclude_fd;
 Xv_private Defaults_pairs xv_kbd_cmds_value_pairs[4];
