@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_dbx_c_sccsid[] = "@(#)txt_dbx.c 20.26 93/06/28 DRA: $Id: txt_dbx.c,v 4.6 2026/07/30 07:43:45 dra Exp $";
+char     txt_dbx_c_sccsid[] = "@(#)txt_dbx.c 20.26 93/06/28 DRA: $Id: txt_dbx.c,v 4.7 2026/08/06 08:47:37 dra Exp $";
 #endif
 
 /*
@@ -247,7 +247,7 @@ Xv_public void textsw_scroll_lines(Textsw_view v, int count)
     ev_scroll_lines(view->e_view, count, FALSE);
 }
 
-Pkg_private Textsw_mark textsw_add_glyph_on_line(Textsw abstract, int line,
+Xv_public Textsw_mark textsw_add_glyph_on_line(Textsw abstract, int line,
 			struct pixrect *pr, int op, int offset_x, int offset_y, int flags)
 {
     Ev_mark_object  mark;
@@ -264,7 +264,7 @@ Pkg_private Textsw_mark textsw_add_glyph_on_line(Textsw abstract, int line,
     return (Textsw_mark)mark;
 }
 
-Pkg_private void textsw_remove_glyph(Textsw abstract, Textsw_mark mark, int flags)
+Xv_public void textsw_remove_glyph(Textsw abstract, Textsw_mark mark, int flags)
 {
     long unsigned  *dummy_for_compiler = (long unsigned *) &mark;
     Textsw_private priv;
