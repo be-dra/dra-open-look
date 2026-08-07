@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.56 2026/08/04 20:24:56 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.58 2026/08/06 17:17:17 dra Exp $";
 #endif
 #endif
 
@@ -93,8 +93,8 @@ extern int				_xv_is_multibyte;
 Xv_private_data char 	*xv_shell_prompt;
 
 /* global default server parameters */
-Xv_private Xv_Screen xv_default_screen;
-Xv_private Display *xv_default_display;
+Xv_public Xv_Screen xv_default_screen;
+Xv_public Display *xv_default_display;
 
 #define MAX_NBR_MAPPINGS 6
 
@@ -7168,7 +7168,7 @@ static Xv_opaque server_get_attr(Xv_Server server_public, int *status, Attr_attr
 	return (Xv_opaque) 0;
 }
 
-Xv_private Xv_opaque server_get_timestamp(Xv_Server server_public)
+Xv_opaque server_get_timestamp(Xv_Server server_public)
 {
     Server_info    *server = SERVER_PRIVATE(server_public);
     return ((Xv_opaque) server->xtime);
