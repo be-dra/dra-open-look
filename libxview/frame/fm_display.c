@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.8 2026/07/22 12:05:08 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.9 2026/08/06 09:02:12 dra Exp $ ";
 #endif
 #endif
 
@@ -316,12 +316,9 @@ Pkg_private void frame_display_busy(Frame_class_info *frame, int status)
 /*
  * highlight subwindow border for sw.
  */
-Xv_private void
-frame_kbd_use(frame_public, sw, pw)
-    Frame           frame_public;
-    Xv_Window       sw;		/* frame subwindow */
-    Xv_Window	    pw;		/* paint window that has the keyboard focus.
-				 * This may or may not be equal to sw. */
+Xv_public void frame_kbd_use(Frame frame_public, Xv_Window sw,		/* frame subwindow */
+    			Xv_Window pw)		/* paint window that has the keyboard focus.
+				 					 * This may or may not be equal to sw. */
 {
     Frame_class_info *frame = FRAME_CLASS_PRIVATE(frame_public);
     Cms cms;
