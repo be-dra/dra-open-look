@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.34 2026/07/21 06:27:21 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.35 2026/08/06 14:09:40 dra Exp $";
 #endif
 #endif
 
@@ -254,10 +254,10 @@ Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev);
 Pkg_private int sel_wrap_convert_proc(Selection_owner owner, Atom *type,
 					Xv_opaque *value, unsigned long *length, int *format);
 
-extern XContext  selCtx;
-extern XContext  reqCtx;
-extern XContext  targetCtx;
-extern XContext  propCtx;
+Pkg_private XContext  selCtx;
+Pkg_private XContext  reqCtx;
+Pkg_private XContext  targetCtx;
+Pkg_private XContext  propCtx;
 
 #endif /* sel_impl_defined */
 
