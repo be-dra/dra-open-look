@@ -1,4 +1,4 @@
-/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.15 2026/07/19 21:58:22 dra Exp $	*/
+/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.16 2026/08/06 08:45:17 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -193,7 +193,8 @@ Pkg_private void		panel_check_item_layout(Item_info *ip);
 Pkg_private void          	panel_clear_item(Item_info *ip);
 Pkg_private void		panel_clear_pw_rect(Xv_window pw, Rect rect);
 Pkg_private void		panel_clear_rect(Panel_info *panel, Rect rect);
-Pkg_private int		 	panel_col_to_x(Xv_Font font, int col);
+/* used in slingshot ??? */
+Xv_public int		 	panel_col_to_x(Xv_Font font, int col);
 Pkg_private void		panel_display(Panel_info *panel, Panel_setting flag);
 Pkg_private Notify_value	panel_default_event(Panel p_public, Event *event,
                                             Notify_arg arg);
@@ -222,7 +223,8 @@ Pkg_private     Notify_value panel_notify_panel_event(Xv_Window window, Notify_e
 Pkg_private int panel_nullproc(Panel_item it, Event *ev);
 Pkg_private void panel_paint_image(Panel_info *panel, Panel_image *image,
     Rect *rect, int  inactive_item, int  color_index);
-Pkg_private void panel_paint_svrim(Xv_Window pw, Pixrect *pr, int x, int y,
+/* subclasses might want to use it..., originally Pkg_private... */
+Xv_public void panel_paint_svrim(Xv_Window pw, Pixrect *pr, int x, int y,
     int color_index, Pixrect *mask_pr);
 Pkg_private void panel_paint_text(Xv_opaque	pw, XFontSet fs, Font font_xid,
     				int	color_index, int x, int y, CHAR *str);
