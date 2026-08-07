@@ -1,4 +1,4 @@
-/*	@(#)textsw.h 20.56 93/06/28 SMI  DRA: $Id: textsw.h,v 4.14 2026/07/30 07:25:00 dra Exp $	*/
+/*	@(#)textsw.h 20.56 93/06/28 SMI  DRA: $Id: textsw.h,v 4.15 2026/08/06 08:47:37 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -458,7 +458,7 @@ typedef struct {
 
 extern  const Xv_pkg	xv_textsw_pkg;
 extern  const Xv_pkg	xv_textsw_view_pkg;
-extern  int     TEXTSW_MENU_DATA_KEY;
+Xv_public int     TEXTSW_MENU_DATA_KEY;
 
 
 /*
