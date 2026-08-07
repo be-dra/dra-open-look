@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.21 2026/07/19 13:49:13 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.22 2026/08/06 09:03:08 dra Exp $";
 #endif
 #endif
 /*
@@ -41,7 +41,7 @@ Xv_private void selection_agent_clear(Xv_Server, XSelectionClearEvent *);
 Xv_private void selection_agent_selectionrequest(Xv_Server server,
 									XSelectionRequestEvent *req_event);
 
-Xv_private char		*xv_app_name;
+Xv_public char		*xv_app_name;
 Xv_private char		*xv_instance_app_name;
 
 /*
