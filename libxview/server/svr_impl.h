@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.20 2026/07/31 08:30:50 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.21 2026/08/06 08:46:45 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -195,7 +195,7 @@ Xv_private void server_trace(int level, const char *format, ...);
 Xv_private Server_atom_type server_get_atom_type(Xv_Server server_public,
 													Atom atom);
 
-Xv_private Xv_opaque server_get_timestamp(Xv_Server server_public);
+Xv_public Xv_opaque server_get_timestamp(Xv_Server server_public);
 Xv_private Xv_opaque server_get_fullscreen(Xv_Server server_public);
 Xv_private void server_set_timestamp(Xv_Server server_public, struct timeval *ev_time, unsigned long xtime);
 Xv_private void server_set_fullscreen(Xv_Server server_public, int in_fullscreen);
