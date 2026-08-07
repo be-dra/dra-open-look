@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.28 2026/07/18 19:57:59 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.30 2026/08/06 13:51:45 dra Exp $ ";
 #endif
 #endif
 
@@ -964,7 +964,6 @@ static int find_site(Dnd_info *dnd, XButtonEvent *e)
 	}
 	return send_preview_event(dnd, DND_NO_SITE, (XEvent *) e);
 }
-Xv_private Xv_opaque server_get_timestamp(Xv_Server server_public);
 
 extern int debug_DND;
 
