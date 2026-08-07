@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_error.c 1.36 93/06/28  DRA: $Id: xv_error.c,v 4.1 2024/03/28 19:35:11 dra Exp $";
+static char     sccsid[] = "@(#)xv_error.c 1.36 93/06/28  DRA: $Id: xv_error.c,v 4.2 2026/08/06 08:41:46 dra Exp $";
 #endif
 #endif
 
@@ -19,7 +19,8 @@ static char     sccsid[] = "@(#)xv_error.c 1.36 93/06/28  DRA: $Id: xv_error.c,v
 /* Unix system error variables */
 #include <errno.h>
 
-Xv_private char *xv_app_name;
+/* defined in xv_init.c */
+Xv_public char *xv_app_name;
 extern int (*xv_error_proc)(Xv_object, Attr_avlist);
 
 /*
