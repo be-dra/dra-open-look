@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.7 2025/06/20 20:36:52 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.9 2026/08/08 05:04:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -83,32 +83,12 @@ propGetTextProp(dpy,win,property,text)
 {
 	XTextProperty	textProp;
 	Bool		ret = False;
-#ifdef OW_I18N_L4
-	wchar_t		**list;
-	int		count;
-	int		status;
-#endif
 
 	if (XGetTextProperty(dpy,win,&textProp,property) == 0) {
 		*text = NULL;
 		return False;
 	}
 
-
-#ifdef OW_I18N_L4
-	if (textProp.format != 8) {
-		*text = NULL;
-	} else {
-		status = XwcTextPropertyToTextList(dpy, &textProp, &list, &count);
-		if (count >= 1 && status == Success) {
-			*text = MemNewText(list[0]);
-			XwcFreeStringList(list);
-			ret = True;
-		} else
-			*text = NULL;
-	}
-		
-#else
 	if (
 		/* recently, they also come with type = UTF8_STRING - I don't care  */
 	    textProp.format   == 8) {
@@ -121,7 +101,6 @@ propGetTextProp(dpy,win,property,text)
 	}
 
 	XFree((char *)textProp.value);
-#endif
 	return ret;
 }
 
@@ -179,12 +158,6 @@ PropListAvailable(dpy,win)
 			retFlags |= OLLeftFooterAvail;
 		else if (atomList[i] == AtomRightFooter)
 			retFlags |= OLRightFooterAvail;
-#ifdef OW_I18N_L4
-		else if (atomList[i] == AtomLeftIMStatus)
-			retFlags |= OLLeftIMStatusAvail;
-		else if (atomList[i] == AtomRightIMStatus)
-			retFlags |= OLRightIMStatusAvail;
-#endif
 		else if (atomList[i] == Atom_NET_WM_ICON)
 			retFlags |= NetWMIconAvail;
 		else if (atomList[i] == AtomWinColors)
@@ -501,7 +474,7 @@ PropGetWMState(dpy,win,state,iconwin)
 	int	*state;			/* RETURN */
 	Window	*iconwin;		/* RETURN */
 {
-	unsigned int nItems,remain;
+	unsigned long nItems,remain;
 	long *data;
 
 	if (!PropAvailable(win,WMStateAvail))
@@ -574,7 +547,7 @@ Bool PropGetNetWMIcon(Display *dpy, Window win, unsigned long **much,
 Bool PropGetOLWindowState(Display *dpy, Window win, OLWindowState	*winState) /* RETURN */
 {
 	OLWindowState	*newState;
-	unsigned int	nItems,remain;
+	unsigned long	nItems,remain;
 
 	if (!PropAvailable(win,OLWindowStateAvail))
 		return False;
@@ -715,10 +688,6 @@ propGetOLDecor(dpy,win,atom,decorFlags)
 			*decorFlags |= WMDecorationPushPin;
 		else if (atomList[i] == AtomDecorIconName)
 			*decorFlags |= WMDecorationIconName;
-#ifdef OW_I18N_L4
-                else if (atomList[i] == AtomDecorIMStatus)
-                        *decorFlags |= WMDecorationIMStatus;
-#endif		
 	}
 
 	XFree((char *)atomList);
@@ -789,43 +758,3 @@ Bool PropGetOLRightFooter(Display *dpy, Window win, Text **footer)
 
 	return True;
 }
-
-#ifdef OW_I18N_L4
-
-/*
- * PropGetOLLeftIMStatus - gets the left IM status string
- */
-Bool
-PropGetOLLeftIMStatus(dpy,win,status)
-	Display	*dpy;
-	Window	win;
-	Text	**status;			/* RETURN */
-{
-	if (!PropAvailable(win,OLLeftIMStatusAvail))
-		return False;
-
-	if (!propGetTextProp(dpy,win,AtomLeftIMStatus,status))
-		return False;
-
-	return True;
-}
-
-/*
- * PropGetOLRightIMStatus - gets the right IM status string
- */
-Bool
-PropGetOLRightIMStatus(dpy,win,status)
-	Display	*dpy;
-	Window	win;
-	Text	**status;			/* RETURN */
-{
-	if (!PropAvailable(win,OLRightIMStatusAvail))
-		return False;
-
-	if (!propGetTextProp(dpy,win,AtomRightIMStatus,status))
-		return False;
-
-	return True;
-}
-
-#endif
