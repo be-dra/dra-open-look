@@ -1,4 +1,4 @@
-/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.9 2026/06/02 20:59:42 dra Exp $ */
+/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.10 2026/08/07 18:28:39 dra Exp $ */
 /* #ident	"@(#)win.h	26.43	93/06/28 SMI" */
 
 /*
@@ -69,9 +69,6 @@ typedef struct {
 #define WMDecorationResizeable  (1L<<4)
 #define WMDecorationIconName	(1L<<5)
 #define WMDecorationWarpToPin	(1L<<6)
-#ifdef OW_I18N_L4
-#define	WMDecorationIMStatus	(1L<<7)
-#endif
 
 /*
  *	Window Manager State
@@ -420,11 +417,6 @@ typedef struct _winpaneframe {
 	Footer			leftFooter;
 	Footer			rightFooter;
 
-#ifdef OW_I18N_L4
-	/* input method status footers */
-	Footer			leftIMStatus;
-	Footer			rightIMStatus;
-#endif
 	/* title fields */
 	int			titleOff;	/* x offset of title area in pix */
 	int			nameLength;	/* length of name in chars */
