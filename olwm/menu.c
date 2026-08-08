@@ -1,5 +1,5 @@
 /* #ident	"@(#)menu.c	26.76	93/06/28 SMI" */
-char menu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: menu.c,v 2.5 2026/02/28 13:42:33 dra Exp $";
+char menu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: menu.c,v 2.6 2026/08/07 18:30:40 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -598,12 +598,10 @@ void DrawMenu(Display *dpy, MenuInfo *mInfo)
 							mInfo->titleX, mInfo->titleY, 0,
 							OLGX_NORMAL | TextOLGX);
 
-#ifdef OW_I18N_L4
 		if (GRV.BoldFontEmulation == True)
 			olgx_draw_text(gisNormal, win, mtit,
 								mInfo->titleX + 1, mInfo->titleY, 0,
 								OLGX_NORMAL | TextOLGX);
-#endif
 
 		olgx_draw_text_ledge(gisNormal, win,
 							MENU_TITLE_MARGIN, mInfo->titleHeight - 6,
@@ -1036,11 +1034,7 @@ establishAccelerator(bInfo, binding)
 	if (ks >= XK_a && ks <= XK_z)
 		ks = ks - XK_a + XK_A;
 
-#ifdef OW_I18N_L4
-	bInfo->accel_key = mbstowcsdup(XKeysymToString(ks));
-#else
 	bInfo->accel_key = MemNewString(XKeysymToString(ks));
-#endif /* OW_I18N_L4 */
 
 	/* run through the eight modifier bits */
 	for (m = 0; m < 8; ++m) {
@@ -1081,11 +1075,7 @@ establishAccelerator(bInfo, binding)
 					break;
 				default:
 
-#ifdef OW_I18N_L4
-					temp = mbstowcsdup(XKeysymToString(ks));
-#else
 					temp = XKeysymToString(ks);
-#endif /* OW_I18N_L4 */
 
 					break;
 			}
