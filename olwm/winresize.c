@@ -1,5 +1,5 @@
 /* #ident	"@(#)winresize.c	26.27	93/06/28 SMI" */
-char winresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winresize.c,v 1.6 2026/02/28 13:42:16 dra Exp $";
+char winresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winresize.c,v 1.7 2026/08/07 18:27:29 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -17,9 +17,6 @@ char winresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winresize.c,v 1.6 2026/0
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/keysym.h>
-#ifdef OW_I18N_L4
-#include "i18n.h"
-#endif
 #include <olgx/olgx.h>
 
 #include "ollocale.h"
