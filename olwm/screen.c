@@ -1,5 +1,5 @@
 /* #ident	"@(#)screen.c	26.46	93/06/28 SMI" */
-char screen_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: screen.c,v 2.4 2026/01/27 13:11:32 dra Exp $";
+char screen_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: screen.c,v 2.5 2026/08/08 05:04:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -1428,6 +1428,7 @@ static void initGCs(dpy,scrInfo)
 	Window rootwin = scrInfo->rootid;
 	unsigned long valuemask;
 	char *resString;
+	unsigned gcf = 0;
 
 #ifdef ALLPLANES
 	extern Bool AllPlanesExists;
@@ -1474,19 +1475,14 @@ static void initGCs(dpy,scrInfo)
 	values.function = GXcopy;
 	values.foreground = scrInfo->colorInfo.fgColor;
 
-#ifndef OW_I18N_L4
-	values.font = GRV.TitleFontInfo->fid;
-#endif
+	if (GRV.TitleFontInfo.fstr) {
+		values.font = GRV.TitleFontInfo.fstr->fid;
+		gcf = GCFont;
+	}
 
 	values.graphics_exposures = False;
 	scrInfo->gc[FOREGROUND_GC] = XCreateGC(dpy, scrInfo->pixmap[PROTO_DRAWABLE],
-
-#ifdef OW_I18N_L4
-			(GCFunction | GCForeground | GCGraphicsExposures),
-#else
-			(GCFont | GCFunction | GCForeground | GCGraphicsExposures),
-#endif
-
+			(gcf | GCFunction | GCForeground | GCGraphicsExposures),
 			&values);
 
 	/* 
@@ -1506,19 +1502,14 @@ static void initGCs(dpy,scrInfo)
 	values.function = GXcopy;
 	values.foreground = scrInfo->colorInfo.bg1Color;
 
-#ifndef OW_I18N_L4
-	values.font = GRV.TitleFontInfo->fid;
-#endif
+	if (GRV.TitleFontInfo.fstr) {
+		values.font = GRV.TitleFontInfo.fstr->fid;
+		gcf = GCFont;
+	}
 
 	values.graphics_exposures = False;
 	scrInfo->gc[WINDOW_GC] = XCreateGC(dpy, scrInfo->pixmap[PROTO_DRAWABLE],
-
-#ifdef OW_I18N_L4
-			(GCFunction | GCForeground | GCGraphicsExposures),
-#else
-			(GCFunction | GCForeground | GCFont | GCGraphicsExposures),
-#endif
-
+			(gcf | GCFunction | GCForeground | GCGraphicsExposures),
 			&values);
 
 	/* 
@@ -1569,21 +1560,15 @@ static void initGCs(dpy,scrInfo)
 	values.foreground = scrInfo->colorInfo.fgColor;
 	values.background = scrInfo->colorInfo.workspaceColor;
 
-#ifndef OW_I18N_L4
-	values.font = GRV.IconFontInfo->fid;
-#endif
+	if (GRV.IconFontInfo.fstr) {
+		values.font = GRV.IconFontInfo.fstr->fid;
+		gcf = GCFont;
+	}
 
 	values.graphics_exposures = False;
 	scrInfo->gc[ICON_NORMAL_GC] = XCreateGC(dpy,
 			scrInfo->pixmap[PROTO_DRAWABLE],
-			(GCFunction | GCForeground | GCBackground |
-
-#ifdef OW_I18N_L4
-					GCGraphicsExposures),
-#else
-					GCFont | GCGraphicsExposures),
-#endif
-
+			gcf | GCFunction |GCForeground |GCBackground |GCGraphicsExposures,
 			&values);
 
 	/* 
@@ -1669,10 +1654,7 @@ static void initGCs(dpy,scrInfo)
  *	needed.  If we change back to that scheme, some Upd* routines for 
  *	dynamically changing resources will need to be reorganized.)
  */
-static void
-initOLGX(dpy,scrInfo)
-	Display		*dpy;
-	ScreenInfo	*scrInfo;
+static void initOLGX(Display *dpy, ScreenInfo	*scrInfo)
 {
 	unsigned long pixvals[5];
 	int dflag = (GRV.ui_style == UIS_3D_COLOR) ? OLGX_3D_COLOR : OLGX_2D;
@@ -1690,28 +1672,22 @@ initOLGX(dpy,scrInfo)
 	 * Gis for drawing in window color with title font
 	 *	most window objects and frame title
  	 */
-	scrInfo->gi[NORMAL_GINFO] = olgx_main_initialize(dpy,
+	scrInfo->gi[NORMAL_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, dflag,
 		GRV.GlyphFontInfo,
-#ifdef OW_I18N_L4
-		GRV.TitleFontSetInfo.fs,
-#else
-		GRV.TitleFontInfo,
-#endif
+		GRV.TitleFontInfo.fontset,
+		GRV.TitleFontInfo.fstr,
 		pixvals,NULL);
 
 	/* 
 	 * Gis for drawing in window color with button font
 	 *	notice buttons & menu buttons
 	 */
-	scrInfo->gi[BUTTON_GINFO] = olgx_main_initialize(dpy,
+	scrInfo->gi[BUTTON_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, dflag,
 	 	GRV.GlyphFontInfo,
-#ifdef OW_I18N_L4
-		GRV.ButtonFontSetInfo.fs,
-#else
-		GRV.ButtonFontInfo,
-#endif
+		GRV.ButtonFontInfo.fontset,
+		GRV.ButtonFontInfo.fstr,
 		pixvals,NULL);
 
 	/* 
@@ -1724,14 +1700,11 @@ initOLGX(dpy,scrInfo)
 	 * never require the 3D "more arrow".
 	 */
 	pixvals[OLGX_WHITE] = scrInfo->colorInfo.bg1Color;
-	scrInfo->gi[TEXT_GINFO] = olgx_main_initialize(dpy,
+	scrInfo->gi[TEXT_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, OLGX_2D,
 	       	GRV.GlyphFontInfo,
-#ifdef OW_I18N_L4
-		GRV.TextFontSetInfo.fs,
-#else
-		GRV.TextFontInfo,
-#endif
+		GRV.TextFontInfo.fontset,
+		GRV.TextFontInfo.fstr,
 		pixvals,NULL);
 
 	/* 
@@ -1741,14 +1714,11 @@ initOLGX(dpy,scrInfo)
 	pixvals[OLGX_WHITE] = scrInfo->colorInfo.fgColor;
 	pixvals[OLGX_BLACK] = scrInfo->colorInfo.bg0Color;
 
-	scrInfo->gi[REVPIN_GINFO] = olgx_main_initialize(dpy,
+	scrInfo->gi[REVPIN_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, dflag,
 		GRV.GlyphFontInfo,
-#ifdef OW_I18N_L4
-		GRV.TitleFontSetInfo.fs,
-#else
-		GRV.TitleFontInfo,
-#endif
+		GRV.TitleFontInfo.fontset,
+		GRV.TitleFontInfo.fstr,
 		pixvals,NULL);
 }
 
@@ -1889,10 +1859,7 @@ static void updateScreenBorderColor(Display *dpy, ScreenInfo	*scrInfo)
 /*
  * initFonts - init things that depend on the fonts
  */
-static void
-initFonts(dpy,scrInfo)
-	Display		*dpy;
-	ScreenInfo	*scrInfo;
+static void initFonts(Display *dpy, ScreenInfo	*scrInfo)
 {
 	Resize_width = Resize_height = 0;
 	updateScreenGlyphFont(dpy,scrInfo);
@@ -1901,86 +1868,74 @@ initFonts(dpy,scrInfo)
 /*
  * updateScreenTitleFont -- change all GC/Ginfo's that use TitleFont
  */
-static void
-updateScreenTitleFont(dpy,scrInfo)
-	Display		*dpy;
-	ScreenInfo	*scrInfo;
+static void updateScreenTitleFont(Display *dpy, ScreenInfo	*scrInfo)
 {
-#ifdef OW_I18N_L4
-        XFontSet	fs = GRV.TitleFontSetInfo.fs;
-#else
-	XFontStruct	*font = GRV.TitleFontInfo;
-#endif
-#ifndef OW_I18N_L4
-	XGCValues       values;
+	OlFontSetInfo fontInfo;
 
-	values.font = font->fid;
-	XChangeGC(dpy,scrInfo->gc[FOREGROUND_GC],GCFont,&values);
-	XChangeGC(dpy,scrInfo->gc[WINDOW_GC],GCFont,&values);
-#endif
+	fontInfo = GRV.TitleFontInfo;
+	if (fontInfo.fontset) {
+		olgx_set_text_fontset(scrInfo->gi[NORMAL_GINFO], fontInfo.fontset,
+											OLGX_NORMAL);
+		olgx_set_text_fontset(scrInfo->gi[REVPIN_GINFO], fontInfo.fontset,
+											OLGX_NORMAL);
+	}
+	else {
+		XGCValues       values;
 
-#ifdef OW_I18N_L4
-	olgx_set_text_fontset(scrInfo->gi[NORMAL_GINFO],fs,OLGX_NORMAL);
-	olgx_set_text_fontset(scrInfo->gi[REVPIN_GINFO],fs,OLGX_NORMAL);
-#else
-	olgx_set_text_font(scrInfo->gi[NORMAL_GINFO],font,OLGX_NORMAL);
-	olgx_set_text_font(scrInfo->gi[REVPIN_GINFO],font,OLGX_NORMAL);
+		values.font = fontInfo.fstr->fid;
+		XChangeGC(dpy,scrInfo->gc[FOREGROUND_GC],GCFont,&values);
+		XChangeGC(dpy,scrInfo->gc[WINDOW_GC],GCFont,&values);
+		olgx_set_text_font(scrInfo->gi[NORMAL_GINFO],fontInfo.fstr,OLGX_NORMAL);
+		olgx_set_text_font(scrInfo->gi[REVPIN_GINFO],fontInfo.fstr,OLGX_NORMAL);
+	}
+
 	dra_update_title_font(scrInfo);
-#endif
 }
 
 /*
  * updateScreenTextFont -- change all GC/Ginfo's that use TextFont
  */
-static void
-updateScreenTextFont(dpy,scrInfo)
-	Display		*dpy;
-	ScreenInfo	*scrInfo;
+static void updateScreenTextFont(Display *dpy, ScreenInfo	*scrInfo)
 {
-#ifdef OW_I18N_L4
-        XFontSet	fs = GRV.TextFontSetInfo.fs;
-
-	olgx_set_text_fontset(scrInfo->gi[TEXT_GINFO],fs,OLGX_NORMAL);
-#else
-	XFontStruct	*font = GRV.TextFontInfo;
-
-	olgx_set_text_font(scrInfo->gi[TEXT_GINFO],font,OLGX_NORMAL);
-#endif
+	if (GRV.TextFontInfo.fontset) {
+		olgx_set_text_fontset(scrInfo->gi[TEXT_GINFO],
+							GRV.TextFontInfo.fontset,OLGX_NORMAL);
+	}
+	else {
+		olgx_set_text_font(scrInfo->gi[TEXT_GINFO],
+							GRV.TextFontInfo.fstr,OLGX_NORMAL);
+	}
 }
 
 /*
  * updateScreenButtonFont -- change all GC/Ginfo's that use ButtonFont
  */
-static void updateScreenButtonFont(dpy,scrInfo)
-	Display		*dpy;
-	ScreenInfo	*scrInfo;
+static void updateScreenButtonFont(Display *dpy, ScreenInfo	*scrInfo)
 {
-#ifdef OW_I18N_L4
-	XFontSet	fs = GRV.ButtonFontSetInfo.fs;
-
-	olgx_set_text_fontset(scrInfo->gi[BUTTON_GINFO],fs,OLGX_NORMAL);
-#else
-	XFontStruct	*font = GRV.ButtonFontInfo;
-
-	olgx_set_text_font(scrInfo->gi[BUTTON_GINFO],font,OLGX_NORMAL);
+	if (GRV.ButtonFontInfo.fontset) {
+		olgx_set_text_fontset(scrInfo->gi[TEXT_GINFO],
+							GRV.ButtonFontInfo.fontset,OLGX_NORMAL);
+	}
+	else {
+		olgx_set_text_font(scrInfo->gi[TEXT_GINFO],
+							GRV.ButtonFontInfo.fstr,OLGX_NORMAL);
+	}
 	dra_update_button_font(scrInfo);
-#endif
 }
 
 /*
  * updateScreenIconFont -- change all GC/Ginfo's that use IconFont
  */
-static void updateScreenIconFont(dpy,scrInfo)
-	Display		*dpy;
-	ScreenInfo	*scrInfo;
+static void updateScreenIconFont(Display *dpy, ScreenInfo	*scrInfo)
 {
-#ifndef OW_I18N_L4
-	XFontStruct	*font = GRV.IconFontInfo;
-	XGCValues       values;
-
-	values.font = font->fid;
-	XChangeGC(dpy,scrInfo->gc[ICON_NORMAL_GC],GCFont,&values);
-#endif
+	if (GRV.IconFontInfo.fontset) {
+		olgx_set_text_fontset(scrInfo->gi[TEXT_GINFO],
+							GRV.IconFontInfo.fontset,OLGX_NORMAL);
+	}
+	else {
+		olgx_set_text_font(scrInfo->gi[TEXT_GINFO],
+							GRV.IconFontInfo.fstr,OLGX_NORMAL);
+	}
 }
 
 /*
@@ -2016,12 +1971,8 @@ static void updateScreenGlyphFont(Display *dpy, ScreenInfo	*scrInfo)
 /*
  *	initScreenInfo	- creates the ScreenInfo for a particular screen
  */
-static void
-initScreenInfo(dpy,screenno,visInfo,nvis)
-	Display		*dpy;
-	int		screenno;
-	XVisualInfo	*visInfo;
-	int		nvis;
+static void initScreenInfo(Display *dpy, int screenno, XVisualInfo	*visInfo,
+									int nvis)
 {
 	ScreenInfo	*scrInfo;
 	Client		*client;
