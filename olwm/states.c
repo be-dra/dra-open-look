@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.8 2025/03/01 15:01:26 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.9 2026/08/07 18:29:40 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -305,11 +305,6 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
 		} else {
 			decors->pushpin_initial_state = PIN_OUT;
 		}
-#ifdef OW_I18N_L4
-		/* check if need to decor the IM status */
-		if (oldVersion) {
-		}
-#endif
 	}
 
 	/*
