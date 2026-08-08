@@ -1,5 +1,5 @@
 /* #ident  "@(#)fontset.c	1.10    93/06/28 SMI" */
-char fontset_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontset.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char fontset_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontset.c,v 2.2 2026/08/08 05:04:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -90,7 +90,7 @@ char	*locale;
 		/*
 		 * Setup the new font set database for this locale.
 		 */
-#ifdef DEBUG
+#ifdef LOCALE_DEBUG
 		fprintf(stderr, "New font locale -> %s\n", locale);
 #endif
 		if (last_font_locale != NULL)
@@ -105,10 +105,10 @@ char	*locale;
 	 * way we can tell the current locale to the XCreateFontSet is
 	 * via setlocale!
 	 */
-	if (strcmp(locale, DRA_CHANGED_setlocale(LC_CTYPE, NULL)) != NULL)
+	if (strcmp(locale, setlocale(LC_CTYPE, NULL)) != NULL)
 	{
-		current_lc_ctype = MemNewString(DRA_CHANGED_setlocale(LC_CTYPE, NULL));
-		DRA_CHANGED_setlocale(LC_CTYPE, locale);
+		current_lc_ctype = MemNewString(setlocale(LC_CTYPE, NULL));
+		setlocale(LC_CTYPE, locale);
 	}
 	else
 		current_lc_ctype = NULL;
@@ -130,7 +130,7 @@ char	*locale;
 				    &missing_charset_count, &def_string);
 	}
 	if (current_lc_ctype != NULL) {
-		DRA_CHANGED_setlocale(LC_CTYPE, current_lc_ctype);
+		setlocale(LC_CTYPE, current_lc_ctype);
 		free(current_lc_ctype);
 	}
 	if (miss_list && (missing_charset_count > 0)) {
@@ -163,17 +163,17 @@ XFontSet	fs;
 	}
 
 	if (--(fsc->count) <= 0) {
-		cur_locale = DRA_CHANGED_setlocale(LC_CTYPE, NULL);
+		cur_locale = setlocale(LC_CTYPE, NULL);
 		if (strcmp(fsc->locale, cur_locale) != 0) {
 			(void) strcpy(saved_locale, cur_locale);
-			(void) DRA_CHANGED_setlocale(LC_CTYPE, fsc->locale);
+			(void) setlocale(LC_CTYPE, fsc->locale);
 		} else
 			saved_locale[0] = 0;
 
 		fsc_remove(dpy, fsc);
 
 		if (saved_locale[0] != 0)
-			(void) DRA_CHANGED_setlocale(LC_CTYPE, saved_locale);
+			(void) setlocale(LC_CTYPE, saved_locale);
 	}
 }
 
@@ -196,7 +196,7 @@ char	*locale;
 	{
 		(void) sprintf(filename, "%s/lib/locale/%s/OW_FONT_SETS/%s",
 			openWinPath, locale, FONT_SETS);
-#ifdef DEBUG
+#ifdef LOCALE_DEBUG
 		fprintf(stderr, "Try to open the FontSetDB [%s]\n", filename);
 #endif
 		if (access(filename, R_OK) != 0)
@@ -232,7 +232,7 @@ static char *parse_font_list(XrmDatabase db, char *list, int count)
 	if (count > 15)
 		return NULL;
 
-#ifdef DEBUG
+#ifdef LOCALE_DEBUG
 	fprintf(stderr, "list -> [%s]\n", list);
 #endif
 	if (strncmp(list, FS_DEF, FS_DEF_LEN) == 0) 
@@ -254,7 +254,7 @@ static char *parse_font_list(XrmDatabase db, char *list, int count)
 				return parse_font_list(db, xrm_result.addr, count++);
 		}
 	}
-#ifdef DEBUG
+#ifdef LOCALE_DEBUG
 	fprintf(stderr, "There are no such key\n");
 #endif
 	return NULL;
@@ -280,12 +280,12 @@ char		*key;
 	xrm_result.size = 0;
 	xrm_result.addr = NULL;
 
-#ifdef DEBUG
+#ifdef LOCALE_DEBUG
 	fprintf(stderr, "Looking for key [%s] in FontSetDB...\n", key);
 #endif
 	if (XrmGetResource(db, key, key, &type, &xrm_result) == True) 
 		return(parse_font_list(db, xrm_result.addr, 0));
-#ifdef DEBUG
+#ifdef LOCALE_DEBUG
 	fprintf(stderr, "There are no such key\n");
 #endif
 	return NULL;
