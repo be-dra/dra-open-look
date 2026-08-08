@@ -1,5 +1,5 @@
 /* #ident	"@(#)winbusy.c	26.12	93/06/28 SMI" */
-char winbusy_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winbusy.c,v 1.2 1995/09/22 06:14:31 dra Exp $";
+char winbusy_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winbusy.c,v 1.3 2026/08/07 18:27:19 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -16,9 +16,6 @@ char winbusy_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winbusy.c,v 1.2 1995/09/22
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
-#ifdef OW_I18N_L4
-#include "i18n.h"
-#endif
 #include <olgx/olgx.h>
 
 #include "i18n.h"
