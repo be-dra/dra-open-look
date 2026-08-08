@@ -1,5 +1,5 @@
 /* #ident	"@(#)i18n.c	1.12	93/06/28 SMI" */
-char i18n_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: i18n.c,v 1.4 2026/07/27 20:37:12 dra Exp $";
+char i18n_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: i18n.c,v 1.5 2026/08/08 05:04:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -67,51 +67,26 @@ DrawText(dpy,drawable,font,gc,x,y,text,len)
  *	      fonts used in olwm.
  *	      #ifdef'd for both XFontInfo and XFontSet
  */
-int
-FontInfo(font,op,text,len)
-	DisplayFont	font;
-	FontInfoOp	op;
-	Text		*text;
-	int		len;
+int FontInfo(DisplayFont	font, FontInfoOp	op, Text *text, int len)
 {
-#ifdef OW_I18N_L4
-	XFontSetInfo	*fontInfo;
-#else
-	XFontStruct	*fontInfo;
-#endif
+	OlFontSetInfo fontInfo;
 	int		ret;
 
 	switch (font) {
 
 	case TitleFont:
-#ifdef OW_I18N_L4
-		fontInfo = &(GRV.TitleFontSetInfo);
-#else
 		fontInfo = GRV.TitleFontInfo;
-#endif
 		break;
 	case TextFont:
-#ifdef OW_I18N_L4
-		fontInfo = &(GRV.TextFontSetInfo);
-#else
 		fontInfo = GRV.TextFontInfo;
-#endif
 		break;
 
 	case ButtonFont:
-#ifdef OW_I18N_L4
-		fontInfo = &(GRV.ButtonFontSetInfo);
-#else
 		fontInfo = GRV.ButtonFontInfo;
-#endif
 		break;
 
 	case IconFont:
-#ifdef OW_I18N_L4
-		fontInfo = &(GRV.IconFontSetInfo);
-#else
 		fontInfo = GRV.IconFontInfo;
-#endif
 		break;
 
 	default:
@@ -120,36 +95,31 @@ FontInfo(font,op,text,len)
 
 	switch (op) {
 	case FontWidthOp:
-#ifdef OW_I18N_L4
-		ret = XwcTextEscapement(fontInfo->fs,text,len);
-#else
-		ret = XTextWidth(fontInfo,text,len);
-#endif
+		if (fontInfo.fontset)
+			ret = XmbTextEscapement(fontInfo.fontset,text,len);
+		else ret = XTextWidth(fontInfo.fstr,text,len);
 		break;
 
 	case FontHeightOp:
-#ifdef OW_I18N_L4
-		ret = fontInfo->fsx->max_logical_extent.height;
-#else
-		ret = fontInfo->ascent + fontInfo->descent;
-#endif
+		if (fontInfo.fontset)
+		ret = fontInfo.fsext->max_logical_extent.height;
+		else
+		ret = fontInfo.fstr->ascent + fontInfo.fstr->descent;
 		break;
 
 	case FontAscentOp:
-#ifdef OW_I18N_L4
-		ret = - fontInfo->fsx->max_logical_extent.y;
-#else
-		ret = fontInfo->ascent;
-#endif
+		if (fontInfo.fontset)
+		ret = - fontInfo.fsext->max_logical_extent.y;
+		else
+		ret = fontInfo.fstr->ascent;
 		break;
 
 	case FontDescentOp:
-#ifdef OW_I18N_L4
-		ret = fontInfo->fsx->max_logical_extent.height +
-		      fontInfo->fsx->max_logical_extent.y;
-#else
-		ret = fontInfo->descent;
-#endif
+		if (fontInfo.fontset)
+		ret = fontInfo.fsext->max_logical_extent.height +
+		      fontInfo.fsext->max_logical_extent.y;
+		else
+		ret = fontInfo.fstr->descent;
 		break;
 
 	default:
