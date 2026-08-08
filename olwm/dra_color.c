@@ -20,7 +20,7 @@
 #include "group.h"
 #include <stdarg.h>
 
-char dra_color_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_color.c,v 2.5 2026/06/02 20:59:54 dra Exp $";
+char dra_color_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_color.c,v 2.6 2026/08/08 05:04:45 dra Exp $";
 
 static int minlev = 1000;
 static int maxlev = 0;
@@ -109,6 +109,7 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 	int dflag;
 	Client *cliLead;
 	Window *colfol, groupie;
+	unsigned gcf;
 
 	dra_olwm_trace(110, "\nin dra_colors_new_state(win=%x, cli=%x, ws=%x\n",
 					window, cli, wanted_a_subgroup);
@@ -123,7 +124,7 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 
 		/* look whether there is a _OL_COLORS_FOLLOW property */
 		colfol = (Window *)GetWindowProperty(dpy, window,
-					AtomColorsFollow, 0, 1, 
+					AtomColorsFollow, 0, 1,
 					XA_WINDOW, 32, &nitems, &rest);
 		if (colfol) {
 			groupie = *colfol;
@@ -145,7 +146,7 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 			}
 		}
 
-    
+
 		if ((cliLead = (Client *)GroupLeader(groupie))) {
 			dra_olwm_trace(120, "has group leader (or color group leader)\n");
 
@@ -167,7 +168,7 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 	 */
 		/* look whether there is a _OL_COLORS_FOLLOW property */
 		colfol = (Window *)GetWindowProperty(dpy, window,
-					AtomColorsFollow, 0, 1, 
+					AtomColorsFollow, 0, 1,
 					XA_WINDOW, 32, &nitems, &rest);
 
 		if (colfol) {
@@ -175,7 +176,7 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 			XFree((char *)colfol);
 			dra_olwm_trace(120, "is a color follower for %x\n", groupie);
 			cli->color_master = groupie;
-    
+
 			if ((cliLead = (Client *)GroupLeader(groupie))) {
 				dra_olwm_trace(120, "has group leader (or color group leader)\n");
 
@@ -294,25 +295,29 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 	newCI->gc[ICON_MASK_GC] = scrInfo->gc[ICON_MASK_GC];
 	newCI->gc[ICON_BORDER_GC] = scrInfo->gc[ICON_BORDER_GC];
 
-	/* 
+	/*
 	 * Create a GC for Foregound w/ TitleFont
 	 */
 	if (flags & _OL_WC_FOREGROUND) {
 		newCI->fore_pixel = fg.pixel;
 
+		gcf = 0;
 		values.function = GXcopy;
 		values.foreground = newCI->fore_pixel;
-		values.font = GRV.TitleFontInfo->fid;
+		if (GRV.TitleFontInfo.fstr) {
+			values.font = GRV.TitleFontInfo.fstr->fid;
+			gcf = GCFont;
+		}
 		values.graphics_exposures = False;
 		newCI->gc[FOREGROUND_GC] = XCreateGC(dpy,
 					scrInfo->pixmap[PROTO_DRAWABLE],
-					(GCFont | GCFunction | GCForeground | GCGraphicsExposures),
+					(gcf | GCFunction | GCForeground | GCGraphicsExposures),
 					&values);
 		newCI->gc_is_own[FOREGROUND_GC] = True;
 	}
 	else newCI->gc[FOREGROUND_GC] = scrInfo->gc[FOREGROUND_GC];
 
-	/* 
+	/*
 	 * Create a GC for busy stipple in foreground
 	 */
 	if (flags & _OL_WC_FOREGROUND) {
@@ -324,7 +329,7 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 		newCI->gc_is_own[BUSY_GC] = True;
 		newCI->gc[BUSY_GC] = XCreateGC( dpy,
 							scrInfo->pixmap[PROTO_DRAWABLE],
-							( GCFunction | GCForeground | GCGraphicsExposures | 
+							( GCFunction | GCForeground | GCGraphicsExposures |
 								GCStipple | GCFillStyle),
 							&values);
 	}
@@ -333,14 +338,18 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 	if (flags & _OL_WC_BACKGROUND) {
 		newCI->back_pixel = bg1.pixel;
 
+		gcf = 0;
 		values.function = GXcopy;
 		values.foreground = bg1.pixel;
-		values.font = GRV.TitleFontInfo->fid;
+		if (GRV.TitleFontInfo.fstr) {
+			values.font = GRV.TitleFontInfo.fstr->fid;
+			gcf = GCFont;
+		}
 		values.graphics_exposures = False;
 		newCI->gc_is_own[WINDOW_GC] = True;
 		newCI->gc[WINDOW_GC] = XCreateGC(dpy,
 					scrInfo->pixmap[PROTO_DRAWABLE],
-					(GCFunction | GCForeground | GCFont | GCGraphicsExposures),
+					(GCFunction | GCForeground | gcf | GCGraphicsExposures),
 					&values);
 	}
 	else newCI->gc[WINDOW_GC] = scrInfo->gc[WINDOW_GC];
@@ -367,27 +376,29 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 		pixvals[OLGX_BG2] = pixvals[OLGX_BG3] = bg1.pixel;
 	}
 
-	/* 
+	/*
 	 * Gis for drawing in window color with title font
 	 *	most window objects and frame title
  	 */
-	newCI->gi[NORMAL_GINFO] = olgx_main_initialize(dpy,
+	newCI->gi[NORMAL_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, dflag,
 		GRV.GlyphFontInfo,
-		GRV.TitleFontInfo,
+		GRV.TitleFontInfo.fontset,
+		GRV.TitleFontInfo.fstr,
 		pixvals,NULL);
 
-	/* 
+	/*
 	 * Gis for drawing in window color with button font
 	 *	notice buttons & menu buttons
 	 */
-	newCI->gi[BUTTON_GINFO] = olgx_main_initialize(dpy,
+	newCI->gi[BUTTON_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, dflag,
 	 	GRV.GlyphFontInfo,
-		GRV.ButtonFontInfo,
+		GRV.ButtonFontInfo.fontset,
+		GRV.ButtonFontInfo.fstr,
 		pixvals,NULL);
 
-	/* 
+	/*
 	 * Gis for drawing in window color with text font
 	 *	notice descriptive text and 2D resize corners
 	 *
@@ -397,13 +408,14 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 	 * never require the 3D "more arrow".
 	 */
 	pixvals[OLGX_WHITE] = bg1.pixel;
-	newCI->gi[TEXT_GINFO] = olgx_main_initialize(dpy,
+	newCI->gi[TEXT_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, OLGX_2D,
 	       	GRV.GlyphFontInfo,
-		GRV.TextFontInfo,
+		GRV.TextFontInfo.fontset,
+		GRV.TextFontInfo.fstr,
 		pixvals,NULL);
 
-	/* 
+	/*
 	 * Gis for drawing pushpin in reverse - useful only in 2D
 	 *	swap fb/bg0 entries
          */
@@ -411,10 +423,11 @@ void colors_new_state(Client *cli, Display *dpy, Window window,
 	if (GRV.ui_style == UIS_2D_BW) pixvals[OLGX_BLACK] = bg0.pixel;
 	else pixvals[OLGX_BLACK] = bg1.pixel;
 
-	newCI->gi[REVPIN_GINFO] = olgx_main_initialize(dpy,
+	newCI->gi[REVPIN_GINFO] = olgx_all_initialize(dpy,
 		scrInfo->screen, scrInfo->depth, dflag,
 		GRV.GlyphFontInfo,
-		GRV.TitleFontInfo,
+		GRV.TitleFontInfo.fontset,
+		GRV.TitleFontInfo.fstr,
 		pixvals,NULL);
 
 	cli->client_colors = newCI;
@@ -431,18 +444,27 @@ void dra_colors_new_state(Client *cli, Display *dpy, Window window,
 
 static void update_title_font(Client *cli, ScreenInfo	*scrInfo)
 {
-	XFontStruct	*font = GRV.TitleFontInfo;
 	ClientColorInfo *c = cli->client_colors;
 
 	if (cli->scrInfo != scrInfo) return;
-	if (c->gc_is_own[WINDOW_GC]) {
-		XSetFont(scrInfo->dpy, c->gc[WINDOW_GC], font->fid);
+
+	if (GRV.TitleFontInfo.fstr) {
+		XFontStruct	*font = GRV.TitleFontInfo.fstr;
+		if (c->gc_is_own[WINDOW_GC]) {
+			XSetFont(scrInfo->dpy, c->gc[WINDOW_GC], font->fid);
+		}
+		if (c->gc_is_own[FOREGROUND_GC]) {
+			XSetFont(scrInfo->dpy, c->gc[FOREGROUND_GC], font->fid);
+		}
+		olgx_set_text_font(c->gi[NORMAL_GINFO], font, OLGX_NORMAL);
+		olgx_set_text_font(c->gi[REVPIN_GINFO], font, OLGX_NORMAL);
 	}
-	if (c->gc_is_own[FOREGROUND_GC]) {
-		XSetFont(scrInfo->dpy, c->gc[FOREGROUND_GC], font->fid);
+	else {
+		XFontSet font = GRV.TitleFontInfo.fontset;
+
+		olgx_set_text_fontset(c->gi[NORMAL_GINFO], font, OLGX_NORMAL);
+		olgx_set_text_fontset(c->gi[REVPIN_GINFO], font, OLGX_NORMAL);
 	}
-	olgx_set_text_font(c->gi[NORMAL_GINFO], font, OLGX_NORMAL);
-	olgx_set_text_font(c->gi[REVPIN_GINFO], font, OLGX_NORMAL);
 }
 
 void dra_update_title_font(ScreenInfo	*scrInfo)
@@ -452,11 +474,18 @@ void dra_update_title_font(ScreenInfo	*scrInfo)
 
 static void update_button_font(Client *cli, ScreenInfo	*scrInfo)
 {
-	XFontStruct	*font = GRV.ButtonFontInfo;
 	ClientColorInfo *c = cli->client_colors;
 
 	if (cli->scrInfo != scrInfo) return;
-	olgx_set_text_font(c->gi[BUTTON_GINFO], font, OLGX_NORMAL);
+
+	if (GRV.ButtonFontInfo.fstr) {
+		olgx_set_text_font(c->gi[BUTTON_GINFO], GRV.ButtonFontInfo.fstr,
+								OLGX_NORMAL);
+	}
+	else {
+		olgx_set_text_fontset(c->gi[BUTTON_GINFO], GRV.ButtonFontInfo.fontset,
+								OLGX_NORMAL);
+	}
 }
 
 void dra_update_button_font(ScreenInfo	*scrInfo)
