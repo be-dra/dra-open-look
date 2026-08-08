@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.12 2026/07/27 20:38:07 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.13 2026/08/08 05:04:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -62,9 +62,6 @@ static int headerHeight();
 static void setTitleText(Display *dpy, WinPaneFrame *w, Window panewin);
 static void setFooterText();
 void FrameUpdateShape();
-#ifdef OW_I18N_L4
-static void setIMStatusText();
-#endif
 static void updateResizePositions();
 
 /***************************************************************************
@@ -164,16 +161,6 @@ Graphics_info *gis;
 	return FontHeight(TitleFont) + ResizeArm_Height(gis);
 }
 
-#ifdef OW_I18N_L4
-static int
-IMstatusHeight(cli,gis)
-Client *cli;
-Graphics_info *gis;
-{
-	return FontHeight(TitleFont);
-}
-#endif
-
 /* height/width functions */
 int heightTopFrame(WinPaneFrame *win)  /* uses only WinGeneric... */
 {
@@ -200,11 +187,6 @@ WinPaneFrame *win;
 
 	if (cli->wmDecors->flags & WMDecorationFooter)
 		result += footerHeight(cli, gisNormal);
-#ifdef OW_I18N_L4
-	if (cli->wmDecors->flags & WMDecorationIMStatus)
-		result += IMstatusHeight(cli, gisNormal);
-#endif
-
 	return result;
 }
 
@@ -731,10 +713,6 @@ static void drawFooter(Display *dpy, WinPaneFrame *win, Client *cli)
 	int 	gutter = ptSize(gisNormal);
 	int 	rstart, lmaxwidth, rmaxwidth;
 
-#ifdef OW_I18N_L4
-	if (cli->wmDecors->flags & WMDecorationIMStatus)
-		fy += IMstatusHeight(cli,gisNormal);
-#endif
 	baseline = fy + FontAscent(TitleFont) +
 		   ResizeArm_Height(gisNormal);
 
@@ -779,95 +757,6 @@ static void drawFooter(Display *dpy, WinPaneFrame *win, Client *cli)
 			   OLGX_NORMAL | TextOLGX);
 	}
 }
-
-
-#ifdef OW_I18N_L4
-/*
- * drawIMStatus - draw the IMStatus, IMStatus window position is NOT
- * reflected by footer exsitence or not, but footer postion will
- * affect by IMStatus existance (this is bad assumption).
- */
-static void
-drawIMStatus(dpy, win, cli)
-Display *dpy;
-WinPaneFrame *win;
-Client *cli;
-{
-	Window self;
-	int w;
-	int h;
-	int armh;
-	int fy;
-	int baseline;
-	int margin;
-	int statuswidth;
-	int qstatuswidth;
-	int gutter;
-	int rstart, lmaxwidth, rmaxwidth;
-	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
-
-	self = win->core.self;
-	w = win->core.width;
-	h = win->core.height;
-	armh = ResizeArm_Height(gisNormal);
-	fy = h - heightBottomFrame(win);
-	baseline = fy - GRV.TitleFontSetInfo.fsx->max_logical_extent.y +
-			ResizeArm_Height(gisNormal);
-	margin = FRAME_OUTLINE_WIDTH + ptSize(gisNormal);
-	statuswidth = w - 2*margin;
-	qstatuswidth = statuswidth / 4;
-	gutter = ptSize(gisNormal);
-
-	/* fill in frame-colored area above IMStatus */
-	XFillRectangle(dpy, self, WinGC(win,WINDOW_GC), 
-			widthLeftFrame(win), fy,
-		       	w - widthLeftFrame(win) - widthRightFrame(win),
-		       	IMstatusHeight(cli, gisNormal));
-
-	/* REMIND we don't paint the "more arrow" if text is truncated */
-
-	if ((win->leftIMStatus.width + win->rightIMStatus.width + gutter)
-	    <= statuswidth) {
-	    /* room for both: no clipping */
-	    lmaxwidth = win->leftIMStatus.width;
-	    rmaxwidth = win->rightIMStatus.width;
-	} else if (win->leftIMStatus.width < qstatuswidth) {
-	    /* left IMStatus takes less than 1/4 of the status */
-	    lmaxwidth = win->leftIMStatus.width;
-	    rmaxwidth = statuswidth - lmaxwidth - gutter;
-	} else if
-	    ((win->rightIMStatus.width) < (statuswidth-qstatuswidth-gutter)) {
-	    /* right IMStatus takes less than 3/4 of the IMStatus */
-	    rmaxwidth = win->rightIMStatus.width;
-	    lmaxwidth = statuswidth - rmaxwidth - gutter;
-	} else {
-	    /* must truncate both */
-	    lmaxwidth = qstatuswidth;
-	    rmaxwidth = statuswidth - qstatuswidth - gutter;
-	}
-	rstart = w - margin - rmaxwidth;
-
-	if (win->leftIMStatus.string) {
-	    olgx_draw_text(gisNormal, self, win->leftIMStatus.string,
-			   margin, baseline, lmaxwidth,
-			   OLGX_NORMAL | TextOLGX);
-	    if (GRV.BoldFontEmulation == True)
-		olgx_draw_text(gisNormal, self, win->leftIMStatus.string,
-			   margin + 1, baseline, lmaxwidth,
-			   OLGX_NORMAL | TextOLGX);
-	}
-
-	if (win->rightIMStatus.string) {
-	    olgx_draw_text(gisNormal, self, win->rightIMStatus.string,
-			   rstart, baseline, rmaxwidth,
-			   OLGX_NORMAL | TextOLGX);
-	    if (GRV.BoldFontEmulation)
-		olgx_draw_text(gisNormal, self, win->rightIMStatus.string,
-			   rstart + 1, baseline, rmaxwidth,
-			   OLGX_NORMAL | TextOLGX);
-	}
-}
-#endif /* OW_I18N_L4 */
 
 
 /* drawBase2D - draw the outer border of the window (2D mode)
@@ -955,11 +844,6 @@ WinPaneFrame *winInfo;
 	if (cli->wmDecors->flags & WMDecorationFooter)
 		drawFooter(dpy, winInfo, cli);	/* no difference between 2D and 3D */
 
-#ifdef OW_I18N_L4
-	if (cli->wmDecors->flags & WMDecorationIMStatus)
-		drawIMStatus(dpy, winInfo,cli);	/* no difference between 2D and 3D */
-#endif
-
 	return 0;
 }
 
@@ -995,13 +879,6 @@ WinPaneFrame *winInfo;
 		MemFree(winInfo->leftFooter.string);
 	if (winInfo->rightFooter.string)
 		MemFree(winInfo->rightFooter.string);
-#ifdef OW_I18N_L4
-	if (winInfo->leftIMStatus.string) 
-	        MemFree(winInfo->leftIMStatus.string);
-	if (winInfo->leftIMStatus.string) 
-	        MemFree(winInfo->rightIMStatus.string);
-#endif
-
 	/*
 	 * REMIND: we need to remove grabs and shapes from this window,
 	 * because it may be stored on a cache and re-used.  If we were to
@@ -1053,9 +930,6 @@ XConfigureRequestEvent *pxcre;
 		winInfo->core.dirtyconfig |= CWWidth;
 		setTitleText(dpy,winInfo,winPane->core.self);
 		setFooterText(dpy,winInfo,winPane->core.self);
-#ifdef OW_I18N_L4
-		setIMStatusText(dpy,winInfo,winPane->core.self);
-#endif
 	}
 
 	if (newh != winInfo->core.height)
@@ -1374,58 +1248,6 @@ setFooterText(dpy,w,panewin)
 	setRightFooter(dpy,w,panewin);
 }
 
-
-#ifdef OW_I18N_L4
-/*
- * setLeftIMStatus - sets the left IMStatus from the AtomLeftIMStatus property
- */
-static void
-setLeftIMStatus(dpy,winInfo,panewin)
-	Display		*dpy;
-	WinPaneFrame	*winInfo;
-	Window		panewin;
-{
-	if (winInfo->leftIMStatus.string)
-		MemFree(winInfo->leftIMStatus.string);
-
-	if (!PropGetOLLeftIMStatus(dpy,panewin,&(winInfo->leftIMStatus.string)))
-		winInfo->leftIMStatus.string = NULL;
-
-	calcFooterSize(&(winInfo->leftIMStatus));
-}
-
-/*
- * setRightIMStatus - sets the left IMStatus from the AtomRightIMStatus property
- */
-static void
-setRightIMStatus(dpy,winInfo,panewin)
-	Display		*dpy;
-	WinPaneFrame	*winInfo;
-	Window		panewin;
-{
-	if (winInfo->rightIMStatus.string)
-		MemFree(winInfo->rightIMStatus.string);
-
-	if (!PropGetOLRightIMStatus(dpy,panewin,&(winInfo->rightIMStatus.string)))
-		winInfo->rightIMStatus.string = NULL;
-
-	calcFooterSize(&(winInfo->rightIMStatus));
-}
-
-/* 
- * setIMStatusText - set both left and right IMStatus text
- */
-static void
-setIMStatusText(dpy,w,panewin)
-	Display 	*dpy;
-	WinPaneFrame 	*w;
-	Window 		panewin;
-{
-	setLeftIMStatus(dpy,w,panewin);
-	setRightIMStatus(dpy,w,panewin);
-}
-#endif
-
 /*
  * fullrestoreFrame
  */
@@ -1660,12 +1482,6 @@ WinPaneFrame *MakeFrame(Client *cli, Window panewin,
 	/* set up the footer */
 	if (cli->wmDecors->flags & WMDecorationFooter)
 		setFooterText(dpy, w, panewin);
-
-#ifdef OW_I18N_L4
-	/* set up the status */
-	if (cli->wmDecors->flags & WMDecorationIMStatus)
-		setIMStatusText(dpy, w, panewin);
-#endif /* OW_I18N_L4 */
 
 	/* Determine which menu should come up when menus are requested
 	 * for this frame. */
@@ -1958,22 +1774,6 @@ void FrameUpdateFooter(Client *cli, XPropertyEvent	*event)
 
 	(WinFunc(cli->framewin, core.drawfunc)) (cli->dpy, cli->framewin);
 }
-
-#ifdef OW_I18N_L4
-/* 
- * FrameUpdateIMStatus -- the IMStatus text has changed
- */
-void FrameUpdateIMStatus(Client *cli, XPropertyEvent *event)
-{
-	if (event->atom == AtomLeftIMStatus) {
-		setLeftIMStatus(cli->dpy,cli->framewin,PANEWINOFCLIENT(cli));
-	} else if (event->atom == AtomRightIMStatus) {
-		setRightIMStatus(cli->dpy,cli->framewin,PANEWINOFCLIENT(cli));
-	}
-
-	(WinFunc(cli->framewin,core.drawfunc))(cli->dpy, cli->framewin);
-}
-#endif
 
 /* 
  * FrameFlashTitleBar -- flash the title bar 
