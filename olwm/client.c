@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.7 2026/03/02 19:38:50 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.8 2026/08/07 18:29:50 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -75,9 +75,6 @@ extern void StateUpdateDecorDel();
 extern void StateUpdateWMNormalHints();
 extern void StateUpdateWMHints();
 extern void StateUpdateWMProtocols();
-#ifdef OW_I18N_L4
-extern void FrameUpdateIMStatus();
-#endif
 
 /***************************************************************************
 * private data
@@ -1748,10 +1745,6 @@ static ClientPropUpdate propUpdateTable[] =  {
 	{ &AtomWinAttr,			StateUpdateWinAttr },
 	{ &AtomDecorAdd,			StateUpdateDecorAdd },
 	{ &AtomDecorDel,			StateUpdateDecorDel },
-#ifdef OW_I18N_L4
-	{ &AtomLeftIMStatus,		FrameUpdateIMStatus },
-	{ &AtomLeftIMStatus,		FrameUpdateIMStatus }
-#endif
 };
 #define NPROPUPDATETABLE (sizeof(propUpdateTable)/sizeof(ClientPropUpdate))
 
