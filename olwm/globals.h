@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: globals.h,v 2.4 2025/01/19 10:16:17 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: globals.h,v 2.5 2026/08/08 05:04:45 dra Exp $ */
 /* #ident	"@(#)globals.h	26.45	93/06/28 SMI" */
 
 /*
@@ -14,6 +14,7 @@
 #define _OLWM_GLOBALS_H
 
 #include "list.h"
+#include "i18n.h"
 
 typedef struct {
 	unsigned int	modmask;
@@ -39,17 +40,11 @@ typedef struct _globalResourceVariables {
 	Bool		ReverseVideo;
 	Bool		PaintWorkspace;
 	Bool		PointerWorkspace;
-#ifdef OW_I18N_L4
-	XFontSetInfo 	TitleFontSetInfo;
-	XFontSetInfo	TextFontSetInfo;
-	XFontSetInfo 	ButtonFontSetInfo;
-	XFontSetInfo	IconFontSetInfo;
-#else
-	XFontStruct    	*TitleFontInfo;
-	XFontStruct	*TextFontInfo;
-	XFontStruct    	*ButtonFontInfo;
-	XFontStruct	*IconFontInfo;
-#endif
+	OlFontSetInfo    TitleFontInfo;
+	OlFontSetInfo	TextFontInfo;
+	OlFontSetInfo    ButtonFontInfo;
+	OlFontSetInfo	IconFontInfo;
+
 	XFontStruct	*GlyphFontInfo;
 	Cursor		BasicPointer;
 	Cursor		MovePointer;
@@ -136,10 +131,8 @@ typedef struct _globalResourceVariables {
 	Bool        screenSizeRestrictsWindowSize;
 	UiStyles    ui_style;
 	char		*blackNWhiteWorkspaceColor;
-#ifdef OW_I18N_L3
 	OLLCItem	LC[OLLC_LC_MAX];
 	char		*CharacterSet;
-#endif
 	Bool		PrintOrphans;
 	Bool		PrintAll;
 	Bool		Synchronize;
@@ -149,17 +142,12 @@ typedef struct _globalResourceVariables {
 extern GlobalResourceVariables	GRV;
 
 
-#ifdef OW_I18N_L3
-
 /* shortcuts for getting at locale category items */
 #define lc_basic		LC[OLLC_LC_BASIC_LOCALE]
 #define lc_dlang		LC[OLLC_LC_DISPLAY_LANG]
 #define lc_ilang		LC[OLLC_LC_INPUT_LANG]
 #define lc_numeric		LC[OLLC_LC_NUMERIC]
 #define lc_datefmt		LC[OLLC_LC_DATE_FORMAT]
-
-#endif
-
 
 #endif /* _OLWM_GLOBALS_H */
 
