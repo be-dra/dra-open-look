@@ -1,5 +1,5 @@
 /* #ident	"@(#)atom.c	26.24	93/06/28 SMI" */
-char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.16 2026/02/23 16:38:58 dra Exp $";
+char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.17 2026/08/07 18:29:00 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -85,12 +85,6 @@ void InitAtoms(Display *dpy)
 		"_SUN_OLWM_NOFOCUS_WINDOW",
 		"_OL_DFLT_BTN",
 		"_OL_DECOR_ICON_NAME",
-#ifdef OW_I18N_L4
-		"_OL_DECOR_IMSTATUS",
-		"_OL_WINMSG_IMSTATUS",
-		"_OL_WINMSG_IMPREEDIT",
-#endif
-
 		/* ICCCM selection atoms */
 		"ATOM_PAIR",
 		"CLIENT_WINDOW",
@@ -102,10 +96,7 @@ void InitAtoms(Display *dpy)
 		"TARGETS",
 		"TIMESTAMP",
 		"USER",
-#ifdef OW_I18N_L4
 		"COMPOUND_TEXT" ,
-#endif
-
 		/* SunView environment */
 		"_SUN_SUNVIEW_ENV",
 
