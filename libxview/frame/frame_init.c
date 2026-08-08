@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.18 2026/07/18 19:31:40 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.19 2026/08/07 13:53:12 dra Exp $ ";
 #endif
 #endif
 
@@ -150,6 +150,7 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	Atom property_array[3];
 	XTextProperty WMMachineName;
 	char hostname[MAXHOSTNAMELEN + 1];
+	char *display_lang;
 	Window xid;
 
 	DRAWABLE_INFO_MACRO(frame_public, info);
@@ -191,6 +192,12 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	WMMachineName.nitems = (int)xv_get_hostname(hostname, MAXHOSTNAMELEN + 1);
 	xid = xv_xid(info);
 	XSetWMClientMachine(xv_display(info), xid, &WMMachineName);
+
+	display_lang = setlocale(LC_MESSAGES, NULL);
+	XChangeProperty(xv_display(info), xid,
+					xv_get(xv_server(info), SERVER_ATOM, "WM_LOCALE_NAME"),
+					XA_STRING, 8, PropModeReplace,
+					(unsigned char *)display_lang, strlen(display_lang));
 
 	XChangeProperty(xv_display(info), xid,
 					xv_get(xv_server(info), SERVER_ATOM, "WM_CLIENT_LEADER"),
