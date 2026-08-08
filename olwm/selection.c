@@ -1,5 +1,5 @@
 /* #ident	"@(#)selection.c	26.19	93/06/28 SMI" */
-char selection_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: selection.c,v 2.4 2025/06/20 20:37:02 dra Exp $";
+char selection_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: selection.c,v 2.5 2026/08/07 18:29:28 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -129,17 +129,8 @@ processPrimaryTarget(dpy, requestor, target, property)
 
 		cli = NULL;
 		while (cli = EnumSelections(cli)) {
-#ifdef OW_I18N_L4
-			if (cli->framewin != NULL && cli->framewin->fcore.name != NULL) {
-			wchar_t *wcs = cli->framewin->fcore.name;
-				int n = wslen(wcs) * sizeof(wchar_t) + 1;
-			tmp = (char*) MemAlloc(n);
-			wcstombs(tmp, wcs, n);
-			}
-#else
 			if (cli->framewin != NULL && cli->framewin->fcore.name != NULL)
 			tmp = cli->framewin->fcore.name;
-#endif
 			else
 			tmp = "";
 
