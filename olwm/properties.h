@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.4 2025/03/01 14:59:59 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.5 2026/08/07 18:30:29 dra Exp $ */
 /* #ident	"@(#)properties.h	26.8	93/06/28 SMI" */
 
 /*
@@ -51,10 +51,6 @@ typedef struct {
 #define OLWindowStateAvail	(1<<12)
 #define OLLeftFooterAvail	(1<<13)
 #define OLRightFooterAvail	(1<<14)
-#ifdef OW_I18N_L4
-#define OLLeftIMStatusAvail	(1<<15)
-#define OLRightIMStatusAvail	(1<<16)
-#endif
 #define NetWMIconAvail     	(1<<17)
 #define OLWinColorsAvail		(1<<18)
 
@@ -81,10 +77,5 @@ extern	Bool	PropGetOLDecorAdd();
 extern	Bool	PropGetOLDecorDel();
 extern	Bool	PropGetOLLeftFooter();
 extern	Bool	PropGetOLRightFooter();
-#ifdef OW_I18N_L4
-extern	Bool	PropGetOLLeftIMStatus();
-extern	Bool	PropGetOLRightIMStatus();
-#endif
-
 
 #endif /* _OLWM_PROPERTIES_H */
