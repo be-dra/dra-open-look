@@ -1,7 +1,7 @@
 #ifndef _OLWM_ATOM_H
 #define _OLWM_ATOM_H
 
-/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.15 2026/02/23 16:39:06 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.16 2026/08/07 18:28:53 dra Exp $ */
 enum atom_index_t {
 	OL_AtomColorMapWindows,
 	OL_AtomWMState,
@@ -36,11 +36,6 @@ enum atom_index_t {
 	OL_AtomOlwmNoFocusWin,
 	OL_AtomDfltBtn,
 	OL_AtomDecorIconName,
-#ifdef OW_I18N_L4
-	OL_AtomDecorIMStatus,
-	OL_AtomLeftIMStatus,
-	OL_AtomRightIMStatus,
-#endif
 	OL_AtomAtomPair,
 	OL_AtomClientWindow,
 	OL_AtomClass,
@@ -51,9 +46,7 @@ enum atom_index_t {
 	OL_AtomTargets,
 	OL_AtomTimestamp,
 	OL_AtomUser,
-#ifdef OW_I18N_L4
 	OL_AtomCompoundText,
-#endif
 	OL_AtomSunViewEnv,
 	OL_AtomSunLedMap,
 	OL_AtomSunWMProtocols,
@@ -146,11 +139,6 @@ extern Atom atoms[];
 #define AtomOlwmNoFocusWin atoms[OL_AtomOlwmNoFocusWin]
 #define AtomDfltBtn atoms[OL_AtomDfltBtn]
 #define AtomDecorIconName atoms[OL_AtomDecorIconName]
-#ifdef OW_I18N_L4
-#define AtomDecorIMStatus atoms[OL_AtomDecorIMStatus]
-#define AtomLeftIMStatus atoms[OL_AtomLeftIMStatus]
-#define AtomRightIMStatus atoms[OL_AtomRightIMStatus]
-#endif
 #define AtomAtomPair atoms[OL_AtomAtomPair]
 #define AtomClientWindow atoms[OL_AtomClientWindow]
 #define AtomClass atoms[OL_AtomClass]
@@ -161,9 +149,7 @@ extern Atom atoms[];
 #define AtomTargets atoms[OL_AtomTargets]
 #define AtomTimestamp atoms[OL_AtomTimestamp]
 #define AtomUser atoms[OL_AtomUser]
-#ifdef OW_I18N_L4
 #define AtomCompoundText atoms[OL_AtomCompoundText]
-#endif
 #define AtomSunViewEnv atoms[OL_AtomSunViewEnv]
 #define AtomSunLedMap atoms[OL_AtomSunLedMap]
 #define AtomSunWMProtocols atoms[OL_AtomSunWMProtocols]
