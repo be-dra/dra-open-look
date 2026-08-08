@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: mem.h,v 1.3 2025/06/20 20:37:08 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: mem.h,v 1.4 2026/08/07 18:29:17 dra Exp $ */
 /* #ident	"@(#)mem.h	26.15	93/06/28 SMI" */
 
 /*
@@ -39,14 +39,6 @@ extern int AcctTag;
 #define MemNewString(s) (strcpy((char *)MemAlloc(strlen(s)+1),s))
 #endif /* MEMDEBUG */
 
-#ifdef OW_I18N_L4
-
-#define MemNewText(s)	wscpy((wchar_t *)MemAlloc((wslen(s)+1)*sizeof(wchar_t)),s)
-
-#else
-
 #define MemNewText(s)	MemNewString((char *)s)
-
-#endif /* OW_I18N_L4 */
 
 #endif /* _OLWM_MEM_H */
