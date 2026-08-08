@@ -1,5 +1,5 @@
 /* #ident	"@(#)winpinmenu.c	26.31	93/06/28 SMI" */
-char winpinmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpinmenu.c,v 1.5 2024/09/02 19:24:24 dra Exp $";
+char winpinmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpinmenu.c,v 1.6 2026/08/07 18:28:01 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -228,9 +228,6 @@ MakePinMenu(dpy, winInfo, origMenuInfo)
 	XSizeHints 	sizeHints;
 	XWMHints 	wmHints;
 	MenuInfo	*newMenuInfo;
-#ifdef OW_I18N_L4
-	XTextProperty   textProps;
-#endif
 
 	/* Make a copy of the original MenuInfo
 	 * the main difference is that a pinned menu does not have a title
@@ -329,19 +326,7 @@ MakePinMenu(dpy, winInfo, origMenuInfo)
 		sizeof(XWMHints)/sizeof(long));
 
 	/* put the title into the header */
-#ifdef OW_I18N_L4
-	/*
-	 * Should be using XStdICCTextStyle, but uses
-	 * XCompoundTextStyle for workaround for bug 1100305.
-	 */
-	if (XwcTextListToTextProperty(dpy, &newMenuInfo->menu->title,
-			  1, XCompoundTextStyle, &textProps) == Success) {
-		XSetWMName(dpy, win, &textProps);
-		XFree((char *)textProps.value);
-	}
-#else
 	XStoreName(dpy, win, newMenuInfo->menu->title);
-#endif
 
 	newMenuInfo->menuWin = (WinGeneric *)w;
 	w->menuInfo = newMenuInfo;
