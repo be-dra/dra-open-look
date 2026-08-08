@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: resources.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: resources.h,v 1.4 2026/08/08 05:04:45 dra Exp $ */
 /* #ident	"@(#)resources.h	26.18	93/06/28 SMI" */
 
 /*
@@ -37,9 +37,5 @@ extern XrmDatabase OlwmDB;
 
 extern void InitGlobals();
 extern void UpdateGlobals();
-
-#ifdef OW_I18N_L3
-extern void EffectOLLC();
-#endif /* OW_I18N_L3 */
 
 #endif /* _OLWM_RESOURCES_H */
