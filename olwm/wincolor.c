@@ -1,5 +1,5 @@
 /* #ident	"@(#)wincolor.c	26.24	93/06/28 SMI" */
-char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.9 2026/02/25 17:44:06 dra Exp $";
+char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.10 2026/08/07 18:28:11 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -19,9 +19,6 @@ char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.9 2026/02/
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
-#ifdef OW_I18N_L4
-#include "i18n.h"
-#endif
 #include <olgx/olgx.h>
 
 #include "i18n.h"
