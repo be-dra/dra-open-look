@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.9 2026/08/06 09:02:12 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.10 2026/08/07 13:52:44 dra Exp $ ";
 #endif
 #endif
 
@@ -28,10 +28,25 @@ static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display
 
 Pkg_private void frame_display_label(Frame_class_info *frame)
 {
+	Frame fp = FRAME_PUBLIC(frame);
+	Xv_server srv = XV_SERVER_FROM_WINDOW(fp);
     Xv_Drawable_info *info;
 
-    DRAWABLE_INFO_MACRO(FRAME_PUBLIC(frame), info);
+    DRAWABLE_INFO_MACRO(fp, info);
     XStoreName(xv_display(info), xv_xid(info), frame->label);
+
+	if (_xv_is_multibyte) {
+		XChangeProperty(xv_display(info), xv_xid(info), 
+		    xv_get(srv, SERVER_ATOM, "_NET_WM_NAME"),
+		    xv_get(srv, SERVER_ATOM, "UTF8_STRING"),
+		    8, PropModeReplace, (unsigned char *)frame->label,
+			strlen(frame->label));
+	}
+	else {
+		/* should we do anything here? Do we care about the funny
+		 * **modern** window managers out there?
+		 */
+	}
 }
 
 /* Originally, this function was only what the name says: display.
