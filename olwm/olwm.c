@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.7 2025/06/20 20:37:19 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.8 2026/08/08 05:04:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -132,20 +132,16 @@ static	XrmOptionDescRec	optionTable[] = {
 	{ "-debug",	 ".printOrphans",XrmoptionNoArg, "True" },
 	{ "-orphans", 	 ".printOrphans",XrmoptionNoArg, "True" },
 	{ "-synchronize",".synchronize", XrmoptionNoArg, "True" },
-#ifdef OW_I18N_L3
 	/* 
 	 * Internationalization Options
 	 */
-        { "-basiclocale", "*basicLocale", XrmoptionSepArg,  NULL },
-       	{ "-displaylang", "*displayLang", XrmoptionSepArg,  NULL },
-       	{ "-inputlang",   "*inputLang", XrmoptionSepArg,  NULL },
-       	{ "-numeric",     "*numeric", XrmoptionSepArg,  NULL },
-       	{ "-dateformat",  "*dateFormat", XrmoptionSepArg,  NULL },
-#endif /* OW_I18N_L3 */
+    { "-basiclocale", "*basicLocale", XrmoptionSepArg,  NULL },
+    { "-displaylang", "*displayLang", XrmoptionSepArg,  NULL },
+    { "-inputlang",   "*inputLang", XrmoptionSepArg,  NULL },
+    { "-numeric",     "*numeric", XrmoptionSepArg,  NULL },
+    { "-dateformat",  "*dateFormat", XrmoptionSepArg,  NULL },
 };
 #define OPTION_TABLE_ENTRIES (sizeof(optionTable)/sizeof(XrmOptionDescRec))
-
-extern char *DRA_CHANGED_setlocale(int cat, char *val);
 
 /* Child Process Handling */
 
@@ -174,11 +170,9 @@ int main(int argc, char **argv)
 {
 	XrmDatabase		commandlineDB = NULL;
 
-#ifdef OW_I18N_L3
 	char			*OpenWinHome;
 	char			locale_dir[MAXPATHLEN+1];
 	extern char		*getenv();
-#endif /* OW_I18N_L3 */
 
 #ifdef MALLOCDEBUG
 	malloc_debug(MALLOCDEBUG);
@@ -187,7 +181,6 @@ int main(int argc, char **argv)
 	moncontrol(0);
 #endif /* GPROF_HOOKS */
 
-#ifdef OW_I18N_L3
        	/*
        	 * Even in the SUNDAE1.0 (first release) we might need the
        	 * dynamic locale change for window manager, since window
@@ -201,7 +194,7 @@ int main(int argc, char **argv)
        	 * FIX_ME! But may not work well, because we did not touch the
        	 * Xlib function XrmParseCommand().
        	 */
-       	if (DRA_CHANGED_setlocale(LC_CTYPE, "") == NULL) {
+       	if (setlocale(LC_CTYPE, "") == NULL) {
 		char		*locale;
 
 		locale = (locale = getenv("LC_CTYPE")) != NULL ? locale
@@ -217,7 +210,7 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
                using 'C' locale for the command line parsing.\n",
 				locale);
 #endif /* linux */
-		(void)DRA_CHANGED_setlocale(LC_CTYPE,"C");
+		(void)setlocale(LC_CTYPE,"C");
 	}
 	if ((OpenWinHome = getenv("OPENWINHOME")) != 0)
 		(void)strcpy(locale_dir,OpenWinHome);
@@ -226,7 +219,6 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 	(void)strcat(locale_dir,"/lib/locale");
 	bindtextdomain("olwm_messages",locale_dir);
        	textdomain("olwm_messages");
-#endif /* OW_I18N_L3 */
 
 	ProgramName = argv[0];
 	argVec = argv;
