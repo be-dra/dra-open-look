@@ -1,5 +1,5 @@
 /* #ident	"@(#)usermenu.c	26.62	93/06/28 SMI" */
-char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.6 2026/03/01 14:46:51 dra Exp $";
+char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.7 2026/08/07 18:31:01 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -757,17 +757,14 @@ makeMenuSearchPath()
 
 	menuSearchPath = (char **)MemAlloc(NUM_SEARCH_PATH*sizeof(char *));
 
-#ifdef OW_I18N_L3
 	/* $HOME/.<menufile>.<locale> */
 	sprintf(buf, "%s/.%%1$s.%%2$s", home);
 	menuSearchPath[i++] = MemNewString(buf);
-#endif
 
 	/* $HOME/.<menufile> */
 	sprintf(buf, "%s/.%%s", home);
 	menuSearchPath[i++] = MemNewString(buf);
 
-#ifdef OW_I18N_L3
 	/* $OPENWINHOME/share/locale/<locale>/olwm/<menufile> */
 	sprintf(buf, "%s/share/locale/%%2$s/olwm/%%1$s", owHome);
 	menuSearchPath[i++] = MemNewString(buf);
@@ -775,7 +772,6 @@ makeMenuSearchPath()
 	/* $OPENWINHOME/lib/<menufile>.<locale> */
 	sprintf(buf, "%s/lib/%%1$s.%%2$s", owHome);
 	menuSearchPath[i++] = MemNewString(buf);
-#endif
 
 	/* $OPENWINHOME/lib/<menufile> */
 	sprintf(buf, "%s/lib/%%s", owHome);
@@ -807,12 +803,7 @@ menuFromFileSearch(file, menu, messages)
 {
 	char		**pFmt;
 	char		fullPath[MAXPATHLEN];
-	char		*locale =
-#ifdef OW_I18N_L3
-							GRV.lc_dlang.locale;
-#else
-							"";
-#endif
+	char		*locale = GRV.lc_dlang.locale;
 	int		rval;
 
 	if (file[0] == '/')
@@ -1402,19 +1393,7 @@ static Menu * buildFromSpec(Display *dpy, menudata *pmenu, char *deftitle)
 	if (menuHelp != NULL)
 		ReplaceChars(menuHelp, " \t", '_');
 
-#ifdef OW_I18N_L4
-	if (tit == NULL) {
-		m = NewNamedMenu(NULL, flpin, menuHelp);
-	}
-	else {
-		wchar_t *wtit = mbstowcsdup(tit);
-
-		MemFree(tit);
-		m = NewNamedMenu(wtit, flpin, menuHelp);
-	}
-#else
 	m = NewNamedMenu(tit, flpin, menuHelp);
-#endif
 
 	/*
 	 * If no default has been specified, set the first button in the menu to be
@@ -1427,11 +1406,7 @@ static Menu * buildFromSpec(Display *dpy, menudata *pmenu, char *deftitle)
 
 		/*right now, usermenus cannot have alternate items */
 
-#ifdef OW_I18N_L4
-		b->label[0] = mbstowcsdup(bdata->name);
-#else
 		b->label[0] = bdata->name;
-#endif
 
 		b->label[1] = NULL;
 		b->helpstring[0] = NULL;
