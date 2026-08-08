@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: ollocale.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: ollocale.h,v 1.3 2026/08/08 05:04:45 dra Exp $ */
 /* #ident	"@(#)ollocale.h	1.10	93/06/28 SMI" */
 
 /*
@@ -12,8 +12,6 @@
 
 #ifndef _OLLOCALE_H
 #define _OLLOCALE_H
-
-#ifdef OW_I18N_L3
 
 #include <locale.h>
 /*
@@ -41,7 +39,5 @@ typedef struct _OLLCItem {
 	int	posixCategory;		/* Will initialize in GRVLCInit() */
 	char	*envName;		/* Will initialize in GRVLCInit() */
 } OLLCItem;
-
-#endif /* OW_I18N_L3 */
 
 #endif /* _OLLOCALE_H */
