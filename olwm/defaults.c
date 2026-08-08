@@ -1,5 +1,5 @@
 /* #ident  "@(#)defaults.c	26.22    93/06/28 SMI" */
-char defaults_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: defaults.c,v 1.2 1995/09/22 06:14:31 dra Exp $";
+char defaults_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: defaults.c,v 1.3 2026/08/07 18:31:32 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -26,9 +26,7 @@ char defaults_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: defaults.c,v 1.2 1995/09/
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/Xresource.h>
-#ifdef OW_I18N_L4
 #include <sys/param.h>
-#endif
 
 #include "i18n.h"
 #include "ollocale.h"
@@ -113,14 +111,12 @@ GetUserDefaults(dpy)
  * REMIND: this should use XFILESEARCHPATH.
  */
  
-XrmDatabase
-GetAppDefaults()
+XrmDatabase GetAppDefaults(void)
 {
     XrmDatabase appDB = NULL;
     char filename[1024];
     char *openwinhome = getenv("OPENWINHOME");
 
-#ifdef OW_I18N_L3
     char *locale;
 
     locale = GRV.lc_basic.locale;
@@ -138,7 +134,6 @@ GetAppDefaults()
 	if (appDB != NULL)
 	    return appDB;
     }
-#endif
 
     if (openwinhome != NULL) {
 	(void) strcpy(filename, openwinhome);
