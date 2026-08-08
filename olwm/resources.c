@@ -1,5 +1,5 @@
 /* #ident	"@(#)resources.c	26.75	93/06/28 SMI" */
-char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.4 2025/01/19 10:16:34 dra Exp $";
+char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.5 2026/08/08 05:04:45 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -51,59 +51,37 @@ static Bool	forceKeyRegrab;
 
 /* converters */
 
-static Bool cvtWorkspaceStyle();
-static Bool cvtBeepStatus();
-static Bool cvtBoolean();
-static Bool cvtClickTimeout();
-static Bool cvtCursorFont();
-static Bool cvtFocusStyle();
-static Bool cvtFont();
+static Bool cvtWorkspaceStyle(void);
+static Bool cvtBeepStatus(void);
+static Bool cvtBoolean(void);
+static Bool cvtClickTimeout(void);
+static Bool cvtCursorFont(void);
+static Bool cvtFocusStyle(void);
 #ifdef OW_I18N_L4
-static Bool cvtFontSet();
+static Bool cvtFontSet(void);
 #endif
-static Bool cvtIconLocation();
-static Bool cvtInteger();
-static Bool cvtKey();
-static Bool cvtMouseless();
-static Bool cvtString();
-#ifdef OW_I18N_L4
-static Bool cvtWString();
-#endif
-static Bool cvtStringList();
+static Bool cvtIconLocation(void);
+static Bool cvtInteger(void);
+static Bool cvtKey(void);
+static Bool cvtMouseless(void);
+static Bool cvtString(void);
+static Bool cvtStringList(void);
 
 
 /* internationalization stuff */
 
-#ifdef OW_I18N_L3
-
-static void GRVLCInit();
-static Bool cvtOLLC();
-static void setOLLCPosix();
-
-#endif
-
+static void GRVLCInit(void);
 
 /* updaters */
 
-static void updButtonFont();
-       void UpdFocusStyle();			/* yes, this one's global */
-static void updGlyphFont();
-static void updIconFont();
-static void updIconLocation();
-static void updMenuAccelerators();
-static void updMouseless();
-static void updString();
-static void updStringList();
-static void updSync();
-static void updTextFont();
-static void updTitleFont();
-static void updWindow();
-static void updWindowCacheSize();
-static void updWorkspaceStyle();
-static void updWorkspace();
-static void updForeground();
-static void updBackground();
-static void updBorder();
+static void updButtonFont(void);
+static void updGlyphFont(void);
+static void updIconFont(void);
+static void updIconLocation(void);
+static void updMenuAccelerators(void);
+static void updMouseless(void);
+static void updSync(void);
+static void updWindowCacheSize(void);
 
 
 /* resource table */
@@ -162,6 +140,289 @@ static void updUiStyle(Display *dpy, ResourceItem *item, UiStyles *cur, UiStyles
     }
 }
 
+/*
+ * cvtOLLC
+ * 
+ * REMIND: somewhat strange.  This function always returns True, so the
+ * default value in the Resource Table is never used.  Further, this function 
+ * handles both the conversion and update functions itself.
+ */
+static Bool cvtOLLC(Display *dpy, ResourceItem *item, char *string, void *addr)
+{
+	OLLCItem *ollcitem = addr;
+	char *newlocale;
+
+#ifdef LOCALE_DEBUG
+	fprintf(stderr, "cvtOLLC: locale#%d, newlocale %s, curlocale %s\n",
+			ollcitem->posixCategory, string,
+			ollcitem->locale ? ollcitem->locale : "(null)");
+#endif
+
+	/* don't need to do anything if the new locale is the same as the old */
+
+	if ((string == NULL && ollcitem->locale == NULL) ||
+			(string != NULL && ollcitem->locale != NULL &&
+					0 == strcmp(string, ollcitem->locale))) {
+		return True;
+	}
+
+	/* they differ; update the locale */
+
+	if (string == NULL)
+		newlocale = NULL;
+	else
+		newlocale = MemNewString(string);
+
+	if (ollcitem->locale != NULL)
+		MemFree(ollcitem->locale);
+
+	ollcitem->locale = newlocale;
+
+#ifdef LOCALE_DEBUG
+	fprintf(stderr, "cvtOLLC: locale#%d -> %s\n",
+			ollcitem->posixCategory,
+			ollcitem->locale ? ollcitem->locale : "(null)");
+#endif
+
+	return True;
+}
+
+static void updString(Display *dpy, ResourceItem *item, char **cur, char **new)
+{
+    MemFree(*cur);
+    *cur = *new;
+}
+
+static void * freeStringList(char *str, void *junk)
+{
+	MemFree(str);
+	return NULL;
+}
+
+static void updStringList(Display *dpy, ResourceItem *item, List **cur, List **new)
+{
+    ListApply(*cur, freeStringList, NULL);
+    ListDestroy(*cur);
+    *cur = *new;
+}
+
+
+static void updWorkspaceStyle(Display *dpy, ResourceItem *item, WorkspaceStyle *cur, WorkspaceStyle *new)
+{
+    *cur = *new;
+    updateWorkspaceBackground = True;
+}
+
+
+static void updWorkspace(Display *dpy, ResourceItem *item, char **cur, char **new)
+{
+    MemFree(*cur);
+    *cur = *new;
+    updateWorkspaceBackground = True;
+}
+
+
+static void updWindow(Display *dpy, ResourceItem *item, char **cur, char **new)
+{
+    MemFree(*cur);
+    *cur = *new;
+    SetWindowColor(dpy);
+}
+
+
+static void updForeground(Display *dpy, ResourceItem *item, char **cur, char **new)
+{
+    MemFree(*cur);
+    *cur = *new;
+    SetForegroundColor(dpy);
+}
+
+static void updBackground(Display *dpy, ResourceItem *item, char **cur, char **new)
+{
+    MemFree(*cur);
+    *cur = *new;
+    SetBackgroundColor(dpy);
+}
+
+static void updBorder(Display *dpy, ResourceItem *item, char **cur, char **new)
+{
+    MemFree(*cur);
+    *cur = *new;
+    SetBorderColor(dpy);
+}
+
+
+static void updTitleFont(Display *dpy, ResourceItem *item,
+#ifdef OW_I18N_L4
+    XFontSetInfo    *cur, XFontSetInfo    *new
+#else
+    XFontStruct	    **cur, XFontStruct	    **new
+#endif
+	)
+{
+#ifdef OW_I18N_L4
+    freeFontSet(dpy, cur->fs);
+#else
+    XFree((char *) *cur);
+#endif
+    *cur = *new;
+    SetTitleFont(dpy);
+}
+
+
+static void updTextFont(Display *dpy, ResourceItem *item,
+#ifdef OW_I18N_L4
+    XFontSetInfo    *cur, XFontSetInfo    *new
+#else
+    XFontStruct	    **cur, XFontStruct	    **new
+#endif
+	)
+{
+#ifdef OW_I18N_L4
+    freeFontSet(dpy, cur->fs);
+#else
+    XFree((char *) *cur);
+#endif
+    *cur = *new;
+    SetTextFont(dpy);
+}
+
+
+static void
+updButtonFont(dpy, item, cur, new)
+    Display	    *dpy;
+    ResourceItem    *item;
+#ifdef OW_I18N_L4
+    XFontSetInfo    *cur, *new;
+#else
+    XFontStruct	    **cur, **new;
+#endif
+{
+#ifdef OW_I18N_L4
+    freeFontSet(dpy, cur->fs);
+#else
+    XFree((char *) *cur);
+#endif
+    *cur = *new;
+    SetButtonFont(dpy);
+}
+
+
+static void
+updIconFont(dpy, item, cur, new)
+    Display	    *dpy;
+    ResourceItem    *item;
+#ifdef OW_I18N_L4
+    XFontSetInfo    *cur, *new;
+#else
+    XFontStruct	    **cur, **new;
+#endif
+{
+#ifdef OW_I18N_L4
+    freeFontSet(dpy, cur->fs);
+#else
+    XFree((char *) *cur);
+#endif
+    *cur = *new;
+    SetIconFont(dpy);
+}
+
+
+
+/*
+ * unconfigureFocus
+ *
+ * Tell a client to remove any grabs it may have set up according to the focus 
+ * mode.  If this client is the focus, tell it to draw in its unfocused state.
+ */
+static void * unconfigureFocus(Client *cli)
+{
+	if (cli->framewin == NULL)
+		return NULL;
+	FrameSetupGrabs(cli, cli->framewin->core.self, False);
+	if (cli->isFocus) {
+		cli->isFocus = False;
+		WinCallDraw((WinGeneric *) cli->framewin);
+		cli->isFocus = True;
+	}
+	return NULL;
+}
+
+
+
+/*
+ * reconfigureFocus
+ *
+ * Tell a client to restore any grabs it may need for the new focus mode.  If 
+ * this client is the focus, tell it to draw using the proper highlighting for 
+ * the new focus mode.
+ */
+static void * reconfigureFocus(Client *cli)
+{
+	if (cli->framewin == NULL)
+		return NULL;
+	FrameSetupGrabs(cli, cli->framewin->core.self, True);
+	if (cli->isFocus) {
+		WinCallDraw((WinGeneric *) cli->framewin);
+	}
+	return NULL;
+}
+
+static Bool cvtFont(Display *dpy, ResourceItem *item, char *string, void *addr)
+{
+	char **mcl;
+	int mcc;
+	char *dc;
+	OlFontSetInfo *dest = addr;
+
+	dest->fontset = XCreateFontSet(dpy, string, &mcl, &mcc, &dc);
+	if (dest->fontset) {
+		dest->fsext = XExtentsOfFontSet(dest->fontset);
+		if (mcl) XFreeStringList(mcl);
+		dest->fstr = NULL;
+	}
+	else {
+    	dest->fstr = XLoadQueryFont(dpy, string);
+
+    	if (! dest->fstr) return False;
+		dest->fontset = NULL;
+		dest->fsext = NULL;
+	}
+    return True;
+}
+
+static Bool cvtGlyphFont(Display *dpy, ResourceItem *item, char *string, void *addr)
+{
+	XFontStruct **dest = addr;
+
+    *dest = XLoadQueryFont(dpy, string);
+
+    if (! *dest) return False;
+    return True;
+}
+
+
+/*
+ * UpdFocusStyle -- change the focus style on the fly
+ *
+ * If focus style needs updating, call unconfigureFocus on every client.  This
+ * will clear grabs and highlighting and such while the old focus mode is
+ * still in effect.  Update the global value, and then call reconfigureFocus
+ * on every client to set up stuff for the new focus mode.
+ *
+ * REMIND: This function is global because it's called from FlipFocusFunc in
+ * services.c.  This call passes NULL for item.  This needs to be cleaned up.
+ */
+void UpdFocusStyle(Display *dpy, ResourceItem *item, Bool *cur, Bool *new)
+{
+	if (*cur != *new) {
+		ListApply(ActiveClientList, unconfigureFocus, 0);
+		*cur = *new;
+		ListApply(ActiveClientList, reconfigureFocus, 0);
+	}
+}
+
+
 
 /*
  * Locale Item Table.  This table contains resource items pertaining to locale
@@ -173,9 +434,7 @@ static void updUiStyle(Display *dpy, ResourceItem *item, UiStyles *cur, UiStyles
  * the RI_LOCALE_DEP flag set.
  */
 
-ResourceItem LocaleItemTable[] = {
-
-#ifdef OW_I18N_L3
+static ResourceItem LocaleItemTable[] = {
 {   "basicLocale",		"BasicLocale",		NULL,
     &(GRV.lc_basic),		cvtOLLC,                NULL,
     0L },
@@ -191,7 +450,6 @@ ResourceItem LocaleItemTable[] = {
 {   "dateFormat",		"DateFormat",		NULL,
     &(GRV.lc_datefmt),		cvtOLLC,                NULL,
     0L },
-#endif /* OW_I18N_L3 */
 
 /* NOTE: the following item must always be the last. */
 
@@ -242,7 +500,7 @@ ResourceItem MainItemTable[] = {
     RI_LOCALE_DEP },
 {   "glyphFont",		"GlyphFont",
     "-sun-open look glyph-*-*-*-*-*-120-*-*-*-*-*-*",
-    &(GRV.GlyphFontInfo),	cvtFont,		updGlyphFont,
+    &(GRV.GlyphFontInfo),	cvtGlyphFont,		updGlyphFont,
     RI_LOCALE_DEP },
 {   "cursorFont",		"CursorFont",
     "-sun-open look cursor-*-*-*-*-*-120-*-*-*-*-*-*",
@@ -288,11 +546,7 @@ ResourceItem MainItemTable[] = {
     &(GRV.FocusFollowsMouse),	cvtFocusStyle,		UpdFocusStyle,
     0L },
 {   "defaultTitle",		"DefaultTitle",		"No Name", 
-#ifdef OW_I18N_L4
-    &(GRV.DefaultWinName),	cvtWString,		updString,
-#else
     &(GRV.DefaultWinName),	cvtString,		updString,
-#endif
     0L },
 {   "flashFrequency",		"FlashFrequency",	"100000", 
     &(GRV.FlashTime),		cvtInteger,		NULL,
@@ -543,11 +797,9 @@ ResourceItem MainItemTable[] = {
 #  endif
     &(GRV.WindowMenuAccelerators), cvtBoolean,		updMenuAccelerators,
     0L },
-#ifdef OW_I18N_L3
 {   "characterSet",		"CharacterSet",		ISO_LATIN_1,
     &(GRV.CharacterSet),	cvtString,		NULL,
     RI_LOCALE_DEP },
-#endif
 
 /* NOTE: the following item must always be the last. */
 
@@ -944,52 +1196,8 @@ cvtBoolean(dpy, item, string, addr)
     return matchBool(string, (Bool *)addr);
 }
 
-char *DRA_CHANGED_setlocale(int cat, char *val)
-{
-#ifdef linux
-	static char messloc[100];
-	static int use_messloc = 0;
-
-	/* everything worked fine in Linux 1.2.1, but now in 1.2.13
-	 * the say they support some locales -
-	 * and everything is always in english
-	 */
-
-	/* I'm only interested in the messages category */
-	if (cat != LC_MESSAGES) {
-		return setlocale(cat, val);
-	}
-
-	if (! val) {
-		/* a query */
-		if (use_messloc) return messloc;
-		return setlocale(cat, val);
-	}
-	else {
-		char *ret = setlocale(cat, val);
-
-		if (! ret) {
-			/* this is a locale that is not supported (???) */
-			use_messloc = 1;
-			strcpy(messloc, val);
-			return messloc;
-		}
-		use_messloc = 0;
-		return ret;
-	}
-#else /* linux */
-	return setlocale(cat, val);
-#endif /* linux */
-}
-
-
 #ifdef OW_I18N_L4
-static Bool
-cvtFontSet(dpy, item, string, addr)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    *string;
-    void	    *addr;
+static Bool cvtFontSet(Display *dpy, ResourceItem *item, char *string, void *addr)
 {
     XFontSetInfo    *dest = addr;
     XFontSet	    info;
@@ -998,7 +1206,7 @@ cvtFontSet(dpy, item, string, addr)
     XFontSetExtents	*XExtentsOfFontSet();
 
     /* XXX - is this right? the locale may not have been set up properly */
-    locale = DRA_CHANGED_setlocale(LC_CTYPE, NULL);
+    locale = setlocale(LC_CTYPE, NULL);
     info = loadQueryFontSet(dpy, string, locale);
     if (info == NULL) {
         return False;
@@ -1011,25 +1219,6 @@ cvtFontSet(dpy, item, string, addr)
 }
 #endif
 
-
-static Bool
-cvtFont(dpy, item, string, addr)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    *string;
-    void	    *addr;
-{
-    XFontStruct	    **dest = addr;
-    XFontStruct	    *info;
-    
-    info = XLoadQueryFont(dpy, string);
-
-    if (info == NULL)
-	return False;
-
-    *dest = info;
-    return True;
-}
 
 
 /*
@@ -1154,28 +1343,6 @@ cvtCursorFont(dpy, item, string, addr)
 
     return True;
 }
-
-
-#ifdef OW_I18N_L4
-/*
- * Converting a string simply means making a copy of it.
- */
-static Bool
-cvtWString(dpy, item, string, addr)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    *string;
-    void	    *addr;
-{
-    wchar_t **str = addr;
-
-    if (string == NULL)
-	return False;
-
-    *str = mbstowcsdup(string);
-    return True;
-}
-#endif
 
 
 /*
@@ -1365,15 +1532,6 @@ List **pplist;
 }
 
 
-static void *
-freeStringList(str,junk)
-char *str;
-void *junk;
-{
-	MemFree(str);
-	return NULL;
-}
-
 
 static Bool
 cvtStringList(dpy, item, string, addr)
@@ -1390,65 +1548,7 @@ cvtStringList(dpy, item, string, addr)
     return True;
 }
 
-
-#ifdef OW_I18N_L3
-
-/*
- * cvtOLLC
- * 
- * REMIND: somewhat strange.  This function always returns True, so the
- * default value in the Resource Table is never used.  Further, this function 
- * handles both the conversion and update functions itself.
- */
-static Bool
-cvtOLLC(dpy, item, string, addr)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    *string;
-    void	    *addr;
-{
-    OLLCItem	    *ollcitem = addr;
-    char	    *newlocale;
-
-#ifdef DEBUG
-    fprintf(stderr, "cvtOLLC: locale#%d, newlocale %s, curlocale %s\n",
-	    ollcitem->posixCategory, string,
-	    ollcitem->locale ? ollcitem->locale : "(null)");
-#endif
-
-    /* don't need to do anything if the new locale is the same as the old */
-
-    if ((string == NULL && ollcitem->locale == NULL) ||
-        (string != NULL && ollcitem->locale != NULL &&
-	 0 == strcmp(string, ollcitem->locale)))
-    {
-	return True;
-    }
-
-    /* they differ; update the locale */
-
-    if (string == NULL)
-	newlocale = NULL;
-    else
-	newlocale = MemNewString(string);
-
-    if (ollcitem->locale != NULL)
-	MemFree(ollcitem->locale);
-
-    ollcitem->locale = newlocale;
-
-#ifdef DEBUG
-    fprintf(stderr, "cvtOLLC: locale#%d -> %s\n",
-	    ollcitem->posixCategory,
-	    ollcitem->locale ? ollcitem->locale : "(null)");
-#endif
-
-    return True;
-}
-
-#endif /* OW_I18N_L3 */
-
-#if defined (DEBUG) && defined (OW_I18N_L3)
+#if defined (LOCALE_DEBUG)
 dump_locale()
 {
     fprintf(stderr, "  -> %5.5s %5.5s %5.5s %5.5s %5.5s\n",
@@ -1479,98 +1579,6 @@ dump_locale()
  */
 
 static void
-updString(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    **cur, **new;
-{
-    MemFree(*cur);
-    *cur = *new;
-}
-
-
-static void
-updStringList(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    List	    **cur, **new;
-{
-    ListApply(*cur, freeStringList, NULL);
-    ListDestroy(*cur);
-    *cur = *new;
-}
-
-
-static void
-updWorkspaceStyle(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    WorkspaceStyle  *cur, *new;
-{
-    *cur = *new;
-    updateWorkspaceBackground = True;
-}
-
-
-static void
-updWorkspace(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    **cur, **new;
-{
-    MemFree(*cur);
-    *cur = *new;
-    updateWorkspaceBackground = True;
-}
-
-
-static void
-updWindow(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    **cur, **new;
-{
-    MemFree(*cur);
-    *cur = *new;
-    SetWindowColor(dpy);
-}
-
-
-static void
-updForeground(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    **cur, **new;
-{
-    MemFree(*cur);
-    *cur = *new;
-    SetForegroundColor(dpy);
-}
-
-static void
-updBackground(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    **cur, **new;
-{
-    MemFree(*cur);
-    *cur = *new;
-    SetBackgroundColor(dpy);
-}
-
-static void
-updBorder(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    char	    **cur, **new;
-{
-    MemFree(*cur);
-    *cur = *new;
-    SetBorderColor(dpy);
-}
-
-
-static void
 updSync(dpy, item, cur, new)
     Display	    *dpy;
     ResourceItem    *item;
@@ -1580,86 +1588,6 @@ updSync(dpy, item, cur, new)
 	(void) XSynchronize(dpy, *new);
 	*cur = *new;
     }
-}
-
-
-static void
-updTitleFont(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-#ifdef OW_I18N_L4
-    XFontSetInfo    *cur, *new;
-#else
-    XFontStruct	    **cur, **new;
-#endif
-{
-#ifdef OW_I18N_L4
-    freeFontSet(dpy, cur->fs);
-#else
-    XFree((char *) *cur);
-#endif
-    *cur = *new;
-    SetTitleFont(dpy);
-}
-
-
-static void
-updTextFont(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-#ifdef OW_I18N_L4
-    XFontSetInfo    *cur, *new;
-#else
-    XFontStruct	    **cur, **new;
-#endif
-{
-#ifdef OW_I18N_L4
-    freeFontSet(dpy, cur->fs);
-#else
-    XFree((char *) *cur);
-#endif
-    *cur = *new;
-    SetTextFont(dpy);
-}
-
-
-static void
-updButtonFont(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-#ifdef OW_I18N_L4
-    XFontSetInfo    *cur, *new;
-#else
-    XFontStruct	    **cur, **new;
-#endif
-{
-#ifdef OW_I18N_L4
-    freeFontSet(dpy, cur->fs);
-#else
-    XFree((char *) *cur);
-#endif
-    *cur = *new;
-    SetButtonFont(dpy);
-}
-
-
-static void
-updIconFont(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-#ifdef OW_I18N_L4
-    XFontSetInfo    *cur, *new;
-#else
-    XFontStruct	    **cur, **new;
-#endif
-{
-#ifdef OW_I18N_L4
-    freeFontSet(dpy, cur->fs);
-#else
-    XFree((char *) *cur);
-#endif
-    *cur = *new;
-    SetIconFont(dpy);
 }
 
 
@@ -1730,75 +1658,6 @@ updWindowCacheSize(dpy, item, cur, new)
     }
 }
 
-
-/*
- * unconfigureFocus
- *
- * Tell a client to remove any grabs it may have set up according to the focus 
- * mode.  If this client is the focus, tell it to draw in its unfocused state.
- */
-static void *
-unconfigureFocus(cli)
-    Client *cli;
-{
-    if (cli->framewin == NULL)
-	return NULL;
-    FrameSetupGrabs(cli, cli->framewin->core.self, False);
-    if (cli->isFocus) {
-	cli->isFocus = False;
-	WinCallDraw((WinGeneric *)cli->framewin);
-	cli->isFocus = True;
-    }
-    return NULL;
-}
-
-
-/*
- * reconfigureFocus
- *
- * Tell a client to restore any grabs it may need for the new focus mode.  If 
- * this client is the focus, tell it to draw using the proper highlighting for 
- * the new focus mode.
- */
-static void *
-reconfigureFocus(cli)
-    Client *cli;
-{
-    if (cli->framewin == NULL)
-	return NULL;
-    FrameSetupGrabs(cli, cli->framewin->core.self, True);
-    if (cli->isFocus) {
-	WinCallDraw((WinGeneric *)cli->framewin);
-    }
-    return NULL;
-}
-
-
-/*
- * UpdFocusStyle -- change the focus style on the fly
- *
- * If focus style needs updating, call unconfigureFocus on every client.  This
- * will clear grabs and highlighting and such while the old focus mode is
- * still in effect.  Update the global value, and then call reconfigureFocus
- * on every client to set up stuff for the new focus mode.
- *
- * REMIND: This function is global because it's called from FlipFocusFunc in
- * services.c.  This call passes NULL for item.  This needs to be cleaned up.
- */
-void
-UpdFocusStyle(dpy, item, cur, new)
-    Display	    *dpy;
-    ResourceItem    *item;
-    Bool	    *cur, *new;
-{
-    if (*cur != *new) {
-	ListApply(ActiveClientList, unconfigureFocus, 0);
-	*cur = *new;
-	ListApply(ActiveClientList, reconfigureFocus, 0);
-    }
-}
-
-
 /* ===== Global Functions ================================================= */
 
 
@@ -1814,12 +1673,10 @@ static union {
     int		    intval;
     void	    *pointer;
     KeySpec	    keyspec;
-#ifdef OW_I18N_L3
     OLLCItem	    ollcitem;
 #ifdef OW_I18N_L4
     XFontSetInfo    fontsetinfo;
 #endif
-#endif /* OW_I18N_L3 */
 } datum;
 
 
@@ -1838,228 +1695,91 @@ static union {
  * storage.
  */
 
-void
-ScanResourceItemTable(dpy, table, rdb, oldlocale, flags)
-    Display *dpy;
-    ResourceItem *table;
-    XrmDatabase rdb;
-    char *oldlocale;
-    unsigned long flags;
+void ScanResourceItemTable( Display *dpy, ResourceItem *table, XrmDatabase rdb,
+								char *oldlocale, unsigned long flags)
 {
-    XrmRepresentation type;
-    XrmValue value;
-    XrmValue oldvalue;
-    XrmQuark classes[4];
-    XrmQuark instances[4];
-    ResourceItem *item;
-    Bool hit;
+	XrmRepresentation type;
+	XrmValue value;
+	XrmValue oldvalue;
+	XrmQuark classes[4];
+	XrmQuark instances[4];
+	ResourceItem *item;
+	Bool hit;
 
-#ifdef OW_I18N_L3
-    XrmQuark localeQ;
-    XrmQuark oldlocaleQ;
+	XrmQuark localeQ;
+	XrmQuark oldlocaleQ;
 
-    if (GRV.lc_basic.locale != NULL)
-	localeQ = XrmStringToQuark(GRV.lc_basic.locale);
-    else
-	localeQ = NULLQUARK;
+	if (GRV.lc_basic.locale != NULL)
+		localeQ = XrmStringToQuark(GRV.lc_basic.locale);
+	else
+		localeQ = NULLQUARK;
 
-    if (oldlocale != NULL)
-	oldlocaleQ = XrmStringToQuark(oldlocale);
-#endif    
+	if (oldlocale != NULL)
+		oldlocaleQ = XrmStringToQuark(oldlocale);
 
-    classes[0] = OpenWinQ;
-    instances[0] = TopInstanceQ;
+	classes[0] = OpenWinQ;
+	instances[0] = TopInstanceQ;
 
-    for (item = table; !(item->flags & RI_LAST_ITEM); ++item) {
+	for (item = table; !(item->flags & RI_LAST_ITEM); ++item) {
 
-	/* never update an immutable item */
-	if (item->flags & RI_IMMUTABLE)
-	    continue;
+		/* never update an immutable item */
+		if (item->flags & RI_IMMUTABLE)
+			continue;
 
-	classes[1] = item->classQ;
-	instances[1] = item->instanceQ;
-	hit = False;
+		classes[1] = item->classQ;
+		instances[1] = item->instanceQ;
+		hit = False;
 
-#ifdef OW_I18N_L3
-	if (item->flags & RI_LOCALE_DEP) {
-	    classes[2] = instances[2] = localeQ;
-	    classes[3] = instances[3] = NULLQUARK;
-	    hit = XrmQGetResource(rdb, instances, classes, &type, &value);
+		if (item->flags & RI_LOCALE_DEP) {
+			classes[2] = instances[2] = localeQ;
+			classes[3] = instances[3] = NULLQUARK;
+			hit = XrmQGetResource(rdb, instances, classes, &type, &value);
+		}
+
+		if (!hit) {
+			classes[2] = instances[2] = NULLQUARK;
+			hit = XrmQGetResource(rdb, instances, classes, &type, &value);
+		}
+
+		if (flags & SR_UPDATING) {
+
+			/* ignore if not found */
+			if (!hit)
+				continue;
+
+			/* ignore if old and new values are the same */
+			if ((item->flags & RI_LOCALE_DEP) && (oldlocale != NULL))
+				classes[2] = instances[2] = oldlocaleQ;
+			if (XrmQGetResource(OlwmDB, instances, classes, &type, &oldvalue)
+					&& 0 == strcmp((char *)value.addr, (char *)oldvalue.addr)) {
+				continue;
+			}
+			if ((item->flags & RI_LOCALE_DEP) && (oldlocale != NULL))
+				classes[2] = instances[2] = localeQ;
+
+			if (item->updater == NULL) {
+				(void)(*item->converter) (dpy, item, (char *)value.addr,
+						item->addr);
+			}
+			else {
+				(void)memset((char *)&datum, 0, sizeof(datum));
+				if ((*item->converter) (dpy, item, (char *)value.addr, &datum))
+					(*item->updater) (dpy, item, item->addr, &datum);
+			}
+		}
+		else {
+			if (hit && (*item->converter) (dpy, item, value.addr, item->addr)) {
+				if (flags & SR_IMMUTABLE)
+					item->flags |= RI_IMMUTABLE;
+			}
+			else {
+				if (flags & SR_USE_DEFAULT)
+					(void)(*item->converter) (dpy, item, item->defaultString,
+							item->addr);
+			}
+		}
 	}
-#endif
-
-	if (!hit) {
-	    classes[2] = instances[2] = NULLQUARK;
-	    hit = XrmQGetResource(rdb, instances, classes, &type, &value);
-	}
-
-	if (flags & SR_UPDATING) {
-
-	    /* ignore if not found */
-	    if (!hit)
-		continue;
-
-	    /* ignore if old and new values are the same */
-#ifdef OW_I18N_L3
-	    if ((item->flags & RI_LOCALE_DEP) && (oldlocale != NULL))
-		classes[2] = instances[2] = oldlocaleQ;
-#endif
-	    if (XrmQGetResource(OlwmDB, instances, classes, &type, &oldvalue)
-		&& 0 == strcmp((char *)value.addr, (char *)oldvalue.addr))
-	    {
-		continue;
-	    }
-#ifdef OW_I18N_L3
-	    if ((item->flags & RI_LOCALE_DEP) && (oldlocale != NULL))
-		classes[2] = instances[2] = localeQ;
-#endif
-
-	    if (item->updater == NULL) {
-		(void) (*item->converter)(dpy, item, (char *)value.addr,
-					  item->addr);
-	    } else {
-		(void) memset((char *) &datum, 0, sizeof(datum));
-		if ((*item->converter)(dpy, item, (char *)value.addr, &datum))
-		    (*item->updater)(dpy, item, item->addr, &datum);
-	    }
-	} else {
-	    if (hit && (*item->converter)(dpy, item, value.addr, item->addr)) {
-		if (flags & SR_IMMUTABLE)
-		    item->flags |= RI_IMMUTABLE;
-	    } else {
-		if (flags & SR_USE_DEFAULT)
-		    (void) (*item->converter)(dpy, item, item->defaultString,
-					      item->addr);
-	    }
-	}
-    }
 }
-
-
-/*
- * InitGlobals.  Zero out all global variables.  Run through resource tables, 
- * interning their quarks.  Called once at startup time.  Destroys cmdDB.
- */
-void
-InitGlobals(dpy, cmdDB)
-    Display *dpy;
-    XrmDatabase cmdDB;
-{
-    ResourceItem *item;
-    XrmDatabase userDB;
-
-    (void) memset((char *) &GRV, 0, sizeof(GRV));
-
-    /* Run through the tables and intern the quarks. */
-
-    for (item = LocaleItemTable; !(item->flags & RI_LAST_ITEM); ++item) {
-	item->classQ    = XrmStringToQuark(item->class);
-	item->instanceQ = XrmStringToQuark(item->instance);
-    }
-
-    for (item = MainItemTable; !(item->flags & RI_LAST_ITEM); ++item) {
-	item->classQ    = XrmStringToQuark(item->class);
-	item->instanceQ = XrmStringToQuark(item->instance);
-    }
-
-#ifdef OW_I18N_L3
-    GRVLCInit();
-#endif
-
-    userDB = GetUserDefaults(dpy);
-
-    ScanResourceItemTable(dpy, LocaleItemTable, cmdDB, NULL, SR_IMMUTABLE);
-    ScanResourceItemTable(dpy, LocaleItemTable, userDB, NULL, NULL);
-
-#ifdef OW_I18N_L3
-    setOLLCPosix();
-    EffectOLLC(dpy, True, NULL, NULL);
-#endif
-
-    ScanResourceItemTable(dpy, MainItemTable, cmdDB, NULL, SR_IMMUTABLE);
-
-    OlwmDB = GetAppDefaults();
-    XrmMergeDatabases(userDB, &OlwmDB);
-    XrmMergeDatabases(cmdDB, &OlwmDB);
-
-    ScanResourceItemTable(dpy, MainItemTable, OlwmDB, NULL, SR_USE_DEFAULT);
-
-    /*
-     * Special case for glyph font: if we couldn't find a valid glyph font,
-     * it's a fatal error.
-     */
-    if (GRV.GlyphFontInfo == NULL)
-	ErrorGeneral(GetString("can't open glyph font"));
-	/*NOTREACHED*/
-}
-
-
-/*
- * UpdateGlobals -- handle updates to the server's resource database.  Called
- * every time the server's RESOURCE_MANAGER property changes.  Refetches the 
- * user's database and the app-defaults database and merges them, and then 
- * replaces the global database with this new one.  This loses the resources 
- * that corresponded to the command-line arguments, but that should be OK 
- * since we should have set them to be immutable at startup time.
- */
-void
-UpdateGlobals(dpy)
-    Display *dpy;
-{
-    XrmDatabase		userDB;
-    XrmDatabase		newDB;
-    Bool		dlangChanged = False;
-#ifdef OW_I18N_L3
-    char		oldBasicLocale[MAXNAMELEN + 1];
-    char		oldDisplayLang[MAXNAMELEN + 1];
-#endif
-
-    updateWorkspaceBackground = False;
-    forceKeyRegrab = False;
-
-    userDB = GetUserDefaults(dpy);
-
-    ScanResourceItemTable(dpy, LocaleItemTable, userDB, NULL, SR_UPDATING);
-
-#ifdef OW_I18N_L3
-    EffectOLLC(dpy, False, oldBasicLocale, oldDisplayLang);
-#endif /* OW_I18N_L3 */
-
-    /*
-     * This re-fetches the app-defaults file every time the user database
-     * changes.  This may be necessary if the locale changes.  It may also be
-     * necessary if a resource disappears from the user's database.  In this
-     * case, we will want the value to revert to a value in the app-defaults
-     * file, a value that had been overridden before.
-     */
-    newDB = GetAppDefaults();
-    XrmMergeDatabases(userDB, &newDB);
-
-#ifdef OW_I18N_L3
-    ScanResourceItemTable(dpy, MainItemTable, newDB,
-			  oldBasicLocale, SR_UPDATING);
-
-    if (strcmp(GRV.lc_dlang.locale, oldDisplayLang) != 0)
-	dlangChanged = True;
-
-#else
-    ScanResourceItemTable(dpy, MainItemTable, newDB, NULL, SR_UPDATING);
-#endif
-
-    if (updateWorkspaceBackground)
-	SetWorkspaceBackground(dpy);
-
-    if (dlangChanged || UpdateBindings(dpy, newDB, forceKeyRegrab))
-	ReInitAllMenus(dpy);
-
-    XrmDestroyDatabase(OlwmDB);
-    OlwmDB = newDB;
-}
-
-
-/* ===== Internationalization ============================================= */
-
-#ifdef OW_I18N_L3
 
 /*
  * setOLLCPosix
@@ -2067,48 +1787,27 @@ UpdateGlobals(dpy)
  * For each locale category setting that's NULL, fetch its current POSIX 
  * setting and store it into GRV.
  */
-static void
-setOLLCPosix()
+static void setOLLCPosix(void)
 {
-    OLLCItem *ollci;
-    OLLCItem *last = &GRV.LC[OLLC_LC_MAX];
+	OLLCItem *ollci;
+	OLLCItem *last = &GRV.LC[OLLC_LC_MAX];
 
 
-    (void) DRA_CHANGED_setlocale(LC_ALL, "");
-#ifdef DEBUG
-    fprintf(stderr, "Just bfore OLLCPosix\n");
-    dump_locale();
+	(void)setlocale(LC_ALL, "");
+
+#ifdef LOCALE_DEBUG
+	fprintf(stderr, "Just before OLLCPosix\n");
+	dump_locale();
 #endif
-    for (ollci = GRV.LC; ollci < last; ollci++) {
-	if (ollci->locale == NULL && ollci->posixCategory >= 0)
-	    ollci->locale =
-		MemNewString(DRA_CHANGED_setlocale(ollci->posixCategory, NULL));
-    }
-#ifdef DEBUG
-    dump_locale();
+
+	for (ollci = GRV.LC; ollci < last; ollci++) {
+		if (ollci->locale == NULL && ollci->posixCategory >= 0)
+			ollci->locale = MemNewString(setlocale(ollci->posixCategory, NULL));
+	}
+
+#ifdef LOCALE_DEBUG
+	dump_locale();
 #endif
-}
-
-
-/*
- * GRVLCInit
- *
- * For each OPEN LOOK locale category, fill in its corresponding POSIX locale 
- * category identifier.  Note: this is not intended to be a complete mapping.
- */
-static void
-GRVLCInit()
-{
-    GRV.lc_basic.posixCategory		=  LC_CTYPE;
-    GRV.lc_basic.envName		= "LC_CTYPE";
-    GRV.lc_dlang.posixCategory		=  LC_MESSAGES;
-    GRV.lc_dlang.envName		= "LC_MESSAGES";
-    GRV.lc_ilang.posixCategory		= -1;
-    GRV.lc_ilang.envName		= NULL;
-    GRV.lc_numeric.posixCategory	=  LC_NUMERIC;
-    GRV.lc_numeric.envName		= "LC_NUMERIC";
-    GRV.lc_datefmt.posixCategory	=  LC_TIME;
-    GRV.lc_datefmt.envName		= "LC_TIME";
 }
 
 
@@ -2137,121 +1836,254 @@ GRVLCInit()
  *
  * REMIND: need to check return values from setlocale().
  */
-void
-EffectOLLC(dpy, initial, oldBasicLocale, oldDisplayLang)
-    Display *dpy;
-    Bool     initial;
-    char    *oldBasicLocale;
-    char    *oldDisplayLang;
+static void EffectOLLC(Display *dpy, Bool initial, char *oldBasicLocale,
+											char *oldDisplayLang)
 {
-    OLLCItem *ollci;
-    char *basic, *new, *cur;
-    Bool basic_updated = False;
-    Bool sticky_locale;
+	OLLCItem *ollci;
+	char *basic, *new, *cur;
+	Bool basic_updated = False;
+	Bool sticky_locale;
 
-#ifdef DEBUG
-    fprintf(stderr, "Before calling EffectOLLC\n");
-    dump_locale();
+#ifdef LOCALE_DEBUG
+	fprintf(stderr, "Before calling EffectOLLC\n");
+	dump_locale();
 #endif
-    /*
-     * Apply restrictions to the basic locale if current locale is not
-     * sticky locale (sticky locale is defined to be locale which uses
-     * none iso latin1 as characterset), updating if necessary.
-     * Ensure that GRV.lc_basic matches reality.
-     *
-     * Note: update using LC_ALL in order to get the POSIX locale
-     * categories that aren't covered by the OPEN LOOK locale
-     * categories.  This forces us to update all the other locale
-     * categories, even if they otherwise wouldn't need to be updated.
-     */
-    if (initial || strcmp(GRV.CharacterSet, ISO_LATIN_1) == 0)
-	sticky_locale = False;
-    else
-	sticky_locale = True;
 
-    basic = MemNewString(DRA_CHANGED_setlocale(LC_CTYPE, NULL));
-    if (oldBasicLocale != NULL)
-	(void) strcpy(oldBasicLocale, basic);
-    if (oldDisplayLang != NULL)
-	(void) strcpy(oldDisplayLang, DRA_CHANGED_setlocale(LC_MESSAGES, NULL));
-    if (initial || ! sticky_locale ||
-	(strcmp(basic, "C") == 0 && strcmp(GRV.lc_basic.locale, "C") != 0) )
-    {
-#ifdef DEBUG
-	fprintf(stderr, "Basic Locale -> %s\n", GRV.lc_basic.locale);
-#endif
-	DRA_CHANGED_setlocale(LC_ALL, GRV.lc_basic.locale);
-	basic_updated = True;
-#ifdef OW_I18N_L4
 	/*
-	 * Check with Xlib to see basiclocale/LC_CTYPE is supported or
-	 * not.
+	 * Apply restrictions to the basic locale if current locale is not
+	 * sticky locale (sticky locale is defined to be locale which uses
+	 * none iso latin1 as characterset), updating if necessary.
+	 * Ensure that GRV.lc_basic matches reality.
+	 *
+	 * Note: update using LC_ALL in order to get the POSIX locale
+	 * categories that aren't covered by the OPEN LOOK locale
+	 * categories.  This forces us to update all the other locale
+	 * categories, even if they otherwise wouldn't need to be updated.
 	 */
-	if (! XSupportsLocale()) {
-	    /*
-	     * Assumption: "C" locale is always supported by the Xlib.
-	     */
-	    (void) fprintf(stderr, "%s: Supplied locale (%s) is not supported by Xlib - defaulting to C\n",
-			   ProgramName, GRV.lc_basic.locale);
-	    (void) DRA_CHANGED_setlocale(LC_ALL, "C");
-	    if (strcmp(basic, "C") == 0)
-	        basic_updated = False;
-	    MemFree(GRV.lc_basic.locale);
-	    GRV.lc_basic.locale = MemNewString("C");
-	    MemFree(GRV.lc_dlang.locale);
-	    GRV.lc_dlang.locale = MemNewString("C");
-	}
-	if (! XSetLocaleModifiers(""))
-	    (void) fprintf(stderr, "%s: Error in setting locale modifier to Xlib\n",
-			   ProgramName);
+	if (initial || strcmp(GRV.CharacterSet, ISO_LATIN_1) == 0)
+		sticky_locale = False;
+	else
+		sticky_locale = True;
+
+	basic = MemNewString(setlocale(LC_CTYPE, NULL));
+	if (oldBasicLocale != NULL)
+		(void)strcpy(oldBasicLocale, basic);
+	if (oldDisplayLang != NULL)
+		(void)strcpy(oldDisplayLang, setlocale(LC_MESSAGES, NULL));
+	if (initial || !sticky_locale ||
+			(strcmp(basic, "C") == 0 && strcmp(GRV.lc_basic.locale, "C") != 0))
+	{
+
+#ifdef LOCALE_DEBUG
+		fprintf(stderr, "Basic Locale -> %s\n", GRV.lc_basic.locale);
 #endif
+
+		setlocale(LC_ALL, GRV.lc_basic.locale);
+		basic_updated = True;
+
+#ifdef OW_I18N_L4
+		/*
+		 * Check with Xlib to see basiclocale/LC_CTYPE is supported or
+		 * not.
+		 */
+		if (!XSupportsLocale()) {
+			/*
+			 * Assumption: "C" locale is always supported by the Xlib.
+			 */
+			(void)fprintf(stderr,
+					"%s: Supplied locale (%s) is not supported by Xlib - defaulting to C\n",
+					ProgramName, GRV.lc_basic.locale);
+			(void)setlocale(LC_ALL, "C");
+			if (strcmp(basic, "C") == 0)
+				basic_updated = False;
+			MemFree(GRV.lc_basic.locale);
+			GRV.lc_basic.locale = MemNewString("C");
+			MemFree(GRV.lc_dlang.locale);
+			GRV.lc_dlang.locale = MemNewString("C");
+		}
+		if (!XSetLocaleModifiers(""))
+			(void)fprintf(stderr,
+					"%s: Error in setting locale modifier to Xlib\n",
+					ProgramName);
+#endif
+
+		MemFree(basic);
+		basic = MemNewString(GRV.lc_basic.locale);
+	}
+	else if (strcmp(basic, GRV.lc_basic.locale) != 0) {
+		MemFree(GRV.lc_basic.locale);
+		GRV.lc_basic.locale = MemNewString(basic);
+	}
+
+	/*
+	 * Run through the other locale categories, applying the restrictions, and
+	 * updating if necessary.  Skip categories that have no corresponding
+	 * Posix locale category.  As before, make sure the value in GRV matches
+	 * the actual current setting.
+	 */
+	for (ollci = GRV.LC + 1; ollci < &GRV.LC[OLLC_LC_MAX]; ++ollci) {
+
+		if (ollci->posixCategory < 0)
+			continue;
+
+		if (sticky_locale) {
+			if (strcmp(basic, "C") != 0 && strcmp(ollci->locale, "C") != 0) {
+				new = basic;
+			}
+			else {
+				new = "C";
+			}
+		}
+		else
+			new = ollci->locale;
+
+		cur = setlocale(ollci->posixCategory, NULL);
+		if (basic_updated || strcmp(cur, new) != 0) {
+
+#ifdef LOCALE_DEBUG
+			fprintf(stderr, "locale#%d -> %s\n", ollci->posixCategory, new);
+#endif
+
+			setlocale(ollci->posixCategory, new);
+		}
+
+		if (strcmp(ollci->locale, new) != 0) {
+			MemFree(ollci->locale);
+			ollci->locale = MemNewString(new);
+		}
+	}
+
 	MemFree(basic);
-	basic = MemNewString(GRV.lc_basic.locale);
-    } else if (strcmp(basic, GRV.lc_basic.locale) != 0) {
-	MemFree(GRV.lc_basic.locale);
-	GRV.lc_basic.locale = MemNewString(basic);
-    }
 
-    /*
-     * Run through the other locale categories, applying the restrictions, and
-     * updating if necessary.  Skip categories that have no corresponding
-     * Posix locale category.  As before, make sure the value in GRV matches
-     * the actual current setting.
-     */
-    for (ollci = GRV.LC + 1; ollci < &GRV.LC[OLLC_LC_MAX]; ++ollci) {
-
-	if (ollci->posixCategory < 0)
-	    continue;
-
-	if (sticky_locale) {
-	    if (strcmp(basic, "C") != 0
-	        && strcmp(ollci->locale, "C") != 0)
-	    {
-	        new = basic;
-	    } else {
-	        new = "C";
-	    }
-	} else
-	    new = ollci->locale;
-
-	cur = DRA_CHANGED_setlocale(ollci->posixCategory, NULL);
-	if (basic_updated || strcmp(cur, new) != 0) {
-#ifdef DEBUG
-	    fprintf(stderr, "locale#%d -> %s\n", ollci->posixCategory, new);
-#endif
-	    DRA_CHANGED_setlocale(ollci->posixCategory, new);
-	}
-
-	if (strcmp(ollci->locale, new) != 0) {
-	    MemFree(ollci->locale);
-	    ollci->locale = MemNewString(new);
-	}
-    }
-
-    MemFree(basic);
-#ifdef DEBUG
-    dump_locale();
+#ifdef LOCALE_DEBUG
+	dump_locale();
 #endif
 }
 
-#endif /* OW_I18N_L3 */
+/*
+ * InitGlobals.  Zero out all global variables.  Run through resource tables, 
+ * interning their quarks.  Called once at startup time.  Destroys cmdDB.
+ */
+void InitGlobals(Display *dpy, XrmDatabase cmdDB)
+{
+	ResourceItem *item;
+	XrmDatabase userDB;
+
+	memset((char *)&GRV, 0, sizeof(GRV));
+
+	/* Run through the tables and intern the quarks. */
+
+	for (item = LocaleItemTable; !(item->flags & RI_LAST_ITEM); ++item) {
+		item->classQ = XrmStringToQuark(item->class);
+		item->instanceQ = XrmStringToQuark(item->instance);
+	}
+
+	for (item = MainItemTable; !(item->flags & RI_LAST_ITEM); ++item) {
+		item->classQ = XrmStringToQuark(item->class);
+		item->instanceQ = XrmStringToQuark(item->instance);
+	}
+
+	GRVLCInit();
+
+	userDB = GetUserDefaults(dpy);
+
+	ScanResourceItemTable(dpy, LocaleItemTable, cmdDB, NULL, SR_IMMUTABLE);
+	ScanResourceItemTable(dpy, LocaleItemTable, userDB, NULL, 0L);
+
+	setOLLCPosix();
+	EffectOLLC(dpy, True, NULL, NULL);
+
+	ScanResourceItemTable(dpy, MainItemTable, cmdDB, NULL, SR_IMMUTABLE);
+
+	OlwmDB = GetAppDefaults();
+	XrmMergeDatabases(userDB, &OlwmDB);
+	XrmMergeDatabases(cmdDB, &OlwmDB);
+
+	ScanResourceItemTable(dpy, MainItemTable, OlwmDB, NULL, SR_USE_DEFAULT);
+
+	/*
+	 * Special case for glyph font: if we couldn't find a valid glyph font,
+	 * it's a fatal error.
+	 */
+	if (GRV.GlyphFontInfo == NULL)
+		ErrorGeneral(GetString("can't open glyph font"));
+
+ 	/*NOTREACHED*/
+}
+
+
+/*
+ * UpdateGlobals -- handle updates to the server's resource database.  Called
+ * every time the server's RESOURCE_MANAGER property changes.  Refetches the 
+ * user's database and the app-defaults database and merges them, and then 
+ * replaces the global database with this new one.  This loses the resources 
+ * that corresponded to the command-line arguments, but that should be OK 
+ * since we should have set them to be immutable at startup time.
+ */
+void UpdateGlobals(Display *dpy)
+{
+	XrmDatabase userDB;
+	XrmDatabase newDB;
+	Bool dlangChanged = False;
+	char oldBasicLocale[MAXNAMELEN + 1];
+	char oldDisplayLang[MAXNAMELEN + 1];
+
+	updateWorkspaceBackground = False;
+	forceKeyRegrab = False;
+
+	userDB = GetUserDefaults(dpy);
+
+	ScanResourceItemTable(dpy, LocaleItemTable, userDB, NULL, SR_UPDATING);
+
+	EffectOLLC(dpy, False, oldBasicLocale, oldDisplayLang);
+
+	/*
+	 * This re-fetches the app-defaults file every time the user database
+	 * changes.  This may be necessary if the locale changes.  It may also be
+	 * necessary if a resource disappears from the user's database.  In this
+	 * case, we will want the value to revert to a value in the app-defaults
+	 * file, a value that had been overridden before.
+	 */
+	newDB = GetAppDefaults();
+	XrmMergeDatabases(userDB, &newDB);
+
+	ScanResourceItemTable(dpy, MainItemTable, newDB,
+			oldBasicLocale, SR_UPDATING);
+
+	if (strcmp(GRV.lc_dlang.locale, oldDisplayLang) != 0)
+		dlangChanged = True;
+
+	if (updateWorkspaceBackground)
+		SetWorkspaceBackground(dpy);
+
+	if (dlangChanged || UpdateBindings(dpy, newDB, forceKeyRegrab))
+		ReInitAllMenus(dpy);
+
+	XrmDestroyDatabase(OlwmDB);
+	OlwmDB = newDB;
+}
+
+
+/* ===== Internationalization ============================================= */
+
+
+/*
+ * GRVLCInit
+ *
+ * For each OPEN LOOK locale category, fill in its corresponding POSIX locale 
+ * category identifier.  Note: this is not intended to be a complete mapping.
+ */
+static void GRVLCInit(void)
+{
+    GRV.lc_basic.posixCategory		=  LC_CTYPE;
+    GRV.lc_basic.envName		= "LC_CTYPE";
+    GRV.lc_dlang.posixCategory		=  LC_MESSAGES;
+    GRV.lc_dlang.envName		= "LC_MESSAGES";
+    GRV.lc_ilang.posixCategory		= -1;
+    GRV.lc_ilang.envName		= NULL;
+    GRV.lc_numeric.posixCategory	=  LC_NUMERIC;
+    GRV.lc_numeric.envName		= "LC_NUMERIC";
+    GRV.lc_datefmt.posixCategory	=  LC_TIME;
+    GRV.lc_datefmt.envName		= "LC_TIME";
+}
+
