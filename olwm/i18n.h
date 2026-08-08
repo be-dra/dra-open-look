@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: i18n.h,v 1.4 2025/06/21 20:18:47 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: i18n.h,v 1.5 2026/08/08 05:04:45 dra Exp $ */
 /* #ident	"@(#)i18n.h	1.26	93/06/28 SMI" */
 
 /*
@@ -16,6 +16,13 @@
 #include <string.h>
 #include <ctype.h>
 #include <libintl.h>
+#include <X11/Xlib.h>
+
+typedef struct {
+        XFontSet        fontset;
+        XFontSetExtents	*fsext;
+		XFontStruct *fstr;
+} OlFontSetInfo;   /* I don't want this to look like something from Xlib.h */
 
 #ifdef OW_I18N_L4
 
@@ -28,10 +35,16 @@
 #include <X11/XlibR5.h>		
 #endif /* XlibSpecificationRelease < 5 */
 
+#ifdef ORIGINAL
+
 typedef struct {
         XFontSet        fs;
         XFontSetExtents	*fsx;
 } XFontSetInfo;
+
+#else /* ORIGINAL */
+
+#endif /* ORIGINAL */
 
 extern wchar_t  *mbstowcsdup();
 
@@ -146,19 +159,12 @@ extern	int	FontInfo();
 #define		FreeText(s)		MemFree(s)
 #define		GetNewText(s)		mbstowcsdup(gettext(s))
 
-#elif defined OW_I18N_L3
+#else
 
 #define		GetString(s)		gettext(s)
 #define		GetText(s)		gettext(s)
 #define		FreeText(s)	
 #define		GetNewText(s)		MemNewString(gettext(s))
-
-#else
-
-#define 	GetString(s)		s
-#define		GetText(s)		s
-#define		FreeText(s)
-#define		GetNewText(s)		MemNewString(s)
 
 #endif
 
