@@ -1,5 +1,5 @@
 /* #ident	"@(#)resources.c	26.75	93/06/28 SMI" */
-char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.5 2026/08/08 05:04:45 dra Exp $";
+char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.7 2026/08/08 16:18:48 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -42,6 +42,8 @@ char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.5 2026/0
 #include "olcursor.h"
 #include "events.h"
 #include "error.h"
+
+Bool _ol_is_multibyte = False;
 
 /* static data */
 
@@ -140,6 +142,8 @@ static void updUiStyle(Display *dpy, ResourceItem *item, UiStyles *cur, UiStyles
     }
 }
 
+static Bool	force_using_locale;
+
 /*
  * cvtOLLC
  * 
@@ -170,8 +174,15 @@ static Bool cvtOLLC(Display *dpy, ResourceItem *item, char *string, void *addr)
 
 	if (string == NULL)
 		newlocale = NULL;
-	else
-		newlocale = MemNewString(string);
+	else {
+		/* we don't want locale-specific locale settings like basicLocale */
+		if (force_using_locale) {
+			newlocale = NULL;
+		}
+		else {
+			newlocale = MemNewString(string);
+		}
+	}
 
 	if (ollcitem->locale != NULL)
 		MemFree(ollcitem->locale);
@@ -375,19 +386,21 @@ static Bool cvtFont(Display *dpy, ResourceItem *item, char *string, void *addr)
 	char *dc;
 	OlFontSetInfo *dest = addr;
 
-	dest->fontset = XCreateFontSet(dpy, string, &mcl, &mcc, &dc);
-	if (dest->fontset) {
-		dest->fsext = XExtentsOfFontSet(dest->fontset);
-		if (mcl) XFreeStringList(mcl);
-		dest->fstr = NULL;
+	if (_ol_is_multibyte) {
+		/* only in the multibyte case do we fiddle with font sets */
+		dest->fontset = XCreateFontSet(dpy, string, &mcl, &mcc, &dc);
+		if (dest->fontset) {
+			dest->fsext = XExtentsOfFontSet(dest->fontset);
+			if (mcl) XFreeStringList(mcl);
+			dest->fstr = NULL;
+			return True;
+		}
 	}
-	else {
-    	dest->fstr = XLoadQueryFont(dpy, string);
+	dest->fstr = XLoadQueryFont(dpy, string);
 
-    	if (! dest->fstr) return False;
-		dest->fontset = NULL;
-		dest->fsext = NULL;
-	}
+	if (! dest->fstr) return False;
+	dest->fontset = NULL;
+	dest->fsext = NULL;
     return True;
 }
 
@@ -435,27 +448,17 @@ void UpdFocusStyle(Display *dpy, ResourceItem *item, Bool *cur, Bool *new)
  */
 
 static ResourceItem LocaleItemTable[] = {
-{   "basicLocale",		"BasicLocale",		NULL,
-    &(GRV.lc_basic),		cvtOLLC,                NULL,
-    0L },
-{   "displayLang",		"DisplayLang",		NULL,
-    &(GRV.lc_dlang),		cvtOLLC,                NULL,
-    0L },
-{   "inputLang",		"InputLang",		NULL,
-    &(GRV.lc_ilang),		cvtOLLC,                NULL,
-    0L },
-{   "numeric",			"Numeric",		NULL,
-    &(GRV.lc_numeric),		cvtOLLC,                NULL,
-    0L },
-{   "dateFormat",		"DateFormat",		NULL,
-    &(GRV.lc_datefmt),		cvtOLLC,                NULL,
-    0L },
+{   "forceUsingLocale", "ForceUsingLocale", NULL, &force_using_locale,
+				cvtBoolean, NULL, 0L },
+{   "basicLocale", "BasicLocale", NULL, &GRV.lc_basic, cvtOLLC, NULL, 0L },
+{   "displayLang", "DisplayLang", NULL, &GRV.lc_dlang, cvtOLLC, NULL, 0L },
+{   "inputLang",   "InputLang",	  NULL, &GRV.lc_ilang, cvtOLLC, NULL, 0L },
+{   "numeric",     "Numeric",     NULL, &GRV.lc_numeric,cvtOLLC,NULL, 0L },
+{   "dateFormat",  "DateFormat",  NULL, &GRV.lc_datefmt,cvtOLLC,NULL, 0L },
 
 /* NOTE: the following item must always be the last. */
 
-{   NULL,			NULL,			NULL,
-    NULL,			NULL,			NULL,
-    RI_LAST_ITEM }
+{   NULL,	NULL,	NULL, NULL,	NULL,	NULL, RI_LAST_ITEM }
 };
 
 
@@ -1914,6 +1917,18 @@ static void EffectOLLC(Display *dpy, Bool initial, char *oldBasicLocale,
 		MemFree(GRV.lc_basic.locale);
 		GRV.lc_basic.locale = MemNewString(basic);
 	}
+
+	/* declared in ollocale.h */
+	_ol_is_multibyte = False;
+	if (basic) {
+		if (strcasestr(basic,"utf-8") || strcasestr(basic,"utf8")) {
+			_ol_is_multibyte = True;
+		}
+	}
+#ifdef LOCALE_DEBUG
+	fprintf(stderr, "%s-%d: _ol_is_multibyte = %d\n", __FILE__, __LINE__,
+						_ol_is_multibyte);
+#endif
 
 	/*
 	 * Run through the other locale categories, applying the restrictions, and
