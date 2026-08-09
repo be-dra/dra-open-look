@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.9 2026/08/07 18:29:40 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.10 2026/08/08 16:20:11 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -714,6 +714,30 @@ static void * promoteDependentFollowers(window, groupid)
 	return (void *)0;
 }
 
+static int charheight(Graphics_info *gi)
+{
+	if (Olgx_Flags(gi) & OLGX_FONTSET) {
+		XFontStruct **fonts;
+		char **font_names;
+		int nfonts;
+
+		nfonts = XFontsOfFontSet(TextFont_Set(gi), &fonts, &font_names);
+		if (nfonts > 0) {
+			XFontStruct *fs = fonts[0];
+			return (MAX(Abbrev_MenuButton_Height(gi),
+				fs->ascent + fs->descent + 2));
+		}
+		else {
+			XRectangle ink, log;
+			XmbTextExtents(TextFont_Set(gi), "Tg", 2, &ink, &log);
+			return (MAX(Abbrev_MenuButton_Height(gi), log.height + 2));
+		}
+	}
+	else {
+		return (MAX(Abbrev_MenuButton_Height(gi),
+				Ascent_of_TextFont(gi) + Descent_of_TextFont(gi) + 2));
+	}
+}
 
 /***************************************************************************
 * global functions
@@ -993,9 +1017,7 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
 					for (i = 0; i < nitems; i++) {
 						if (prop[i] == mv) {
 							paneAttr.height = sh
-									- MAX(Abbrev_MenuButton_Height(gi),
-									Ascent_of_TextFont(gi) +
-									Descent_of_TextFont(gi) + 2)
+									- charheight(gi)
 									- 3 * ResizeArm_Height(gi)
 									- 77;	/* nix da, Knalltuete */
 							needresize = True;
@@ -1017,8 +1039,7 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
 			int sw = DisplayWidth(dpy, scrInfo->screen)
 					- 2 * ResizeArm_Width(gi);
 			int sh = DisplayHeight(dpy, scrInfo->screen)
-					- MAX(Abbrev_MenuButton_Height(gi),
-					Ascent_of_TextFont(gi) + Descent_of_TextFont(gi) + 2)
+					- charheight(gi)
 					- 3 * ResizeArm_Height(gi);
 
 			if (paneAttr.width >= sw) {
