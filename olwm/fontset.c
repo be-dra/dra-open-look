@@ -1,5 +1,5 @@
 /* #ident  "@(#)fontset.c	1.10    93/06/28 SMI" */
-char fontset_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontset.c,v 2.2 2026/08/08 05:04:45 dra Exp $";
+char fontset_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontset.c,v 2.3 2026/08/08 15:30:47 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -436,4 +436,4 @@ fs_cache	*afsc;
 	fprintf(stderr, "Removing none existed font cache\n");
 }
 	
-#endif
+#endif /* OW_I18N_L4 */
