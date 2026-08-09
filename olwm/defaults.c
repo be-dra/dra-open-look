@@ -1,5 +1,5 @@
 /* #ident  "@(#)defaults.c	26.22    93/06/28 SMI" */
-char defaults_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: defaults.c,v 1.3 2026/08/07 18:31:32 dra Exp $";
+char defaults_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: defaults.c,v 1.4 2026/08/08 10:16:24 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -145,21 +145,4 @@ XrmDatabase GetAppDefaults(void)
 
     appDB = XrmGetFileDatabase("/usr/lib/X11/app-defaults/Olwm");
     return appDB;
-}
-
-
-/* ===== global functions ================================================= */
-
-/* 
- * GetDefaults
- *
- * XXX - this has been turned into just a call to InitGlobals().  Does it 
- * still need to exist?
- */
-void
-GetDefaults(dpy, commandlineDB)
-    Display *dpy;
-    XrmDatabase commandlineDB;
-{
-    InitGlobals(dpy, commandlineDB);
 }
