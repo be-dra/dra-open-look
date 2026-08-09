@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.5 2026/08/07 18:30:29 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.6 2026/08/08 15:29:05 dra Exp $ */
 /* #ident	"@(#)properties.h	26.8	93/06/28 SMI" */
 
 /*
@@ -56,7 +56,6 @@ typedef struct {
 
 #define ENTIRE_CONTENTS		(10000000L)
 
-extern	void	*GetWindowProperty();
 
 extern	long	PropListAvailable();
 extern	void	PropSetAvailable();
