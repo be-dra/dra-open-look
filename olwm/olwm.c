@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.8 2026/08/08 05:04:45 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.10 2026/08/08 10:16:24 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -216,9 +216,7 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 		(void)strcpy(locale_dir,OpenWinHome);
 	else
 		(void)strcpy(locale_dir,"/usr");
-	(void)strcat(locale_dir,"/lib/locale");
-	bindtextdomain("olwm_messages",locale_dir);
-       	textdomain("olwm_messages");
+	strcat(locale_dir,"/lib/locale");
 
 	ProgramName = argv[0];
 	argVec = argv;
@@ -266,7 +264,11 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 		numbuttons = 3;
 
 	/* put all resources into global OlwmDB and set olwm variables */
-	GetDefaults(DefDpy, commandlineDB);
+    InitGlobals(DefDpy, commandlineDB);
+	/* now all the locale stuff has been set up */
+
+	bindtextdomain("olwm_messages",locale_dir);
+	textdomain("olwm_messages");
 
 	/* Initialize the event handling system. */
 	InitEvents(DefDpy);
