@@ -1,5 +1,5 @@
 /* #ident	"@(#)environ.c	1.9	93/06/28 SMI" */
-char environ_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: environ.c,v 1.5 2024/08/04 17:37:16 dra Exp $";
+char environ_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: environ.c,v 1.6 2026/08/08 15:28:54 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -16,6 +16,7 @@ char environ_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: environ.c,v 1.5 2024/08/04
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include "mem.h"
+#include "olwm.h"
 #include "atom.h"
 
 extern	char **environ;
@@ -146,7 +147,6 @@ putSunViewEnv(env,dpy,screen)
 	int		i, svEnvLen = sizeof(svEnv)/sizeof(char *);
 	char		*result,*curpos;
 	unsigned long	nitems,remainder;
-	extern void	*GetWindowProperty();
 
 	result = (char *)GetWindowProperty(dpy,RootWindow(dpy,screen),
 			AtomSunViewEnv,0L,100000L,
