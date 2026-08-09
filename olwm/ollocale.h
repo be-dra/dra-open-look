@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: ollocale.h,v 1.3 2026/08/08 05:04:45 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: ollocale.h,v 1.4 2026/08/08 11:15:24 dra Exp $ */
 /* #ident	"@(#)ollocale.h	1.10	93/06/28 SMI" */
 
 /*
@@ -40,4 +40,5 @@ typedef struct _OLLCItem {
 	char	*envName;		/* Will initialize in GRVLCInit() */
 } OLLCItem;
 
+extern Bool _ol_is_multibyte;
 #endif /* _OLLOCALE_H */
