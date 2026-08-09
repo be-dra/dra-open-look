@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: defaults.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: defaults.h,v 1.3 2026/08/08 10:16:24 dra Exp $ */
 /* #ident	"@(#)defaults.h	26.16	93/06/28 SMI" */
 
 /*
@@ -13,7 +13,6 @@
 #ifndef _OLWM_DEFAULTS_H
 #define _OLWM_DEFAULTS_H
 
-extern void GetDefaults();
 extern XrmDatabase GetUserDefaults();
 extern XrmDatabase GetAppDefaults();
 
