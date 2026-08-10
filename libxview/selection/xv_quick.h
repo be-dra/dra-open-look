@@ -2,7 +2,7 @@
 #define xv_quick_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: xv_quick.h,v 1.8 2026/06/26 11:54:09 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: xv_quick.h,v 1.9 2026/08/09 17:58:14 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -45,7 +45,6 @@ typedef enum {
 	QUICK_SELECT_DOWN			= QUICK_ATTR(ATTR_OPAQUE,         6),
 	QUICK_LOC_DRAG				= QUICK_ATTR(ATTR_OPAQUE,         7),
 	QUICK_ADJUST_UP				= QUICK_ATTR(ATTR_OPAQUE,         8),
-	QUICK_FONTINFO				= QUICK_ATTR(ATTR_OPAQUE,         9),
 	QUICK_CLIENT_DATA_SIZE		= QUICK_ATTR(ATTR_LONG,          10), /* CS- */
 	QUICK_CANCEL                = QUICK_ATTR(ATTR_NO_VALUE,      11),
 	QUICK_CLIENT_ITEM			= QUICK_ATTR(ATTR_OPAQUE,        12),
