@@ -1,4 +1,4 @@
-char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.43 2026/07/19 21:58:05 dra Exp $";
+char p_select_c_sccsid[] = "@(#)p_select.c 20.81 93/06/28 DRA: $Id: p_select.c,v 4.44 2026/08/09 18:00:07 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -493,30 +493,6 @@ static void q_remove_underline(Quick_owner qo)
 	qd->priv = NULL;
 }
 
-static XFontStruct *get_fontstruct(Item_info *ip)
-{
-	Graphics_info *gi;
-	XFontStruct *fs;
-
-	gi = image_ginfo(&ip->label);
-	if (gi) {
-		fs = TextFont_Struct(gi);
-	}
-	else {
-		Xv_font font = image_font(&ip->label);
-
-		gi = ip->panel->ginfo;
-		if (font) {
-			fs = (XFontStruct *)xv_get(font, FONT_INFO);
-		}
-		else {
-			fs = TextFont_Struct(gi);
-		}
-	}
-
-	return fs;
-}
-
 static void destroy_quick_owner(Xv_opaque obj, int key, char *data)
 {
 	xv_destroy((Xv_object)data);
@@ -574,7 +550,7 @@ static void start_quick_dup(Panel_item item, Item_info *ip, Event *ev)
 			xv_set(qo,
 				QUICK_BASELINE,
 							(int)xv_get(item, PANEL_ITEM_LABEL_BASELINE)+2,
-				QUICK_FONTINFO, get_fontstruct(ip),
+				XV_FONT, image_font(&ip->label),
 				QUICK_START, s, sx, ex,
 				QUICK_CLIENT_ITEM, item,
 				NULL);
