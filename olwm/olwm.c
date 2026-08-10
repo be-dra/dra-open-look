@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.10 2026/08/08 10:16:24 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.11 2026/08/09 11:15:49 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -151,15 +151,10 @@ void ReapChildren();		/* public -- called from events.c */
 Bool AllPlanesExists;		/* server supports the ALLPLANES extension */
 #endif
 
-#ifdef SHAPE
 Bool ShapeSupported;		/* server supports the SHAPE extension */
 int  ShapeEventBase;
-int  ShapeErrorBase;
 int  ShapeRequestBase;
-#endif
-
-int	numbuttons;		/* number of buttons on the pointer */
-				/*   REMIND: this shouldn't be global */
+static int  ShapeErrorBase;
 
 static char	**argVec;
 
@@ -250,18 +245,9 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 #endif /* ALLPLANES */
 
 
-#ifdef SHAPE
 	ShapeSupported = XQueryExtension(DefDpy, "SHAPE",
 	    &ShapeRequestBase, &ShapeEventBase, &ShapeErrorBase);
-#endif /* SHAPE */
 
-
-	/*
-	 * Determine the number of buttons on the pointer.  Use 3 by default.
-	 */
-	numbuttons = XGetPointerMapping (DefDpy, (unsigned char *)0, 0);
-	if (numbuttons < 1)
-		numbuttons = 3;
 
 	/* put all resources into global OlwmDB and set olwm variables */
     InitGlobals(DefDpy, commandlineDB);
