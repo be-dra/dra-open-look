@@ -1,5 +1,5 @@
 /* #ident	"@(#)evbind.c	1.35	93/06/28 SMI" */
-char evbind_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: evbind.c,v 2.1 2024/09/20 19:59:01 dra Exp $";
+char evbind_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: evbind.c,v 2.2 2026/08/09 11:15:49 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -185,6 +185,8 @@ MouseBinding TwoButtonsWithChording[] = {	/* The Xerox-inspired way */
     { BAD_STATE,	0,		ACTION_NONE		},
 };
 
+static int numbuttons; /* number of buttons on the pointer */
+
 
 /*
  * searchMouseBindings
@@ -208,7 +210,6 @@ searchMouseBindings(pe, action)
     static int first = 1;	/* is this the first time here? */
 
     if (first) {
-	extern int numbuttons;
 	switch (numbuttons) {		/* based on # buttons on pointer */
 	default:
 	case 3:
@@ -1354,6 +1355,13 @@ UpdateBindings(dpy, newDB, regrabKeys)
 void InitBindings(Display *dpy)
 {
 	int i;
+
+	/*
+	 * Determine the number of buttons on the pointer.  Use 3 by default.
+	 */
+	numbuttons = XGetPointerMapping (dpy, (unsigned char *)0, 0);
+	if (numbuttons < 1)
+		numbuttons = 3;
 
     kbdCmdInstanceQ	= XrmStringToQuark("keyboardCommand");
     kbdCmdClassQ	= XrmStringToQuark("KeyboardCommand");
