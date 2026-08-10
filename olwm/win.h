@@ -1,4 +1,4 @@
-/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.10 2026/08/07 18:28:39 dra Exp $ */
+/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.11 2026/08/09 11:15:49 dra Exp $ */
 /* #ident	"@(#)win.h	26.43	93/06/28 SMI" */
 
 /*
@@ -20,13 +20,7 @@
 #include "screen.h"
 #include "i18n.h"
 
-#ifdef SHAPE
-#  ifdef apollo
-#    include <X11/shape.h>
-#  else
-#    include <X11/extensions/shape.h>
-#  endif
-#endif
+#include <X11/extensions/shape.h>
 
 /***************************************************************************
 * Client state structures
@@ -147,9 +141,7 @@ typedef struct _client
 	struct _screeninfo *scrInfo;
 	OLWindowState	*windowState;
 	Window		transientFor;
-#ifdef SHAPE
 	Bool		isShaped;
-#endif
 	Bool		menuAccelerators;
 	struct _clientColorInfo *client_colors; /* non-NIL only for group leaders */
 	Window color_master; /* non-NULL only for popups with _OL_COLOR_FOLLOW */
@@ -544,9 +536,9 @@ extern void WinRemoveChild();
 
 /* globals */
 
-#ifdef SHAPE
 extern Bool ShapeSupported;
 extern int  ShapeEventBase;
+#ifdef NO_SHAPE
 extern int  ShapeErrorBase;
 #endif
 
