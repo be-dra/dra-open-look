@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.10 2026/08/08 16:20:11 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.11 2026/08/09 11:15:49 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -135,10 +135,7 @@ typedef struct {
 /*
  * Determine FocusMode from wmHints and protocols
  */
-static FocusMode
-focusModeFromHintsProtocols(wmHints,protocols)
-	XWMHints	*wmHints;
-	int		protocols;
+static FocusMode focusModeFromHintsProtocols(XWMHints	*wmHints, int protocols)
 {
 	FocusMode	focusMode;
 
@@ -160,10 +157,7 @@ focusModeFromHintsProtocols(wmHints,protocols)
  * matchInstClass -- run through the list of names to be minimally decorated,
  * and see if this window's class or instance match any.
  */
-static Bool
-matchInstClass(str, mc)
-    char *str;
-    minimalclosure *mc;
+static Bool matchInstClass(char *str, minimalclosure *mc)
 {
     if ((mc->class == NULL) || (strcmp(str, mc->class) != 0))
 	return ((mc->instance != NULL) && (strcmp(str, mc->instance) == 0));
@@ -199,12 +193,10 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
 	 */
 	decors->def_item = 0;
 
-#ifdef SHAPE
 	if (cli->isShaped) {
 	    *decors = MinimalWindow;
 	    return decors;
 	}
-#endif
 
 	oldVersion = False;
 
@@ -387,7 +379,8 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
  * request.  When this occurred, the requested position was almost always
  * (1,1) or thereabouts.
  */
-static Bool clientSpecifiedPosition(XSizeHints *normHints, XWindowAttributes	*paneAttr)
+static Bool clientSpecifiedPosition(XSizeHints *normHints,
+								XWindowAttributes	*paneAttr)
 {
 	Bool ret = (normHints->flags & USPosition) ||
 	   ((normHints->flags & PPosition) &&
@@ -401,11 +394,8 @@ static Bool clientSpecifiedPosition(XSizeHints *normHints, XWindowAttributes	*pa
  * if it were mapped at the given location.  Visibility is defined as having 
  * at least one resize-corner width (or height) on the screen.
  */
-static Bool
-frameOnScreen(winFrame, scrInfo, x, y)
-    WinPaneFrame *winFrame;
-    ScreenInfo *scrInfo;
-    int x, y;
+static Bool frameOnScreen(WinPaneFrame *winFrame, ScreenInfo *scrInfo,
+									int x, int y)
 {
     int dx, dy;
     int sw = DisplayWidth(scrInfo->dpy, scrInfo->screen);
@@ -436,7 +426,8 @@ frameOnScreen(winFrame, scrInfo, x, y)
  * Changes the x and y members of the attrs structure; also changes the 
  * screen's notion of the location for the next frame.
  */
-static void calcPosition(Display *dpy, int screen, XWindowAttributes *attrs, WinPaneFrame *frame)
+static void calcPosition(Display *dpy, int screen, XWindowAttributes *attrs,
+								WinPaneFrame *frame)
 {
 	int		stepValue;
 	ScreenInfo	*scrInfo;
@@ -474,9 +465,7 @@ static void calcPosition(Display *dpy, int screen, XWindowAttributes *attrs, Win
 /*
  * iconifyOne -- iconify one client to IconicState from NormalState
  */
-static void *iconifyOne(cli, winIcon)
-Client *cli;
-WinGeneric *winIcon;
+static void *iconifyOne(Client *cli, WinGeneric *winIcon)
 {
 	if (cli->groupmask == GROUP_DEPENDENT)
 		RemoveSelection(cli);
@@ -499,10 +488,7 @@ WinGeneric *winIcon;
 
 /* deiconifyOne -- deiconify one client to NormalState from IconicState
  */
-static void *deiconifyOne(cli, winIcon, raise)
-Client *cli;
-WinGeneric *winIcon;
-Bool raise;
+static void *deiconifyOne(Client *cli, WinGeneric *winIcon, Bool raise)
 {
 	if (cli->groupmask != GROUP_DEPENDENT)
 	    DrawIconToWindowLines(cli->dpy, winIcon, cli->framewin);
@@ -538,10 +524,7 @@ Bool raise;
  * Marks a client's frame window with a given value.  Suitable for calling by
  * ListApply or GroupApply.
  */
-static void *
-markFrame(cli, value)
-    Client *cli;
-    int value;
+static void * markFrame(Client *cli, int value)
 {
     if (cli->framewin != NULL)
 	cli->framewin->core.tag = value;
@@ -552,8 +535,7 @@ markFrame(cli, value)
 /*
  * unmarkAllFrames -- Clear the tag field of the frame window of every client.
  */
-static void *
-unmarkAllFrames()
+static void *unmarkAllFrames(void)
 {
     List *l = ActiveClientList;
     Client *tc;
@@ -577,19 +559,14 @@ printClientList()
     fflush(stdout);
 }
 
-static void *
-printGroupMember(cli, value)
-    Client *cli;
-    int value;
+static void * printGroupMember(Client *cli, int value)
 {
     printf("0x%x\n", (unsigned int) cli);
     return NULL;
 }
 
 
-static void
-printGroupList(id)
-    unsigned long id;
+static void printGroupList(unsigned long id)
 {
     GroupApply(id, printGroupMember, 0,
 	GROUP_LEADER | GROUP_DEPENDENT | GROUP_INDEPENDENT);
@@ -666,7 +643,7 @@ static void deiconifyGroup(Client *cli, WinIconFrame* winIcon)
 					emanation = tmpcli->wmDecors->notice_emanation;
 				}
 			}
-			deiconifyOne(tmpcli, winIcon, False);
+			deiconifyOne(tmpcli, (WinGeneric *)winIcon, False);
 		}
 	}
 
@@ -694,9 +671,7 @@ static void deiconifyGroup(Client *cli, WinIconFrame* winIcon)
  * REMIND we don't update the group data structures while the GroupApply is in
  * progress.  Doing so will corrupt the group data structure.
  */
-static void * promoteDependentFollowers(window, groupid)
-    Window window;
-    Window groupid;
+static void * promoteDependentFollowers(Window window, Window groupid)
 {
     List *l = ActiveClientList;
     Client *cli;
@@ -871,15 +846,13 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
 		return NULL;
 	}
 
-#ifdef SHAPE
 	{
 		Bool bshaped, cshaped;
 		int bx, by, cx, cy;
 		unsigned int bw, bh, cw, ch;
 
-		if (ShapeSupported &&
-				0 != XShapeQueryExtents(dpy, window, &bshaped, &bx, &by,
-						&bw, &bh, &cshaped, &cx, &cy, &cw, &ch)) {
+		if (ShapeSupported && 0 != XShapeQueryExtents(dpy, window, &bshaped,
+						&bx, &by, &bw, &bh, &cshaped, &cx, &cy, &cw, &ch)) {
 			XShapeSelectInput(dpy, window, ShapeNotifyMask);
 			cli->isShaped = bshaped;
 		}
@@ -887,7 +860,6 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
 			cli->isShaped = False;
 		}
 	}
-#endif /* SHAPE */
 
 	/*
 	 * Turn on prop read filtering with set of available properties
@@ -1384,10 +1356,7 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
  * ReparentTree -- called at start up, this routine queries the window
  *	tree and reparents all the windows 
  */
-void
-ReparentTree(dpy,treeroot)
-Display	*dpy;
-Window 	treeroot;
+void ReparentTree(Display	*dpy, Window treeroot)
 {
 	unsigned int numChildren;
 	Window *children, root, parent, w;
@@ -1422,9 +1391,7 @@ Window 	treeroot;
 /* 
  * StateIconic - transition a window to IconicState
  */
-void StateIconic(cli,timestamp)
-Client *cli;
-Time	timestamp;
+void StateIconic(Client *cli, Time	timestamp)
 {
 	WinIconFrame 	*iconInfo = cli->iconwin;
 	WinPaneFrame 	*frameInfo = cli->framewin;
@@ -1459,7 +1426,7 @@ Time	timestamp;
 		 */
 		case GROUP_INDEPENDENT:
 			IconShow(cli, iconInfo);
-			iconifyOne(cli, iconInfo);
+			iconifyOne(cli, (WinGeneric *)iconInfo);
 			GroupApply(PANEWINOFCLIENT(cli), iconifyOne,
 				iconInfo, GROUP_DEPENDENT);
 			break;
@@ -1494,10 +1461,7 @@ Time	timestamp;
 /* 
  * StateNormal - transition a window to NormalState
  */
-void
-StateNormal(cli,timestamp)
-Client *cli;
-Time	timestamp;
+void StateNormal(Client *cli, Time	timestamp)
 {
 	WinIconFrame 	*iconInfo = cli->iconwin;
 	WinPaneFrame 	*frameInfo = cli->framewin;
@@ -1523,7 +1487,7 @@ Time	timestamp;
 
 		/* Map the frame window and any group followers. */
 		if (cli->groupmask == GROUP_DEPENDENT) {
-			deiconifyOne(cli,iconInfo,True);
+			deiconifyOne(cli,(WinGeneric *)iconInfo,True);
 		}
 		else {
 			deiconifyGroup(cli, iconInfo);
@@ -1557,10 +1521,7 @@ Time	timestamp;
  *	structures; clear the client out of all lists it may be
  * 	on; reparent the pane window
  */
-void
-StateWithdrawn(cli,timestamp)
-Client *cli;
-Time	timestamp;
+void StateWithdrawn(Client *cli, Time	timestamp)
 {
 	WinIconFrame 	*iconInfo = cli->iconwin;
 	WinPaneFrame 	*frameInfo = cli->framewin;
@@ -1606,10 +1567,7 @@ Time	timestamp;
  * StateInvisible - transition a window to InvisibleState
  *	Unmap either icon or frame windows and update wmState
  */
-void
-StateInvisible(cli,timestamp)
-Client	*cli;
-Time	timestamp;
+void StateInvisible(Client	*cli, Time	timestamp)
 {
 	WinIconFrame 	*iconInfo = cli->iconwin;
 	WinPaneFrame 	*frameInfo = cli->framewin;
@@ -1651,10 +1609,7 @@ Time	timestamp;
  * Refresh SizeHints from WM_NORMAL_HINTS property.  The new values
  * can simply be copied into the client's normHints.
  */
-void
-StateUpdateWMNormalHints(cli,event)
-	Client		*cli;
-	XPropertyEvent	*event;
+void StateUpdateWMNormalHints(Client *cli, XPropertyEvent	*event)
 {
 	Window		pane;
 	XSizeHints	sizeHints;
@@ -1685,10 +1640,7 @@ StateUpdateWMNormalHints(cli,event)
  * Reapply WMHints from the WM_HINTS property.  Ignore everything but
  * InputHint and Icon{Pixmap/Mask}Hint.
  */
-void
-StateUpdateWMHints(cli,event)
-	Client		*cli;
-	XPropertyEvent	*event;
+void StateUpdateWMHints(Client *cli, XPropertyEvent	*event)
 {
 	Window		pane;
 	XWMHints	wmHints;
@@ -1725,10 +1677,7 @@ StateUpdateWMHints(cli,event)
 /*
  * Reset client protocols and focusMode from WM_PROTOCOLS
  */
-void
-StateUpdateWMProtocols(cli,event)
-	Client		*cli;
-	XPropertyEvent	*event;
+void StateUpdateWMProtocols(Client *cli, XPropertyEvent	*event)
 {
 	Window		pane;
 	int		protocols;
