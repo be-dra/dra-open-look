@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.7 2026/07/31 08:41:04 dra Exp $ ";
+static char     sccsid[] = "@(#)font_x.c 20.33 93/06/28 DRA: RCS $Id: font_x.c,v 4.8 2026/08/10 20:26:10 dra Exp $ ";
 #endif
 #endif
 
@@ -77,8 +77,11 @@ Pkg_private  XFontSet xv_load_font_set(Display *dpy, char *locale,
         *temp_list++ = ',';
         *temp_list = '\0';
     }
-	/* when this ",*" was added, no more missing_charsets were reported */
-	strcat(font_name_list, ",*");
+	/* when this ",*" was added, no more missing_charsets were reported:
+	 *                 strcat(font_name_list, ",*");
+	 * Yes, but we can also suppress the "missing" complaints by use
+	 * of .../lib/locale/*.utf8/OW_FONT_SETS/*.fs
+	 */
 	SERVERTRACE((777, "%s: '%s', locale=%s\n", __FUNCTION__, font_name_list,
 								locale));
 	font_set = XCreateFontSet(dpy, font_name_list, &missing_charsets,
