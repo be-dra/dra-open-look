@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.10 2026/08/07 13:52:44 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.11 2026/08/10 08:41:44 dra Exp $ ";
 #endif
 #endif
 
@@ -192,6 +192,9 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 					OLGX_NORMAL | OLGX_MORE_ARROW);
 		}
 		if (frame->right_footer != NULL) {
+			SERVERTRACE((100, "right footer: %03o %03o\n",
+					(unsigned char)frame->right_footer[0], 
+					(unsigned char)frame->right_footer[1]));
 			olgx_draw_text(frame->ginfo, xv_xid(info), frame->right_footer,
 					footer_width + margin - max_right_width, baseline,
 					max_right_width, OLGX_NORMAL | OLGX_MORE_ARROW);
