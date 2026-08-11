@@ -3,13 +3,31 @@
 
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)gettext.c 50.21 93/06/28 DRA: RCS $Id: gettext.c,v 4.5 2024/12/05 05:59:55 dra Exp $ ";
+static char     sccsid[] = "@(#)gettext.c 50.21 93/06/28 DRA: RCS $Id: gettext.c,v 4.6 2026/08/10 16:29:00 dra Exp $ ";
 #endif
 #endif
 
 #include <xview_private/gettext.h>
 #include <xview/xv_i18n.h>
+#include <libintl.h>
 
+
+/********************************************************************
+ *
+ * Until recently (August 10, 2026), I did not use the real "msgfmt"
+ * because it required some funny header entries. I used 
+ * ..../xview40/util/msgfmt/msgfmt.
+ * However, this, in turn did not work with the 'real' functions
+ * bindtextdomain and dgettext. Therefore, I used the functions here,
+ * but renamed them to xv_dgettext and xv_bindtextdomain.
+ *
+ * Now, I have found out about those header entries, and so, decided
+ * to switch to the "official" msgfmt, dgettext and bindtextdomain.
+ * See the references (jkrdgvtfvjkrfv).
+ *
+ * After a testing period, we can remove pretty much EVERYTHING here....
+ *
+ ********************************************************************/
 static char *_xview_gettext(struct message_so messages, char *);
 
 static struct domain_binding *firstbind=0, *lastbind=0;
@@ -129,80 +147,87 @@ static char *lookupdefbind(char	*domain_name)
 char *xv_bindtextdomain(char *domain_name, unsigned char *binding)
 {
 
-    struct domain_binding *bind;
-    char pathtmp[MAXPATHLEN+1];
+	struct domain_binding *bind;
+	char pathtmp[MAXPATHLEN + 1];
 
-    pathtmp[0] = '\0';
+	if (domain_name) {
+		/* let's try the real bindtextdomain , Ref (jkrdgvtfvjkrfv). */
+		return bindtextdomain(domain_name, (char *)binding);
+	}
 
-    /* Initialize list */
-    if (! firstbind) {
-	initbindinglist();
-    }
+	pathtmp[0] = '\0';
 
-    if (!domain_name) {
-	return (NULL);
-    }
+	/* Initialize list */
+	if (!firstbind) {
+		initbindinglist();
+	}
 
-    if (*domain_name == '\0') {
+	if (!domain_name) {
+		return (NULL);
+	}
+
+	if (*domain_name == '\0') {
+		if (!binding) {
+			/* query, add COOKIE to binding
+			 * return new binding cookie
+			 */
+			pathtmp[0] = (unsigned char)COOKIE;
+			pathtmp[1] = '\0';
+			strcat(pathtmp, firstbind->binding);
+			return (strdup(pathtmp));
+		}
+		else if (binding[0] == COOKIE) {
+			/* result of a previous query,
+			 * restore old binding
+			 */
+			firstbind->binding = strdup((char *)binding + 1);
+			free((char *)binding);
+			return (NULL);
+		}
+		else {
+			/* add binding to default binding list
+			 */
+			strcat(pathtmp, firstbind->binding);
+			free(firstbind->binding);
+			strcat(pathtmp, (char *)binding);
+			strcat(pathtmp, "\n");
+			firstbind->binding = strdup(pathtmp);
+			return (NULL);
+		}
+	}
+
+	/* linear search for binding, rebind if found, add if not */
+	bind = firstbind;
+	while (bind) {
+		if (!strcmp(domain_name, bind->domain_name)) {
+			if (!binding) {
+				return (bind->domain_name);
+			}
+			if (bind->domain_name) {
+				free(bind->domain_name);
+			}
+			if (bind->binding) {
+				free(bind->binding);
+			}
+
+			bind->domain_name = strdup(domain_name);
+			bind->binding = strdup((char *)binding);
+			return (bind->binding);
+		}
+		bind = bind->nextdomain;
+	}
+
+	/* Not found in list, add it to the end */
+
 	if (!binding) {
-	    /* query, add COOKIE to binding
-	     * return new binding cookie
-	    */
-	    pathtmp[0] = (unsigned char) COOKIE;
-	    pathtmp[1] = '\0';
-	    strcat(pathtmp, firstbind->binding);
-	    return (strdup(pathtmp));
-	} else if (binding[0] == COOKIE) {
-	    /* result of a previous query,
-	     * restore old binding
-	    */
-	    firstbind->binding = strdup((char*)binding+1);
-	    free((char *)binding);
-	    return (NULL);
-	} else {
-	    /* add binding to default binding list
-	    */
-	    strcat(pathtmp, firstbind->binding);
-	    free(firstbind->binding);
-	    strcat(pathtmp, (char *)binding);
-	    strcat(pathtmp, "\n");
-	    firstbind->binding = strdup(pathtmp);
-	    return (NULL);
+		return (NULL);
 	}
-    }
-
-    /* linear search for binding, rebind if found, add if not */
-    bind = firstbind;
-    while (bind) {
-	if (!strcmp(domain_name, bind->domain_name)) {
-	    if (!binding) {
-		return(bind->domain_name);
-	    }
-	    if (bind->domain_name) {
-		free(bind->domain_name);
-	    }
-	    if (bind->binding) {
-		free(bind->binding);
-	    }
-
-	    bind->domain_name = strdup(domain_name);
-	    bind->binding = strdup((char *)binding);
-	    return (bind->binding);
-	}
-	bind = bind->nextdomain;
-    }
-
-    /* Not found in list, add it to the end */
-
-    if (!binding) {
-	return (NULL);
-    }
-    lastbind = bind = lastbind->nextdomain =
-	(struct domain_binding *) malloc(sizeof(struct domain_binding));
-    bind->domain_name = strdup(domain_name);
-    bind->binding = strdup((char*)binding);
-    bind->nextdomain = NULL;
-    return (bind->binding);
+	lastbind = bind = lastbind->nextdomain =
+			(struct domain_binding *)malloc(sizeof(struct domain_binding));
+	bind->domain_name = strdup(domain_name);
+	bind->binding = strdup((char *)binding);
+	bind->nextdomain = NULL;
+	return (bind->binding);
 }
 
 static char * findtextdomain(char *domain_name)
@@ -273,6 +298,11 @@ char *xv_dgettext(const char *domain_name, const char *msg_id)
 	caddr_t addr;
 
 	int msg_inc;
+
+	if (msg_id) {
+		/* let's try the real dgettext , Ref (jkrdgvtfvjkrfv). */
+		return dgettext(domain_name, msg_id);
+	}
 
 	if (!gotenv) {
 		char *p = getenv("SHUNT_GETTEXT");
