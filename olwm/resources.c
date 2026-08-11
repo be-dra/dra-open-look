@@ -1,5 +1,5 @@
 /* #ident	"@(#)resources.c	26.75	93/06/28 SMI" */
-char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.7 2026/08/08 16:18:48 dra Exp $";
+char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.8 2026/08/10 16:42:52 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -784,20 +784,10 @@ ResourceItem MainItemTable[] = {
 {	"blackNWhiteWorkspaceColor", "BlackNWhiteWorkspaceColor",	"#999999",
     &(GRV.blackNWhiteWorkspaceColor),	cvtString,		NULL,
     0L },
-{   "menuAccelerators",		"MenuAccelerators",
-#  ifdef OLGX_DIAMOND_MARK
-	"True",
-#  else
-	"False",
-#  endif
+{   "menuAccelerators",		"MenuAccelerators", "False",
     &(GRV.MenuAccelerators),	cvtBoolean,		updMenuAccelerators,
     0L },
-{   "windowMenuAccelerators",	"WindowMenuAccelerators",
-#  ifdef OLGX_DIAMOND_MARK
-	"True",
-#  else
-	"False",
-#  endif
+{   "windowMenuAccelerators",	"WindowMenuAccelerators", "False",
     &(GRV.WindowMenuAccelerators), cvtBoolean,		updMenuAccelerators,
     0L },
 {   "characterSet",		"CharacterSet",		ISO_LATIN_1,
