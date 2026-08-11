@@ -1,4 +1,4 @@
-/*      @(#)i18n_impl.h 1.23 93/06/28 SMI	DRA: RCS: $Id: i18n_impl.h,v 4.5 2026/07/21 10:21:22 dra Exp $ */
+/*      @(#)i18n_impl.h 1.23 93/06/28 SMI	DRA: RCS: $Id: i18n_impl.h,v 4.6 2026/08/10 19:19:21 dra Exp $ */
 /*
  *      (c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
  *      pending in the U.S. and foreign countries. See LEGAL_NOTICE 
@@ -50,7 +50,7 @@
 Xv_private CONST char	*xv_domain;
 #endif /* XGETTEXT */
 
-#define XV_MSG(s)		(xv_dgettext(xv_domain, s))
+#define XV_MSG(s)		(dgettext(xv_domain, s))
 
 #else  /* OS_HAS_LOCALE */
 
