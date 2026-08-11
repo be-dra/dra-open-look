@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.58 2026/08/06 17:17:17 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.59 2026/08/10 16:30:28 dra Exp $";
 #endif
 #endif
 
@@ -4755,6 +4755,11 @@ static void server_set_locale(Server_info  *server)
 	if (defaults_exists("openWindows.forceUsingLocale",
 						"OpenWindows.ForceUsingLocale"))
 	{
+		/* if this is TRUE, we use the system locales - no matter
+		 * what the Ollc_const resorurces (basicLocal, DisplayLang etc)
+		 * and the corresponding cmd line options (-lc_basiclocale etc)
+		 * are - they will be simply ignored
+		 */
 		force_using_locale =defaults_get_boolean("openWindows.forceUsingLocale",
 						"OpenWindows.ForceUsingLocale", FALSE);
 	}
