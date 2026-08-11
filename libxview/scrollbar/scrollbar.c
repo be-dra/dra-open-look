@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.9 2026/08/07 05:18:18 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.10 2026/08/10 16:30:00 dra Exp $ ";
 #endif
 #endif
 
@@ -866,7 +866,7 @@ static void pagewin_paint(Window xid, page_data_t *pn)
 					pn->width, pn->height, OLGX_NORMAL, FALSE);
 	}
 	olgx_draw_text(pn->ginfo, xid, pn->c_pn, pn->hmargin,
-					pn->vmargin + Ascent_of_TextFont(pn->ginfo),
+					pn->vmargin + pn->ascent,
 					0, OLGX_NORMAL);
 }
 
@@ -903,14 +903,26 @@ static void get_page_window(Xv_scrollbar_info *sb)
 
 	pn->yoff = AbbScrollbar_Height(pn->ginfo) / 2;
 	if (_xv_is_multibyte) {
+		XFontStruct **fss;
+		char **names;
+
+		if (XFontsOfFontSet(TextFont_Set(pn->ginfo), &fss, &names) > 0) {
+			XFontStruct *fs = fss[0];
+
+			pn->ascent = fs->ascent;
+			pn->height = pn->ascent + fs->descent + 2 * pn->vmargin;
+		}
+		else {
+			pn->height = 15; /* ??? */
+		}
 		pn->digitwidth = XmbTextEscapement(TextFont_Set(pn->ginfo), "0", 1);
 	}
 	else {
 		pn->digitwidth = XTextWidth(TextFont_Struct(pn->ginfo), "0", 1);
-	}
-	pn->height = Ascent_of_TextFont(pn->ginfo) +
-								Descent_of_TextFont(pn->ginfo) +
+		pn->ascent = Ascent_of_TextFont(pn->ginfo);
+		pn->height = pn->ascent + Descent_of_TextFont(pn->ginfo) +
 								2 * pn->vmargin;
+	}
 
 	sb->page_window = xv_create(xv_get(SCROLLBAR_PUBLIC(sb), XV_ROOT), WINDOW,
 					XV_HEIGHT, pn->height,
