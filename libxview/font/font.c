@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.21 2026/08/04 20:26:31 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.23 2026/08/10 20:27:52 dra Exp $ ";
 #endif
 #endif
 
@@ -571,8 +571,6 @@ static void initialize_locale_info(Font_locale_info *linfo)
 	linfo->known_families = default_family_translation;
 	linfo->known_styles = default_style_translation;
 
-	linfo->default_family = DEFAULT_FONT_FAMILY;
-
 	linfo->default_fixedwidth_family = DEFAULT_FONT_FIXEDWIDTH_FAMILY;
 	linfo->default_style = DEFAULT_FONT_STYLE;
 	linfo->default_weight = DEFAULT_FONT_WEIGHT;
@@ -610,8 +608,7 @@ static Font_locale_info *find_font_locale_info(Xv_opaque server, Attr_avlist avl
 
 	/* create locale specific font set database */
 	if ((str = getenv("OPENWINHOME"))) {
-		sprintf(filename,
-							"%s/lib/locale/%s/OW_FONT_SETS/OpenWindows.fs",
+		sprintf(filename, "%s/lib/locale/%s/OW_FONT_SETS/OpenWindows.fs",
 							str, locale);
 		db = XrmGetFileDatabase(filename);
 	}
@@ -2170,11 +2167,15 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 		char *font_name = (char *)NULL;
 
 		font_list = (Font_info *) xv_get(server, XV_KEY_DATA, fh_key);
-		if (!font_list) {
-			font_free_font_return_attr_strings(&my_attrs);
-			SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,XV_NULL));
-			return XV_NULL;
-		}
+
+		/* event for the first font (maybe OpenWindows.RegularFont), we want
+		 * to reach the OW_FONT_SETS thing
+		 */
+/* 		if (!font_list) { */
+/* 			font_free_font_return_attr_strings(&my_attrs); */
+/* 			SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,XV_NULL)); */
+/* 			return XV_NULL; */
+/* 		} */
 
 		if (my_attrs.specifier) {
 			SERVERTRACE((777, "%s: spec %s\n", __FUNCTION__,my_attrs.specifier));
@@ -2235,9 +2236,15 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 				}
 			}
 		}
-		else {
+#ifdef BEFORE_DRA_CHANGED
+		else
+#else /* BEFORE_DRA_CHANGED */
+		if (! finfo)
+#endif /* BEFORE_DRA_CHANGED */
+		{
 			char key[256];
 
+			font_free_font_return_attr_strings(&my_attrs);
 			font_fill_in_defaults(&my_attrs);
 
 #ifdef SVR4
@@ -2246,7 +2253,9 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 					my_attrs.style ? my_attrs.style : "*",
 					my_attrs.size ? my_attrs.size : 0);
 #else
-			sprintf(key, "%s-%s-%d", my_attrs.family, my_attrs.style,
+			sprintf(key, "%s-%s-%d",
+					my_attrs.family,
+					my_attrs.style ? my_attrs.style : "",
 					my_attrs.size);
 #endif
 
@@ -2263,12 +2272,17 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 				char *str = NULL;
 
 				if (linfo->db) {
+					/* for a working example, see for example
+					 *     .../lib/locale/de_DE.utf8/OW_FONT_SETS/something.fs
+					 */
 					str = get_font_set_list(linfo->db, key);
 				}
 				if (str) {
-					char **names = construct_font_set_list(str);
+					char **names;
 
-					for (finfo = font_list; finfo != NULL; finfo = finfo->next) {
+					SERVERTRACE((777, "%s: str=%s\n", __FUNCTION__,str));
+					names = construct_font_set_list(str);
+					for (finfo = font_list; finfo != NULL; finfo=finfo->next) {
 						if ((linfo == finfo->locale_info) && finfo->name
 								&& names[0]
 								&& (strcmp(names[0], finfo->name) == 0)
@@ -2278,6 +2292,23 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 					}
 					if (names) {
 						free_font_set_list(names);
+					}
+					if (! finfo) {
+						Xv_font other = xv_create(server, FONT,
+												FONT_NAME, str,
+												NULL);
+						SERVERTRACE((777, "other family %s\n",
+										(char *)xv_get(other, FONT_FAMILY)));
+						SERVERTRACE((777, "other style %s\n",
+										(char *)xv_get(other, FONT_STYLE)));
+						SERVERTRACE((777, "other size %d\n",
+										(int)xv_get(other, FONT_SIZE)));
+						font_free_font_return_attr_strings(&my_attrs);
+						return xv_find(server, FONT, 
+										FONT_FAMILY, xv_get(other, FONT_FAMILY),
+										FONT_STYLE, xv_get(other, FONT_STYLE),
+										FONT_SIZE, xv_get(other, FONT_SIZE),
+										NULL);
 					}
 				}
 				else {
