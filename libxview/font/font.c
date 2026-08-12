@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.23 2026/08/10 20:27:52 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.24 2026/08/11 10:06:45 dra Exp $ ";
 #endif
 #endif
 
@@ -2167,15 +2167,11 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 		char *font_name = (char *)NULL;
 
 		font_list = (Font_info *) xv_get(server, XV_KEY_DATA, fh_key);
-
-		/* event for the first font (maybe OpenWindows.RegularFont), we want
-		 * to reach the OW_FONT_SETS thing
-		 */
-/* 		if (!font_list) { */
-/* 			font_free_font_return_attr_strings(&my_attrs); */
-/* 			SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,XV_NULL)); */
-/* 			return XV_NULL; */
-/* 		} */
+		if (!font_list) {
+			font_free_font_return_attr_strings(&my_attrs);
+			SERVERTRACE((777, "%s: return %ld\n", __FUNCTION__,XV_NULL));
+			return XV_NULL;
+		}
 
 		if (my_attrs.specifier) {
 			SERVERTRACE((777, "%s: spec %s\n", __FUNCTION__,my_attrs.specifier));
@@ -2236,15 +2232,9 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 				}
 			}
 		}
-#ifdef BEFORE_DRA_CHANGED
-		else
-#else /* BEFORE_DRA_CHANGED */
-		if (! finfo)
-#endif /* BEFORE_DRA_CHANGED */
-		{
+		else {
 			char key[256];
 
-			font_free_font_return_attr_strings(&my_attrs);
 			font_fill_in_defaults(&my_attrs);
 
 #ifdef SVR4
@@ -2292,23 +2282,6 @@ static Xv_object font_find_font(Xv_opaque parent_public, const Xv_pkg *pkg,
 					}
 					if (names) {
 						free_font_set_list(names);
-					}
-					if (! finfo) {
-						Xv_font other = xv_create(server, FONT,
-												FONT_NAME, str,
-												NULL);
-						SERVERTRACE((777, "other family %s\n",
-										(char *)xv_get(other, FONT_FAMILY)));
-						SERVERTRACE((777, "other style %s\n",
-										(char *)xv_get(other, FONT_STYLE)));
-						SERVERTRACE((777, "other size %d\n",
-										(int)xv_get(other, FONT_SIZE)));
-						font_free_font_return_attr_strings(&my_attrs);
-						return xv_find(server, FONT, 
-										FONT_FAMILY, xv_get(other, FONT_FAMILY),
-										FONT_STYLE, xv_get(other, FONT_STYLE),
-										FONT_SIZE, xv_get(other, FONT_SIZE),
-										NULL);
 					}
 				}
 				else {
