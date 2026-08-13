@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.23 2026/08/04 19:19:43 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.24 2026/08/13 06:05:44 dra Exp $";
 #endif
 
 /*
@@ -568,9 +568,14 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 
 static void dump_hex_stream(const char *tag, const char *buf, int len)
 {
+	static int verbose = -1;
 	int i;
 
-	if (tag) return;
+	if (verbose < 0) {
+		char *v = getenv("XV_TTY_VERBOSE");
+		verbose = (v != 0 ? atoi(v) : 0);
+	}
+	if (verbose == 0) return;
 
 	fprintf(stderr, "--- TRACE [%s] (len=%d) ---\n", tag, len);
 	for (i = 0; i < len; i++) {
