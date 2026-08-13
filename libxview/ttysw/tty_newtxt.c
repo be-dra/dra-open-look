@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.8 2026/08/04 18:21:38 dra Exp $";
+char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.9 2026/08/12 20:08:31 dra Exp $";
 #endif
 
 /*
@@ -403,6 +403,10 @@ Xv_private void tty_newtext(Xv_opaque window, int xbasew, int ybasew, int op,
 			*gc, xbasew, ybasew, string, len);
 	}
 	else {
+		if (len > 1 || *string != '~') {
+			SERVERTRACE((967, "(%d,%d) %d '%*.*s'\n", xbasew, ybasew,len,len,
+											len, string));
+		}
 		(*routine) (display, drawable, *gc, xbasew, ybasew, string, len);
 	}
 }
