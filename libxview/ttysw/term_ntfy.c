@@ -1,5 +1,5 @@
 #ifndef lint
-char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.8 2026/07/30 12:06:21 dra Exp $";
+char     term_ntfy_c_sccsid[] = "@(#)term_ntfy.c 20.60 93/06/28 DRA: $Id: term_ntfy.c,v 4.9 2026/08/24 18:59:26 dra Exp $";
 #endif
 
 /*
@@ -203,7 +203,7 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 #endif
 			&& insert == length)
 			{
-				CHAR input_char = (CHAR) action;
+				char input_char = (char) action;
 
 				/* Following call changes termsw state by side effect. */
 				textsw_replace_i18n(tsw, length - 1, length, &input_char,
@@ -225,7 +225,7 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 					(int)textsw_find_mark_i18n(tsw, termsw->user_mark))) {
 		Textsw_index pattern_start = cmd_start;
 		Textsw_index pattern_end = cmd_start;
-		CHAR newline = (CHAR) '\n';
+		char newline = '\n';
 
 		if (textsw_find_i18n(tsw, &pattern_start, &pattern_end,
 						&newline, 1, 0) == -1
@@ -308,19 +308,25 @@ Pkg_private Notify_value termsw_text_event(Termsw_view termsw_view,
 #else
 			action >= ASCII_FIRST && action <= ISO_LAST)
 #endif
+	{
+		/*
+		 * Pass the event through to the pty, storing it in the ttysw input
+		 * buffer until the notifier triggers code to feed it into the pty
+		 * proper.
+		 */
+		if (event_is_string(event)) {
+			char *p = event_string(event);
 
-{
-	/*
-	 * Pass the event through to the pty, storing it in the ttysw input
-	 * buffer until the notifier triggers code to feed it into the pty
-	 * proper.
-	 */
-	CHAR input_char = (CHAR) action;
+			ttysw_copy_to_input_buffer(ttysw, p, strlen(p));
+		}
+		else {
+			char input_char = (char) action;
 
-	ttysw_copy_to_input_buffer(ttysw, &input_char, 1);
-	ttysw_reset_conditions(ttysw_view);
-	return NOTIFY_DONE;
-}
+			ttysw_copy_to_input_buffer(ttysw, &input_char, 1);
+		}
+		ttysw_reset_conditions(ttysw_view);
+		return NOTIFY_DONE;
+	}
 	else {
 		/* Nice normal event */
 		nv = notify_next_event_func(termsw_view, ev, arg, type);
