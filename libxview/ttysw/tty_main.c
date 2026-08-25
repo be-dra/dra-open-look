@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.24 2026/08/13 06:05:44 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.25 2026/08/24 18:58:54 dra Exp $";
 #endif
 
 /*
@@ -159,6 +159,8 @@ ttysw_pty_output_ok(ttysw)
     return (0);
 }
 
+static int verbose = -1;
+
 /*
  * Write window input to pty.
  *
@@ -167,31 +169,37 @@ ttysw_pty_output_ok(ttysw)
  * make sure that, when in canonical mode, we don't present partial input
  * lines to the application reading from the slave side of the pty.
  */
-#ifdef DEBUG
 static void ttysw_print_debug_string(char *cp, int len)
 {
-    int		    i;
+	int i;
+	unsigned char *ucp;
 
-    putchar('"');
-    for (i=0; i<len; i++) {
-	if (isprint(cp[i]))
-	    putchar(cp[i]);
-	else if (cp[i] == '\033')
-	    printf("<ESC>");
-	else if (cp[i] == '\n')
-	    printf("<NL>");
-	else if (cp[i] == '\r')
-	    printf("<CR>");
-	else if (cp[i] == '\010')
-	    printf("<BS>");
-	else if (iscntrl(cp[i]))
-	    printf("<^%c>", cp[i]+'A'-1);
-	else
-	    printf("<0x%x>", cp[i]);
-    }
-    printf("\"\n");
+	if (verbose < 0) {
+		char *v = getenv("XV_TTY_VERBOSE");
+		verbose = (v != 0 ? atoi(v) : 0);
+	}
+	if (verbose == 0) return;
+	fprintf(stderr, "\nwrite to pty: \"");
+	ucp = (unsigned char *)cp;
+
+	for (i = 0; i < len; i++) {
+		if (isprint(ucp[i]))
+			putc(ucp[i], stderr);
+		else if (ucp[i] == '\033')
+			fprintf(stderr, "<ESC>");
+		else if (ucp[i] == '\n')
+			fprintf(stderr, "<NL>");
+		else if (ucp[i] == '\r')
+			fprintf(stderr, "<CR>");
+		else if (ucp[i] == '\010')
+			fprintf(stderr, "<BS>");
+		else if (iscntrl(ucp[i]))
+			fprintf(stderr, "<^%c>", ucp[i] + 'A' - 1);
+		else
+			fprintf(stderr, "<0x%x>", ucp[i]);
+	}
+	fprintf(stderr, "\"\n");
 }
-#endif /* DEBUG */
 
 Pkg_private void ttysw_pty_output(Ttysw_private ttysw, int pty)
 {
@@ -209,10 +217,7 @@ Pkg_private void ttysw_pty_output(Ttysw_private ttysw, int pty)
 			if (eot_bp >= irbp) {	/* was: > */
 				cc = write(pty, irbp, (size_t)(eot_bp - irbp));
 
-#ifdef DEBUG
-				printf("write to pty: ");
 				ttysw_print_debug_string(irbp, eot_bp - irbp);
-#endif /* DEBUG */
 
 				if (cc > 0)
 					irbp += cc;
@@ -246,10 +251,7 @@ Pkg_private void ttysw_pty_output(Ttysw_private ttysw, int pty)
 			return;
 		cc = write(pty, irbp, (size_t)(iwbp - irbp));
 
-#ifdef DEBUG
-		printf("write to pty: ");
 		ttysw_print_debug_string(irbp, iwbp - irbp);
-#endif /* DEBUG */
 
 		if (cc > 0) {
 			irbp += cc;
@@ -568,7 +570,6 @@ Pkg_private void ttysw_pty_input(Ttysw_private ttysw, int pty)
 
 static void dump_hex_stream(const char *tag, const char *buf, int len)
 {
-	static int verbose = -1;
 	int i;
 
 	if (verbose < 0) {
@@ -928,11 +929,11 @@ static int ttysw_process_keyboard(Ttysw_private ttysw, Event *ev)
 			return (ttysw_domap(ttysw, ev));
 	}
 
-	/* INCOMPLETE  event_is_string(ev) ??? */
 	if ((id >= ASCII_FIRST && id <= ISO_LAST) && (event_is_down(ev))) {
 		if (event_is_string(ev)) {
-			ttysw_input_it(ttysw, event_string(ev),
-								(int)strlen(event_string(ev)));
+			char *p = event_string(ev);
+
+			ttysw_input_it(ttysw, p, (int)strlen(p));
 		}
 		else {
 			char c = (char)id;
