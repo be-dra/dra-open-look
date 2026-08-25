@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.11 2026/08/09 11:15:49 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.13 2026/08/25 06:26:10 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -157,6 +157,23 @@ int  ShapeRequestBase;
 static int  ShapeErrorBase;
 
 static char	**argVec;
+
+/*
+ * The Xlib seems to call (unrequested!!!) XInitThreads.
+ * However, here [[ https://x.org/releases/X11R7.5/doc/libX11/libX11.html ]]
+ * they say
+ * "It is recommended that single-threaded programs not call this function."
+ *
+ * So: let the Multithreadprograms call XInitThreads......
+ *
+ * This is just a hack to navigate around the stupidity of the Xlib people.
+ * They call XInitThreads for nothing - in a single threaded program like olwm.
+ */
+Status XInitThreads(void)
+{
+/* 	fprintf(stderr, "fake XInitThreads called in olwm\n"); */
+	return 0;
+}
 
 /*
  * main	-- parse arguments, perform initialization, call event-loop
