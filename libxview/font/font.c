@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.24 2026/08/11 10:06:45 dra Exp $ ";
+static char     sccsid[] = "@(#)font.c 20.119 93/06/28 DRA: RCS $Id: font.c,v 4.26 2026/08/25 17:55:32 dra Exp $ ";
 #endif
 #endif
 
@@ -1116,6 +1116,7 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 
 	if (my_attrs.orig_name) {
 		free(my_attrs.orig_name);
+		my_attrs.orig_name = NULL;
 	}
 	if (my_attrs.free_names)
 		free_font_set_list(my_attrs.names);
@@ -1146,6 +1147,10 @@ static int font_init(Xv_opaque parent_public, Xv_opaque selfpub,
 			(void)xv_set((Xv_opaque) font_public, XV_INCREMENT_REF_COUNT, NULL);
 		}
 	}
+	/* this solved a memory leak. However, I don't understand why -
+	 * see 33 lines above
+	 */
+	if (my_attrs.orig_name) xv_free(my_attrs.orig_name);
 	SERVERTRACE((777, "%s: %ld end: %s\n", __FUNCTION__,selfpub, font->name));
 	return XV_OK;
 }
@@ -2346,6 +2351,7 @@ static void font_free_font_return_attr_strings(struct font_return_attrs *attrs)
 {
 	if (attrs->orig_name) {
 		free(attrs->orig_name);
+		attrs->orig_name = NULL;
 	}
 	if (attrs->free_name) {
 		free(attrs->name);
@@ -3420,8 +3426,10 @@ static int font_construct_names(Display *display, Font_return_attrs	font_attrs)
 			 *  font_attrs->specifier or font_attrs->name, but it didn't work.
 			 *  So now we'll try to expand font_attrs->name to xlfd name.
 			 */
-			if (font_attrs->orig_name)
+			if (font_attrs->orig_name) {
 				free(font_attrs->orig_name);
+				font_attrs->orig_name = NULL;
+			}
 			font_attrs->name = normalize_font_name(font_attrs->name, linfo);
 
 			/*
@@ -3452,7 +3460,7 @@ static int font_construct_names(Display *display, Font_return_attrs	font_attrs)
 			}
 		}
 
-
+		if (font_attrs->orig_name) xv_free(font_attrs->orig_name);
 		font_attrs->orig_name = xv_strsave(font_attrs->name);
 		base_list[0] = font_attrs->name;
 		base_list[1] = NULL;
@@ -3595,6 +3603,7 @@ static int font_construct_name(Font_return_attrs font_attrs)
 	 * The font name has precedence over other attributes.
 	 */
 	if (font_attrs->name) {
+		if (font_attrs->orig_name) xv_free(font_attrs->orig_name);
 		font_attrs->orig_name = xv_strsave(font_attrs->name);
 
 		font_attrs->name = normalize_font_name(font_attrs->name, linfo);
@@ -3935,14 +3944,10 @@ static void font_init_create_attrs(Font_return_attrs	font_attrs)
     font_attrs->free_setwidthname =
     font_attrs->free_addstylename = (int)0;
 
-    font_attrs->orig_name =
-    font_attrs->name = font_attrs->foundry =
-    font_attrs->family = font_attrs->style =
-    font_attrs->weight = font_attrs->slant =
-    font_attrs->setwidthname =
-    font_attrs->addstylename =
-    font_attrs->encoding =
-    font_attrs->registry = (char *)NULL;
+    font_attrs->orig_name = font_attrs->name = font_attrs->foundry =
+    font_attrs->family = font_attrs->style = font_attrs->weight =
+	font_attrs->slant = font_attrs->setwidthname = font_attrs->addstylename =
+    font_attrs->encoding = font_attrs->registry = (char *)NULL;
     font_attrs->delim_used = '\0';
 
     font_attrs->size = (int) FONT_NO_SIZE;
