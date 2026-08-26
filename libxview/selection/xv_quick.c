@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.14 2026/07/09 16:11:34 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.15 2026/08/25 18:02:39 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -47,8 +47,8 @@ typedef void (*remove_underline_t)(Quick_owner);
 
 typedef struct {
     Quick_owner public_self;  /* back pointer to public object */
-	int startx; /* left end of underlining */
-	int endx; /* right end of underlining */
+	int startx; /* left end of underlining in pixels */
+	int endx; /* right end of underlining in pixels */
 	int xpos[MAX_SELECTED];
 	int startindex, endindex;
 	unsigned long reply_data;
@@ -62,7 +62,8 @@ typedef struct {
 	int baseline;
 	int multiclick_timeout_ms;
 	char delimtab[256];   /* TRUE= character is a word delimiter */
-	XFontStruct *fs;
+	Xv_font font;
+	XFontStruct *xfs;
 	Xv_opaque client_data;
 	Xv_opaque client_item;
 	int full_startx;
@@ -129,8 +130,7 @@ static int quick_init(Xv_Window parent, Quick_owner self, Attr_avlist avlist,
 		priv->delimtab[(int)*delims] = TRUE;
 	}
 
-	priv->fs = (XFontStruct *)xv_get(xv_get(parent, XV_FONT), FONT_INFO);
-
+	priv->font = xv_get(parent, XV_FONT);
 	return XV_OK;
 }
 
@@ -239,22 +239,41 @@ static int determine_multiclick(int multitimeMS,
 	return (deltaMS <= multitimeMS);
 }   
 
-static void mouse_to_charpos(Quick_private_t *priv, int mx, char *s,
+static void mouse_to_charpos(Quick_private_t *priv, int mouse_x, char *s,
 									int *sx, int *startindex)
 {
 	int i, len = strlen(s);
 	int outsx = *sx, outstartidx = *startindex;
 
-	for (i = 0; i < len; i++) {
-		priv->xpos[i] = *sx;
-		if (priv->fs->per_char)  {
-			*sx += priv->fs->per_char[(u_char)s[i]
-						- priv->fs->min_char_or_byte2].width;
+	if (_xv_is_multibyte) {
+		int clen;
+		XFontSet fs = (XFontSet)xv_get(priv->font, FONT_SET_ID);
+		for (i = 0; i < len && s[i]; ) {
+			priv->xpos[i] = *sx;
+			clen = mblen(s + i, MB_CUR_MAX);
+			if (clen < 1) clen = 1;
+
+			*sx += XmbTextEscapement(fs, (const char *)s + i, clen);
+			if (mouse_x >= priv->xpos[i] && mouse_x < *sx) {
+				outsx = priv->xpos[i];
+				outstartidx = i;
+			}
+
+			i += clen;
 		}
-		else *sx += priv->fs->min_bounds.width;
-		if (mx >= priv->xpos[i] && mx < *sx) {
-			outsx = priv->xpos[i];
-			outstartidx = i;
+	}
+	else {
+		XFontStruct *fs = (XFontStruct *)xv_get(priv->font, FONT_INFO);
+		for (i = 0; i < len; i++) {
+			priv->xpos[i] = *sx;
+			if (fs->per_char)  {
+				*sx += fs->per_char[(u_char)s[i]-fs->min_char_or_byte2].width;
+			}
+			else *sx += fs->min_bounds.width;
+			if (mouse_x >= priv->xpos[i] && mouse_x < *sx) {
+				outsx = priv->xpos[i];
+				outstartidx = i;
+			}
 		}
 	}
 	priv->xpos[i] = *sx;
@@ -268,7 +287,6 @@ static void select_word(Quick_private_t *priv, char *s, int sx)
 {
 	int i;
 	int cwidth;
-	XFontStruct *fs = priv->fs;
 
 	/* I need a new startindex <= qd->startindex
 	 * and a new startx <= qd->startx
@@ -278,10 +296,17 @@ static void select_word(Quick_private_t *priv, char *s, int sx)
 
 	i = priv->startindex;
 	if (priv->delimtab[(int)s[i]]) {
-		if (fs->per_char)  {
-			cwidth = fs->per_char[(u_char)s[i] - fs->min_char_or_byte2].width;
+		if (_xv_is_multibyte) {
+			XFontSet fs = (XFontSet)xv_get(priv->font, FONT_SET_ID);
+			cwidth = XmbTextEscapement(fs, (const char *)s + i, 1);
 		}
-		else cwidth = fs->min_bounds.width;
+		else {
+			XFontStruct *fs = (XFontStruct *)xv_get(priv->font, FONT_INFO);
+			if (fs->per_char)  {
+				cwidth =fs->per_char[(u_char)s[i]-fs->min_char_or_byte2].width;
+			}
+			else cwidth = fs->min_bounds.width;
+		}
 		priv->endindex = priv->startindex;
 		priv->endx = priv->startx + cwidth;
 	}
@@ -295,32 +320,69 @@ static void select_word(Quick_private_t *priv, char *s, int sx)
 			/* no need to walk back - there is no 'back' */
 		}
 		else {
-			for (i = priv->startindex-1; i >= 0 && ! priv->delimtab[(int)s[i]]; i--)
+			if (_xv_is_multibyte) {
+				XFontSet fs = (XFontSet)xv_get(priv->font, FONT_SET_ID);
+
+				for (i = xv_utf8_prev_char_offset(s, priv->startindex);
+					i >= 0 && ! priv->delimtab[(int)s[i]];
+					i = xv_utf8_prev_char_offset(s, i))
+				{
+					int clen = mblen(s + i, MB_CUR_MAX);
+					cwidth = XmbTextEscapement(fs, (const char *)s + i, clen);
+					cwid_sum += cwidth;
+				}
+				if (i < 0) priv->startindex = 0;
+				else priv->startindex = i;   /* + 1 ???? */
+				priv->startx = priv->startx - cwid_sum;
+			}
+			else {
+				XFontStruct *fs = (XFontStruct *)xv_get(priv->font, FONT_INFO);
+
+				for (i = priv->startindex-1; i >= 0 && ! priv->delimtab[(int)s[i]]; i--)
+				{
+					if (fs->per_char)  {
+						cwidth = fs->per_char[(u_char)s[i]-fs->min_char_or_byte2].width;
+					}
+					else cwidth = fs->min_bounds.width;
+					cwid_sum += cwidth;
+				}
+				if (i < 0) priv->startindex = 0;
+				else priv->startindex = i + 1;
+				priv->startx = priv->startx - cwid_sum;
+			}
+		}
+
+		/* now we walk forward until the end of the word */
+		cwid_sum = 0;
+		if (_xv_is_multibyte) {
+			XFontSet fs = (XFontSet)xv_get(priv->font, FONT_SET_ID);
+
+			for (i = priv->startindex; i < len && ! priv->delimtab[(int)s[i]];)
 			{
+				int clen = mblen(s + i, MB_CUR_MAX);
+				cwidth = XmbTextEscapement(fs, (const char *)s + i, clen);
+				cwid_sum += cwidth;
+			}
+			if (i >= len) priv->endindex = len - 1;  /* ???? */
+			else if (i == 0) priv->endindex = 0;
+			else priv->endindex = i - 1;     /* ???? */
+			priv->endx = priv->startx + cwid_sum;
+		}
+		else {
+			XFontStruct *fs = (XFontStruct *)xv_get(priv->font, FONT_INFO);
+
+			for (i = priv->startindex; i < len && ! priv->delimtab[(int)s[i]]; i++) {
 				if (fs->per_char)  {
 					cwidth = fs->per_char[(u_char)s[i]-fs->min_char_or_byte2].width;
 				}
 				else cwidth = fs->min_bounds.width;
 				cwid_sum += cwidth;
 			}
-			if (i < 0) priv->startindex = 0;
-			else priv->startindex = i + 1;
-			priv->startx = priv->startx - cwid_sum;
+			if (i >= len) priv->endindex = len - 1;
+			else if (i == 0) priv->endindex = 0;
+			else priv->endindex = i - 1;
+			priv->endx = priv->startx + cwid_sum;
 		}
-
-		/* now we walk forward until the end of the word */
-		cwid_sum = 0;
-		for (i = priv->startindex; i < len && ! priv->delimtab[(int)s[i]]; i++) {
-			if (fs->per_char)  {
-				cwidth = fs->per_char[(u_char)s[i]-fs->min_char_or_byte2].width;
-			}
-			else cwidth = fs->min_bounds.width;
-			cwid_sum += cwidth;
-		}
-		if (i >= len) priv->endindex = len - 1;
-		else if (i == 0) priv->endindex = 0;
-		else priv->endindex = i - 1;
-		priv->endx = priv->startx + cwid_sum;
 	}
 }
 
@@ -399,7 +461,7 @@ static void quick_select_down(Quick_private_t *priv, Event *ev)
 	}
 }
 
-static int update_secondary(Quick_private_t *priv, int mx)
+static int update_secondary(Quick_private_t *priv, int mouse_x)
 {
 	int *xp = priv->xpos;
 	int len, i;
@@ -411,7 +473,7 @@ static int update_secondary(Quick_private_t *priv, int mx)
 	len = strlen(priv->full_text);
 
 	for (i = 0; i < len; i++) {
-		if (mx >= xp[i] && mx < xp[i+1]) {
+		if (mouse_x >= xp[i] && mouse_x < xp[i+1]) {
 			priv->endx = xp[i+1];
 			priv->endindex = i;
 			break;
@@ -567,16 +629,11 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 				ADONE;
 
 			case QUICK_BASELINE: priv->baseline = (int)A1; ADONE;
-			case QUICK_FONTINFO: priv->fs = (XFontStruct *)A1; ADONE;
 			case QUICK_CLIENT_DATA_SIZE:
 				priv->client_data = (Xv_opaque)xv_alloc_func((size_t)A1);
 				ADONE;
 
-			case XV_FONT: {
-					Xv_font f = (Xv_font)A1;
-					priv->fs = (XFontStruct *)xv_get(f, FONT_INFO);
-				}
-				ADONE;
+			case XV_FONT: priv->font = (Xv_font)A1; ADONE;
 
 			case QUICK_REMOVE_UNDERLINE_PROC:
 				priv->remove_underline = (remove_underline_t)A1;
