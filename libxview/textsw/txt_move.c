@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.54 2026/07/30 07:56:48 dra Exp $";
+char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.55 2026/08/25 16:02:25 dra Exp $";
 #endif
 
 /*
@@ -99,7 +99,7 @@ static int DndConvertProc(Dnd dnd, Atom *type, Xv_opaque *data,
 	}
 
 	/* this would also be handled in sel_own.c - however, we also want
-	 * to destroy the (temporary dnd object
+	 * to destroy the (temporary) dnd object
 	 */
 	if (*type == priv->atoms.dragdrop_done) {
 		xv_set(dnd, SEL_OWN, False, NULL);
@@ -190,6 +190,7 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 	Es_index to_read;
 	int len;
 	Drag_drop dnd;
+	Atom *tl;
 
 	ev_get_selection(priv->views, &first, &last_plus_one, EV_SEL_PRIMARY);
 	if (first + SELECTION_BUF_SIZE > last_plus_one)
@@ -236,6 +237,8 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 	 * but after dnd_send_drop, you may have still a lot of LOC_DRAG
 	 * (or rather, MotionNotify) events for the view in the queue
 	 */
+
+	/* please note that this object will be destroyed in DndConvertProc */
     dnd = xv_create(public_view, DRAGDROP,
 			SEL_CONVERT_PROC,	DndConvertProc,
 			SEL_DONE_PROC,      dnd_done_proc,
@@ -256,10 +259,8 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 				NULL);
     xv_set(dnd, XV_KEY_DATA, dnd_view_key, view, NULL);
 
-#ifdef NO_XDND
-#else /* NO_XDND */
 	if (! xv_get(dnd, XV_KEY_DATA, SEL_NEXT_ITEM)) {
-		Atom *tl = xv_calloc(4, (unsigned)sizeof(Atom));
+		tl = xv_calloc(4, (unsigned)sizeof(Atom));
 
 		tl[0] = XA_STRING;
 		tl[1] = priv->atoms.text;
@@ -270,7 +271,7 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 				XV_KEY_DATA_REMOVE_PROC, SEL_NEXT_ITEM, free_dnd_keys,
 				NULL);
 	}
-#endif /* NO_XDND */
+
 	SERVERTRACE((333, "before dnd_send_drop(%ld)\n", dnd));
     if ((dnd_status = dnd_send_drop(dnd)) != XV_OK) {
        if (dnd_status != DND_ABORTED)
