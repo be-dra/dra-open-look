@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.58 2026/08/03 15:23:39 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.59 2026/08/26 15:55:23 dra Exp $";
 #endif
 #endif
 
@@ -2486,7 +2486,7 @@ static int process_clientmessage_events(Xv_object window,
 					msg_y = clientmessage->data.l[2] & 0xffff;
 					if (clientmessage->data.l[4] & DND_FORWARDED_FLAG)
 						event_forwarded = DND_FORWARDED;
-					}
+				}
 				else {
 					/* new preview */
 					/* Decode the x, y position in top level coord space */
