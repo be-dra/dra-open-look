@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.10 2026/07/18 20:28:11 dra Exp $ ";
+static char     sccsid[] = "@(#)file_chsr.c 1.60 93/06/28  DRA: RCS $Id: file_chsr.c,v 4.12 2026/08/26 20:36:23 dra Exp $ ";
 #endif
 #endif
 
@@ -1098,6 +1098,7 @@ static void fc_create_ui(Fc_private *private)
 		private->ui.pattern_text = xv_create(private->ui.panel, PANEL_TEXT,
 				XV_KEY_DATA, fc_key, private,
 				XV_HELP_DATA, "xview:pattern_text",
+				PANEL_ALLOW_FILE_DROP, FALSE,
 				PANEL_LABEL_STRING, XV_MSG("Pattern:"),
 				PANEL_VALUE, (private->state->filter_string)
 								? private->state->filter_string
