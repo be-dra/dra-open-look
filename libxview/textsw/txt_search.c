@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_search_c_sccsid[] = "@(#)txt_search.c 20.45 93/06/28 DRA: $Id: txt_search.c,v 4.11 2026/07/30 08:09:47 dra Exp $";
+char     txt_search_c_sccsid[] = "@(#)txt_search.c 20.45 93/06/28 DRA: $Id: txt_search.c,v 4.13 2026/08/26 20:40:01 dra Exp $";
 #endif
 
 /*
@@ -313,6 +313,7 @@ static Panel create_search_items(Frame fram, Textsw_view_private view,int tf_key
 				PANEL_VALUE, search_string,
 				XV_HELP_DATA, textsw_make_help(tsw, "findstring"),
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, textsw_free_help,
+				PANEL_ALLOW_FILE_DROP, FALSE,
 				NULL);
 
 	wrap = xv_create(panel, PANEL_CYCLE,
@@ -334,6 +335,7 @@ static Panel create_search_items(Frame fram, Textsw_view_private view,int tf_key
 				XV_HELP_DATA, textsw_make_help(tsw, "replacestring"),
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, textsw_free_help,
 				XV_KEY_DATA, key_inact_when_ro, TRUE,
+				PANEL_ALLOW_FILE_DROP, FALSE,
 				PANEL_INACTIVE, ro,
 				NULL);
 
