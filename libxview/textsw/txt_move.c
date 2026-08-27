@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.55 2026/08/25 16:02:25 dra Exp $";
+char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.56 2026/08/26 12:10:49 dra Exp $";
 #endif
 
 /*
@@ -190,7 +190,6 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 	Es_index to_read;
 	int len;
 	Drag_drop dnd;
-	Atom *tl;
 
 	ev_get_selection(priv->views, &first, &last_plus_one, EV_SEL_PRIMARY);
 	if (first + SELECTION_BUF_SIZE > last_plus_one)
@@ -259,16 +258,13 @@ Pkg_private void textsw_do_drag_copy_move(Textsw_view_private view, Event *ie, i
 				NULL);
     xv_set(dnd, XV_KEY_DATA, dnd_view_key, view, NULL);
 
-	if (! xv_get(dnd, XV_KEY_DATA, SEL_NEXT_ITEM)) {
-		tl = xv_calloc(4, (unsigned)sizeof(Atom));
-
-		tl[0] = XA_STRING;
-		tl[1] = priv->atoms.text;
-		tl[2] = priv->atoms.plain;
-
+	if (! xv_get(dnd, DND_BASIC_DATA_ATOMS)) {
 		xv_set(dnd,
-				XV_KEY_DATA, SEL_NEXT_ITEM, tl,
-				XV_KEY_DATA_REMOVE_PROC, SEL_NEXT_ITEM, free_dnd_keys,
+				DND_BASIC_DATA_ATOMS,
+					XA_STRING,
+					priv->atoms.text,
+					priv->atoms.plain,
+					NULL,
 				NULL);
 	}
 
