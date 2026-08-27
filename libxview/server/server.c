@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.59 2026/08/10 16:30:28 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.61 2026/08/26 20:40:58 dra Exp $";
 #endif
 #endif
 
@@ -3820,6 +3820,7 @@ static void fill_me(Frame prop)
 					XV_HELP_DATA, "windowprops:xvwp_xpos",
 					FRAME_PROPS_CONVERTER, convert_num_string, inst,
 					FRAME_PROPS_DATA_OFFSET, OFF(x),
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					NULL,
 				FRAME_PROPS_CREATE_ITEM,
 					FRAME_PROPS_ITEM_SPEC,
@@ -3837,6 +3838,7 @@ static void fill_me(Frame prop)
 					XV_HELP_DATA, "windowprops:xvwp_ypos",
 					FRAME_PROPS_CONVERTER, convert_num_string, inst,
 					FRAME_PROPS_DATA_OFFSET, OFF(y),
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					NULL,
 				FRAME_PROPS_CREATE_ITEM,
 					FRAME_PROPS_ITEM_SPEC,
@@ -3893,6 +3895,7 @@ static void fill_me(Frame prop)
 					XV_HELP_DATA, "windowprops:xvwp_iconxpos",
 					FRAME_PROPS_CONVERTER, convert_num_string, inst,
 					FRAME_PROPS_DATA_OFFSET, OFF(icon_x),
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					NULL,
 				FRAME_PROPS_CREATE_ITEM,
 					FRAME_PROPS_ITEM_SPEC,
@@ -3910,6 +3913,7 @@ static void fill_me(Frame prop)
 					XV_HELP_DATA, "windowprops:xvwp_iconypos",
 					FRAME_PROPS_CONVERTER, convert_num_string, inst,
 					FRAME_PROPS_DATA_OFFSET, OFF(icon_y),
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					NULL,
 				NULL);
 
