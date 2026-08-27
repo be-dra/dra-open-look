@@ -1,4 +1,4 @@
-/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.4 2026/07/19 13:32:56 dra Exp $      */
+/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.6 2026/08/26 20:27:18 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -188,7 +188,7 @@ typedef enum {
 	XV_APP_HELP_FILE         = XV_ATTR(ATTR_STRING,	114), /* CSG */
 	XV_WANT_ROWS_AND_COLUMNS = XV_ATTR(ATTR_BOOLEAN, 109), /* CSG */
 	XV_SET_POPUP             = XV_ALIST(ATTR_ENUM, 108),   /* CS- */
-	XV_SET_MENU              = XV_ATTR(ATTR_OPAQUE, 107),   /* CS- */
+	XV_SET_MENU              = XV_ATTR(ATTR_OPAQUE, 107),  /* CS- */
 
 	/*
 	 * Mouseless Model support
