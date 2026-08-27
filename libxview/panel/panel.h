@@ -1,4 +1,4 @@
-/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.9 2026/07/19 21:58:25 dra Exp $	*/
+/*	@(#)panel.h 20.102 93/06/28 SMI  DRA: $Id: panel.h,v 4.10 2026/08/26 20:32:24 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -386,6 +386,7 @@ typedef enum {
 
 	/* Panel_text_item attributes */
 	PANEL_TEXT_SELECT_LINE	= PANEL_ATTR(ATTR_NO_VALUE,		 210),
+	PANEL_ALLOW_FILE_DROP 	= PANEL_ATTR(ATTR_BOOLEAN,		 232),
 
 	/* Panel_subwin_item attributes */
 	PANEL_WINDOW_CLASS = PANEL_ATTR(ATTR_OPAQUE, 221),                /* C-- */
