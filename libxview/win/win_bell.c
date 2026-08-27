@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_bell.c 20.20 93/06/28 DRA: $Id: win_bell.c,v 4.1 2024/03/28 19:28:19 dra Exp $";
+static char     sccsid[] = "@(#)win_bell.c 20.20 93/06/28 DRA: $Id: win_bell.c,v 4.2 2026/08/26 15:55:23 dra Exp $";
 #endif
 #endif
 
@@ -33,18 +33,22 @@ static Bool     win_do_audible_bell;
 static Bool     win_do_visible_bell;
 static int      win_bell_done_init;
 
-static Defaults_pairs bell_types[] = {
-	{ "never",   0 },
-	{ "notices", 0 }, 
-	{ "always",  1 },
-	{ NULL,      1 }
-};
-
 /*
  * Ring bell and flash window
  */
 void win_bell(Xv_object window, struct timeval tv, Xv_object pw)
 {
+	static Defaults_pairs bell_types[] = {
+		{ "never",   0 },
+		{ "notices", 0 },  /* notices do their own handling and directly call
+							* win_beep in cases "notices" and "always" 
+							* So, if we come here, it is not called from a
+							* notice....
+							*/
+		{ "always",  1 },
+		{ NULL,      1 }
+	};
+
 	Xv_Drawable_info *info;
 	Display *display;
 	Rect r;
@@ -65,12 +69,13 @@ void win_bell(Xv_object window, struct timeval tv, Xv_object pw)
 		(void)win_getsize(window, &r);
 		(void)pw_writebackground(pw, 0, 0,
 				r.r_width, r.r_height, PIX_NOT(PIX_DST));
+/* #define pw_writebackground(dpw, dx, dy, w, h, op) \ */
+/* 		xv_rop(dpw, dx, dy, w, h, op, (Pixrect *)NULL, 0, 0) */
+/* so, this becomes: xv_rop(pw, 0, 0, w, h, PIX_NOT(PIX_DST), NULL, 0, 0) */
 	}
 
 	/* Ring bell */
-	/* BUG: is this right? */
-	if (win_do_audible_bell)
-		win_beep(display, tv);
+	if (win_do_audible_bell) win_beep(display, tv);
 
 	/* Turn off flash */
 	if (pw && win_do_visible_bell) {
