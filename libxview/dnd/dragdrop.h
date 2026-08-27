@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.3 2026/02/04 13:05:09 dra Exp $ ";
+static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.5 2026/08/26 11:52:00 dra Exp $ ";
 #endif
 #endif
 
@@ -68,7 +68,7 @@ typedef enum {
  */
 #define dnd_site_id(event)      (event->ie_xevent->xclient.data.l[3])
 
-			/* Private defines */
+/* Private defines */
 #define DND_MOVE_FLAG           (1<<0)
 #define DND_ACK_FLAG            (1<<1)
 #define DND_TRANSIENT_FLAG      (1<<2)
@@ -77,8 +77,6 @@ typedef enum {
 #define DND_LOCAL               (1<<0)
 #define DND_FORWARDED           (1<<1)
 #define DND_IS_XDND             (1<<7)
-
-
 
 /* 
  * Public attributes
@@ -93,6 +91,8 @@ typedef enum {
 	DND_REJECT_CURSOR		= DND_ATTR(ATTR_OPAQUE,		45),
 	DND_REJECT_X_CURSOR		= DND_ATTR(ATTR_LONG,		50),
 	DND_TIMEOUT_VALUE		= DND_ATTR(ATTR_LONG,		25),
+	DND_BASIC_DATA_NAMES    = DND_ATTR_LIST(ATTR_NULL, ATTR_STRING,	  22),
+	DND_BASIC_DATA_ATOMS    = DND_ATTR_LIST(ATTR_NULL, ATTR_LONG,	  23),
 	/* Private Drop Site Item attrs */
 	DROP_SITE_SIZE			= DND_ATTR(ATTR_INT,		95),
 	/* Public Drop Site Item attrs */
