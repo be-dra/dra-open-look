@@ -1,4 +1,4 @@
-/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.16 2026/08/06 08:45:17 dra Exp $	*/
+/*	@(#)panel_impl.h 20.90 93/06/28 SMI  DRA: $Id: panel_impl.h,v 4.17 2026/08/26 19:33:30 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -89,6 +89,7 @@ typedef struct panel_info {
 		Atom		seln_yield;
 		Atom		compound_text;
 		Atom		length_chars;
+		Atom        file_name;
     } atom;
     Xv_Font		bold_font;
     XFontSet		bold_fontset_id;
