@@ -26,7 +26,7 @@
 #include <xview/accel.h>
 #include <xview_private/i18n_impl.h>
 
-char accel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: accel.c,v 4.8 2025/06/28 13:34:13 dra Exp $";
+char accel_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: accel.c,v 4.10 2026/08/26 20:34:58 dra Exp $";
 
 #define ADOFF(f) FP_OFF(Accel_descr_t *,f)
 
@@ -546,6 +546,7 @@ static void create_items(Accel_private *priv)
 					PANEL_VALUE_STORED_LENGTH, 100,
 					FRAME_PROPS_DATA_OFFSET, ADOFF(keysymname),
 					FRAME_PROPS_SLAVE_OF, list,
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					XV_HELP_DATA, make_help(priv, "keysymname"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 					NULL,
