@@ -1,4 +1,4 @@
-char panel_c_sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.20 2026/07/19 21:58:14 dra Exp $";
+char panel_c_sccsid[] = "@(#)panel.c 20.84 93/06/28 DRA: $Id: panel.c,v 4.21 2026/08/26 19:33:39 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -92,6 +92,7 @@ static int panel_init(Xv_Window parent, Xv_window panel_public, Attr_avlist     
 	    (Atom) xv_get(server, SERVER_ATOM, "COMPOUND_TEXT");
     panel->atom.length_chars =
 	    (Atom) xv_get(server, SERVER_ATOM, "LENGTH_CHARS");
+    panel->atom.file_name = (Atom) xv_get(server, SERVER_ATOM, "FILE_NAME");
     panel->atom.clipboard = (Atom) xv_get(server, SERVER_ATOM, "CLIPBOARD");
     panel->atom.delete = (Atom) xv_get(server, SERVER_ATOM, "DELETE");
     panel->atom.length = (Atom) xv_get(server, SERVER_ATOM, "LENGTH");
