@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_line_c_sccsid[] = "@(#)txt_line.c 1.26 93/06/28 DRA: $Id: txt_line.c,v 4.5 2024/11/01 11:51:35 dra Exp $";
+char     txt_line_c_sccsid[] = "@(#)txt_line.c 1.26 93/06/28 DRA: $Id: txt_line.c,v 4.7 2026/08/26 20:40:01 dra Exp $";
 #endif
 
 /*
@@ -118,6 +118,7 @@ Pkg_private void textsw_create_sel_line_panel(Frame frame, Textsw_view_private v
 			PANEL_LABEL_STRING, XV_MSG("Line Number:"),
 			XV_HELP_DATA, textsw_make_help(tsw, "linenumber"),
 			XV_KEY_DATA_REMOVE_PROC, XV_HELP, textsw_free_help,
+			PANEL_ALLOW_FILE_DROP, FALSE,
 			NULL);
 
     xv_set(panel, PANEL_CARET_ITEM, tf, NULL);
