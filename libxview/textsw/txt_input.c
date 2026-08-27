@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.43 2026/08/01 08:42:47 dra Exp $";
+char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.44 2026/08/26 19:58:52 dra Exp $";
 #endif
 
 /*
@@ -888,6 +888,15 @@ static int textsw_mouse_event(Textsw_view_private view, Event *ie)
 				textsw_flush_caches(view, TFC_STD);
 
 				textsw_do_menu(view, ie);
+			}
+			break;
+		case ACTION_DRAG_PREVIEW:
+			/* if an application wants to support other drops, it
+			 * will have to use notify_interpoe_event_func and
+			 * handle ACTION_DRAG_PREVIEW there...
+			 */
+			if (event_id(ie) == LOC_WINENTER) {
+				dnd_reject_unless(ie, XA_STRING, NULL);
 			}
 			break;
 		case ACTION_DRAG_MOVE:
