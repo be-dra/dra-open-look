@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.30 2026/08/06 13:51:45 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.32 2026/08/26 12:51:12 dra Exp $ ";
 #endif
 #endif
 
@@ -133,6 +133,8 @@ typedef struct dnd_info {
     int			 lastSiteIndex;
     int			 eventSiteIndex;
     unsigned int	 numSites;
+	Atom         *basic_data_atoms;
+	int           num_bda;
     /* DND_HACK begin */
     short		 is_old;
     /* DND_HACK end */
@@ -616,7 +618,7 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 				 * However, if I send such a preview event to a client that
 				 * is running against the 'standard' XView library, it will
 				 * not understand.
-				 * Our new XView clients set the bit
+				 * Our new XView4.0 clients set the bit
 				 * DND_EXPECT_NEW_PREVIEW_EVENT in their drop sites - so we
 				 * can recognize them.
 				 */
@@ -632,7 +634,7 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 											& DND_EXPECT_NEW_PREVIEW_EVENT)
 				{
 					unsigned event_forwarded = 0;
-					/* there is a new application that know about
+					/* there is a new application that knows about
 					 * the new preview event
 					 */
 					if (dnd->siteRects[dnd->eventSiteIndex].flags
@@ -1715,16 +1717,20 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	 * 
 	 * Convention: this atom list should contain ONLY atoms that
 	 * describe the 'main data type' of the dragged data.
+	 *
+	 * (26.08.2026) we have new Attributes DND_BASIC_DATA_NAMES and
+	 * DND_BASIC_DATA_ATOMS that replace the old XV_KEY_DATA, SEL_NEXT_ITEM
+	 * convention.
 	 */
 
 	memset(dnd->targetlist, '\0', sizeof(dnd->targetlist));
 
-	tl = (Atom *)xv_get(DND_PUBLIC(dnd), XV_KEY_DATA, SEL_NEXT_ITEM);
+	tl = dnd->basic_data_atoms;
 
 	if (tl) {
 		dnd->numtargets = MAXTARGETS;
 		for (i = 0; i < MAXTARGETS; i++) {
-			if (tl[i]) {
+			if (i < dnd->num_bda) {
 				dnd->targetlist[i] = tl[i];
 			}
 			else {
@@ -2228,6 +2234,49 @@ Xv_public void dnd_reject_unless(Event *ev, Atom first, ...)
 	}
 }
 
+static void process_data_atoms(Dnd_info *priv, Atom *atoms)
+{
+	unsigned i, cnt;
+
+	if (priv->basic_data_atoms) xv_free(priv->basic_data_atoms);
+	priv->basic_data_atoms = NULL;
+	priv->num_bda = 0;
+
+	if (! atoms) return;
+	if (! *atoms) return;
+
+	cnt = 0;
+	while (atoms[cnt++]);
+
+	priv->basic_data_atoms = xv_alloc_n(Atom, cnt+1);
+	priv->num_bda = cnt;
+	for (i = 0; i < cnt; i++) {
+		priv->basic_data_atoms[i] = atoms[i];
+	}
+}
+
+static void process_data_names(Dnd_info *priv, char **names)
+{
+	unsigned i, cnt;
+    Xv_server server = XV_SERVER_FROM_WINDOW(priv->parent);
+
+	if (priv->basic_data_atoms) xv_free(priv->basic_data_atoms);
+	priv->basic_data_atoms = NULL;
+	priv->num_bda = 0;
+
+	if (! names) return;
+	if (! *names) return;
+
+	cnt = 0;
+	while (names[cnt++]);
+
+	priv->basic_data_atoms = xv_alloc_n(Atom, cnt);
+	priv->num_bda = cnt-1;
+	for (i = 0; i < priv->num_bda; i++) {
+		priv->basic_data_atoms[i] = xv_get(server, SERVER_ATOM, names[i]);
+	}
+}
+
 #define ADONE ATTR_CONSUME(*attrs);break
 
 static int dnd_init(Xv_Window parent, Xv_drag_drop dnd_public,
@@ -2314,6 +2363,12 @@ static Xv_opaque dnd_set_avlist(Dnd dnd_public, Attr_attribute *avlist)
 				XV_BCOPY((struct timeval *)attrs[1], &(dnd->timeout),
 						sizeof(struct timeval));
 				ADONE;
+			case DND_BASIC_DATA_NAMES:
+				process_data_names(dnd, (char **)&attrs[1]);
+				ADONE;
+			case DND_BASIC_DATA_ATOMS:
+				process_data_atoms(dnd, (Atom *)&attrs[1]);
+				ADONE;
 			case SEL_DRAGDROP_DONE:
 				{
 					Xv_Drawable_info *info;
@@ -2387,6 +2442,9 @@ static Xv_opaque dnd_get_attr(Dnd dnd_public, int *status,
 		case DND_TIMEOUT_VALUE:
 			value = (Xv_opaque) & dnd->timeout;
 			break;
+		case DND_BASIC_DATA_ATOMS:
+			value = (Xv_opaque)dnd->basic_data_atoms;
+			break;
 		default:
 			if (xv_check_bad_attr(DRAGDROP, attr) == XV_ERROR)
 				*status = XV_ERROR;
@@ -2401,10 +2459,10 @@ static int dnd_destroy(Dnd dnd_public, Destroy_status status)
 	Dnd_info *dnd = DND_PRIVATE(dnd_public);
 
 	if (status == DESTROY_CLEANUP) {
-		if (dnd->dsdm_selreq)
-			xv_destroy(dnd->dsdm_selreq);
-		if (dnd->window)
-			xv_destroy(dnd->window);
+		SERVERTRACE((333, "%s(%ld)\n", __FUNCTION__, dnd));
+		if (dnd->dsdm_selreq) xv_destroy(dnd->dsdm_selreq);
+		if (dnd->window) xv_destroy(dnd->window);
+		if (dnd->basic_data_atoms) xv_free(dnd->basic_data_atoms);
 
 #ifdef NO_XDND
 #else /* NO_XDND */
