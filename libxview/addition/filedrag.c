@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.15 2026/07/16 13:58:07 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.16 2026/08/26 12:10:37 dra Exp $";
 #endif
 
 typedef struct {
@@ -688,11 +688,6 @@ static int filedrag_init(Xv_window owner, Xv_opaque xself, Attr_avlist avlist,
 	return XV_OK;
 }
 
-static void free_key_data(Xv_opaque obj, int key, char *data)
-{
-	if (data) xv_free(data);
-}
-
 static Xv_opaque filedrag_set(FileDrag self, Attr_avlist avlist)
 {
 	Attr_attribute *attrs;
@@ -762,17 +757,11 @@ static Xv_opaque filedrag_set(FileDrag self, Attr_avlist avlist)
 			}
 
 			/* Convention: we are dragging **files**   */
-			{
-				Xv_server server = XV_SERVER_FROM_WINDOW(xv_get(self,XV_OWNER));
-				Atom *tl = xv_calloc(2, (unsigned)sizeof(Atom));
-
-				tl[0] = xv_get(server, SERVER_ATOM, "FILE_NAME");
-
-				xv_set(self,
-						XV_KEY_DATA, SEL_NEXT_ITEM, tl,
-						XV_KEY_DATA_REMOVE_PROC, SEL_NEXT_ITEM, free_key_data,
-						NULL);
-			}
+			xv_set(self,
+					DND_BASIC_DATA_NAMES,
+						"FILE_NAME",
+						NULL,
+					NULL);
 			break;
 
 		default: xv_check_bad_attr(FILEDRAG, A0);
