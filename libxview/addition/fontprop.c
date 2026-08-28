@@ -30,7 +30,7 @@
 #include <xview/permprop.h>
 #include <xview_private/i18n_impl.h>
 
-char fontprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontprop.c,v 4.5 2025/06/06 18:40:26 dra Exp $";
+char fontprop_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: fontprop.c,v 4.7 2026/08/26 20:34:58 dra Exp $";
 
 #define SUBOFF(_field_) FP_OFF(fontprop_t *,_field_)
 
@@ -468,6 +468,7 @@ static void create_name(Fontprops_private *priv)
 					make_help(priv, priv->name_read_only ? "ro_name" : "name"),
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 				FRAME_PROPS_DATA_OFFSET, priv->dataoff + SUBOFF(fontname),
+				PANEL_ALLOW_FILE_DROP, FALSE,
 				NULL,
 			NULL);
 }
