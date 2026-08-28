@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.57 2026/08/06 15:04:53 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.59 2026/08/26 20:34:58 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -2562,6 +2562,7 @@ static void dir_end_of_creation(Dir_private *priv)
 					PANEL_VALUE_DISPLAY_WIDTH, 30,
 					PANEL_VALUE_STORED_LENGTH, 300,
 					PANEL_CLIENT_DATA, priv,
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					NULL);
 
 	xv_set(priv->panel, WIN_FIT_WIDTH, 1, WIN_FIT_HEIGHT, 1, NULL);
