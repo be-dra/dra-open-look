@@ -27,7 +27,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview/shortcut.h>
 
-char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.14 2025/06/28 20:16:51 dra Exp $";
+char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.16 2026/08/26 20:34:58 dra Exp $";
 
 typedef struct {
 	char *code;
@@ -437,6 +437,7 @@ static void create_top(Shortcut_private *priv, Attr_attribute *avlist)
 					PANEL_VALUE_STORED_LENGTH, 1,
 					FRAME_PROPS_DATA_OFFSET, FDOFF(character),
 					FRAME_PROPS_SLAVE_OF, list,
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					XV_HELP_DATA, make_help(priv, "key"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 					NULL,
