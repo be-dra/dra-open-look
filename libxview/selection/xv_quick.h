@@ -2,7 +2,7 @@
 #define xv_quick_h_INCLUDED
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: xv_quick.h,v 1.9 2026/08/09 17:58:14 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: xv_quick.h,v 1.10 2026/09/04 08:07:42 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -48,6 +48,7 @@ typedef enum {
 	QUICK_CLIENT_DATA_SIZE		= QUICK_ATTR(ATTR_LONG,          10), /* CS- */
 	QUICK_CANCEL                = QUICK_ATTR(ATTR_NO_VALUE,      11),
 	QUICK_CLIENT_ITEM			= QUICK_ATTR(ATTR_OPAQUE,        12),
+	QUICK_STRING_CONVERT_PROC	= QUICK_ATTR(ATTR_FUNCTION_PTR,	 13),
 	QUICK_CLIENT_DATA			= QUICK_ATTR(ATTR_OPAQUE,		99)  /* --G */
 } Quick_attr;
 
@@ -55,6 +56,10 @@ typedef struct {
     Xv_sel_owner	parent_data;
     Xv_opaque		private_data;
 } Xv_quick_owner;
+
+typedef void (*quick_remove_underline_t)(Quick_owner);
+typedef int (*quick_string_convert_t)(Quick_owner, Atom *type, Xv_opaque *,
+												unsigned long *);
 
 extern const Xv_pkg 		xv_quick_owner_pkg;
 
