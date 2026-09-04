@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.15 2026/08/25 18:02:39 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.16 2026/09/04 08:07:58 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -41,8 +41,6 @@ char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.15 2026/08
 #include <xview/xv_quick.h>
 #include <xview_private/svr_impl.h>
 
-typedef void (*remove_underline_t)(Quick_owner);
-
 #define MAX_SELECTED 500
 
 typedef struct {
@@ -55,7 +53,7 @@ typedef struct {
     struct timeval last_click_time;
 	int select_click_cnt;
 
-	remove_underline_t remove_underline;
+	quick_remove_underline_t remove_underline;
 	Display *dpy;
 	Window xid;
 	GC gc;
@@ -66,6 +64,8 @@ typedef struct {
 	XFontStruct *xfs;
 	Xv_opaque client_data;
 	Xv_opaque client_item;
+	int allocated;
+	quick_string_convert_t string_convert_proc;
 	int full_startx;
 	int full_endx;
 	char seltext[MAX_SELECTED];
@@ -134,6 +134,18 @@ static int quick_init(Xv_Window parent, Quick_owner self, Attr_avlist avlist,
 	return XV_OK;
 }
 
+static void note_quick_done(Quick_owner self, Xv_opaque value, Atom type)
+{
+	if (type == XA_STRING) {
+		Quick_private_t *priv = QUICKPRIV(self);
+
+		if (priv->allocated) {
+			priv->allocated = FALSE;
+			xv_free(value);
+		}
+	}
+}
+
 static int note_quick_convert(Quick_owner self, Atom *type,
 					Xv_opaque *data, unsigned long *length, int *format)
 {
@@ -141,6 +153,7 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 	Xv_window win = xv_get(self, XV_OWNER);
 	Xv_Server srv = XV_SERVER_FROM_WINDOW(win);
 
+	priv->allocated = FALSE;
 	if (priv->seltext[0] == '\0') {
 		strncpy(priv->seltext, priv->full_text + priv->startindex,
 						(size_t)(priv->endindex - priv->startindex + 1));
@@ -182,6 +195,13 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 		return TRUE;
 	}
 	else if (*type == XA_STRING) {
+		if (priv->string_convert_proc) {
+			if ((*priv->string_convert_proc)(self, type, data, length)) {
+				*format = 8;
+				priv->allocated = TRUE;
+				return TRUE;
+			}
+		}
 		*data = (Xv_opaque)priv->seltext;
 		*length = strlen(priv->seltext);
 		*format = 8;
@@ -203,6 +223,15 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 		*format = 32;
 		*type = XA_ATOM;
 		return TRUE;
+	}
+	else {
+		if (priv->string_convert_proc) {
+			if ((*priv->string_convert_proc)(self, type, data, length)) {
+				*format = 8;
+				priv->allocated = TRUE;
+				return TRUE;
+			}
+		}
 	}
 
 	return sel_convert_proc(self, type, data, length, format);
@@ -635,8 +664,12 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 
 			case XV_FONT: priv->font = (Xv_font)A1; ADONE;
 
+			case QUICK_STRING_CONVERT_PROC:
+				priv->string_convert_proc = (quick_string_convert_t)A1;
+				ADONE;
+
 			case QUICK_REMOVE_UNDERLINE_PROC:
-				priv->remove_underline = (remove_underline_t)A1;
+				priv->remove_underline = (quick_remove_underline_t)A1;
 				ADONE;
 
 			case QUICK_SELECT_DOWN:
@@ -659,6 +692,7 @@ static Xv_opaque quick_set(Quick_owner self, Attr_avlist avlist)
 				xv_set(self, 
 					SEL_RANK, XA_SECONDARY,
 					SEL_CONVERT_PROC, note_quick_convert,
+					SEL_DONE_PROC, note_quick_done,
 					SEL_LOSE_PROC, note_quick_lose,
 					NULL);
 				break;
@@ -679,6 +713,8 @@ static Xv_opaque quick_get(Quick_owner self, int *status, Attr_attribute attr,
 		case QUICK_BASELINE: return (Xv_opaque)priv->baseline;
 		case QUICK_CLIENT_ITEM: return priv->client_item;
 		case QUICK_CLIENT_DATA: return (Xv_opaque)priv->client_data;
+		case QUICK_STRING_CONVERT_PROC:
+			return (Xv_opaque)priv->string_convert_proc;
 		case QUICK_REMOVE_UNDERLINE_PROC:
 			return (Xv_opaque)priv->remove_underline;
 		default:
