@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.16 2026/08/26 12:10:37 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.17 2026/09/04 17:01:22 dra Exp $";
 #endif
 
 typedef struct {
@@ -149,6 +149,8 @@ static int convert_text(FileDrag_private *priv, Xv_server server, Atom *type,
 	read(fd, buffer, (size_t)sb.st_size);
 	close(fd);
 	*data = (Xv_opaque)buffer;
+	/* how could I know what the contents of a file are ???? */
+	*type = XA_STRING;
 
 	return TRUE;
 }
