@@ -23,7 +23,7 @@
  * if B. Drahota has been advised of the possibility of such damages.
  */
 
-char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.16 2026/09/04 08:07:58 dra Exp $";
+char xv_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: xv_quick.c,v 1.18 2026/09/04 17:24:31 dra Exp $";
 
 /* This class is a helper for "quick duplicate".
  *
@@ -160,6 +160,8 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 		priv->seltext[priv->endindex - priv->startindex + 1] = '\0';
 	}
 
+	SERVERTRACE((300, "%s: req '%s\n", __FUNCTION__, (char *)xv_get(srv, SERVER_ATOM_NAME, *type)));
+
 	if (*type == xv_get(srv, SERVER_ATOM, "_SUN_SELECTION_END")) {
 		/* Lose the Secondary Selection */
 		xv_set(self, SEL_OWN, FALSE, NULL);
@@ -196,9 +198,11 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 	}
 	else if (*type == XA_STRING) {
 		if (priv->string_convert_proc) {
+			*data = (Xv_opaque)priv->seltext;
+			*length = strlen(priv->seltext);
 			if ((*priv->string_convert_proc)(self, type, data, length)) {
 				*format = 8;
-				priv->allocated = TRUE;
+				if (*data != (Xv_opaque)priv->seltext) priv->allocated = TRUE;
 				return TRUE;
 			}
 		}
@@ -226,9 +230,11 @@ static int note_quick_convert(Quick_owner self, Atom *type,
 	}
 	else {
 		if (priv->string_convert_proc) {
+			*data = (Xv_opaque)priv->seltext;
+			*length = strlen(priv->seltext);
 			if ((*priv->string_convert_proc)(self, type, data, length)) {
 				*format = 8;
-				priv->allocated = TRUE;
+				if (*data != (Xv_opaque)priv->seltext) priv->allocated = TRUE;
 				return TRUE;
 			}
 		}
