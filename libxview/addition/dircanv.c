@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.59 2026/08/26 20:34:58 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.60 2026/09/04 17:23:53 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -462,6 +462,10 @@ static int delegate_conversion(Selection_owner selown, Atom *type,
 	}
 	else if (*type == (Atom)xv_get(server, SERVER_ATOM, "text/uri-list")) {
 		char *fn;
+
+		/* ask the convert_proc of the dragdrop object */
+		retval = (*cf)(dragdrop, type, value, length, format);
+		if (retval) return retval;
 
 		*type =  (Atom)xv_get(server, SERVER_ATOM, "FILE_NAME");
 
