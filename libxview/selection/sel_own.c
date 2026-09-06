@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.53 2026/08/06 14:09:53 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.55 2026/09/06 07:11:54 dra Exp $";
 #endif
 #endif
 
@@ -1136,7 +1136,6 @@ static Xv_opaque sel_owner_set_avlist(Selection_owner sel_owner_public,
 	Attr_avlist attrs;
 	Sel_owner_info *sel_owner = SEL_OWNER_PRIVATE(sel_owner_public);
 	int owner = FALSE;
-	int result;
 
 	/*
 	 * Parse Selection attributes before Selection_owner attributes.
@@ -1144,9 +1143,21 @@ static Xv_opaque sel_owner_set_avlist(Selection_owner sel_owner_public,
 	 * to be changed to a more efficient way of processing the object parent
 	 * attrs before the object itself.
 	 */
+
+	/* very careful here - we had an attribute list with a few
+	 * XV_KEY_DATA_REMOVE_PROC without corresponding XV_KEY_DATA -
+	 * and in these cases the GENERIC set method returns something != XV_OK.
+	 * I think, we don't want to know....
+	 */
+#ifdef BEFORE_DRA_CHANGED
+	int result;
+
 	result = xv_super_set_avlist(sel_owner_public, SELECTION_OWNER, avlist);
 	if (result != XV_OK)
 		return result;
+#else
+	xv_super_set_avlist(sel_owner_public, SELECTION_OWNER, avlist);
+#endif
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
