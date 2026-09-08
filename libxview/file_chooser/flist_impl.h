@@ -1,4 +1,4 @@
-/*      @(#)flist_impl.h 1.11 93/06/28 SMI  DRA: RCS $Id: flist_impl.h,v 4.3 2026/07/18 20:29:00 dra Exp $      */
+/*      @(#)flist_impl.h 1.11 93/06/28 SMI  DRA: RCS $Id: flist_impl.h,v 4.4 2026/09/07 21:14:27 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -9,12 +9,10 @@
 
 #include <sys/param.h>
 #include <dirent.h>
-#ifdef __linux
-#include <regex.h>
-#endif
 #include <xview_private/xv_path_util.h>
 #include <xview/file_list.h>
 #include <xview_private/i18n_impl.h>
+#include <xview/regexpr.h>
 
 
 typedef struct {
@@ -24,11 +22,7 @@ typedef struct {
     DIR *		dir_ptr;		/* cached directory pointer */
     char *		previous_dir;		/* last directory displayed */
     char *		regex_pattern; 		/* regular expression */
-#ifdef __linux
-    regex_t *	regex_compile;		/* compiled form of regex */
-#else
-    char *		regex_compile;		/* compiled form of regex */
-#endif
+	xv_regexp_context   regex_context;
     Server_image	match_glyph;		/* matched regex glyph */
     Server_image	match_glyph_mask;	/* matched regex glyph mask */
     unsigned short	filter_mask;		/* mask for filter_func */
