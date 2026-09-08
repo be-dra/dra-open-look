@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.9 2026/07/18 19:36:50 dra Exp $";
+static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.10 2026/09/07 10:07:50 dra Exp $";
 #endif
 #endif
 
@@ -16,8 +16,9 @@ static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 
 
 #include <xview/pkg.h>
 #include <xview/notify.h>
-#include <xview_private/gen_impl.h>
+#include <xview/generic.h>
 #include <xview_private/portable.h>
+#include <stdint.h>
 
 #include  <X11/X.h>
 #include  <X11/Xlib.h>
@@ -26,6 +27,29 @@ static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 
 Xv_private char    *xv_instance_app_name;
 
 /* ------------------------------------------------------------------------- */
+
+#define GEN_PUBLIC(obj)		XV_PUBLIC(obj)
+#define GEN_PRIVATE(obj)	XV_PRIVATE(Generic_info, Xv_generic_struct, obj)
+#define HEAD(obj)		(GEN_PRIVATE(obj))->key_data
+
+typedef uint32_t		generic_key_type_t;
+
+typedef struct _generic_node {
+    struct _generic_node *next;
+    generic_key_type_t key;
+    Xv_opaque       data;
+    void            (*copy_proc) (int copy_proc_is_unused);
+    void            (*remove_proc) (Xv_opaque, generic_key_type_t, Xv_opaque);
+} Generic_node;
+
+typedef	struct	{
+    Xv_object		public_self;	/* back pointer to object */
+    Xv_object		owner;		/* owner of object */
+
+    Generic_node	*key_data;
+    Xv_opaque		instance_qlist;
+    char		*instance_name;
+} Generic_info;
 
 /*
  * Public
@@ -400,7 +424,9 @@ static Xv_opaque generic_set_avlist(Xv_object object, Attr_avlist avlist)
 	return error_code;
 }
 
-Pkg_private Xv_opaque generic_get(Xv_object object, int *status,
+Xv_private Xv_opaque generic_get(Xv_object, int *, Attr_attribute, va_list);
+
+Xv_private Xv_opaque generic_get(Xv_object object, int *status,
 								Attr_attribute attr, va_list args)
 {
 	generic_key_type_t key;
