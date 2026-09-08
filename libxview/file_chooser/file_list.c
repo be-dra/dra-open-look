@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.8 2026/07/18 20:28:39 dra Exp $ ";
+static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.9 2026/09/07 21:14:54 dra Exp $ ";
 #endif
 #endif
  
@@ -680,100 +680,23 @@ static void flist_update_list(File_list_private *private, File_list_row rows[], 
 
 
 /****************************************************************************/
-
-/*
- * Front end to regexp(3).
- *
- * BUG:  regexp is *not* safe for Multibyte characters!
- * The only pattern matching routines on Solaris 2.x at this time
- * that can deal with multibyte are in libgen, which is *only* a
- * '.a' file.  Thus, XView can't reference it without breaking 
- * binary compatibility, and portability.
- *
- * Once the POSIX.2/XPG interface(s) become available on Solaris,
- * that should be used instead.
- */
-#define INIT		register char *sp = instring;
-#define GETC()		(*sp++)
-#define PEEKC()		(*sp)
-#define UNGETC(c)	(--sp)
-#define RETURN(c)	return c;
-#define ERROR(c)	xv_error(0, ERROR_STRING, XV_MSG("Invalid regular expression!"), \
-				 ERROR_PKG, FILE_LIST, NULL)
-
-#ifndef __linux
-/*
- * Note:  This junk was put here reguarding bug 1120422, CRT#701
- * It WILL generate compiler warnings!  However, it does make the
- * symbols local, which is what we want.  This was verified with 'nm'.
- * 
- * ifdef'd for SVR4 because it causes the 4.x MIT build to fail, not just print
- * warnings.
- */
-#ifdef BEFORE_DRA_FIXED_BUG
-#ifdef SVR4
-static int	sed, nbra, circf;
-static char	*loc1, *loc2, *locs;
-static int 	advance();
-static char	*compile();
-static int 	step();
-#endif /* SVR4 */
-#endif
-
-
-#include <regexp.h>
-
-
-static void flist_compile_regex(File_list_private *private)
-{
-    char compile_buf[MAXPATHLEN+1];
-    char *end_ptr;
-    size_t num_bytes;
-
-    end_ptr = compile( private->regex_pattern,
-		  compile_buf, 
-		  &(compile_buf[MAXPATHLEN+1]),
-		  '\0' );
-
-    num_bytes = (size_t) (end_ptr - compile_buf);
-
-    xv_free_ref( private->regex_compile );
-    private->regex_compile = xv_alloc_n(char, num_bytes);
-    (void) XV_BCOPY(compile_buf, private->regex_compile, num_bytes);
-} 
-
-
-static int flist_match_regex(char *s, File_list_private *private)
-{
-    return step(s, private->regex_compile);
-}
-#else /* __linux */
-
-/* Linux does not have regexp.h or compile()/step(). Use regex.h and
- * re_compile_pattern()/re_match() instead. */
-
 static int flist_compile_regex(File_list_private *private)
 {
-	const char *errptr;
+	const char *q;
 
 	if (private->f.use_frame && (int)xv_get(private->frame, FRAME_SHOW_FOOTER))
 	{
 		xv_set(private->frame, FRAME_LEFT_FOOTER, "", NULL);
 	}
 
-    if (private->regex_compile == NULL) {
-        private->regex_compile = calloc(1L, sizeof(regex_t));
-        private->regex_compile->translate = NULL;
-    }
-    if (private->regex_compile->allocated == 0) {
-        private->regex_compile->buffer = calloc(sizeof(char), (long)MAXPATHLEN + 1);
-        private->regex_compile->allocated = MAXPATHLEN + 1;
-    }
-    errptr = re_compile_pattern(private->regex_pattern,
-					strlen(private->regex_pattern), private->regex_compile);
-
-	if (errptr) {
-		flist_error(private, "%s", errptr);
+	if (private->regex_context) {
+		xv_free_regexp(private->regex_context);
+		private->regex_context = NULL;
+	}
+	if ((q = xv_compile_regexp(private->regex_pattern,
+						&private->regex_context)))
+	{
+		flist_error(private, "%s", q);
 		return FALSE;
 	}
 	return TRUE;
@@ -781,11 +704,9 @@ static int flist_compile_regex(File_list_private *private)
 
 static int flist_match_regex(char *s, File_list_private *private)
 {
-    if (private->regex_compile == NULL || private->regex_compile->allocated == 0)
-        return 0;
-    return (re_match(private->regex_compile, s, (int)strlen(s), 0, NULL) != -1);
+    if (private->regex_context == NULL) return FALSE;
+	return (xv_match_regexp(s, private->regex_context, 0) != NULL);
 }
-#endif /* __linux */
 
 /****************************************************************************/
 
@@ -1143,13 +1064,9 @@ static int file_list_destroy(File_list public, Destroy_status status)
 		xv_free_ref(private->directory);
 		xv_free_ref(private->regex_pattern);
 
-#ifdef __linux
-		if (private->regex_compile && private->regex_compile->allocated)
-			xv_free_ref(private->regex_compile->buffer);
-#endif
+		xv_free_regexp(private->regex_context);
 
 		xv_free_ref(private->previous_dir);
-		xv_free_ref(private->regex_compile);
 		xv_free_ref(private->dotdot_string);
 		if (private->dir_ptr)
 			(void)closedir(private->dir_ptr);
