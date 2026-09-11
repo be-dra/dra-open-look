@@ -1,5 +1,5 @@
 /* #ident	"@(#)resources.c	26.75	93/06/28 SMI" */
-char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.8 2026/08/10 16:42:52 dra Exp $";
+char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.9 2026/09/10 11:28:02 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -618,7 +618,7 @@ ResourceItem MainItemTable[] = {
     &(GRV.SaveWorkspaceTimeout), cvtInteger,		NULL,
     0L },
 {   "saveWorkspaceCmd",		"SaveWorkspaceCmd",	
-	"owplaces -ampersand -ampSleepTime 0 -output $HOME/.openwin-init-$DISPLAY_HOST",
+	"owplaces -ampersand -ampSleepTime 0 -output $HOME/.xview/openwin-init-$DISPLAY_HOST",
     &(GRV.SaveWorkspaceCmd),	cvtString,		NULL,
     0L },
 {   "textDelimiterChars",		"TextDelimiterChars",	
