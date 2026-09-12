@@ -4,7 +4,7 @@
 #include <xview/xview.h>
 #include <xview/scrollw.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.13 2026/08/04 20:56:54 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.14 2026/09/12 05:05:11 dra Exp $" */
 
 extern const Xv_pkg xv_graphwin_pkg;
 #define GRAPHWIN &xv_graphwin_pkg
@@ -121,7 +121,12 @@ typedef struct {
 } Graph_private_info;
 
 typedef struct {
-	Rect rect, image_rect;
+	int r_left, r_top;
+	short r_width, r_height;
+} GraphRect;
+
+typedef struct {
+	GraphRect rect, image_rect;
 	Graphobj_state state;
 	Graph_private_info *gi;
 	Scrollpw_info *vinfo;
