@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.60 2026/09/04 17:23:53 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.61 2026/09/12 05:04:51 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -27,6 +27,14 @@ typedef void (*menu_cb_t)(Menu, Menu_item);
 typedef void (*tell_match_proc_t) (Dircanvas, char *, int);
 
 typedef int (*dirsortfunc)(Dir_entry_t *, Dir_entry_t *);
+
+/* originally, we used the type Rect here. But in "big" directories
+ * (like /usr/lib64) the Rect field 'short r_top' appeared to be too small
+ */
+typedef struct {
+	int r_left, r_top;
+	short r_width, r_height;
+} DirRect;
 
 static int dir_key = 0;
 static dirsortfunc act_sorting;
@@ -185,7 +193,8 @@ static void repaint_file_2D(Dir_private *priv, int this, Display *dpy,
 	}
 }
 
-static void make_filepos(Dir_private *priv, int this, int *xp, int *yp, Rect *trect, Rect *irect)
+static void make_filepos(Dir_private *priv, int this, int *xp, int *yp,
+							DirRect *trect, DirRect *irect)
 {
 	if (priv->line_oriented) {
 		*xp = priv->maxwidth * (this%priv->cols) + priv->col_dist;
@@ -218,7 +227,7 @@ static void make_filepos(Dir_private *priv, int this, int *xp, int *yp, Rect *tr
 
 static void dir_repaint_from_expose(Dir_private *priv, Scrollwin_repaint_struct *rs)
 {
-	Rect fr;
+	DirRect fr;
 	int scrx, scry, x, y, xoff, yoff, iconsiz;
 	int i;
 	Display *dpy = rs->vinfo->dpy;
@@ -243,7 +252,7 @@ static void dir_repaint_from_expose(Dir_private *priv, Scrollwin_repaint_struct 
 	fr.r_height = priv->file_hig + iconsiz;
 
 	for (i = 0; i < priv->visible_num; i++) {
-		make_filepos(priv, i, &x, &y, (Rect *)0, (Rect *)0);
+		make_filepos(priv, i, &x, &y, (DirRect *)0, (DirRect *)0);
 
 		fr.r_top = y - yoff;
 		fr.r_left = x - xoff;
@@ -260,7 +269,7 @@ static void dir_repaint_from_expose(Dir_private *priv, Scrollwin_repaint_struct 
 			int foc_x, foc_y;
 
 			make_filepos(priv, priv->cursor_index, &foc_x, &foc_y,
-												(Rect *)0, (Rect *)0);
+												(DirRect *)0, (DirRect *)0);
 
 			xv_set(focuswin,
 					XV_X, foc_x - rs->vinfo->scr_x - FRAME_FOCUS_RIGHT_WIDTH,
@@ -336,7 +345,7 @@ static void take_file_on_select_button(Dir_private *priv, int shift, int control
 static int dir_find_index(Dir_private *priv, int x, int y, char *is_rename)
 {
 	int fx, fy, that;
-	Rect trect, irect;
+	DirRect trect, irect;
 
 	if (is_rename) *is_rename = FALSE;
 
@@ -379,9 +388,28 @@ static void dir_handle_drop(Dir_private *priv, Scrollwin_drop_struct *drop)
 	xv_set(DIRPUB(priv), DIR_RECEIVE_DROP, drop, dropped_on, NULL);
 }
 
+static DirRect d_rect_bounding(DirRect *r1, DirRect *r2)
+{
+	DirRect r;
+
+	if (rect_isnull(r1))
+		r = *r2;
+	else if (rect_isnull(r2))
+		r = *r1;
+	else {
+		r.r_left = MIN(r1->r_left, r2->r_left);
+		r.r_top = MIN(r1->r_top, r2->r_top);
+		r.r_width = MAX(r1->r_left + r1->r_width, r2->r_left + r2->r_width)
+				- r.r_left;
+		r.r_height = MAX(r1->r_top + r1->r_height, r2->r_top + r2->r_height)
+				- r.r_top;
+	}
+	return (r);
+}
+
 static void perform_frame_catch(Dir_private *priv, dir_event_ptr dev, int toggle)
 {
-	Rect irect, rect, frame;
+	DirRect irect, rect, frame;
 	int x, y, i;
 	Dir_entry_t *vis;
 	int ex = dev->virt_x,
@@ -397,7 +425,7 @@ static void perform_frame_catch(Dir_private *priv, dir_event_ptr dev, int toggle
 		make_filepos(priv, i, &x, &y, &rect, &irect);
 
 		if (irect.r_width) {
-			rect = rect_bounding(&rect, &irect);
+			rect = d_rect_bounding(&rect, &irect);
 		}
 
 		if (rect_intersectsrect(&frame, &rect)) {
@@ -622,7 +650,7 @@ static void repaint_file(Dir_private *priv, int this)
 	Xv_opaque pw;
 	Scrollpw_info vi;
 
-	make_filepos(priv, this, &x, &y, (Rect *)0, (Rect *)0);
+	make_filepos(priv, this, &x, &y, (DirRect *)0, (DirRect *)0);
 
 	OPENWIN_EACH_PW(DIRPUB(priv), pw)
 		xv_get(pw, SCROLLPW_INFO, &vi);
@@ -927,9 +955,9 @@ static void dir_start_text(Dir_private *priv, Xv_window pw, int that, int scroll
 	int x, y, px, py;
 	Frame fram;
 	Scrollpw_info vi;
-	Rect trect, irect;
+	DirRect trect, irect;
 
-	make_filepos(priv, that, &x, &y, (Rect *)0, (Rect *)0);
+	make_filepos(priv, that, &x, &y, (DirRect *)0, (DirRect *)0);
 	if (scroll) scroll_into_view(priv, pw, x, y);
 	xv_get(pw, SCROLLPW_INFO, &vi);
 	fram = xv_get(DIRPUB(priv), WIN_FRAME);
@@ -1210,7 +1238,7 @@ static int handle_navigation(Dir_private *priv, Xv_window pw, Scrollpw_info *vi,
 
 	if (x_scroll < 0 && y_scroll < 0) {
 		make_filepos(priv, priv->cursor_index, &foc_x, &foc_y,
-											(Rect *)0, (Rect *)0);
+											(DirRect *)0, (DirRect *)0);
 
 		xv_set(focuswin,
 					XV_X, foc_x - vi->scr_x - FRAME_FOCUS_RIGHT_WIDTH,
@@ -1547,7 +1575,7 @@ static int dir_handle_events(Dir_private *priv, Scrollwin_event_struct *es)
 					priv->cursor_index = priv->visible_num - 1;
 
 				make_filepos(priv, priv->cursor_index, &foc_x, &foc_y,
-												(Rect *)0, (Rect *)0);
+												(DirRect *)0, (DirRect *)0);
 
 				xv_set(focuswin,
 					WIN_PARENT, es->pw,
