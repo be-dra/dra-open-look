@@ -5,7 +5,7 @@
 #include <xview/help.h>
 #include <xview/font.h>
 
-char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.39 2026/08/04 21:18:01 dra Exp $";
+char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.40 2026/09/12 05:05:17 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -32,7 +32,7 @@ typedef enum {
 typedef struct _graphobj {
 	Xv_opaque               public_self;
 	struct _graphobj        *next;
-	Rect                    rect, label_rect, image_rect;
+	GraphRect                    rect, label_rect, image_rect;
 	char                    *label;
 	int                     label_gravity;
 	int                     space;
@@ -258,7 +258,7 @@ static short drag_objects(Graphwin_private *priv, Scrollwin_event_struct * es)
 static void perform_frame_catch(Graphwin_private *priv,
 					Scrollwin_event_struct *es, int toggle)
 {
-	Rect frame;
+	GraphRect frame;
 	graphlist it;
 
 	frame.r_left = MINi(es->virt_x, priv->vdown_x);
@@ -1594,7 +1594,7 @@ static void make_label_rect(Graphobj_private *priv)
 
 static void make_rect(Graphobj_private *priv)
 {
-	Rect *r = &priv->rect,
+	GraphRect *r = &priv->rect,
 		*lr = &priv->label_rect,
 		*ir = &priv->image_rect;
 
@@ -1689,6 +1689,7 @@ static Xv_opaque graphobj_set(Xv_opaque self, Attr_avlist avlist)
 {
 	Attr_attribute *attrs;
 	Graphobj_private *priv = GROBJPRIV(self);
+	Rect *r;
 	int need_rect = FALSE;
 	int need_label_rect = FALSE;
 
@@ -1729,7 +1730,11 @@ static Xv_opaque graphobj_set(Xv_opaque self, Attr_avlist avlist)
 			ADONE;
 
 		case GRAPH_IMAGE_RECT:
-			priv->image_rect = *(Rect *)A1;
+			r = (Rect *)A1;
+			priv->image_rect.r_left = r->r_left;
+			priv->image_rect.r_top = r->r_top;
+			priv->image_rect.r_width = r->r_width;
+			priv->image_rect.r_height = r->r_height;
 			need_rect = TRUE;
 			ADONE;
 
