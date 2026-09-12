@@ -1,4 +1,4 @@
-/*	@(#)rectlist.h 20.16 93/06/28 SMI DRA: $Id: rectlist.h,v 4.1 2024/03/28 18:21:53 dra Exp $	*/
+/*	@(#)rectlist.h 20.16 93/06/28 SMI DRA: $Id: rectlist.h,v 4.2 2026/09/11 16:45:15 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -99,7 +99,7 @@ EXTERN_FUNCTION (unsigned rl_equal, (Rectlist *rl1, Rectlist *rl2));
 EXTERN_FUNCTION (unsigned rl_boundintersectsrect, (Rect *r, Rectlist *rl));
 EXTERN_FUNCTION (unsigned rl_rectintersects, (Rect *r, Rectlist *rl));
 EXTERN_FUNCTION (unsigned rl_equalrect, (Rect *r, Rectlist *rl));
-EXTERN_FUNCTION (unsigned rl_includespoint, (Rectlist *r, int x, int y));
+EXTERN_FUNCTION (unsigned rl_includespoint, (Rectlist *r, xv_coord_t x, xv_coord_t y));
 
 #ifdef xview_other_rl_funcs
 
