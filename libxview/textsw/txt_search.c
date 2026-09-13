@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_search_c_sccsid[] = "@(#)txt_search.c 20.45 93/06/28 DRA: $Id: txt_search.c,v 4.13 2026/08/26 20:40:01 dra Exp $";
+char     txt_search_c_sccsid[] = "@(#)txt_search.c 20.45 93/06/28 DRA: $Id: txt_search.c,v 4.16 2026/09/13 07:02:06 dra Exp $";
 #endif
 
 /*
@@ -43,7 +43,7 @@ static Es_index textsw_do_search_proc(Textsw_view_private view, unsigned directi
 {
 	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
 	Es_index first, last_plus_one;
-	CHAR buf[MAX_STR_LENGTH];
+	char buf[MAX_STR_LENGTH];
 	unsigned str_len;
 	Es_index start_pos;
     int wrapping_off = (int)xv_get(xv_get(fram, XV_KEY_DATA, key_wrap),
@@ -55,14 +55,16 @@ static Es_index textsw_do_search_proc(Textsw_view_private view, unsigned directi
 	if (direction == EV_FIND_DEFAULT)
 		first = last_plus_one;
 
-	STRNCPY(buf, (CHAR *)xv_get(xv_get(fram, XV_KEY_DATA, key_find),
-					PANEL_VALUE), (size_t)MAX_STR_LENGTH - 1);
+	strncpy(buf, (char *)xv_get(xv_get(fram,XV_KEY_DATA,key_find), PANEL_VALUE),
+						(size_t)MAX_STR_LENGTH - 1);
 
-	str_len = STRLEN(buf);
+	str_len = strlen(buf);
 	start_pos = (direction & EV_FIND_BACKWARD)
-			? first : (first - str_len);
+			? first : (first - (Es_index)str_len);
 
-	textsw_find_pattern(priv, &first, &last_plus_one, buf, str_len, direction);
+	/* here we might have a regular expression */
+	textsw_find_pattern(priv, &first, &last_plus_one, buf, str_len,
+							direction | EV_FIND_RE);
 
 	if (wrapping_off) {
 		if (direction == EV_FIND_DEFAULT)
@@ -78,12 +80,14 @@ static Es_index textsw_do_search_proc(Textsw_view_private view, unsigned directi
 	else {
 		if ((ring_bell_status & RING_IF_ONLY_ONE) && (first == start_pos))
 			(void)window_bell(XV_PUBLIC(view));
-		if (!is_global)
+		if (!is_global) {
 			textsw_possibly_normalize_and_set_selection(VIEW_PUBLIC(view),
 					first, last_plus_one, EV_SEL_PRIMARY);
-		else
+		}
+		else {
 			textsw_set_selection(TEXTSW_PUBLIC(priv), first, last_plus_one,
 					EV_SEL_PRIMARY);
+		}
 
 		(void)textsw_set_insert(priv, last_plus_one);
 		textsw_record_find(priv, buf, (int)str_len, (int)direction);
@@ -112,7 +116,7 @@ static void note_find_backwards(Menu menu, Menu_item item)
 static int do_replace_proc(Textsw_view_private view, Frame fram)
 {
 	Textsw textsw = VIEW_PUBLIC(view);
-	CHAR buf[MAX_STR_LENGTH];
+	char buf[MAX_STR_LENGTH];
 	int selection_found;
 	Es_index first, last_plus_one;
 
@@ -120,7 +124,7 @@ static int do_replace_proc(Textsw_view_private view, Frame fram)
 														NULL, 0)))
 	{
 		Panel_item rtext = xv_get(fram, XV_KEY_DATA, key_replace);
-		STRNCPY(buf, (CHAR *) xv_get(rtext, PANEL_VALUE),
+		strncpy(buf, (char *) xv_get(rtext, PANEL_VALUE),
 				(size_t)MAX_STR_LENGTH - 1);
 		textsw_replace(textsw, first, last_plus_one, buf, (long)STRLEN(buf));
 	}
@@ -147,9 +151,9 @@ static void do_replace_all_proc(Textsw_view_private view, int do_replace_first, 
 
     exit_loop = (cur_pos == ES_CANNOT_SET);
 
-    string_length_diff = STRLEN((CHAR *) xv_get(
+    string_length_diff = strlen((char *) xv_get(
 	    xv_get(fram, XV_KEY_DATA, key_replace), PANEL_VALUE))
-		- STRLEN((CHAR *) xv_get(xv_get(fram, XV_KEY_DATA, key_find), PANEL_VALUE));
+		- strlen((char *) xv_get(xv_get(fram, XV_KEY_DATA, key_find), PANEL_VALUE));
 
     while (!process_aborted && !exit_loop) {
 	if (start_checking) {
@@ -267,7 +271,7 @@ static Panel create_search_items(Frame fram, Textsw_view_private view,int tf_key
 	static char *backward = "Backward";
 	static char *forward = "Forward";
 	static int init_str = 0;
-	CHAR search_string[MAX_STR_LENGTH];
+	char search_string[MAX_STR_LENGTH];
 	Es_index dummy;
 	Panel panel;
 	Menu menu;
