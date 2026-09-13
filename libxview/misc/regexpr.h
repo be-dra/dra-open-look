@@ -4,7 +4,7 @@
 #include <xview/xv_c_types.h>
 
 /*
- * "@(#) $Id: regexpr.h,v 1.4 2025/04/09 19:53:51 dra Exp $"
+ * "@(#) $Id: regexpr.h,v 1.5 2026/09/13 07:49:46 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -32,8 +32,10 @@
 
 typedef struct _regexp_context *xv_regexp_context;
 
-EXTERN_FUNCTION(const char *xv_compile_regexp, (char *instring, xv_regexp_context *ctxtp));
-EXTERN_FUNCTION(char *xv_match_regexp, (char *string, xv_regexp_context context, ...));
+EXTERN_FUNCTION(const char *xv_compile_regexp, (char *instring,
+				xv_regexp_context *ctxtp, int cflags));
+EXTERN_FUNCTION(char *xv_match_regexp, (char *string, int eflags,
+										xv_regexp_context context, ...));
 EXTERN_FUNCTION(void xv_free_regexp, (xv_regexp_context context));
 
 #endif /* regexpr_h_INCLUDED */
