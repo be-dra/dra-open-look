@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_line_c_sccsid[] = "@(#)txt_line.c 1.26 93/06/28 DRA: $Id: txt_line.c,v 4.7 2026/08/26 20:40:01 dra Exp $";
+char     txt_line_c_sccsid[] = "@(#)txt_line.c 1.26 93/06/28 DRA: $Id: txt_line.c,v 4.8 2026/09/12 19:50:52 dra Exp $";
 #endif
 
 /*
@@ -58,14 +58,15 @@ static int do_sel_line_proc(Textsw_private priv, Frame fram, Panel_item tf)
 		}
 		else {
 			ev_find_in_esh(priv->views->esh, buf, buf_fill_len,
-					(Es_index) 0, (u_int) line_no - 1, 0, &first, &prev);
+					(Es_index) 0, (u_int) line_no - 1,
+					EV_FIND_DEFAULT, &first, &prev);
 			if (first == ES_CANNOT_SET) {
 				window_bell(XV_PUBLIC(view));
 				return TRUE;
 			}
 		}
 		ev_find_in_esh(priv->views->esh, buf, buf_fill_len,
-				prev, 1, 0, &first, &last_plus_one);
+				prev, 1, EV_FIND_DEFAULT, &first, &last_plus_one);
 		if (first == ES_CANNOT_SET) {
 			window_bell(XV_PUBLIC(view));
 			return TRUE;
