@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.9 2026/09/07 21:14:54 dra Exp $ ";
+static char     sccsid[] = "@(#)file_list.c 1.30 93/06/28  DRA: RCS $Id: file_list.c,v 4.10 2026/09/13 07:54:13 dra Exp $ ";
 #endif
 #endif
  
@@ -694,7 +694,7 @@ static int flist_compile_regex(File_list_private *private)
 		private->regex_context = NULL;
 	}
 	if ((q = xv_compile_regexp(private->regex_pattern,
-						&private->regex_context)))
+						&private->regex_context, 0)))
 	{
 		flist_error(private, "%s", q);
 		return FALSE;
@@ -705,7 +705,7 @@ static int flist_compile_regex(File_list_private *private)
 static int flist_match_regex(char *s, File_list_private *private)
 {
     if (private->regex_context == NULL) return FALSE;
-	return (xv_match_regexp(s, private->regex_context, 0) != NULL);
+	return (xv_match_regexp(s, 0, private->regex_context, NULL) != NULL);
 }
 
 /****************************************************************************/
