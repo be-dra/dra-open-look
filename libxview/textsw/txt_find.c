@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_find_c_sccsid[] = "@(#)txt_find.c 20.27 93/06/28 DRA: $Id: txt_find.c,v 4.10 2026/07/30 07:49:26 dra Exp $";
+char     txt_find_c_sccsid[] = "@(#)txt_find.c 20.27 93/06/28 DRA: $Id: txt_find.c,v 4.11 2026/09/12 19:51:50 dra Exp $";
 #endif
 
 /*
@@ -92,14 +92,14 @@ Pkg_private void textsw_find_selection_and_normalize(Textsw_view_private view, i
 
 /* Caller must set *first to be position at which to start the search. */
 Pkg_private void textsw_find_pattern(Textsw_private textsw, Es_index *first,
-						Es_index *last_plus_one, CHAR *buf, unsigned buf_len,
+						Es_index *last_plus_one, char *buf, unsigned buf_len,
 						unsigned flags)
 {
 	Es_handle esh = textsw->views->esh;
 	Es_index start_at = *first;
 	int i;
 
-	/* this was need for ACTION_FIND... to work without sel svc - strange */
+	/* this was needed for ACTION_FIND... to work without sel svc - strange */
 	if (flags & EV_FIND_BACKWARD) --start_at;
 	else ++start_at;
 
@@ -138,7 +138,9 @@ Pkg_private void textsw_find_pattern_and_normalize(Textsw_view_private view, int
 	register Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
 	Es_index pattern_index;
 
-	pattern_index = (flags & EV_FIND_BACKWARD) ? *first : (*first - buf_len);
+	pattern_index = (flags & EV_FIND_BACKWARD)
+							? *first
+							: (*first - (Es_index)buf_len);
 	textsw_find_pattern(priv, first, last_plus_one, buf, buf_len, flags);
 	if (*first == ES_CANNOT_SET) {
 		(void)window_bell(XV_PUBLIC(view));
