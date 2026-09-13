@@ -28,13 +28,14 @@
 #include <regex.h>
 #include <stdarg.h>
 
-char regexpr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: regexpr.c,v 1.7 2025/04/09 19:56:18 dra Exp $";
+char regexpr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: regexpr.c,v 1.9 2026/09/13 07:49:46 dra Exp $";
 
 typedef struct _regexp_context {
 	regex_t pattbuf;
 } context_t;
 
-const char *xv_compile_regexp(char *instring, xv_regexp_context *ctxt)
+const char *xv_compile_regexp(char *instring, xv_regexp_context *ctxt,
+										int cflags)
 {
 	static char errbuf[200];
 	int status;
@@ -46,7 +47,7 @@ const char *xv_compile_regexp(char *instring, xv_regexp_context *ctxt)
 	}
 	else cont = *ctxt;
 
-	status = regcomp(&cont->pattbuf, instring, 0);
+	status = regcomp(&cont->pattbuf, instring, cflags);
 	if (! status) {
 		return (const char *)0;
 	}
@@ -56,7 +57,7 @@ const char *xv_compile_regexp(char *instring, xv_regexp_context *ctxt)
 	return errbuf;
 }
 
-char *xv_match_regexp(char *string, xv_regexp_context ctxt, ...)
+char *xv_match_regexp(char *string, int eflags, xv_regexp_context ctxt, ...)
 {
 	int retval;
 	unsigned i;
@@ -65,13 +66,13 @@ char *xv_match_regexp(char *string, xv_regexp_context ctxt, ...)
 	va_list ap;
 	char *p;
 
-	retval = regexec(&ctxt->pattbuf, string, MAXMATCH, matches, 0);
+	retval = regexec(&ctxt->pattbuf, string, MAXMATCH, matches, eflags);
 
 	if (retval != 0) return (char *)0;
 
 	va_start(ap, ctxt);
 	/* zum Index 0 gehoert der ganze Match */
-	i = 1;
+	i = 0;
 	while ((p = va_arg(ap,char*))) {
 		if (i < MAXMATCH && matches[i].rm_so >= 0) {
 			char *s, *t, *e;
