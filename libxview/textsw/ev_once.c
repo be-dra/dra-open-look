@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_once_c_sccsid[] = "@(#)ev_once.c 20.28 93/06/28 DRA: $Id: ev_once.c,v 4.4 2026/07/29 04:15:18 dra Exp $";
+char     ev_once_c_sccsid[] = "@(#)ev_once.c 20.28 93/06/28 DRA: $Id: ev_once.c,v 4.7 2026/09/13 07:56:55 dra Exp $";
 #endif
 
 /*
@@ -33,6 +33,8 @@ char     ev_once_c_sccsid[] = "@(#)ev_once.c 20.28 93/06/28 DRA: $Id: ev_once.c,
 #include <xview/pixwin.h>
 #include <xview_private/ev_impl.h>
 #include <xview/window.h>
+#include <xview/regexpr.h>
+#include <regex.h>
 
 /* these still exist but are superceeded by X format images in ev_display.c */
 static unsigned short    caret_image[7] = {
@@ -290,7 +292,7 @@ Pkg_private int ev_rect_for_ith_physical_line(Ev_handle view, int phys_line, Es_
 	lt_index = 0;
     } else {
 	ev_find_in_esh(view->view_chain->esh, newline_str, 1,
-		       *first, (unsigned) phys_line, 0,
+		       *first, (unsigned) phys_line, EV_FIND_DEFAULT,
 		       first, &last_plus_one);
 	if (*first == ES_CANNOT_SET)
 	    return (-1);
@@ -338,8 +340,8 @@ Pkg_private Es_index ev_position_for_physical_line(Ev_chain chain, int line, int
 	}
 	if (count) {
 	    buf[0] = '\n';
-	    ev_find_in_esh(chain->esh, buf, 1, start_search, (unsigned)count, 0,
-			   &first, &last_plus_one);
+	    ev_find_in_esh(chain->esh, buf, 1, start_search, (unsigned)count,
+							EV_FIND_DEFAULT, &first, &last_plus_one);
 	} else {
 	    /*
 	     * Consecutive identical queries: make sure that following tests
@@ -376,7 +378,7 @@ Pkg_private Es_index ev_position_for_physical_line(Ev_chain chain, int line, int
 
 Pkg_private void ev_find_in_esh(
     Es_handle       esh,	/* stream handle          */
-    CHAR           *pattern,	/* pattern to search for  */
+    char           *pattern,	/* pattern to search for  */
     int             pattern_length,	/* no. of chars in pat.   */
     Es_index        position,	/* start search from here */
     unsigned        count,	/* no. occurrances of pat */
@@ -388,16 +390,68 @@ Pkg_private void ev_find_in_esh(
 	 * Currently only simple patterns are supported.
 	 */
 #define BUFSIZE 2096
-	CHAR buf[BUFSIZE + 4];
-	register CHAR *in_buf, *buf_last_plus_one, *matched_to, *done_match;
+	char buf[BUFSIZE + 4];
+	register char *in_buf, *buf_last_plus_one, *matched_to, *done_match;
 	register Es_index new_pos, pos, start_pattern = position;
 	Es_index length;
-	int read;
+	int readlen;
 	int useful_bufsize = BUFSIZE;
 
 	*first = ES_CANNOT_SET;
-	if (flags & EV_FIND_RE)
+	if (flags & EV_FIND_RE) {
+		xv_regexp_context ctxt;
+		const char *err;
+
+		if (flags & EV_FIND_BACKWARD) {
+			/* not yet implemented */
+			return;
+		}
+
+		memset(&ctxt, 0, sizeof(ctxt));
+		err = xv_compile_regexp(pattern, &ctxt, REG_NEWLINE);
+		if (err) {
+			fprintf(stderr, "%s-%d: %s\n", __FILE__, __LINE__, err);
+			return;
+		}
+		new_pos = start_pattern;
+		es_set_position(esh, new_pos);
+		for (;;) {
+			pos = new_pos;
+			new_pos = es_read(esh, useful_bufsize, buf, &readlen);
+			if (readlen == 0) {
+				if (pos == new_pos)
+					return;
+				/*
+				 * Gap in entity indices (hopefully due to wrap-around of
+				 * bounded stream).  Move start_pattern over gap. NOTE: this
+				 * implies that we never match a pattern against a span of
+				 * indices containing a gap.
+				 */
+				es_set_position(esh, new_pos);
+			}
+			else {
+				char match[BUFSIZE + 4];
+
+				buf[readlen] = '\0';
+				if (xv_match_regexp(buf, 0, ctxt, match, NULL)) {
+					char *p;
+
+					p = strstr(buf, match);
+					*first = pos + (p - buf);
+					*last_plus_one = *first + strlen(match);
+					return;
+				}
+				else {
+					/* we have read <readlen> bytes and no match has been
+					 * found - we increment the position by half <readlen>
+					 */
+					new_pos = pos + MAX(readlen / 2, 1);
+					es_set_position(esh, new_pos);
+				}
+			}
+		}
 		return;
+	}
 	matched_to = pattern;
 	done_match = pattern + pattern_length;
 	if (flags & EV_FIND_BACKWARD) {
@@ -409,7 +463,7 @@ Pkg_private void ev_find_in_esh(
 		esbuf.first = ES_INFINITY;
 		start_pattern--;
 Init_Backward:
-		FOREVER {
+		for (;;) {
 			if (start_pattern < 0)
 				return;
 			switch (es_make_buf_include_index(&esbuf,
@@ -417,10 +471,10 @@ Init_Backward:
 							BUFSIZE - 1)) {
 				case 0:
 					pos = esbuf.first;
-					read = esbuf.last_plus_one - pos;
+					readlen = esbuf.last_plus_one - pos;
 					in_buf = buf + (start_pattern - pos);
-					FOREVER {
-						ASSERT(in_buf <= buf + read);
+					for (;;) {
+						ASSERT(in_buf <= buf + readlen);
 						if (*matched_to++ != *in_buf++) {
 							start_pattern--;
 						}
@@ -480,10 +534,10 @@ Init_Backward:
 	  Init_Forward:
 		new_pos = start_pattern;
 		es_set_position(esh, new_pos);
-		FOREVER {
+		for (;;) {
 			pos = new_pos;
-			new_pos = es_read(esh, useful_bufsize, buf, &read);
-			if (read == 0) {
+			new_pos = es_read(esh, useful_bufsize, buf, &readlen);
+			if (readlen == 0) {
 				if (pos == new_pos)
 					return;
 				/*
@@ -497,8 +551,8 @@ Init_Backward:
 			}
 			else {
 				in_buf = buf;
-				buf_last_plus_one = buf + read;
-				FOREVER {
+				buf_last_plus_one = buf + readlen;
+				for (;;) {
 					if (*matched_to++ == *in_buf++) {
 						if (matched_to == done_match) {
 							if (--count == 0) {
