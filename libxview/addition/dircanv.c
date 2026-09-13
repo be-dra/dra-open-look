@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.61 2026/09/12 05:04:51 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.62 2026/09/13 07:52:21 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -1037,7 +1037,8 @@ static int have_matches(Dir_private *priv, Xv_window pw)
 		xv_free_regexp(priv->match_context);
 		priv->match_context = NULL;
 	}
-	if ((q = xv_compile_regexp(priv->match_ed_pattern, &priv->match_context))) {
+	if ((q = xv_compile_regexp(priv->match_ed_pattern,&priv->match_context,0)))
+	{
 		if (priv->tell_match_proc) {
 			sprintf(buf, XV_MSG("Building '%s*': %s"),priv->match_sh_pattern,q);
 			(*(priv->tell_match_proc))(DIRPUB(priv), buf, FALSE);
@@ -1050,7 +1051,7 @@ static int have_matches(Dir_private *priv, Xv_window pw)
 		if (priv->choose_one && have_one) {
 			vis->selected = FALSE;
 		}
-		else if (xv_match_regexp(vis->name, priv->match_context, 0)) {
+		else if (xv_match_regexp(vis->name, 0, priv->match_context, NULL)) {
 			vis->selected = TRUE;
 			++priv->num_sel;
 			have_one = TRUE;
@@ -2022,7 +2023,7 @@ static void determine_visibility(Dir_private *priv)
 			if ((!priv->show_dots) && (p->name[0] == '.')) continue;
 
 			if (priv->filter_ed_pattern) {
-				if (! xv_match_regexp(p->name, priv->filter_context, 0))
+				if (! xv_match_regexp(p->name, 0, priv->filter_context, NULL))
 					continue;
 			}
 
@@ -2911,7 +2912,7 @@ static Xv_opaque dir_set(Xv_opaque self, Attr_avlist avlist)
 						xv_free_regexp(priv->filter_context);
 						priv->filter_context = NULL;
 					}
-					if ((q = xv_compile_regexp(new, &priv->filter_context))) {
+					if ((q = xv_compile_regexp(new, &priv->filter_context,0))) {
 						xv_error(self,
 							ERROR_PKG, DIRCANVAS,
 							ERROR_STRING, q,
