@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_find_c_sccsid[] = "@(#)txt_find.c 20.27 93/06/28 DRA: $Id: txt_find.c,v 4.11 2026/09/12 19:51:50 dra Exp $";
+char     txt_find_c_sccsid[] = "@(#)txt_find.c 20.27 93/06/28 DRA: $Id: txt_find.c,v 4.12 2026/09/13 12:07:52 dra Exp $";
 #endif
 
 /*
@@ -161,7 +161,7 @@ Pkg_private void textsw_find_pattern_and_normalize(Textsw_view_private view, int
 Xv_public int textsw_find_bytes(Textsw abstract,	/* find in this textsw */
     Textsw_index   *first,	/* start here, return start of found pattern here */
     Textsw_index   *last_plus_one,	/* return end of found pattern */
-    CHAR           *buf,	/* pattern */
+    char           *buf,	/* pattern */
     unsigned        buf_len,	/* pattern length */
     unsigned        flags)	/* 0=forward, !0=backward */
 {
@@ -176,8 +176,9 @@ Xv_public int textsw_find_bytes(Textsw abstract,	/* find in this textsw */
 		abort();
 	}
 
+	/* regexp backwards search not yet implemented (2026-09-13) */
     textsw_find_pattern(priv, first, last_plus_one, buf, buf_len,
-			(unsigned) (flags ? EV_FIND_BACKWARD : 0));
+			(unsigned) (flags ? EV_FIND_BACKWARD : EV_FIND_DEFAULT|EV_FIND_RE));
     if (*first == ES_CANNOT_SET) {
 	*first = save_first;
 	return -1;
