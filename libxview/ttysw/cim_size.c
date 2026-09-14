@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_size_c_sccsid[] = "@(#)cim_size.c 20.32 93/06/28 DRA: $Id: cim_size.c,v 4.5 2026/08/04 18:21:38 dra Exp $";
+char     cim_size_c_sccsid[] = "@(#)cim_size.c 20.32 93/06/28 DRA: $Id: cim_size.c,v 4.6 2026/09/13 16:11:38 dra Exp $";
 #endif
 
 /*
@@ -115,16 +115,16 @@ Pkg_private void xv_tty_imagealloc(Ttysw *ttysw, int for_temp)
 	newimage = (char **) calloc(1L, (size_t)(ttysw->ttysw_bottom * sizeof(char *)));
 	newmode = (char **)calloc(1L, ttysw->ttysw_bottom * sizeof(char *));
 	bold = (char *)calloc(1L,
-				(size_t)(bytes_per_char * nchars + 2 * ttysw->ttysw_bottom));
+				(size_t)(bytes_per_char * nchars + 3 * ttysw->ttysw_bottom));
 	line = (char *)calloc(1L,
-				(size_t)(bytes_per_char * nchars + 2 * ttysw->ttysw_bottom));
+				(size_t)(bytes_per_char * nchars + 3 * ttysw->ttysw_bottom));
 
 	for (i = 0; i < ttysw->ttysw_bottom; i++) {
 		newimage[i] = line + 2;
 		newmode[i] = bold + 2;
 		setlinelength(ttysw, newimage[i], 0);
-		line += bytes_per_char * ttysw->ttysw_right + 2;
-		bold += bytes_per_char * ttysw->ttysw_right + 2;
+		line += bytes_per_char * ttysw->ttysw_right + 3;
+		bold += bytes_per_char * ttysw->ttysw_right + 3;
 	}
 	if (for_temp) {
 		temp_image = newimage;
