@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.19 2026/07/19 16:33:37 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.20 2026/09/13 19:18:29 dra Exp $ ";
 #endif
 #endif
 
@@ -557,7 +557,8 @@ static void notice_draw_polygons(Display *dpy, notice_handle notice,
  * The x, y, width, and height parameters passed in correspond to the
  * position and dimensions of the notice window.
  */
-static void notice_draw_borders(Xv_window	window, int x, int y, int width, int height, int is_toplevel_window)
+static void notice_draw_borders(Xv_window	window, int x, int y,
+							int width, int height, int is_toplevel_window)
 {
     Display		*display;
     XSegment		seg[5];
@@ -590,9 +591,9 @@ static void notice_draw_borders(Xv_window	window, int x, int y, int width, int h
     /*
      * Get Cms, pixel values
      */
-    cms = xv_get(window, WIN_CMS, NULL);
-    bg3 = xv_get(cms, CMS_PIXEL, 2, NULL);
-    white = xv_get(cms, CMS_PIXEL, 3, NULL);
+    cms = xv_get(window, WIN_CMS);
+    bg3 = xv_get(cms, CMS_PIXEL, 2);
+    white = xv_get(cms, CMS_PIXEL, 3);
     fg = xv_get(cms, CMS_FOREGROUND_PIXEL);
 	ui_style = xv_get(xv_screen(info), SCREEN_UI_STYLE);
 
@@ -661,12 +662,7 @@ static void notice_draw_borders(Xv_window	window, int x, int y, int width, int h
 
     /*
      * Code to draw border line to show 'raised' effect
-    olgx_draw_box(ginfo, w,
-			paneX,
-			paneY,
-			paneWidth,
-			paneHeight,
-			OLGX_NORMAL, 0);
+    olgx_draw_box(ginfo, w, paneX, paneY, paneWidth, paneHeight,OLGX_NORMAL, 0);
     */
 
     /*
@@ -873,7 +869,6 @@ static void fullscreen_win_event_proc(Xv_Window window, Event *event)
 			}
 			break;
 		case WIN_CLIENT_MESSAGE:
-			fprintf(stderr, "%s-%d: client message\n", __FUNCTION__, __LINE__);
 			if (event_xevent(event)->xclient.message_type == 
 				xv_get(XV_SERVER_FROM_WINDOW(window), SERVER_ATOM,"_DRA_TRACE"))
 			{
@@ -934,10 +929,10 @@ static int notice_text_width(Xv_Font font, CHAR *str)
 
 static int notice_button_width(Xv_Font font, Graphics_info *ginfo, notice_buttons_handle	button)
 {
-    button->button_rect.r_width = notice_text_width(font, button->string) +
-	2*ButtonEndcap_Width(ginfo);
-    button->button_rect.r_height = Button_Height(ginfo);
-    return (button->button_rect.r_width);
+	button->button_rect.r_width = notice_text_width(font, button->string) +
+			2 * ButtonEndcap_Width(ginfo);
+	button->button_rect.r_height = Button_Height(ginfo);
+	return (button->button_rect.r_width);
 }
 
 
