@@ -1,5 +1,5 @@
 #ifndef lint
-char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.25 2026/08/24 18:58:54 dra Exp $";
+char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v 4.26 2026/09/13 16:12:18 dra Exp $";
 #endif
 
 /*
@@ -60,7 +60,6 @@ char tty_main_c_sccsid[] = "@(#)tty_main.c 20.93 93/06/28 DRA: $Id: tty_main.c,v
 #define	oebp	ttysw->ttysw_obuf.cb_ebp
 #define	obuf	ttysw->ttysw_obuf.cb_buf
 
-static int ttysw_process_select(Ttysw_private ttysw, struct inputevent *ie);
 static int ttysw_process_keyboard(Ttysw_private ttysw, struct inputevent *ie);
 static int ttysw_process_motion(Ttysw_private ttysw, struct inputevent *ie);
 static int ttysw_process_adjust(Ttysw_private ttysw, struct inputevent *ie);
@@ -780,6 +779,45 @@ Pkg_private int ttysw_input_it(register Ttysw_private ttysw, char *addr,
 	}
 }
 
+static void dump_image(Ttysw_private priv)
+{
+	int row;
+
+	fprintf(stderr, "\ntop %d, bottom %d\n",
+							priv->ttysw_top, priv->ttysw_bottom);
+
+	for (row = priv->ttysw_top; row < priv->ttysw_bottom; row++) {
+		char *line = priv->image[row];
+
+		fprintf(stderr, "c=%d b=%d:%s\n", (int)line[-2], (int)line[-1], line);
+	}
+	
+}
+
+static int ttysw_process_select(Ttysw_private priv, Event *ev)
+{
+	if (event_meta_is_down(ev)) {
+		if (event_is_down(ev)) {
+			dump_image(priv);
+		}
+		return TTY_DONE;
+	}
+
+	if (event_is_down(ev)) {
+		priv->ttysw_butdown = ACTION_SELECT;
+		SERVERTRACE((500, "%s: ACTION_SELECT down\n", __FUNCTION__));
+		ttysel_make(priv, ev, 1);
+	}
+	else {
+		if (priv->ttysw_butdown == ACTION_SELECT) {
+			SERVERTRACE((500, "%s: ACTION_SELECT up\n", __FUNCTION__));
+			ttysel_adjust(priv, ev, FALSE, FALSE);
+			ttysel_finish(priv, ev);
+		}
+	}
+	return TTY_DONE;
+}
+
 
 /* #ifndef TERMSW */
 Pkg_private void ttysw_handle_itimer(Ttysw_private ttysw)
@@ -869,23 +907,6 @@ Pkg_private int ttysw_eventstd(Tty_view ttysw_view_public, Event *ie)
 	}
 }
 
-static int ttysw_process_select(Ttysw_private priv, Event *ev)
-{
-	if (event_is_down(ev)) {
-		priv->ttysw_butdown = ACTION_SELECT;
-		SERVERTRACE((500, "%s: ACTION_SELECT down\n", __FUNCTION__));
-		ttysel_make(priv, ev, 1);
-	}
-	else {
-		if (priv->ttysw_butdown == ACTION_SELECT) {
-			SERVERTRACE((500, "%s: ACTION_SELECT up\n", __FUNCTION__));
-			ttysel_adjust(priv, ev, FALSE, FALSE);
-			ttysel_finish(priv, ev);
-		}
-	}
-	return TTY_DONE;
-}
-
 static int ttysw_process_adjust(Ttysw_private ttysw, struct inputevent *ie)
 {
 
@@ -945,15 +966,7 @@ static int ttysw_process_keyboard(Ttysw_private ttysw, Event *ev)
 	if (id > ISO_LAST) {
 /* BEGIN only for testing: */
 		if (event_action(ev) == KEY_TOP(5)) {
-			int i;
-			for (i = 0; i < ttysw->ttysw_bottom; i++) {
-				char *line = ttysw->image[i];
-
-				if (line) {
-					fprintf(stderr, "%d: chars=%d, bytes=%d '%.50s\n",
-							i, line[-2], line[-1], line);
-				}
-			}
+			if (event_is_down(ev)) dump_image(ttysw);
 		}
 /* END only for testing: */
 		return ttysw_domap(ttysw, ev);
