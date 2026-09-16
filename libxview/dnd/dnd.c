@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.32 2026/08/26 12:51:12 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.33 2026/09/15 20:05:21 dra Exp $ ";
 #endif
 #endif
 
@@ -821,13 +821,18 @@ static int send_preview_event(Dnd_info *dnd, int site, XEvent *e)
 					 *  + a text drag
 					 */
 					for (i = 0; i < dnd->numtargets; i++) {
-						if (dnd->targetlist[i] == uri || dnd->targetlist[i] == fn) {
+						if (dnd->targetlist[i] == uri
+							|| dnd->targetlist[i] == fn)
+						{
+							/* it is a file drag */
 							cM.xclient.data.l[2] = uri;
+							/* let's simulate thunar: */
+							cM.xclient.data.l[3] = None;
+							cM.xclient.data.l[4] = None;
 							/* let's simulate dolphin: */
-							cM.xclient.data.l[3] = xv_get(srv, SERVER_ATOM,
-														"text/x-moz-url");
-							cM.xclient.data.l[4] = txt;
-							/* thunar has cM.xclient.data.l[3] and ..[4] = None */
+/* 							cM.xclient.data.l[3] = xv_get(srv, SERVER_ATOM, */
+/* 														"text/x-moz-url"); */
+/* 							cM.xclient.data.l[4] = txt; */
 							break;
 						}
 					}
