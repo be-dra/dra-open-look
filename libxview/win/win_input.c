@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.59 2026/08/26 15:55:23 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.60 2026/09/15 20:05:58 dra Exp $";
 #endif
 #endif
 
@@ -2633,9 +2633,10 @@ static int process_clientmessage_events(Xv_object window,
 				framepriv->droppos = clientmessage->data.l[2];
 				msg_x = (clientmessage->data.l[2] >> 16) & 0xffff;
 				msg_y = clientmessage->data.l[2] & 0xffff;
+				act = (Atom)clientmessage->data.l[4];
 
-				SERVERTRACE((TLXDND, "XdndPosition from %lx at (root) %d, %d\n",
-									clientmessage->data.l[0], msg_x, msg_y));
+				SERVERTRACE((TLXDND+2, "XdndPosition from %lx at %d,%d act %d\n",
+								clientmessage->data.l[0], msg_x, msg_y, act));
 
 				(void)win_translate_xy_internal(xv_display(info),
 									xv_get(xv_root(info), XV_XID),
@@ -2643,7 +2644,6 @@ static int process_clientmessage_events(Xv_object window,
 									&framepriv->drop_x, &framepriv->drop_y);
 
 				/* Now drop_x, drop_y are in frame-coords */
-				act = (Atom)clientmessage->data.l[4];
 
 				if (act == (Atom)xv_get(server_public, SERVER_ATOM,
 														"XdndActionMove"))
@@ -2702,7 +2702,7 @@ static int process_clientmessage_events(Xv_object window,
     			cM.data.l[4] = xv_get(server_public,
 										SERVER_ATOM, "XdndActionPrivate");
 
-				SERVERTRACE((TLXDND, "XdndStatus back to %lx\n", cM.window));
+				SERVERTRACE((TLXDND+2, "XdndStatus back to %lx\n", cM.window));
 				DndSendEvent(cM.display, (XEvent *)&cM, "XDnd");
 
 				/* now back to us: */
