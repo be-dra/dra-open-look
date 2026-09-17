@@ -1,4 +1,4 @@
-/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.5 2026/08/04 20:20:01 dra Exp $      */
+/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.6 2026/09/16 13:30:34 dra Exp $      */
 
 /***********************************************************************/
 /*	                      window_impl.h			       */
@@ -180,7 +180,7 @@ typedef struct window_info {
 	 * selection request (analogous to _SUN_SELECTION_END or
 	 * _SUN_DRAGDROP_DONE) - they could even use XdndFinished as target...
 	 */
-	Window xdnd_sender;
+	Window xdnd_source;
 #endif /* NO_XDND */
 
 	/* aqt is an abbreviation of "Avoid QueryTree' */
