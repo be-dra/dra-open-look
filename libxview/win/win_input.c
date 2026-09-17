@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.60 2026/09/15 20:05:58 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.61 2026/09/16 13:30:50 dra Exp $";
 #endif
 #endif
 
@@ -579,7 +579,7 @@ static void xdnd_drop_received(Xv_window window, Xv_server srv,
 	 *    In XView, we use the target _SUN_DRAGDROP_DONE or
 	 *    _SUN_SELECTION_END for that purpose.
 	 */
-	framepriv->xdnd_sender = clm->data.l[0];
+	framepriv->xdnd_source = clm->data.l[0];
 
 	/* I want to dress this as if it were a real XView-Drop */
 
