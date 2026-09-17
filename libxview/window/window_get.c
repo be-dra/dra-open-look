@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.7 2026/07/20 14:21:23 dra Exp $";
+static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.8 2026/09/16 13:30:09 dra Exp $";
 #endif
 #endif
 
@@ -418,10 +418,13 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 
 		case WIN_MOUSE_XY:{
 				static Rect rect;
+				int x, y;
 
 				/* Rect struct is used to get mouse x and y */
-				win_getmouseposition(win_public, &rect.r_left, &rect.r_top);
-				v = (Xv_opaque) & rect;
+				win_getmouseposition(win_public, &x, &y);
+				rect.r_left = x;
+				rect.r_top = y;
+				v = (Xv_opaque)&rect;
 				break;
 			}
 
@@ -522,6 +525,11 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 				v = (Xv_opaque) xv_cms_data;
 				break;
 			}
+
+		/* just in case some application needs access to the
+		 * Xdnd source window
+		 */
+		case WIN_ADD_DROP_INTEREST: return (Xv_opaque)win->xdnd_source;
 
 		case WIN_IC:
 				if (win->win_use_im && !win->xic) {
