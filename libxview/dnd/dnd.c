@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.33 2026/09/15 20:05:21 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.34 2026/09/16 13:31:06 dra Exp $ ";
 #endif
 #endif
 
@@ -2664,7 +2664,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 			Frame frame = xv_get(win, WIN_FRAME);
 			Window_info *framepriv = WIN_PRIVATE(frame);
 
-			if (framepriv->xdnd_sender) {
+			if (framepriv->xdnd_source) {
 				XClientMessageEvent cM;
 
 				cM.type = ClientMessage;
@@ -2672,7 +2672,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 				cM.format = 32;
 				cM.message_type = xv_get(XV_SERVER_FROM_WINDOW(frame),
 									SERVER_ATOM, "XdndFinished");
-				cM.window = framepriv->xdnd_sender;
+				cM.window = framepriv->xdnd_source;
 				cM.data.l[0] = xv_get(frame, XV_XID);
 				cM.data.l[1] = 1;
 				cM.data.l[2] = xv_get(XV_SERVER_FROM_WINDOW(frame),
