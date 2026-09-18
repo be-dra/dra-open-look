@@ -1,4 +1,4 @@
-/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.11 2026/08/09 11:15:49 dra Exp $ */
+/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.12 2026/09/18 07:26:09 dra Exp $ */
 /* #ident	"@(#)win.h	26.43	93/06/28 SMI" */
 
 /*
@@ -104,6 +104,7 @@ typedef struct _windowstate {
 
 /* client flags */
 #define CLOlwmOwned		(1L<<0)
+/* other flags see properties.h: WMNameAvail etc */
 
 /***************************************************************************
 * Client structures
