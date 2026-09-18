@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.4 2025/01/03 13:21:04 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.5 2026/09/18 07:29:38 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -84,6 +84,11 @@ int _rt_count;
 	 XTranslateCoordinates args)
 
 
+#define xv_DND_XDND_AWARE (1<<4)
+#define xv_DND_ENTERLEAVE (1<<0)
+#define xv_DND_MOTION (1<<1)
+#define xv_DND_RECT_SITE 0
+
 /* ===== externs ========================================================== */
 
 extern Window NoFocusWin;
@@ -135,11 +140,7 @@ typedef struct {
  * was found, a pointer to the data is returned.  This data must be freed with
  * XFree().  If no valid property is found, NULL is returned.
  */
-static void *
-GetInterestProperty(dpy, win, nitems)
-    Display *dpy;
-    Window win;
-    unsigned long *nitems;
+static void *GetInterestProperty(Display *dpy,Window win, unsigned long *nitems)
 {
     Status s;
     Atom acttype;
@@ -192,10 +193,7 @@ GetInterestProperty(dpy, win, nitems)
 /*
  * Create and return a region that contains a given rectangle.
  */
-static Region
-MakeRegionFromRect(x, y, w, h)
-    int x, y;
-    unsigned int w, h;
+static Region MakeRegionFromRect(int x, int y, unsigned int w, unsigned int h)
 {
     XRectangle r;
     Region reg;
@@ -217,29 +215,19 @@ MakeRegionFromRect(x, y, w, h)
  * (x,y) location w.r.t. its parent.  If it is false, the region's upper left 
  * corner is at (0,0).
  */
-static Region
-GetWindowRegion(dpy, winInfo, offset)
-    Display *dpy;
-    WinGeneric *winInfo;
-    Bool offset;
+static Region GetWindowRegion(Display *dpy, WinGeneric *winInfo, Bool offset)
 {
-    return MakeRegionFromRect(
-	offset ? winInfo->core.x : 0,
-	offset ? winInfo->core.y : 0,
-	winInfo->core.width,
-	winInfo->core.height
-    );
-}    
+	return MakeRegionFromRect(offset ? winInfo->core.x : 0,
+							offset ? winInfo->core.y : 0,
+							winInfo->core.width, winInfo->core.height);
+}
 
 
 /*
  * Subtract the area of a window from the current visible region.
  */
-static void
-SubtractWindowFromVisibleRegion(dpy, winInfo, visrgn)
-    Display *dpy;
-    Window winInfo;
-    Region visrgn;
+static void SubtractWindowFromVisibleRegion(Display *dpy, WinGeneric *winInfo,
+							Region visrgn)
 {
     Region winrgn = GetWindowRegion(dpy, winInfo, True);
     XSubtractRegion(visrgn, winrgn, visrgn);
@@ -268,126 +256,123 @@ SubtractWindowFromVisibleRegion(dpy, winInfo, visrgn)
  * Process a window's drop site interest property.  If the property is in an 
  * invalid format, fail silently.
  */
-static void
-ProcessInterestProperty(dpy, winInfo, screen, data, datalen, visrgn,
-			xoff, yoff)
-    Display *dpy;
-    WinGeneric *winInfo;
-    int screen;
-    void *data;
-    unsigned long datalen;
-    Region visrgn;
-    int xoff, yoff;
+static void ProcessInterestProperty(Display *dpy, WinGeneric *winInfo,
+    			int screen, void *data, unsigned long datalen, Region visrgn,
+    			int xoff, int yoff)
 {
-    unsigned long *array = data;
-    int cur = 0;
-    int i, j, nsites;
-    Window wid;
-    Window wjunk;
-    Window areawin;
-    unsigned long sid;
-    int areatype;
-    int nrects;
-    unsigned long flags;
-    Region region = NULL;
-    Region toprgn;
-    XRectangle rect;
-    dsite_t *site;
-    int x, y;
-    unsigned int width, height, border, ujunk;
-    int junk;
+	unsigned long *array = data;
+	int cur = 0;
+	int i, j, nsites;
+	Window wid;
+	Window wjunk;
+	Window areawin;
+	unsigned long sid;
+	int areatype;
+	int nrects;
+	unsigned long flags;
+	Region region = NULL;
+	Region toprgn;
+	XRectangle rect;
+	dsite_t *site;
+	int x, y;
+	unsigned int width, height, border, ujunk;
+	int junk;
 
-    if (array[cur] != DND_VERSION) {
+	if (array[cur] != DND_VERSION) {
 #ifdef DEBUG
-	char msg[100];
-	sprintf(msg,
-		"unknown drop interest property version (%d) on 0x%x\n",
-		array[cur], winInfo->core.self);
-	ErrorWarning(msg);
-#endif /* DEBUG */
-	return;
-    }
-
-    toprgn = GetWindowRegion(dpy, winInfo, False);
-
-    NEXTWORD(nsites);
-    for (i=0; i<nsites; ++i) {
-	NEXTWORD(wid);
-	NEXTWORD(sid);
-	NEXTWORD(flags);
-	NEXTWORD(areatype);
-	switch (areatype) {
-	case DND_INTEREST_RECT:
-	    region = XCreateRegion();
-	    NEXTWORD(nrects);
-	    for (j=0; j<nrects; ++j) {
-		NEXTWORD(rect.x);
-		NEXTWORD(rect.y);
-		NEXTWORD(rect.width);
-		NEXTWORD(rect.height);
-		XUnionRectWithRegion(&rect, region, region);
-	    }
-	    break;
-	case DND_INTEREST_WINDOW:
-	    region = XCreateRegion();
-	    NEXTWORD(nrects);
-	    for (j=0; j<nrects; ++j) {
-		NEXTWORD(areawin);
-		if (0 == _XGetGeometry((dpy, areawin, &wjunk, &junk, &junk,
-					&width, &height, &border, &ujunk)))
-		{
-#ifdef DEBUG
-		    char msg[100];
-		    sprintf(msg,
-			    "XGetGeometry failed on window 0x%x\n",
-			    winInfo->core.self);
-		    ErrorWarning(msg);
-#endif /* DEBUG */
-		    continue;
-		}
-		(void) _XTranslateCoordinates((dpy, areawin,
-					       winInfo->core.self, 0, 0,
-					       &x, &y, &wjunk));
-		rect.x = x - border;
-		rect.y = y - border;
-		rect.width = width + border;
-		rect.height = height + border;
-		XUnionRectWithRegion(&rect, region, region);
-	    }
-	    break;
-	default:
-#ifdef DEBUG
-	    {
 		char msg[100];
-		sprintf(msg,
-			"unknown site area type on window 0x%x\n",
-			winInfo->core.self);
-		ErrorWarning(msg);
-	    }
-#endif /* DEBUG */
-	    XDestroyRegion(toprgn);
-	    return;
-	}
-	XIntersectRegion(region, toprgn, region);
-	XOffsetRegion(region, xoff, yoff);
-	XIntersectRegion(region, visrgn, region);
-	site = (dsite_t *) malloc(sizeof(dsite_t));
-	if (site == NULL)
-	    break; /* out of memory - stop processing this property */
-	site->screen = screen;
-	site->site_id = sid;
-	site->window_id = wid;
-	site->flags = flags;
-	site->region = region;
-	site->next = NULL;
-	(*NextSite) = site;
-	NextSite = &site->next;
-	++SitesFound;
-	region = NULL;
-    }
-    XDestroyRegion(toprgn);
-}
 
+		sprintf(msg,
+				"unknown drop interest property version (%d) on 0x%x\n",
+				array[cur], winInfo->core.self);
+		ErrorWarning(msg);
+#endif /* DEBUG */
+		return;
+	}
+
+	toprgn = GetWindowRegion(dpy, winInfo, False);
+
+	NEXTWORD(nsites);
+	for (i = 0; i < nsites; ++i) {
+		NEXTWORD(wid);
+		NEXTWORD(sid);
+		NEXTWORD(flags);
+		NEXTWORD(areatype);
+		switch (areatype) {
+			case DND_INTEREST_RECT:
+				region = XCreateRegion();
+				NEXTWORD(nrects);
+				for (j = 0; j < nrects; ++j) {
+					NEXTWORD(rect.x);
+					NEXTWORD(rect.y);
+					NEXTWORD(rect.width);
+					NEXTWORD(rect.height);
+					XUnionRectWithRegion(&rect, region, region);
+				}
+				break;
+			case DND_INTEREST_WINDOW:
+				region = XCreateRegion();
+				NEXTWORD(nrects);
+				for (j = 0; j < nrects; ++j) {
+					NEXTWORD(areawin);
+					if (0 == _XGetGeometry((dpy, areawin, &wjunk, &junk, &junk,
+											&width, &height, &border, &ujunk)))
+					{
+
+#ifdef DEBUG
+						char msg[100];
+
+						sprintf(msg,
+								"XGetGeometry failed on window 0x%x\n",
+								winInfo->core.self);
+						ErrorWarning(msg);
+#endif /* DEBUG */
+
+						continue;
+					}
+					(void)_XTranslateCoordinates((dpy, areawin,
+									winInfo->core.self, 0, 0, &x, &y, &wjunk));
+					rect.x = x - border;
+					rect.y = y - border;
+					rect.width = width + border;
+					rect.height = height + border;
+					XUnionRectWithRegion(&rect, region, region);
+				}
+				break;
+			default:
+#ifdef DEBUG
+				{
+					char msg[100];
+
+					sprintf(msg,
+							"unknown site area type on window 0x%x\n",
+							winInfo->core.self);
+					ErrorWarning(msg);
+				}
+#endif /* DEBUG */
+
+				XDestroyRegion(toprgn);
+				return;
+		}
+		XIntersectRegion(region, toprgn, region);
+		XOffsetRegion(region, xoff, yoff);
+		XIntersectRegion(region, visrgn, region);
+		site = (dsite_t *) malloc(sizeof(dsite_t));
+		if (site == NULL)
+			break;	/* out of memory - stop processing this property */
+		site->screen = screen;
+		site->site_id = sid;
+		site->window_id = wid;
+		site->flags = flags;
+		site->region = region;
+		site->next = NULL;
+		(*NextSite) = site;
+		NextSite = &site->next;
+		++SitesFound;
+		region = NULL;
+	}
+	XDestroyRegion(toprgn);
+}
 
 /*
  * FindDropSites
@@ -425,7 +410,7 @@ static void FindDropSites(Display *dpy)
 		if (rootInfo == NULL || rootInfo->core.kind != WIN_ROOT)
 			continue;
 
-		visrgn = GetWindowRegion(dpy, rootInfo, False);
+		visrgn = GetWindowRegion(dpy, (WinGeneric *)rootInfo, False);
 
 		if (_XQueryTree((dpy, root, &junk, &junk, &children,
 								(unsigned int *)&nchildren)) == 0) {
@@ -448,59 +433,101 @@ static void FindDropSites(Display *dpy)
 		 */
 
 		for (i = nchildren - 1; i >= 0; --i) {
+			Client *client;
 
 			winInfo = WIGetInfo(children[i]);
 			if (winInfo == NULL)
 				continue;
 
-			state = winInfo->core.client->wmState;
+			client = winInfo->core.client;
+			state = client->wmState;
 
 			/*
 			 * Ignore everything except frames in NormalState and icons in 
 			 * IconicState.
 			 */
 			if (!((winInfo->core.kind == WIN_FRAME && state == NormalState) ||
-							(winInfo->core.kind == WIN_ICON
-									&& state == IconicState))) {
+					(winInfo->core.kind == WIN_ICON && state == IconicState)))
+			{
 				continue;
 			}
 
-			fwdsitedata = GetInterestProperty(dpy, children[i], &fwdlen);
+			if (client->flags & OL_SUN_DND) {
+				fwdsitedata = GetInterestProperty(dpy, children[i], &fwdlen);
 
-			if (winInfo->core.kind == WIN_FRAME) {
-				paneInfo = (WinPane *) PANEOFCLIENT(winInfo->core.client);
-				sitedata = GetInterestProperty(dpy, paneInfo->core.self,
-						&datalen);
-				WinRootPos(paneInfo, &xoff, &yoff);
-				if (sitedata != NULL) {
-					ProcessInterestProperty(dpy, paneInfo, s, sitedata,
-							datalen, visrgn, xoff, yoff);
-					XFree(sitedata);
+				if (winInfo->core.kind == WIN_FRAME) {
+					paneInfo = (WinPane *) PANEOFCLIENT(client);
+					sitedata = GetInterestProperty(dpy, paneInfo->core.self,
+							&datalen);
+					WinRootPos(paneInfo, &xoff, &yoff);
+					if (sitedata != NULL) {
+						ProcessInterestProperty(dpy, (WinGeneric *)paneInfo,
+								s, sitedata, datalen, visrgn, xoff, yoff);
+						XFree(sitedata);
 
+						if (fwdsitedata != NULL) {
+							framergn = GetWindowRegion(dpy, winInfo, True);
+							XIntersectRegion(framergn, visrgn, framergn);
+							toprgn = GetWindowRegion(dpy,
+											(WinGeneric *)paneInfo, False);
+							XOffsetRegion(toprgn, xoff, yoff);
+							XSubtractRegion(framergn, toprgn, framergn);
+							ProcessInterestProperty(dpy, winInfo,s, fwdsitedata,
+									fwdlen, framergn,
+									winInfo->core.x, winInfo->core.y);
+							XDestroyRegion(framergn);
+							XDestroyRegion(toprgn);
+							XFree(fwdsitedata);
+						}
+					}
+				}
+				else {
 					if (fwdsitedata != NULL) {
-						framergn = GetWindowRegion(dpy, winInfo, True);
-						XIntersectRegion(framergn, visrgn, framergn);
-						toprgn = GetWindowRegion(dpy, paneInfo, False);
-						XOffsetRegion(toprgn, xoff, yoff);
-						XSubtractRegion(framergn, toprgn, framergn);
 						ProcessInterestProperty(dpy, winInfo, s, fwdsitedata,
-								fwdlen, framergn,
-								winInfo->core.x, winInfo->core.y);
-						XDestroyRegion(framergn);
-						XDestroyRegion(toprgn);
+								fwdlen, visrgn, winInfo->core.x, winInfo->core.y);
 						XFree(fwdsitedata);
 					}
 				}
+
+				SubtractWindowFromVisibleRegion(dpy, winInfo, visrgn);
 			}
-			else {
-				if (fwdsitedata != NULL) {
-					ProcessInterestProperty(dpy, winInfo, s, fwdsitedata,
-							fwdlen, visrgn, winInfo->core.x, winInfo->core.y);
-					XFree(fwdsitedata);
+			if (client->flags & OL_use_dndaware) {
+				if (winInfo->core.kind == WIN_FRAME) {
+					paneInfo = (WinPane *) PANEOFCLIENT(client);
+
+					if (paneInfo) {
+						/* how does such a property look like if it should
+						 * represent the whole top window ?
+						 */
+						long pseudositedata[] = {
+							DND_VERSION,
+							1,
+							children[i],  /* window */
+							1234,   /* site_id */
+							xv_DND_XDND_AWARE |xv_DND_ENTERLEAVE |xv_DND_MOTION,
+							xv_DND_RECT_SITE,
+							1,   /* num rects */
+							0,  /* x */
+							0,  /* y */
+							paneInfo->core.width,
+							paneInfo->core.height
+						};
+						int dl= sizeof(pseudositedata)/sizeof(long);
+
+						framergn = GetWindowRegion(dpy, winInfo, True);
+						XIntersectRegion(framergn, visrgn, framergn);
+						toprgn = GetWindowRegion(dpy, (WinGeneric *)paneInfo,False);
+						XOffsetRegion(toprgn, xoff, yoff);
+						XSubtractRegion(framergn, toprgn, framergn);
+						ProcessInterestProperty(dpy, winInfo,s, pseudositedata,
+								dl, framergn,
+								paneInfo->core.x + winInfo->core.x,
+								paneInfo->core.y + winInfo->core.y);
+						XDestroyRegion(framergn);
+						XDestroyRegion(toprgn);
+					}
 				}
 			}
-
-			SubtractWindowFromVisibleRegion(dpy, winInfo, visrgn);
 		}
 		XDestroyRegion(visrgn);
 		XFree((char *)children);
@@ -549,6 +576,7 @@ FreeDropSites()
  *	8k+5	width
  *	8k+6	height
  *	8k+7	flags
+ * NOTE that this correspond to the XView type DndSiteRects
  */
 static void WriteSiteRectList(Display *dpy, Window win, Atom prop)
 {
