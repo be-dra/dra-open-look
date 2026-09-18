@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: dsdm.h,v 1.2 1995/09/22 06:14:31 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: dsdm.h,v 1.3 2026/09/18 07:24:49 dra Exp $ */
 /* #ident "@(#)dsdm.h	1.3	93/06/28" */
 
 /*
@@ -18,8 +18,13 @@
 #define DND_VERSION		0
 #define DND_INTEREST_RECT	0
 #define DND_INTEREST_WINDOW	1
+
+/* see also <xview/dragdrop.h> */
 #define DND_SITE_DEFAULT	(1<<2)
 #define DND_SITE_FORWARD	(1<<3)
+
+/* see also dndimpl.h */
+#define DND_XDND_AWARE        (1<<4)
 
 /* public functions */
 
