@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.34 2026/09/16 13:31:06 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.35 2026/09/17 21:33:01 dra Exp $ ";
 #endif
 #endif
 
@@ -294,14 +294,15 @@ static int contact_dsdm(Dnd_info	*dnd)
 
 	xv_set(dnd->dsdm_selreq, XV_KEY_DATA, dnd_site_key, (char *)dnd, NULL);
 
-	siteRects = (DndSiteRects *) xv_get(dnd->dsdm_selreq, SEL_DATA, &length, &format);
+	siteRects = (DndSiteRects *)xv_get(dnd->dsdm_selreq, SEL_DATA,
+											&length, &format);
 	/* If the dsdm responded with INCR then siteRects should be NULL and
 	 * dnd->siteRects will contain the data.
 	 */
 	if (siteRects)
 		dnd->siteRects = siteRects;
 
-	dnd->numSites = length / 8;
+	dnd->numSites = length / (sizeof(DndSiteRects) / sizeof(long));
 	dnd->lastSiteIndex = 0;
 	dnd->eventSiteIndex = DND_NO_SITE;
 
@@ -492,9 +493,257 @@ static void send_preview_leave(Display *dpy, Dnd_info *dnd, Time t)
 }
 #endif /* NO_XDND */
 
+static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
+									XMotionEvent *ev)
+{
+	const char *debugname = 0;
+	XEvent cM;
+	Event event;
+
+	cM.xclient.type = ClientMessage;
+	cM.xclient.format = 32;
+	cM.xclient.window = sit->window;
+	if (sit->flags & DND_XDND_AWARE) {
+		/* this is a DndSiteRect that has been constructed for a window
+		 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
+		 */
+		switch (subtype) {
+			case EnterNotify:
+				cM.xclient.message_type = dnd->atom[XdndEnter];
+				{
+					int targets_version = (sit->flags >> 24);
+					int i;
+					Xv_server srv = XV_SERVER_FROM_WINDOW(dnd->parent);
+					Atom uri = (Atom)xv_get(srv, SERVER_ATOM, "text/uri-list");
+					Atom fn = (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME");
+					Atom txt = (Atom)xv_get(srv, SERVER_ATOM, "text/plain");
+
+					dnd->last_top_win_is_aware = TRUE;
+					dnd->xdnd_used_version = MIN(targets_version, XDND_MY_VERSION);
+
+					/* send_preview enter */
+					cM.xclient.message_type = dnd->atom[XdndEnter];
+					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
+					cM.xclient.data.l[1] = (dnd->xdnd_used_version << 24);
+
+					/* at this level, we know of a few 'main drag types':
+					 *  + a file drag
+					 *  + a text drag
+					 */
+					for (i = 0; i < dnd->numtargets; i++) {
+						if (dnd->targetlist[i] == uri
+							|| dnd->targetlist[i] == fn)
+						{
+							/* it is a file drag */
+							cM.xclient.data.l[2] = uri;
+							/* let's simulate thunar: */
+							cM.xclient.data.l[3] = None;
+							cM.xclient.data.l[4] = None;
+							/* let's simulate dolphin: */
+/* 							cM.xclient.data.l[3] = xv_get(srv, SERVER_ATOM, */
+/* 														"text/x-moz-url"); */
+/* 							cM.xclient.data.l[4] = txt; */
+							break;
+						}
+					}
+					if (i >= dnd->numtargets) {
+						/* no file drag */
+						for (i = 0; i < dnd->numtargets; i++) {
+							if (dnd->targetlist[i] == txt
+								|| dnd->targetlist[i] == XA_STRING)
+							{
+								cM.xclient.data.l[2] = txt;
+								cM.xclient.data.l[3] = XA_STRING;
+								cM.xclient.data.l[4] = None;
+								break;
+							}
+						}
+					}
+					if (i >= dnd->numtargets) {
+						/* no file drag and no string drag */
+						cM.xclient.data.l[2] = dnd->targetlist[0];
+						cM.xclient.data.l[3] = dnd->targetlist[1];
+						cM.xclient.data.l[4] = dnd->targetlist[2];
+					}
+
+					/* usually we have more than 3 TARGETS */
+					if (dnd->numtargets >= 3) {
+						/* we should provide a XdndTypeList */
+						cM.xclient.data.l[1] |= 1;
+						XChangeProperty(ev->display,
+								(Window)cM.xclient.data.l[0],
+								dnd->atom[XdndTypeList], XA_ATOM, 32,
+								PropModeReplace, (unsigned char *)dnd->targetlist,
+								dnd->numtargets);
+					}
+
+					SERVERTRACE((TLXDND, "sending XdndEnter to %lx (%ld, %ld, %ld)\n",
+							sit->window, cM.xclient.data.l[2],
+							cM.xclient.data.l[3], cM.xclient.data.l[4]));
+					/* we assume 'accept' first */
+					dnd->xdnd_last_status_was_accept = 1;
+					DndSendEvent(ev->display, &cM, "XdndEnter");
+					UpdateGrabCursor(dnd, EnterNotify, FALSE, ev->time);
+
+					/* send_preview position */
+
+					cM.xclient.message_type = dnd->atom[XdndPosition];
+					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
+					cM.xclient.data.l[1] = 0;
+					cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
+					cM.xclient.data.l[3] = ev->time;
+					cM.xclient.data.l[4] = ((dnd->type == DND_MOVE) ?
+												dnd->atom[XdndActionMove] :
+												dnd->atom[XdndActionCopy]);
+
+					SERVERTRACE((TLXDND, "sending XdndPosition(time %ld) to %lx\n",
+													ev->time, sit->window));
+					DndSendEvent(ev->display, &cM, "XdndPosition");
+				}
+				break;
+			case LeaveNotify:
+				send_preview_leave(ev->display, dnd, ev->time);
+				break;
+			case MotionNotify:
+			default:
+				cM.xclient.message_type = dnd->atom[XdndPosition];
+				cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
+				cM.xclient.data.l[1] = 0;
+				cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
+				cM.xclient.data.l[3] = ev->time;
+				cM.xclient.data.l[4] = ((dnd->type == DND_MOVE) ?
+											dnd->atom[XdndActionMove] :
+											dnd->atom[XdndActionCopy]);
+
+				SERVERTRACE((TLXDND, "sending XdndPosition(time %ld) to %lx\n",
+											ev->time, sit->window));
+				DndSendEvent(ev->display, &cM, "XdndPosition");
+				break;
+		}
+		return DND_SUCCEEDED;
+	}
+	else {
+		Xv_Window eventObject = win_data(ev->display, sit->window);
+
+		/* The original XView Dnd protocol had no information about
+		 * the drag source in the preview client messages.
+		 * Therefore, there was no way to establish a communication
+		 * between the drag source and the preview receiver, 
+		 * the main purpose of such a communication would be a
+		 * 'rejection'. The field data.l[4] was taken by the
+		 * DND_FORWARDED info, which takes only 1 bit.
+		 *
+		 * Now, I want to include the 'forwarded' situation into
+		 * data.l[2] which contains the mouse position in the
+		 * following way:
+		 * 1111111111111111 1 111111111111111
+		 * x_root (16 bits) ^ y_root (15 bits)
+		 *                  |
+		 *                  Forwarded
+		 *
+		 * When this has been thoroughly tested, the data.l[4] field
+		 * can be used for the window ID of the drag source - 
+		 * and we can (in analogy to Xdnd) provide a property with
+		 * that TARGETS or similar....
+		 * Reference (erfihlwebfrygjbv)
+		 *
+		 * However, if I send such a preview event to a client that
+		 * is running against the 'standard' XView library, it will
+		 * not understand.
+		 * Our new XView4.0 clients set the bit
+		 * DND_EXPECT_NEW_PREVIEW_EVENT in their drop sites - so we
+		 * can recognize them.
+		 */
+
+		debugname = "_SUN_DRAGDROP_PREVIEW";
+		cM.xclient.message_type = dnd->atom[PREVIEW];
+		cM.xclient.data.l[0] = subtype;
+		cM.xclient.data.l[1] = ev->time;
+		cM.xclient.data.l[3] = sit->site_id;
+
+		if (sit->flags & DND_EXPECT_NEW_PREVIEW_EVENT) {
+			unsigned event_forwarded = 0;
+			/* there is a new application that knows about
+			 * the new preview event
+			 */
+			if (sit->flags & DND_FORWARDED_FLAG) {
+				event_forwarded = 0x8000;
+			}
+
+			cM.xclient.data.l[2] = (ev->x_root << 16)
+									| event_forwarded
+									| ev->y_root;
+			/* Reference (erfihlwebfrygjbv) */
+			cM.xclient.data.l[4] = xv_get(dnd->parent, XV_XID);
+		}
+		else {
+			/* there is an old application that expects the old
+			 * preview events.
+			 */
+			cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
+			if (sit->flags & DND_FORWARDED_FLAG)
+				cM.xclient.data.l[4] = DND_FORWARDED_FLAG;
+			else
+				cM.xclient.data.l[4] = 0;
+		}
+
+		if (eventObject) {
+			int x, y;
+			Window child;
+			long local_flags = DND_LOCAL;
+
+			event_init(&event);
+			event_set_window(&event, eventObject);
+			switch (subtype) {
+				case EnterNotify:
+					event_set_id(&event, LOC_WINENTER);
+					break;
+				case LeaveNotify:
+					event_set_id(&event, LOC_WINEXIT);
+					break;
+				case MotionNotify:
+					event_set_id(&event, LOC_DRAG);
+					break;
+			}
+			event_set_action(&event, ACTION_DRAG_PREVIEW);
+
+			/* XXX: This can be improved.  Roundtrip for local preview
+			 * events is not neccessary.
+			 */
+			if (!XTranslateCoordinates(ev->display, ev->root, sit->window,
+					ev->x_root, ev->y_root, &x, &y, &child)) {
+				/* XXX: Different Screens */
+				return (DND_ERROR);
+			}
+
+			event_set_x(&event, x);
+			event_set_y(&event, y);
+
+			event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
+			event.ie_time.tv_usec =
+					(((unsigned long)ev->time) % 1000) * 1000;
+
+			if (sit->flags & DND_FORWARDED_FLAG) local_flags |= DND_FORWARDED;
+
+			event_set_flags(&event, local_flags);
+			event_set_xevent(&event, &cM);
+
+			if (win_post_event(eventObject, &event, NOTIFY_IMMEDIATE)
+					!= NOTIFY_OK)
+				return (DND_ERROR);
+
+			return DND_SUCCEEDED;
+		}
+		return DndSendEvent(ev->display, &cM, debugname);
+	}
+}
+
 static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 							XButtonEvent *ev)
 {
+	/* XKeyEvent, XButtonEvent and XMotionEvent have the same fields
+	 * up to state
+	 */
 	XEvent cM;
 	Event event;
 	const char *debugname = 0;
@@ -720,7 +969,7 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 }
 
 
-static int send_preview_event(Dnd_info *dnd, int site, XEvent *e)
+static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 {
 	int i = dnd->eventSiteIndex;
 
@@ -732,15 +981,16 @@ static int send_preview_event(Dnd_info *dnd, int site, XEvent *e)
 	{
 		fprintf(stderr, "%s-%d: unexpected event type %d in send_preview_event\n",
 				__FILE__, __LINE__, e->type);
+		return DND_ERROR;
 	}
 
 #ifdef NO_XDND
 #else /* NO_XDND */
-	/* wenn hier (site == DND_NO_SITE && e->type == MotionNotify),
-	 * dann kommen wir aus DndFindSite und haben nichts gefunden -
+	/* wenn hier (siteindex == DND_NO_SITE && e->type == MotionNotify),
+	 * dann kommen wir aus find_site und haben nichts gefunden -
 	 * jetzt kuemmern wir uns mal um XDND:
 	 */
-	if (site == DND_NO_SITE && e->type == MotionNotify) {
+	if (siteindex == DND_NO_SITE && e->type == MotionNotify) {
 		XEvent cM;
 		Window toplev = find_xdnd_top_level(dnd, e);
 		int act_format = 0;
@@ -902,43 +1152,43 @@ static int send_preview_event(Dnd_info *dnd, int site, XEvent *e)
 
 	/* No Site yet */
 	if (i == DND_NO_SITE) {
-		dnd->eventSiteIndex = site;
+		dnd->eventSiteIndex = siteindex;
 		/* Moved into a new site */
-		if (site != DND_NO_SITE) {
-			if (dnd->siteRects[site].flags & DND_ENTERLEAVE) {
-				if (SendDndEvent(dnd, Dnd_Preview, (long)EnterNotify, &e->xbutton)
-						!= DND_SUCCEEDED)
-					return (DND_ERROR);
+		if (siteindex != DND_NO_SITE) {
+			if (dnd->siteRects[siteindex].flags & DND_ENTERLEAVE) {
+				if (SendPreviewEvent(dnd, dnd->siteRects + siteindex,
+								EnterNotify, &e->xmotion) != DND_SUCCEEDED)
+					return DND_ERROR;
 			}
 			UpdateGrabCursor(dnd, EnterNotify, FALSE, e->xmotion.time);
 		}
 		/* Moved out of the event site */
 	}
-	else if (i != site) {
+	else if (i != siteindex) {
 		/* Tell the old site goodbye */
 		if (dnd->siteRects[i].flags & DND_ENTERLEAVE) {
-			if (SendDndEvent(dnd, Dnd_Preview, (long)LeaveNotify, &e->xbutton)
-					!= DND_SUCCEEDED)
-				return (DND_ERROR);
+			if (SendPreviewEvent(dnd, dnd->siteRects + i,
+								LeaveNotify, &e->xmotion) != DND_SUCCEEDED)
+				return DND_ERROR;
 		}
 		UpdateGrabCursor(dnd, LeaveNotify, FALSE, e->xmotion.time);
-		dnd->eventSiteIndex = site;
+		dnd->eventSiteIndex = siteindex;
 		/* Say hi to the new site */
-		if (site != DND_NO_SITE) {
-			if (dnd->siteRects[site].flags & DND_ENTERLEAVE) {
-				if (SendDndEvent(dnd, Dnd_Preview, (long)EnterNotify, &e->xbutton)
-						!= DND_SUCCEEDED)
-					return (DND_ERROR);
+		if (siteindex != DND_NO_SITE) {
+			if (dnd->siteRects[siteindex].flags & DND_ENTERLEAVE) {
+				if (SendPreviewEvent(dnd, dnd->siteRects + siteindex,
+								EnterNotify, &e->xmotion) != DND_SUCCEEDED)
+					return DND_ERROR;
 			}
 			UpdateGrabCursor(dnd, EnterNotify, FALSE, e->xmotion.time);
 		}
 		/* Moving through the current event site */
 	}
-	else if (i == site) {
+	else if (i == siteindex) {
 		if (dnd->siteRects[i].flags & DND_MOTION) {
-			if (SendDndEvent(dnd, Dnd_Preview, (long)MotionNotify, &e->xbutton)
-					!= DND_SUCCEEDED)
-				return (DND_ERROR);
+			if (SendPreviewEvent(dnd, dnd->siteRects + i,
+								MotionNotify, &e->xmotion) != DND_SUCCEEDED)
+				return DND_ERROR;
 		}
 	}
 	return (DND_SUCCEEDED);
