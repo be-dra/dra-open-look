@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.11 2026/08/09 11:15:49 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.12 2026/09/18 07:28:07 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -864,7 +864,7 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
 	/*
 	 * Turn on prop read filtering with set of available properties
 	 */
-	PropSetAvailable(dpy, window);
+	cli->flags |= PropSetAvailable(dpy, window);
 
 	/*
 	 * Get the WM_TRANSIENT_FOR hint.  If the property exists but has a
