@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.9 2026/08/08 05:04:45 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.10 2026/09/18 07:25:30 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -113,10 +113,7 @@ propGetTextProp(dpy,win,property,text)
  * PropListAvailable - returns a set of flags representing the properties
  *	available on the passed window.
  */
-long
-PropListAvailable(dpy,win)
-	Display	*dpy;
-	Window	win;
+long PropListAvailable(Display	*dpy, Window	win)
 {
 	Atom	*atomList;
 	int	i,count;
@@ -162,9 +159,23 @@ PropListAvailable(dpy,win)
 			retFlags |= NetWMIconAvail;
 		else if (atomList[i] == AtomWinColors)
 			retFlags |= OLWinColorsAvail;
+		else if (atomList[i] == Atom_XdndAware)
+			retFlags |= OLXdndAware;
+		else if (atomList[i] == AtomSunDragDropInterest)
+			retFlags |= OL_SUN_DND;
 	}
 
 	XFree((char *)atomList);
+
+	if (retFlags & OLXdndAware) {
+		/* if this is "one of us", we are not interested in XDND */
+		if (retFlags & OL_SUN_DND) {
+			/* not interested in XDND */
+		}
+		else {
+			retFlags |= OL_use_dndaware;
+		}
+	}
 
 	return retFlags;
 }
@@ -184,13 +195,11 @@ static struct {
 /*
  * PropSetAvailable - sets the property read filter for that window
  */
-void
-PropSetAvailable(dpy,win)
-	Display	*dpy;
-	Window	win;
+int PropSetAvailable(Display	*dpy, Window	win)
 {
 	propAvailable.win = win;
 	propAvailable.flags = PropListAvailable(dpy,win);
+	return propAvailable.flags;
 }
 
 /*
