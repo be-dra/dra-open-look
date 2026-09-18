@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.8 2026/08/07 18:29:50 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.9 2026/09/18 07:27:18 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -35,6 +35,7 @@ char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.8 2026/08/07 1
 #include "globals.h"
 #include "dsdm.h"
 #include "resources.h"
+#include "properties.h"
 #include "atom.h"
 
 /***************************************************************************
@@ -802,9 +803,8 @@ static struct {
  * window and the icon window.  If we encounter an error reading the property,
  * do nothing and return silently.
  */
-void ClientProcessDragDropInterest(cli, state)
-    Client *cli;
-    int state;		/* PropertyNewValue or PropertyDelete */
+void ClientProcessDragDropInterest(Client *cli, int state)
+/* state: PropertyNewValue or PropertyDelete */
 {
 	unsigned long *data;
 	long nitems, remain;
@@ -819,6 +819,7 @@ void ClientProcessDragDropInterest(cli, state)
 		if (cli->iconwin != NULL)
 			XDeleteProperty(cli->dpy, cli->iconwin->core.self,
 					AtomSunDragDropInterest);
+		cli->flags &= ~OL_SUN_DND;
 		return;
 	}
 
@@ -886,15 +887,13 @@ void ClientProcessDragDropInterest(cli, state)
 		}
 	}
 	XFree((char *)data);
+	cli->flags |= OL_SUN_DND;
 }
 
 /*
  * ClientUpdateDragDropInterest - handle PropertyNotify on DragDropInterest
  */
-void
-ClientUpdateDragDropInterest(cli,event)
-	Client		*cli;
-	XPropertyEvent	*event;
+void ClientUpdateDragDropInterest(Client *cli, XPropertyEvent	*event)
 {
 	ClientProcessDragDropInterest(cli,event->state);
 }
@@ -1751,10 +1750,7 @@ static ClientPropUpdate propUpdateTable[] =  {
 /* ClientDistributeProperty -- a property of the client has changed.
  *	Forward the change notification to the appropriate handler.
  */
-void
-ClientDistributeProperty(cli, event)
-	Client		*cli;
-	XPropertyEvent	*event;
+void ClientDistributeProperty(Client *cli, XPropertyEvent	*event)
 {
 	int		i;
 
