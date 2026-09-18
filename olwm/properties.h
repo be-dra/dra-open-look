@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.6 2026/08/08 15:29:05 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: properties.h,v 1.7 2026/09/18 07:25:49 dra Exp $ */
 /* #ident	"@(#)properties.h	26.8	93/06/28 SMI" */
 
 /*
@@ -36,7 +36,6 @@ typedef struct {
 /*
  * Values for flags of available top-level window-management properties
  */
-#define WMClassAvail		(1<<0)
 #define WMNameAvail		(1<<1)
 #define WMIconNameAvail		(1<<2)
 #define WMNormalHintsAvail	(1<<3)
@@ -53,12 +52,16 @@ typedef struct {
 #define OLRightFooterAvail	(1<<14)
 #define NetWMIconAvail     	(1<<17)
 #define OLWinColorsAvail		(1<<18)
+#define WMClassAvail		(1<<19)
+#define OLXdndAware (1<<20)
+#define OL_SUN_DND (1<<21)
+#define OL_use_dndaware (1<<22)
 
 #define ENTIRE_CONTENTS		(10000000L)
 
 
-extern	long	PropListAvailable();
-extern	void	PropSetAvailable();
+extern long PropListAvailable(Display *dpy, Window win);
+extern	int PropSetAvailable(Display	*dpy, Window	win);
 extern	void	PropClearAvailable();
 
 extern	Bool	PropGetWMName();
