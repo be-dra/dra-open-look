@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: globals.h,v 2.5 2026/08/08 05:04:45 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: globals.h,v 2.7 2026/09/18 16:23:28 dra Exp $ */
 /* #ident	"@(#)globals.h	26.45	93/06/28 SMI" */
 
 /*
@@ -15,6 +15,7 @@
 
 #include "list.h"
 #include "i18n.h"
+#include "ollocale.h"
 
 typedef struct {
 	unsigned int	modmask;
@@ -137,6 +138,7 @@ typedef struct _globalResourceVariables {
 	Bool		PrintAll;
 	Bool		Synchronize;
 	Bool		PrintWarnings;
+	Bool        simulateXdndDropSites;
 } GlobalResourceVariables;
 
 extern GlobalResourceVariables	GRV;
