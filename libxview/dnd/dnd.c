@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.35 2026/09/17 21:33:01 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.36 2026/09/18 16:27:23 dra Exp $ ";
 #endif
 #endif
 
@@ -198,7 +198,7 @@ Pkg_private int DndSendEvent(Display *dpy, XEvent *event, const char *nam)
     sendEventError = False;
     old_handler = XSetErrorHandler(sendEventErrorHandler);
 
-    status = XSendEvent(dpy, event->xbutton.window, False, NoEventMask,
+    status = XSendEvent(dpy, event->xany.window, False, NoEventMask,
 			(XEvent *) event);
 	if (debug_DND > 0) fprintf(stderr, "sent %s, before XSync\n", nam);
     XFlush(dpy);
@@ -303,7 +303,7 @@ static int contact_dsdm(Dnd_info	*dnd)
 		dnd->siteRects = siteRects;
 
 	dnd->numSites = length / (sizeof(DndSiteRects) / sizeof(long));
-	dnd->lastSiteIndex = 0;
+	dnd->lastSiteIndex = DND_NO_SITE;
 	dnd->eventSiteIndex = DND_NO_SITE;
 
 	if (!dnd->siteRects)
@@ -472,7 +472,7 @@ static void UpdateGrabCursor( Dnd_info *dnd, int type, int rejected, Time t)
 
 #ifdef NO_XDND
 #else /* NO_XDND */
-static void send_preview_leave(Display *dpy, Dnd_info *dnd, Time t)
+static void send_preview_leave(Display *dpy, Window tgt, Dnd_info *dnd, Time t)
 {
 	XEvent cM;
 
@@ -480,14 +480,14 @@ static void send_preview_leave(Display *dpy, Dnd_info *dnd, Time t)
 	cM.xclient.display = dpy;
 	cM.xclient.format = 32;
 	cM.xclient.message_type = dnd->atom[XdndLeave];
-	cM.xclient.window = dnd->last_top_win;
+	cM.xclient.window = tgt;
 	cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
 	cM.xclient.data.l[1] = 0;
 	cM.xclient.data.l[2] = 0;
 	cM.xclient.data.l[3] = 0;
 	cM.xclient.data.l[4] = 0;
 
-	SERVERTRACE((TLXDND, "sending XdndLeave to %lx\n", dnd->last_top_win));
+	SERVERTRACE((TLXDND, "sending XdndLeave to %lx\n", tgt));
 	DndSendEvent(dpy, (XEvent *)&cM, "XdndLeave");
 	UpdateGrabCursor(dnd, LeaveNotify, FALSE, t);
 }
@@ -503,10 +503,12 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 	cM.xclient.type = ClientMessage;
 	cM.xclient.format = 32;
 	cM.xclient.window = sit->window;
+	cM.xclient.display = ev->display; /* important if we use it locally */
 	if (sit->flags & DND_XDND_AWARE) {
 		/* this is a DndSiteRect that has been constructed for a window
 		 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
 		 */
+		SERVERTRACE((TLXDND, "new XDND preview to %lx\n", sit->window));
 		switch (subtype) {
 			case EnterNotify:
 				cM.xclient.message_type = dnd->atom[XdndEnter];
@@ -602,7 +604,7 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 				}
 				break;
 			case LeaveNotify:
-				send_preview_leave(ev->display, dnd, ev->time);
+				send_preview_leave(ev->display, sit->window, dnd, ev->time);
 				break;
 			case MotionNotify:
 			default:
@@ -990,6 +992,8 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 	 * dann kommen wir aus find_site und haben nichts gefunden -
 	 * jetzt kuemmern wir uns mal um XDND:
 	 */
+
+	SERVERTRACE((TLXDND+20, "%s: siteindex=%d\n", __FUNCTION__, siteindex));
 	if (siteindex == DND_NO_SITE && e->type == MotionNotify) {
 		XEvent cM;
 		Window toplev = find_xdnd_top_level(dnd, e);
@@ -998,6 +1002,7 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 		unsigned long items, rest;
 		unsigned char *bp;
 
+		SERVERTRACE((TLXDND+20, "%s: toplev=%lx\n", __FUNCTION__, toplev));
 		if (toplev) {
 			if (toplev == dnd->last_top_win) {
 				/* brauche das Prop nicht neu zu lesen... */
@@ -1025,7 +1030,8 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 				/* a different top level window */
 				/* so, this is enter and/or leave */
 				if (dnd->last_top_win_is_aware) {
-					send_preview_leave(e->xmotion.display, dnd,e->xmotion.time);
+					send_preview_leave(e->xmotion.display, dnd->last_top_win,
+											dnd,e->xmotion.time);
 				}
 
 				dnd->last_top_win = toplev;
@@ -1931,6 +1937,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 			stop = False;	/* Stop key pressed */
 	Display *dpy;
 	XEvent *ev, xevent;
+	XButtonEvent *xb;
 	Event event;
 	Xv_Drawable_info *info;
 	Window_info *win_info;
@@ -1938,6 +1945,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	int i;
 	Atom *tl;
 	Xv_server srv;
+	DndSiteRects *lastsite = NULL;
 
 	event_init(&event);
 	DRAWABLE_INFO_MACRO(dnd->parent, info);
@@ -2086,7 +2094,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 
 					/* Remove the button that was just released from the
 					 * state field, then check and see if any other buttons
-					 * are press.  If none are, then the drop happened.
+					 * are pressed. If none are, then the drop happened.
 					 */
 					state &= ~(1 << (ev->xbutton.button + 7));
 					if (!(state & (Button1Mask | Button2Mask | Button3Mask |
@@ -2100,6 +2108,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 				lasttime = ev->xmotion.time;
 				server_set_timestamp(srv, NULL, lasttime);
 				if (dsdm_present) {
+					SERVERTRACE((TLXDND+20, "%s: LOC_DRAG\n", __FUNCTION__));
 					find_site(dnd, (XButtonEvent *) ev);
 				}
 				break;
@@ -2115,7 +2124,8 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 #else /* NO_XDND */
 				/* Send XdndLeave if necessary */
 				if (dnd->last_top_win != None && dnd->last_top_win_is_aware) {
-					send_preview_leave(ev->xany.display, dnd, lasttime);
+					send_preview_leave(ev->xany.display, dnd->last_top_win,
+												dnd, lasttime);
 				}
 #endif /* NO_XDND */
 
@@ -2193,7 +2203,36 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 		goto BreakOut;
 	}
 
-	if ((status = Verification(&ev->xbutton, dnd)) == DND_SUCCEEDED) {
+	xb = &ev->xbutton;
+	if (dnd->lastSiteIndex >= 0) {
+		lastsite = dnd->siteRects + dnd->lastSiteIndex;
+
+		if (POINT_IN_SITE(*lastsite, xb->x_root, xb->y_root)) {
+			if (lastsite->flags & DND_XDND_AWARE) {
+				XEvent cM;
+
+				/* this is a DndSiteRect that has been constructed for a window
+				 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
+				 */
+				SERVERTRACE((TLXDND, "XDND drop to %lx\n", lastsite->window));
+				cM.xclient.type = ClientMessage;
+				cM.xclient.display = xb->display;
+				cM.xclient.format = 32;
+				cM.xclient.message_type = dnd->atom[XdndDrop];
+				cM.xclient.window = lastsite->window;
+				cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
+				cM.xclient.data.l[1] = 0;
+				cM.xclient.data.l[2] = xb->time;
+				cM.xclient.data.l[3] = 0;
+				cM.xclient.data.l[4] = 0;
+
+				DndSendEvent(xb->display, &cM, "XdndDrop");
+				goto BreakOut;
+			}
+		}
+	}
+
+	if ((status = Verification(xb, dnd)) == DND_SUCCEEDED) {
 		/* If drop site is within same process, optimize! */
 
 		/* MULTI_DISPLAY: the notion "same process" is a little dangerous in
