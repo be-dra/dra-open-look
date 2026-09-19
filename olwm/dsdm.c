@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.5 2026/09/18 07:29:38 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.7 2026/09/19 06:36:47 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -502,7 +502,7 @@ static void FindDropSites(Display *dpy)
 						long pseudositedata[] = {
 							DND_VERSION,
 							1,
-							children[i],  /* window */
+							paneInfo->core.self,  /* window */
 							1234,   /* site_id */
 							xv_DND_XDND_AWARE |xv_DND_ENTERLEAVE |xv_DND_MOTION,
 							xv_DND_RECT_SITE,
@@ -535,7 +535,8 @@ static void FindDropSites(Display *dpy)
 
 #ifdef RTMETER
 	/* we saw something about 26 roundtrips */
-	fprintf(stderr, "roundtrips = %d\n", _rt_count);
+	fprintf(stderr, "%s`%s: roundtrips = %d\n", __FILE__, __FUNCTION__,
+									_rt_count);
 #endif
 }
 
@@ -545,8 +546,7 @@ static void FindDropSites(Display *dpy)
  *
  * Free the memory associated with the list of drop sites.
  */
-static void
-FreeDropSites()
+static void FreeDropSites(void)
 {
 	dsite_t *next, *temp;
 
@@ -802,9 +802,7 @@ static void handleDSDMrequest(XEvent *event)
  * Start performing the DSDM function by acquiring the DSDM selection.
  * Grabbing the server guarantees that we'll get the selection.
  */
-void
-DragDropStartDSDM(dpy)
-    Display *dpy;
+void DragDropStartDSDM(Display *dpy)
 {
     XGrabServer(dpy);
     selectionTime = TimeFresh();
@@ -820,9 +818,7 @@ DragDropStartDSDM(dpy)
  * Stop performing the DSDM function by relinquishing ownership of the DSDM 
  * selection.  Note that this will generate a SelectionClear event.
  */
-void
-DragDropStopDSDM(dpy)
-    Display *dpy;
+void DragDropStopDSDM(Display *dpy)
 {
     XSetSelectionOwner(dpy, AtomSunDragDropDSDM, None, selectionTime);
 }
@@ -834,8 +830,7 @@ DragDropStopDSDM(dpy)
  * Register the selection handler for the DSDM selection.  Should be called 
  * exactly once at startup.
  */
-void
-DragDropInit()
+void DragDropInit(void)
 {
     SelectionRegister(AtomSunDragDropDSDM, handleDSDMrequest);
 }
