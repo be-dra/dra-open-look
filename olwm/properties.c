@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.10 2026/09/18 07:25:30 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.12 2026/09/18 16:25:09 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -27,6 +27,7 @@ char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.10 202
 #include "mem.h"
 #include "properties.h"
 #include "atom.h"
+#include "globals.h"
 
 /***************************************************************************
  * external data
@@ -173,7 +174,9 @@ long PropListAvailable(Display	*dpy, Window	win)
 			/* not interested in XDND */
 		}
 		else {
-			retFlags |= OL_use_dndaware;
+			if (GRV.simulateXdndDropSites) {
+				retFlags |= OL_use_dndaware;
+			}
 		}
 	}
 
