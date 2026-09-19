@@ -1,5 +1,5 @@
 /* #ident	"@(#)resources.c	26.75	93/06/28 SMI" */
-char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.9 2026/09/10 11:28:02 dra Exp $";
+char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.12 2026/09/18 18:21:05 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -38,6 +38,7 @@ char resources_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: resources.c,v 2.9 2026/0
 #include "defaults.h"
 #include "globals.h"
 #include "resources.h"
+#include "properties.h"
 #include "win.h"
 #include "olcursor.h"
 #include "events.h"
@@ -768,6 +769,9 @@ ResourceItem MainItemTable[] = {
     0L },
 {   "windowCacheSize",		"WindowCacheSize",	"500",
     &(GRV.WindowCacheSize),	cvtInteger,		updWindowCacheSize,
+    0L },
+{   "simulateXdndDropSites",		"SimulateXdndDropSites",	"True",
+    &(GRV.simulateXdndDropSites),	cvtBoolean,		NULL,
     0L },
 {   "menuClickExecutesDefault",		"MenuClickExecutesDefault",	"False",
     &(GRV.menuClickExecutesDefault),	cvtBoolean,		NULL,
@@ -2016,6 +2020,23 @@ void InitGlobals(Display *dpy, XrmDatabase cmdDB)
  	/*NOTREACHED*/
 }
 
+static void *refreshXdndAware(Client *cli)
+{
+	if (!(cli->flags & OLXdndAware)) return NULL;
+
+	cli->flags &= ~OL_use_dndaware;
+
+	if (cli->flags & OL_SUN_DND) {
+		/* not interested in XDND */
+	}
+	else {
+		if (GRV.simulateXdndDropSites) {
+			cli->flags |= OL_use_dndaware;
+		}
+	}
+	return NULL;
+}
+
 
 /*
  * UpdateGlobals -- handle updates to the server's resource database.  Called
@@ -2063,6 +2084,8 @@ void UpdateGlobals(Display *dpy)
 
 	if (dlangChanged || UpdateBindings(dpy, newDB, forceKeyRegrab))
 		ReInitAllMenus(dpy);
+
+	ListApply(ActiveClientList, refreshXdndAware, 0);
 
 	XrmDestroyDatabase(OlwmDB);
 	OlwmDB = newDB;
