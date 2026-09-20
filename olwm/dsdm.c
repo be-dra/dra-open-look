@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.7 2026/09/19 06:36:47 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.8 2026/09/19 11:30:02 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -503,7 +503,7 @@ static void FindDropSites(Display *dpy)
 							DND_VERSION,
 							1,
 							paneInfo->core.self,  /* window */
-							1234,   /* site_id */
+							123456,   /* site_id */
 							xv_DND_XDND_AWARE |xv_DND_ENTERLEAVE |xv_DND_MOTION,
 							xv_DND_RECT_SITE,
 							1,   /* num rects */
