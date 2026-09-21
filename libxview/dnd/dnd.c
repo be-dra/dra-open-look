@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.36 2026/09/18 16:27:23 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.37 2026/09/20 16:09:02 dra Exp $ ";
 #endif
 #endif
 
@@ -472,7 +472,7 @@ static void UpdateGrabCursor( Dnd_info *dnd, int type, int rejected, Time t)
 
 #ifdef NO_XDND
 #else /* NO_XDND */
-static void send_preview_leave(Display *dpy, Window tgt, Dnd_info *dnd, Time t)
+static void send_xdnd_leave(Display *dpy, Window tgt, Dnd_info *dnd, Time t)
 {
 	XEvent cM;
 
@@ -487,10 +487,141 @@ static void send_preview_leave(Display *dpy, Window tgt, Dnd_info *dnd, Time t)
 	cM.xclient.data.l[3] = 0;
 	cM.xclient.data.l[4] = 0;
 
-	SERVERTRACE((TLXDND, "sending XdndLeave to %lx\n", tgt));
+	SERVERTRACE((TLXDND, "sending XdndLeave to %lx\n\n", tgt));
 	DndSendEvent(dpy, (XEvent *)&cM, "XdndLeave");
 	UpdateGrabCursor(dnd, LeaveNotify, FALSE, t);
 }
+
+static void send_xdnd_position(Dnd_info *dnd, Window tgt, XMotionEvent *ev)
+{
+	XEvent cM;
+
+	cM.xclient.type = ClientMessage;
+	cM.xclient.display = ev->display;
+	cM.xclient.format = 32;
+	cM.xclient.message_type = dnd->atom[XdndPosition];
+	cM.xclient.window = tgt;
+	cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
+	cM.xclient.data.l[1] = 0;
+	cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
+	cM.xclient.data.l[3] = ev->time;
+	cM.xclient.data.l[4] = ((dnd->type == DND_MOVE) ?
+								dnd->atom[XdndActionMove] :
+								dnd->atom[XdndActionCopy]);
+
+	SERVERTRACE((TLXDND+15, "sending XdndPosition(time %ld) to %lx\n",
+									ev->time, tgt));
+	DndSendEvent(ev->display, &cM, "XdndPosition");
+}
+
+static void send_xdnd_enter(Dnd_info *dnd, Window tgt, XMotionEvent *ev,
+				int tgts_vers)
+{
+	XEvent cM;
+	int i;
+	Xv_server srv = XV_SERVER_FROM_WINDOW(dnd->parent);
+	Atom uri = (Atom)xv_get(srv, SERVER_ATOM, "text/uri-list");
+	Atom fn = (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME");
+	Atom txt = (Atom)xv_get(srv, SERVER_ATOM, "text/plain");
+
+	dnd->last_top_win_is_aware = TRUE;
+	dnd->xdnd_used_version = MIN(tgts_vers, XDND_MY_VERSION);
+
+	/* send_preview enter */
+	cM.xclient.type = ClientMessage;
+	cM.xclient.display = ev->display;
+	cM.xclient.format = 32;
+	cM.xclient.message_type = dnd->atom[XdndEnter];
+	cM.xclient.window = tgt;
+	cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
+	cM.xclient.data.l[1] = (dnd->xdnd_used_version << 24);
+
+	/* at this level, we know of a few 'main drag types':
+	 *  + a file drag
+	 *  + a text drag
+	 */
+	for (i = 0; i < dnd->numtargets; i++) {
+		if (dnd->targetlist[i] == uri
+			|| dnd->targetlist[i] == fn)
+		{
+			/* it is a file drag */
+			cM.xclient.data.l[2] = uri;
+			/* let's simulate thunar: */
+			cM.xclient.data.l[3] = None;
+			cM.xclient.data.l[4] = None;
+			/* let's simulate dolphin: */
+/* 				cM.xclient.data.l[3] = xv_get(srv, SERVER_ATOM, */
+/* 										"text/x-moz-url"); */
+/* 				cM.xclient.data.l[4] = txt; */
+			break;
+		}
+	}
+	if (i >= dnd->numtargets) {
+		/* no file drag */
+		for (i = 0; i < dnd->numtargets; i++) {
+			if (dnd->targetlist[i] == txt
+				|| dnd->targetlist[i] == XA_STRING)
+			{
+				cM.xclient.data.l[2] = txt;
+				cM.xclient.data.l[3] = XA_STRING;
+				cM.xclient.data.l[4] = None;
+				break;
+			}
+		}
+	}
+	if (i >= dnd->numtargets) {
+		/* no file drag and no string drag */
+		cM.xclient.data.l[2] = dnd->targetlist[0];
+		cM.xclient.data.l[3] = dnd->targetlist[1];
+		cM.xclient.data.l[4] = dnd->targetlist[2];
+	}
+
+	/* usually we have more than 3 TARGETS */
+	if (dnd->numtargets >= 3) {
+		/* we should provide a XdndTypeList */
+		cM.xclient.data.l[1] |= 1;
+		XChangeProperty(ev->display,
+				(Window)cM.xclient.data.l[0],
+				dnd->atom[XdndTypeList], XA_ATOM, 32,
+				PropModeReplace, (unsigned char *)dnd->targetlist,
+				dnd->numtargets);
+	}
+
+	SERVERTRACE((TLXDND, "sending XdndEnter to %lx (%ld, %ld, %ld)\n",
+			tgt, cM.xclient.data.l[2],
+			cM.xclient.data.l[3], cM.xclient.data.l[4]));
+	/* we assume 'accept' first */
+	dnd->xdnd_last_status_was_accept = 1;
+	DndSendEvent(ev->display, &cM, "XdndEnter");
+	UpdateGrabCursor(dnd, EnterNotify, FALSE, ev->time);
+
+	/* as the event is a XMotionEvent, we can send 
+	 * a position message immediately
+	 */
+	send_xdnd_position(dnd, tgt, ev);
+}
+
+static void send_xdnd_drop(Dnd_info *dnd, Window tgt, XButtonEvent *xb)
+{
+	XEvent cM;
+
+	cM.xclient.type = ClientMessage;
+	cM.xclient.display = xb->display;
+	cM.xclient.format = 32;
+	cM.xclient.message_type = dnd->atom[XdndDrop];
+	cM.xclient.window = tgt;
+	cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
+	cM.xclient.data.l[1] = 0;
+	cM.xclient.data.l[2] = xb->time;
+	cM.xclient.data.l[3] = 0;
+	cM.xclient.data.l[4] = 0;
+
+	DndSendEvent(xb->display, &cM, "XdndDrop");
+
+	SERVERTRACE((TLXDND, "sending XdndDrop to %lx\n", tgt));
+	DndSendEvent(xb->display, &cM, "XdndPosition");
+}
+
 #endif /* NO_XDND */
 
 static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
@@ -508,118 +639,23 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 		/* this is a DndSiteRect that has been constructed for a window
 		 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
 		 */
-		SERVERTRACE((TLXDND, "new XDND preview to %lx\n", sit->window));
+		SERVERTRACE((TLXDND, "XDND preview to %lx\n", sit->window));
 		switch (subtype) {
 			case EnterNotify:
-				cM.xclient.message_type = dnd->atom[XdndEnter];
 				{
 					int targets_version = (sit->flags >> 24);
-					int i;
-					Xv_server srv = XV_SERVER_FROM_WINDOW(dnd->parent);
-					Atom uri = (Atom)xv_get(srv, SERVER_ATOM, "text/uri-list");
-					Atom fn = (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME");
-					Atom txt = (Atom)xv_get(srv, SERVER_ATOM, "text/plain");
 
-					dnd->last_top_win_is_aware = TRUE;
-					dnd->xdnd_used_version = MIN(targets_version, XDND_MY_VERSION);
+					if (targets_version == 0) targets_version = XDND_MY_VERSION;
 
-					/* send_preview enter */
-					cM.xclient.message_type = dnd->atom[XdndEnter];
-					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-					cM.xclient.data.l[1] = (dnd->xdnd_used_version << 24);
-
-					/* at this level, we know of a few 'main drag types':
-					 *  + a file drag
-					 *  + a text drag
-					 */
-					for (i = 0; i < dnd->numtargets; i++) {
-						if (dnd->targetlist[i] == uri
-							|| dnd->targetlist[i] == fn)
-						{
-							/* it is a file drag */
-							cM.xclient.data.l[2] = uri;
-							/* let's simulate thunar: */
-							cM.xclient.data.l[3] = None;
-							cM.xclient.data.l[4] = None;
-							/* let's simulate dolphin: */
-/* 							cM.xclient.data.l[3] = xv_get(srv, SERVER_ATOM, */
-/* 														"text/x-moz-url"); */
-/* 							cM.xclient.data.l[4] = txt; */
-							break;
-						}
-					}
-					if (i >= dnd->numtargets) {
-						/* no file drag */
-						for (i = 0; i < dnd->numtargets; i++) {
-							if (dnd->targetlist[i] == txt
-								|| dnd->targetlist[i] == XA_STRING)
-							{
-								cM.xclient.data.l[2] = txt;
-								cM.xclient.data.l[3] = XA_STRING;
-								cM.xclient.data.l[4] = None;
-								break;
-							}
-						}
-					}
-					if (i >= dnd->numtargets) {
-						/* no file drag and no string drag */
-						cM.xclient.data.l[2] = dnd->targetlist[0];
-						cM.xclient.data.l[3] = dnd->targetlist[1];
-						cM.xclient.data.l[4] = dnd->targetlist[2];
-					}
-
-					/* usually we have more than 3 TARGETS */
-					if (dnd->numtargets >= 3) {
-						/* we should provide a XdndTypeList */
-						cM.xclient.data.l[1] |= 1;
-						XChangeProperty(ev->display,
-								(Window)cM.xclient.data.l[0],
-								dnd->atom[XdndTypeList], XA_ATOM, 32,
-								PropModeReplace, (unsigned char *)dnd->targetlist,
-								dnd->numtargets);
-					}
-
-					SERVERTRACE((TLXDND, "sending XdndEnter to %lx (%ld, %ld, %ld)\n",
-							sit->window, cM.xclient.data.l[2],
-							cM.xclient.data.l[3], cM.xclient.data.l[4]));
-					/* we assume 'accept' first */
-					dnd->xdnd_last_status_was_accept = 1;
-					DndSendEvent(ev->display, &cM, "XdndEnter");
-					UpdateGrabCursor(dnd, EnterNotify, FALSE, ev->time);
-
-					/* send_preview position */
-
-					cM.xclient.message_type = dnd->atom[XdndPosition];
-					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-					cM.xclient.data.l[1] = 0;
-					cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
-					cM.xclient.data.l[3] = ev->time;
-					cM.xclient.data.l[4] = ((dnd->type == DND_MOVE) ?
-												dnd->atom[XdndActionMove] :
-												dnd->atom[XdndActionCopy]);
-
-					SERVERTRACE((TLXDND, "sending XdndPosition(time %ld) to %lx\n",
-													ev->time, sit->window));
-					DndSendEvent(ev->display, &cM, "XdndPosition");
+					send_xdnd_enter(dnd, sit->window, ev, targets_version);
 				}
 				break;
 			case LeaveNotify:
-				send_preview_leave(ev->display, sit->window, dnd, ev->time);
+				send_xdnd_leave(ev->display, sit->window, dnd, ev->time);
 				break;
 			case MotionNotify:
 			default:
-				cM.xclient.message_type = dnd->atom[XdndPosition];
-				cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-				cM.xclient.data.l[1] = 0;
-				cM.xclient.data.l[2] = (ev->x_root << 16) | ev->y_root;
-				cM.xclient.data.l[3] = ev->time;
-				cM.xclient.data.l[4] = ((dnd->type == DND_MOVE) ?
-											dnd->atom[XdndActionMove] :
-											dnd->atom[XdndActionCopy]);
-
-				SERVERTRACE((TLXDND, "sending XdndPosition(time %ld) to %lx\n",
-											ev->time, sit->window));
-				DndSendEvent(ev->display, &cM, "XdndPosition");
+				send_xdnd_position(dnd, sit->window, ev);
 				break;
 		}
 		return DND_SUCCEEDED;
@@ -975,6 +1011,7 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 {
 	int i = dnd->eventSiteIndex;
 
+	SERVERTRACE((TLXDND+20, "%s: evsi=%d siteindex=%d\n", __FUNCTION__, i, siteindex));
 	if (e->type != ButtonPress 
 		&& e->type != ButtonRelease
 		&& e->type != MotionNotify
@@ -995,7 +1032,6 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 
 	SERVERTRACE((TLXDND+20, "%s: siteindex=%d\n", __FUNCTION__, siteindex));
 	if (siteindex == DND_NO_SITE && e->type == MotionNotify) {
-		XEvent cM;
 		Window toplev = find_xdnd_top_level(dnd, e);
 		int act_format = 0;
 		Atom act_typeatom;
@@ -1008,29 +1044,14 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 				/* brauche das Prop nicht neu zu lesen... */
 				if (dnd->last_top_win_is_aware) {
 					/* send_preview position */
-					cM.xclient.type = ClientMessage;
-					cM.xclient.display = e->xmotion.display;
-					cM.xclient.format = 32;
-					cM.xclient.message_type = dnd->atom[XdndPosition];
-					cM.xclient.window = toplev;
-					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-					cM.xclient.data.l[1] = 0;
-					cM.xclient.data.l[2] = (e->xmotion.x_root << 16) | e->xmotion.y_root;
-					cM.xclient.data.l[3] = e->xmotion.time;
-					cM.xclient.data.l[4] = ((dnd->type == DND_MOVE) ?
-												dnd->atom[XdndActionMove] :
-												dnd->atom[XdndActionCopy]);
-
-					SERVERTRACE((TLXDND, "sending XdndPosition(time %ld) to %lx\n",
-												e->xmotion.time, toplev));
-					DndSendEvent(e->xmotion.display, &cM, "XdndPosition");
+					send_xdnd_position(dnd, toplev, &e->xmotion);
 				}
 			}
 			else {
 				/* a different top level window */
 				/* so, this is enter and/or leave */
 				if (dnd->last_top_win_is_aware) {
-					send_preview_leave(e->xmotion.display, dnd->last_top_win,
+					send_xdnd_leave(e->xmotion.display, dnd->last_top_win,
 											dnd,e->xmotion.time);
 				}
 
@@ -1046,109 +1067,18 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 					/* this is one of us - we don't need any Xdnd things */
 					XFree(bp);
 				}
-				else if (XGetWindowProperty(e->xmotion.display, toplev, dnd->atom[XdndAware],
+				else if (XGetWindowProperty(e->xmotion.display, toplev,
+						dnd->atom[XdndAware],
 						0L, 10L, FALSE, XA_ATOM, &act_typeatom,
 						&act_format, &items, &rest, &bp) == Success &&
 					act_format == 32)
 				{
 					Atom *ip = (Atom *)bp;
 					int targets_version = (int)(*ip);
-					int i;
-					Xv_server srv = XV_SERVER_FROM_WINDOW(dnd->parent);
-					Atom uri = (Atom)xv_get(srv, SERVER_ATOM, "text/uri-list");
-					Atom fn = (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME");
-					Atom txt = (Atom)xv_get(srv, SERVER_ATOM, "text/plain");
 
 					XFree(bp);
-					dnd->last_top_win_is_aware = TRUE;
-					dnd->xdnd_used_version = MIN(targets_version, XDND_MY_VERSION);
 
-					/* send_preview enter */
-					cM.xclient.type = ClientMessage;
-					cM.xclient.display = e->xmotion.display;
-					cM.xclient.format = 32;
-					cM.xclient.message_type = dnd->atom[XdndEnter];
-					cM.xclient.window = toplev;
-					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-					cM.xclient.data.l[1] = (dnd->xdnd_used_version << 24);
-
-					/* at this level, we know of a few 'main drag types':
-					 *  + a file drag
-					 *  + a text drag
-					 */
-					for (i = 0; i < dnd->numtargets; i++) {
-						if (dnd->targetlist[i] == uri
-							|| dnd->targetlist[i] == fn)
-						{
-							/* it is a file drag */
-							cM.xclient.data.l[2] = uri;
-							/* let's simulate thunar: */
-							cM.xclient.data.l[3] = None;
-							cM.xclient.data.l[4] = None;
-							/* let's simulate dolphin: */
-/* 							cM.xclient.data.l[3] = xv_get(srv, SERVER_ATOM, */
-/* 														"text/x-moz-url"); */
-/* 							cM.xclient.data.l[4] = txt; */
-							break;
-						}
-					}
-					if (i >= dnd->numtargets) {
-						/* no file drag */
-						for (i = 0; i < dnd->numtargets; i++) {
-							if (dnd->targetlist[i] == txt
-								|| dnd->targetlist[i] == XA_STRING)
-							{
-								cM.xclient.data.l[2] = txt;
-								cM.xclient.data.l[3] = XA_STRING;
-								cM.xclient.data.l[4] = None;
-								break;
-							}
-						}
-					}
-					if (i >= dnd->numtargets) {
-						/* no file drag and no string drag */
-						cM.xclient.data.l[2] = dnd->targetlist[0];
-						cM.xclient.data.l[3] = dnd->targetlist[1];
-						cM.xclient.data.l[4] = dnd->targetlist[2];
-					}
-
-					/* usually we have more than 3 TARGETS */
-					if (dnd->numtargets >= 3) {
-						/* we should provide a XdndTypeList */
-						cM.xclient.data.l[1] |= 1;
-						XChangeProperty(e->xmotion.display,
-								(Window)cM.xclient.data.l[0],
-								dnd->atom[XdndTypeList], XA_ATOM, 32,
-								PropModeReplace, (unsigned char *)dnd->targetlist,
-								dnd->numtargets);
-					}
-
-					SERVERTRACE((TLXDND, "sending XdndEnter to %lx (%ld, %ld, %ld)\n",
-							toplev, cM.xclient.data.l[2],
-							cM.xclient.data.l[3], cM.xclient.data.l[4]));
-					/* we assume 'accept' first */
-					dnd->xdnd_last_status_was_accept = 1;
-					DndSendEvent(e->xmotion.display, &cM, "XdndEnter");
-					UpdateGrabCursor(dnd, EnterNotify, FALSE, e->xmotion.time);
-
-					/* send_preview position */
-
-					cM.xclient.type = ClientMessage;
-					cM.xclient.display = e->xmotion.display;
-					cM.xclient.format = 32;
-					cM.xclient.message_type = dnd->atom[XdndPosition];
-					cM.xclient.window = toplev;
-					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-					cM.xclient.data.l[1] = 0;
-					cM.xclient.data.l[2] = (e->xmotion.x_root << 16) | e->xmotion.y_root;
-					cM.xclient.data.l[3] = e->xmotion.time;
-					cM.xclient.data.l[4] = ((dnd->type == DND_MOVE) ?
-												dnd->atom[XdndActionMove] :
-												dnd->atom[XdndActionCopy]);
-
-					SERVERTRACE((TLXDND, "sending XdndPosition(time %ld) to %lx\n",
-													e->xmotion.time, toplev));
-					DndSendEvent(e->xmotion.display, &cM, "XdndPosition");
+					send_xdnd_enter(dnd, toplev, &e->xmotion, targets_version);
 				}
 			}
 		}
@@ -1156,6 +1086,7 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 
 #endif /* NO_XDND */
 
+	SERVERTRACE((TLXDND, "%s ------------------------\n", __FUNCTION__));
 	/* No Site yet */
 	if (i == DND_NO_SITE) {
 		dnd->eventSiteIndex = siteindex;
@@ -1191,7 +1122,10 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 		/* Moving through the current event site */
 	}
 	else if (i == siteindex) {
+		SERVERTRACE((TLXDND, "%s: flags=%x, fl&mot %x\n", __FUNCTION__,
+				dnd->siteRects[i].flags, dnd->siteRects[i].flags & DND_MOTION));
 		if (dnd->siteRects[i].flags & DND_MOTION) {
+			SERVERTRACE((TLXDND, "%s\n", __FUNCTION__));
 			if (SendPreviewEvent(dnd, dnd->siteRects + i,
 								MotionNotify, &e->xmotion) != DND_SUCCEEDED)
 				return DND_ERROR;
@@ -1200,14 +1134,16 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 	return (DND_SUCCEEDED);
 }
 
-static int find_site(Dnd_info *dnd, XButtonEvent *e)
+static int find_site(Dnd_info *dnd, XMotionEvent *e)
 {
 	int i;
 
+#ifdef BEFORE_DRA_CHANGED
 	if (POINT_IN_SITE(dnd->siteRects[dnd->lastSiteIndex], e->x_root, e->y_root))
 	{
 		return send_preview_event(dnd, dnd->lastSiteIndex, (XEvent *) e);
 	}
+#endif /* BEFORE_DRA_CHANGED */
 
 	/* Determine the number of the screen that the mouse is currently in. */
 	if (dnd->lastRootWindow != e->root) {	/* Same root window? */
@@ -1227,8 +1163,6 @@ static int find_site(Dnd_info *dnd, XButtonEvent *e)
 	}
 	return send_preview_event(dnd, DND_NO_SITE, (XEvent *) e);
 }
-
-extern int debug_DND;
 
 /* DND_HACK begin */
 
@@ -2083,6 +2017,25 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	do {
 		xview_x_input_readevent(dpy, &event, dnd->parent, True, True,
 				(int)(ButtonMotionMask|ButtonReleaseMask|KeyReleaseMask), ev);
+
+		if (event_id(&event)==SHIFT_META || event_action(&event)==SHIFT_META) {
+			if (action_select_is_down(&event)) {
+				int i;
+				DndSiteRects *site;
+
+				fprintf(stderr, "\nroot pos (%d, %d)\n",
+									ev->xkey.x_root, ev->xkey.y_root);
+				for (i = 0; i < dnd->numSites; i++) {
+					site = dnd->siteRects + i;
+					if (SCREENS_MATCH(dnd, i) && POINT_IN_SITE(*site,
+									ev->xkey.x_root, ev->xkey.y_root))
+					{
+						fprintf(stderr, "\t%d: id=%ld, w=%lx\n", i,
+								site->site_id, site->window);
+					}
+				}
+			}
+		}
 		switch (event_action(&event)) {
 			case ACTION_SELECT:
 			case ACTION_ADJUST:
@@ -2108,8 +2061,8 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 				lasttime = ev->xmotion.time;
 				server_set_timestamp(srv, NULL, lasttime);
 				if (dsdm_present) {
-					SERVERTRACE((TLXDND+20, "%s: LOC_DRAG\n", __FUNCTION__));
-					find_site(dnd, (XButtonEvent *) ev);
+					SERVERTRACE((TLXDND+15, "%s: LOC_DRAG\n", __FUNCTION__));
+					find_site(dnd, &ev->xmotion);
 				}
 				break;
 			case ACTION_STOP:
@@ -2124,7 +2077,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 #else /* NO_XDND */
 				/* Send XdndLeave if necessary */
 				if (dnd->last_top_win != None && dnd->last_top_win_is_aware) {
-					send_preview_leave(ev->xany.display, dnd->last_top_win,
+					send_xdnd_leave(ev->xany.display, dnd->last_top_win,
 												dnd, lasttime);
 				}
 #endif /* NO_XDND */
@@ -2209,24 +2162,11 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 
 		if (POINT_IN_SITE(*lastsite, xb->x_root, xb->y_root)) {
 			if (lastsite->flags & DND_XDND_AWARE) {
-				XEvent cM;
 
 				/* this is a DndSiteRect that has been constructed for a window
 				 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
 				 */
-				SERVERTRACE((TLXDND, "XDND drop to %lx\n", lastsite->window));
-				cM.xclient.type = ClientMessage;
-				cM.xclient.display = xb->display;
-				cM.xclient.format = 32;
-				cM.xclient.message_type = dnd->atom[XdndDrop];
-				cM.xclient.window = lastsite->window;
-				cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-				cM.xclient.data.l[1] = 0;
-				cM.xclient.data.l[2] = xb->time;
-				cM.xclient.data.l[3] = 0;
-				cM.xclient.data.l[4] = 0;
-
-				DndSendEvent(xb->display, &cM, "XdndDrop");
+				send_xdnd_drop(dnd, lastsite->window, xb);
 				goto BreakOut;
 			}
 		}
@@ -2370,22 +2310,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 					DndSendEvent(ev->xany.display, &xb, "ButtonRelease");
 				}
 				else {
-					XEvent cM;
-
-					/* send_preview enter */
-					cM.xclient.type = ClientMessage;
-					cM.xclient.display = ev->xany.display;
-					cM.xclient.format = 32;
-					cM.xclient.message_type = dnd->atom[XdndDrop];
-					cM.xclient.window = drop_window;
-					cM.xclient.data.l[0] = (Window)xv_get(dnd->parent, XV_XID);
-					cM.xclient.data.l[1] = 0;
-					cM.xclient.data.l[2] = ev->xbutton.time;
-					cM.xclient.data.l[3] = 0;
-					cM.xclient.data.l[4] = 0;
-
-					SERVERTRACE((TLXDND, "sending XdndDrop to %lx\n", drop_window));
-					DndSendEvent(ev->xany.display, &cM, "XdndDrop");
+					send_xdnd_drop(dnd, drop_window, &ev->xbutton);
 				}
 				status = DND_SUCCEEDED;
 			}
