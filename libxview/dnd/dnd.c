@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.37 2026/09/20 16:09:02 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.38 2026/09/22 07:18:30 dra Exp $ ";
 #endif
 #endif
 
@@ -1023,6 +1023,7 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 		return DND_ERROR;
 	}
 
+#ifdef BEFORE_OLWM_CONVERTED_XDNDAWARE
 #ifdef NO_XDND
 #else /* NO_XDND */
 	/* wenn hier (siteindex == DND_NO_SITE && e->type == MotionNotify),
@@ -1085,6 +1086,7 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 	}
 
 #endif /* NO_XDND */
+#endif /* BEFORE_OLWM_CONVERTED_XDNDAWARE */
 
 	SERVERTRACE((TLXDND, "%s ------------------------\n", __FUNCTION__));
 	/* No Site yet */
@@ -1138,12 +1140,12 @@ static int find_site(Dnd_info *dnd, XMotionEvent *e)
 {
 	int i;
 
-#ifdef BEFORE_DRA_CHANGED
+#ifdef BEFORE_OLWM_CONVERTED_XDNDAWARE
 	if (POINT_IN_SITE(dnd->siteRects[dnd->lastSiteIndex], e->x_root, e->y_root))
 	{
 		return send_preview_event(dnd, dnd->lastSiteIndex, (XEvent *) e);
 	}
-#endif /* BEFORE_DRA_CHANGED */
+#endif /* BEFORE_OLWM_CONVERTED_XDNDAWARE */
 
 	/* Determine the number of the screen that the mouse is currently in. */
 	if (dnd->lastRootWindow != e->root) {	/* Same root window? */
