@@ -28,7 +28,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/attr_impl.h>
 
-char colortext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colortext.c,v 4.4 2025/03/08 13:37:48 dra Exp $";
+char colortext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colortext.c,v 4.5 2026/09/22 17:28:12 dra Exp $";
 
 typedef void (*layout_proc_t)(Panel_item, Rect *);
 typedef struct {
@@ -247,7 +247,10 @@ static void colortext_end_create(PanelColortext_private *priv, Panel_color_text_
 	myops = *superops;
 	priv->layout = myops.panel_op_layout;
 	myops.panel_op_layout = colortext_layout;
-	xv_set(self, PANEL_OPS_VECTOR, &myops, NULL);
+	xv_set(self,
+			PANEL_OPS_VECTOR, &myops,
+			PANEL_ALLOW_FILE_DROP, FALSE,
+			NULL);
 
 	if (! priv->header) {
 		priv->header = strdup(XV_MSG("Color"));
