@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: menu.h,v 2.1 2024/09/20 19:59:01 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: menu.h,v 2.2 2026/09/23 13:19:02 dra Exp $ */
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
  */
@@ -194,25 +194,25 @@ void ShowStandardMenu();
 void ShowStandardMenuSync();
 void SetClickCallback();
 
-extern void InitMenus();
-extern MenuCache *InitScreenMenus( /* Display *dpy, ScreenInfo *scrInfo */ );
-extern void MenuCreate( /* dpy, menu */ );
-extern void MenuShow( /* dpy, WinGeneric, menu, event */ );
-extern void SetButton( /* dpy, menu, bindex, Bool */ );
-extern void ExecButtonAction( /* dpy, winInfo, menu, btn, Bool */ );
-extern void DrawMenu( /* dpy, menu */ );
-extern int  PointInRect( /* x, y, rx, ry, rw, rh */ );
+extern void InitMenus(Display *);
+extern MenuCache *InitScreenMenus(Display *dpy, ScreenInfo *scrInfo);
+/* extern void MenuCreate( Display *dpy, menu_t menu ); */
+extern void MenuShow(Display *dpy, WinGeneric *winInfo, Menu *menu, XEvent *pevent);
+extern void SetButton( Display *dpy, MenuInfo *menuInfo, int idx, Bool highlight, Bool flsetdefault);
+extern void ExecButtonAction(Display *dpy, WinGeneric *winInfo, MenuInfo *menuInfo, int btn);
+extern void DrawMenu(Display *dpy, MenuInfo *mInfo);
+extern int  PointInRect(int x, int y, int rx, int ry, int rw, int rh );
 
 
 /*
  * generically useful region code that happens to live in menu.c
  */
 
-void InitRegions();
-void EmptyRegion();
-void RectRegion();
-void AppendExposeDamage();
-void MakeExposeDamage();
+void InitRegions(void);
+void EmptyRegion(Region r);
+void RectRegion(Region r, int x, int y, unsigned int w, unsigned h);
+void AppendExposeDamage(Region *pr, XExposeEvent *ee);
+void MakeExposeDamage(Region *pr, XExposeEvent *ee);
 
 
 /*
@@ -234,8 +234,8 @@ UnmapMenuWindow(/* Display *dpy,
 		);
 
 
-int MenuEventExpose();
-int MenuEventDrawMenu();
+int MenuEventExpose(Display *dpy, XEvent *event, WinGeneric *winInfo);
+int MenuEventDrawMenu(Display *dpy, WinGeneric *winInfo);
 
 
 
