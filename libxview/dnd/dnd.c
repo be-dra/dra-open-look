@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.38 2026/09/22 07:18:30 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.39 2026/09/24 17:38:14 dra Exp $ ";
 #endif
 #endif
 
@@ -217,7 +217,7 @@ static void ReplyProc(Selection_requestor sel, Atom target, Atom type,
 	/* ORIG: if (target == MYATOM("_SUN_DRAGDROP_DSDM")), but _SUN_DRAGDROP_DSDM
 	 * was the SEL_RANK, while the SEL_TYPE was "_SUN_DRAGDROP_SITE_RECTS"
 	 *
-	 * I don't believe that this has ever worked - but on the other it was
+	 * I don't believe that this has ever worked - but on the other side it was
 	 * probably never used because dsdm = olwm does not answer with INCR...
 	 */
 	if (target == MYATOM("_SUN_DRAGDROP_SITE_RECTS")) {
