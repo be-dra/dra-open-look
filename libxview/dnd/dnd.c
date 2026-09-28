@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.39 2026/09/24 17:38:14 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.41 2026/09/27 20:34:02 dra Exp $ ";
 #endif
 #endif
 
@@ -341,6 +341,7 @@ static Window find_xdnd_top_level(Dnd_info *dnd, XEvent *xbm)
 	 * muss ich XTranslateCoordinates aufrufen, um herauszufinden, wo
 	 * die Maus ist - also durchschnittlich 8 Aufrufe.
 	 */
+	SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", dest, frm));
 	while (ch && XTranslateCoordinates(dpy,dest,frm,sx,sy,&nx,&ny,&ch)) {
 		int act_format = 0;
 		Atom act_typeatom;
@@ -393,6 +394,7 @@ static Window find_xdnd_top_level(Dnd_info *dnd, XEvent *xbm)
 		sy = ny;
 		dest = frm;
 		frm = ch;
+		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", dest, frm));
 	}
 
 	if (dest == xbm->xbutton.root) {
@@ -647,21 +649,22 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 
 					if (targets_version == 0) targets_version = XDND_MY_VERSION;
 
-					send_xdnd_enter(dnd, sit->window, ev, targets_version);
+					send_xdnd_enter(dnd, (Window)sit->window, ev,
+											targets_version);
 				}
 				break;
 			case LeaveNotify:
-				send_xdnd_leave(ev->display, sit->window, dnd, ev->time);
+				send_xdnd_leave(ev->display, (Window)sit->window,dnd, ev->time);
 				break;
 			case MotionNotify:
 			default:
-				send_xdnd_position(dnd, sit->window, ev);
+				send_xdnd_position(dnd, (Window)sit->window, ev);
 				break;
 		}
 		return DND_SUCCEEDED;
 	}
 	else {
-		Xv_Window eventObject = win_data(ev->display, sit->window);
+		Xv_Window eventObject = win_data(ev->display, (Window)sit->window);
 
 		/* The original XView Dnd protocol had no information about
 		 * the drag source in the preview client messages.
@@ -727,7 +730,6 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 
 		if (eventObject) {
 			int x, y;
-			Window child;
 			long local_flags = DND_LOCAL;
 
 			event_init(&event);
@@ -748,11 +750,39 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 			/* XXX: This can be improved.  Roundtrip for local preview
 			 * events is not neccessary.
 			 */
-			if (!XTranslateCoordinates(ev->display, ev->root, sit->window,
-					ev->x_root, ev->y_root, &x, &y, &child)) {
-				/* XXX: Different Screens */
-				return (DND_ERROR);
+#ifdef BEFORE_DRA_CHANGED
+			SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", ev->root, sit->window));
+			{
+				Window child;
+				if (!XTranslateCoordinates(ev->display, ev->root,
+					(Window)sit->window, ev->x_root, ev->y_root,&x,&y, &child))
+				{
+					/* XXX: Different Screens */
+					return (DND_ERROR);
+				}
 			}
+
+#else /* BEFORE_DRA_CHANGED */
+			/* try to avoid XTranslateCoordinates - but just try */
+			{
+				int xoff = 0, yoff = 0;
+				Xv_window w = eventObject;
+				Rect r;
+
+				do {
+					window_get_cache_rect(w, &r);
+					xoff += r.r_left;
+					yoff += r.r_top;
+					if (xv_get(w, WIN_BORDER)) {
+						++xoff;
+						++yoff;
+					}
+				} while ((w = xv_get(w, XV_OWNER)));
+
+				x = ev->x_root - xoff;
+				y = ev->y_root - yoff;
+			}
+#endif /* BEFORE_DRA_CHANGED */
 
 			event_set_x(&event, x);
 			event_set_y(&event, y);
@@ -850,6 +880,7 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 						(dnd->type == DND_MOVE ? ACTION_DRAG_MOVE :
 								ACTION_DRAG_COPY));
 
+				SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", ev->window, dnd->dropSite.window));
 				if (!XTranslateCoordinates(ev->display, ev->window,
 								dnd->dropSite.window, ev->x,
 								ev->y, &x, &y, &child)) {
@@ -971,6 +1002,7 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 					/* XXX: This can be improved.  Roundtrip for local preview
 					 * events is not neccessary.
 					 */
+					SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", ev->root, dnd->siteRects[dnd->eventSiteIndex].window));
 					if (!XTranslateCoordinates(ev->display, ev->root,
 							(Window)dnd->siteRects[dnd->eventSiteIndex].window,
 							ev->x_root, ev->y_root, &x, &y, &child)) {
@@ -1583,6 +1615,7 @@ static int ConstructSiteList(Display *dpy, Window dest_window, long *prop,
 					/* Window coords must be in coord space of top level
 					 * window.
 					 */
+					SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", *data, dest_window));
 					if (!XTranslateCoordinates(dpy, (Window) * data++,
 									dest_window, x, y, &dstX, &dstY, &child)) {
 						/* Different Screens */
@@ -1630,6 +1663,7 @@ static Window FindLeafWindow(XButtonEvent *ev)
 	Window child;
 
 	do {
+		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", srcXid, dstXid));
 		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
 						&dstY, &child))
 			return (DND_ERROR);	/* XXX: Different Screens !! */
@@ -1695,6 +1729,7 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 	/* DND_HACK end */
 
 	do {
+		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", srcXid, dstXid));
 		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
 						&dstY, &child))
 			return (DND_ERROR);	/* XXX: Different Screens !! */
@@ -1740,6 +1775,7 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 					XFree((char *)interest_prop);
 				interest_prop = (long *)data;
 
+				SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", srcXid, dstXid));
 				(void)XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY,
 						&dstX, &dstY, &ignore);
 				/* Save x,y coords of top level window
@@ -2168,7 +2204,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 				/* this is a DndSiteRect that has been constructed for a window
 				 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
 				 */
-				send_xdnd_drop(dnd, lastsite->window, xb);
+				send_xdnd_drop(dnd, (Window)lastsite->window, xb);
 				goto BreakOut;
 			}
 		}
@@ -2457,7 +2493,7 @@ Xv_public void dnd_reject_unless(Event *ev, Atom first, ...)
 
 static void process_data_atoms(Dnd_info *priv, Atom *atoms)
 {
-	unsigned i, cnt;
+	unsigned long i, cnt;
 
 	if (priv->basic_data_atoms) xv_free(priv->basic_data_atoms);
 	priv->basic_data_atoms = NULL;
@@ -2478,7 +2514,8 @@ static void process_data_atoms(Dnd_info *priv, Atom *atoms)
 
 static void process_data_names(Dnd_info *priv, char **names)
 {
-	unsigned i, cnt;
+	unsigned i;
+	unsigned long cnt;
     Xv_server server = XV_SERVER_FROM_WINDOW(priv->parent);
 
 	if (priv->basic_data_atoms) xv_free(priv->basic_data_atoms);
