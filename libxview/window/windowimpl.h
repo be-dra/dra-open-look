@@ -1,4 +1,4 @@
-/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.6 2026/09/16 13:30:34 dra Exp $      */
+/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.7 2026/09/27 20:37:53 dra Exp $      */
 
 /***********************************************************************/
 /*	                      window_impl.h			       */
@@ -166,7 +166,7 @@ typedef struct window_info {
 
 #ifdef NO_XDND
 #else /* NO_XDND */
-	/* to save informations from XdndPosition for the XndnDrop
+	/* to save informations from XdndPosition for the XdndDrop -
 	 * an idiotic protocol really...
 	 */
 	int drop_x, drop_y;
