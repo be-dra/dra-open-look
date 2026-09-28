@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.61 2026/08/26 20:40:58 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.62 2026/09/27 20:37:04 dra Exp $";
 #endif
 #endif
 
@@ -844,6 +844,7 @@ static Defaults_pairs shiftmasks[] = {
 	{ NULL, 0 }
 };
 
+#ifdef NOT_NEEDED
 __attribute__((constructor)) static void xview_ctor(void)
 {
 	char *env = getenv("XVIEW_TELL_XINITTHREADS");
@@ -852,6 +853,7 @@ __attribute__((constructor)) static void xview_ctor(void)
 		fprintf(stderr, "xview_ctor called in %s\n", xv_app_name);
 	}
 }
+#endif /* NOT_NEEDED */
 
 static void call_real_XInitThreads(void)
 {
