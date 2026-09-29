@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.22 2026/07/16 20:09:11 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.23 2026/09/28 08:49:17 dra Exp $ ";
 #endif
 #endif
 
@@ -91,6 +91,7 @@ typedef struct _screen_info {
 	unsigned long input_pixel;
 	int olwm_managed;
 	screen_ui_style_t ui_style;
+	Selection_requestor dsdm_selreq;
 	/* atoms I want to know in order to handle them */
 	Atom sun_wm_p;
 	Xv_Cursor busy_pointer;
@@ -757,6 +758,24 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
 			value = screen->basic_pointer;
 			break;
 
+		case SCREEN_DSDM_REQUESTOR:
+			if (! screen->dsdm_selreq) {
+				Xv_window mywin = xv_create(screen->root_window, WINDOW,
+									WIN_INPUT_ONLY,
+									WIN_TOP_LEVEL_NO_DECOR, TRUE,
+									XV_X, 0,
+									XV_Y, 0,
+									XV_WIDTH, 1,
+									XV_HEIGHT, 1,
+									XV_SHOW, FALSE,
+									NULL);
+				screen->dsdm_selreq = xv_create(mywin, SELECTION_REQUESTOR,
+									SEL_RANK, xv_get(screen->server,
+											SERVER_ATOM, "_SUN_DRAGDROP_DSDM"),
+									NULL);
+			}
+			value = screen->dsdm_selreq;
+			break;
 		default:
 			if (xv_check_bad_attr(SCREEN, attr) == XV_ERROR) {
 				*status = XV_ERROR;
