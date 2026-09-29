@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.41 2026/09/27 20:34:02 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.45 2026/09/29 06:41:42 dra Exp $ ";
 #endif
 #endif
 
@@ -127,8 +127,8 @@ typedef struct dnd_info {
     int			 drop_target_y;
     Dnd_site_desc   	 dropSite;
     struct timeval	 timeout;
-    Xv_opaque		 window;
-    Selection_requestor	 dsdm_selreq;
+/*     Xv_opaque		 window; */
+/*     Selection_requestor	 dsdm_selreq; */
     DndSiteRects	*siteRects;
     int			 lastSiteIndex;
     int			 eventSiteIndex;
@@ -149,12 +149,8 @@ typedef struct dnd_info {
 #else /* NO_XDND */
 
 	Selection_owner xdnd_owner;
-	Window last_top_win;
 	int xdnd_used_version;
-	char last_top_win_is_aware;
-	char xdnd_status_from_last_top_win_seen;
 	char xdnd_last_status_was_accept;
-	Window *tl_cache;
 #endif /* NO_XDND */
 } Dnd_info;
 
@@ -162,7 +158,6 @@ typedef struct dnd_info {
 #define TLXDND 411
 
 static int dnd_key = 0;
-static int dnd_site_key	= 0;
 
 #define MYATOM(name)	(Atom)xv_get(server, SERVER_ATOM, name)
 #define POINT_IN_SITE(sr, px, py) \
@@ -209,42 +204,6 @@ Pkg_private int DndSendEvent(Display *dpy, XEvent *event, const char *nam)
     
     return DND_ERROR;
 }
-static void ReplyProc(Selection_requestor sel, Atom target, Atom type,
-							Xv_opaque buffer, unsigned long length, int format)
-{
-	Xv_server server = XV_SERVER_FROM_WINDOW(xv_get(sel, XV_OWNER));
-
-	/* ORIG: if (target == MYATOM("_SUN_DRAGDROP_DSDM")), but _SUN_DRAGDROP_DSDM
-	 * was the SEL_RANK, while the SEL_TYPE was "_SUN_DRAGDROP_SITE_RECTS"
-	 *
-	 * I don't believe that this has ever worked - but on the other side it was
-	 * probably never used because dsdm = olwm does not answer with INCR...
-	 */
-	if (target == MYATOM("_SUN_DRAGDROP_SITE_RECTS")) {
-		Dnd_info *dnd = (Dnd_info *) xv_get(sel, XV_KEY_DATA, dnd_site_key);
-
-		/* Only handle INCR responses in ReplyProc(). */
-		if (type == MYATOM("INCR")) {
-			/* We are in incr mode. */
-			dnd->incr_mode = True;
-			dnd->incr_size = 0;
-		}
-		else if (length && dnd->incr_mode) {
-			if (!dnd->incr_size)
-				dnd->siteRects = (DndSiteRects *) xv_malloc(4 * length);
-			else
-				dnd->siteRects = (DndSiteRects *) xv_realloc(dnd->siteRects,
-						dnd->incr_size + (4 * length));
-			XV_BCOPY((char *)buffer, (char *)(dnd->siteRects + dnd->incr_size),
-					(4 * length));
-			dnd->incr_size += (4 * length);
-		}
-		else if (dnd->incr_mode) {
-			dnd->incr_size = 0;
-			dnd->incr_mode = False;
-		}
-	}
-}
 
 static int contact_dsdm(Dnd_info	*dnd)
 {
@@ -252,55 +211,25 @@ static int contact_dsdm(Dnd_info	*dnd)
 	int format;
 	struct timeval *time;
 	DndSiteRects *siteRects;
+	Xv_window owner = xv_get(DND_PUBLIC(dnd), XV_OWNER);
+	Xv_screen screen = XV_SCREEN_FROM_WINDOW(owner);
+	Selection_requestor selreq = xv_get(screen, SCREEN_DSDM_REQUESTOR);
+	Xv_server server = XV_SERVER_FROM_WINDOW(owner);
 
-	if (!dnd->dsdm_selreq) {
-		Xv_object owner, server;
-
-		owner = (Xv_object) xv_get(DND_PUBLIC(dnd), XV_OWNER);
-
-		server = XV_SERVER_FROM_WINDOW(owner);
-
-		/* XXX: For multiple dnd objects, could use the same window. */
-		dnd->window = xv_create(owner, WINDOW,
-				WIN_INPUT_ONLY,
-				XV_X, 0,
-				XV_Y, 0,
-				XV_WIDTH, 1,
-				XV_HEIGHT, 1,
-				XV_SHOW, FALSE,
-				NULL);
-
-		dnd->dsdm_selreq = xv_create(dnd->window, SELECTION_REQUESTOR,
-				SEL_RANK, dnd->atom[DSDM],
-				SEL_REPLY_PROC, ReplyProc,
-				SEL_TYPE, MYATOM("_SUN_DRAGDROP_SITE_RECTS"),
-				NULL);
-	}
+	xv_set(selreq, SEL_TYPE, MYATOM("_SUN_DRAGDROP_SITE_RECTS"), NULL);
 
 	/* Set the time if we know what it is. */
 	if ((time = (struct timeval *)xv_get(DND_PUBLIC(dnd), SEL_TIME)) != NULL)
-		xv_set(dnd->dsdm_selreq, SEL_TIME, time, NULL);
+		xv_set(selreq, SEL_TIME, time, NULL);
 
 	if (dnd->siteRects) {
 		xv_free(dnd->siteRects);
 		dnd->siteRects = NULL;
 	}
 
-	/* Hang the private dnd info off the selection object so we can
-	 * access it in the ReplyProc.
-	 */
-	if (dnd_site_key == 0)
-		dnd_site_key = xv_unique_key();
+	siteRects = (DndSiteRects *)xv_get(selreq, SEL_DATA, &length, &format);
 
-	xv_set(dnd->dsdm_selreq, XV_KEY_DATA, dnd_site_key, (char *)dnd, NULL);
-
-	siteRects = (DndSiteRects *)xv_get(dnd->dsdm_selreq, SEL_DATA,
-											&length, &format);
-	/* If the dsdm responded with INCR then siteRects should be NULL and
-	 * dnd->siteRects will contain the data.
-	 */
-	if (siteRects)
-		dnd->siteRects = siteRects;
+	if (siteRects) dnd->siteRects = siteRects;
 
 	dnd->numSites = length / (sizeof(DndSiteRects) / sizeof(long));
 	dnd->lastSiteIndex = DND_NO_SITE;
@@ -309,100 +238,6 @@ static int contact_dsdm(Dnd_info	*dnd)
 	if (!dnd->siteRects)
 		return (False);
 	return (True);
-}
-
-/* we return a window only if 
- * +++ it is NOT the root window
- * +++ it does NOT have a INTEREST property
- * +++ it does have a WMSTATE property
- */
-static Window find_xdnd_top_level(Dnd_info *dnd, XEvent *xbm)
-{
-	Display *dpy;
-	Window dest, frm, ch;
-	int nx, ny, sx, sy;
-	int count_xtc = 0;
-
-	dest = xbm->xany.window;
-	dpy = xbm->xany.display;
-	/* xbm kann ein Button oder Motion sein - das ist fuer die
-	 * folgenden Komponenten egal, drum 'nennen' wir es 'button'
-	 */
-	frm = ch = xbm->xbutton.root;
-	sx = xbm->xbutton.x;
-	sy = xbm->xbutton.y;
-
-	/* kann man da nicht mit _DRA_TOP_LEVEL_WINDOWS arbeiten?
-	 * Kann man schon, aber dann muss man fuer jedes TopLevelWindow
-	 * pruefen, ob xbm auch wirklich "da drin" ist : womoeglich werden
-	 * das mehr XTranslateCoordinates-Aufrufe....
-	 * Gewoehnlich habe wir hier 3 XTranslateCoordinates-Aufrufe,
-	 * aber mein UI hat mindestens 17 Toplevel-Windows - und fuer jedes
-	 * muss ich XTranslateCoordinates aufrufen, um herauszufinden, wo
-	 * die Maus ist - also durchschnittlich 8 Aufrufe.
-	 */
-	SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", dest, frm));
-	while (ch && XTranslateCoordinates(dpy,dest,frm,sx,sy,&nx,&ny,&ch)) {
-		int act_format = 0;
-		Atom act_typeatom;
-		unsigned long items, rest;
-		unsigned char *bp;
-
-		++count_xtc;
-		if (dnd->tl_cache) {
-			int i;
-			for (i = 0; dnd->tl_cache[i]; i++) {
-				if (frm == dnd->tl_cache[i]) {
-					if (XGetWindowProperty(dpy, frm, dnd->atom[INTEREST], 0L,1L,
-							False, AnyPropertyType, &act_typeatom, &act_format,
-							&items, &rest, &bp) == Success &&
-						act_format == 32)
-					{
-						/* this is one of us - we don't need any Xdnd things */
-						XFree(bp);
-						frm = None;
-					}
-
-					SERVERTRACE((950, "%d XTranslateCoord: 0x%lx\n",
-										count_xtc, frm));
-					return frm;
-				}
-			}
-		}
-		else {
-			if (XGetWindowProperty(dpy, frm, dnd->atom[WMSTATE],
-					0L, 1000L, FALSE, dnd->atom[WMSTATE], &act_typeatom,
-					&act_format, &items, &rest, &bp) == Success &&
-				act_format == 32)
-			{
-				dest = frm;
-				XFree(bp);
-				if (XGetWindowProperty(dpy, frm, dnd->atom[INTEREST], 0L, 1L,
-							False, AnyPropertyType, &act_typeatom, &act_format,
-							&items, &rest, &bp) == Success &&
-					act_format == 32)
-				{
-					/* this is one of us - we don't need any Xdnd things */
-					XFree(bp);
-					SERVERTRACE((950, "%d XTranslateCoord 0x0\n", count_xtc));
-					return None;
-				}
-				break;
-			}
-		}
-		sx = nx;
-		sy = ny;
-		dest = frm;
-		frm = ch;
-		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", dest, frm));
-	}
-
-	if (dest == xbm->xbutton.root) {
-		/* we do NOT return the root window here */
-		dest = None;
-	}
-	SERVERTRACE((950, "%d XTranslateCoord: 0x%lx\n", count_xtc, dest));
-	return dest;
 }
 
 /* 
@@ -526,7 +361,6 @@ static void send_xdnd_enter(Dnd_info *dnd, Window tgt, XMotionEvent *ev,
 	Atom fn = (Atom)xv_get(srv, SERVER_ATOM, "FILE_NAME");
 	Atom txt = (Atom)xv_get(srv, SERVER_ATOM, "text/plain");
 
-	dnd->last_top_win_is_aware = TRUE;
 	dnd->xdnd_used_version = MIN(tgts_vers, XDND_MY_VERSION);
 
 	/* send_preview enter */
@@ -626,12 +460,61 @@ static void send_xdnd_drop(Dnd_info *dnd, Window tgt, XButtonEvent *xb)
 
 #endif /* NO_XDND */
 
+static int local_preview(Xv_window eventObject, int subtype, XMotionEvent *ev,
+						DndSiteRects *sit, XEvent *cM)
+{
+	Event event;
+	long local_flags = DND_LOCAL;
+	int xoff = 0, yoff = 0;
+	Rect r;
+	Xv_window w = eventObject;
+
+	event_init(&event);
+	event_set_window(&event, eventObject);
+	switch (subtype) {
+		case EnterNotify: event_set_id(&event, LOC_WINENTER); break;
+		case LeaveNotify: event_set_id(&event, LOC_WINEXIT); break;
+		case MotionNotify: event_set_id(&event, LOC_DRAG); break;
+	}
+	event_set_action(&event, ACTION_DRAG_PREVIEW);
+
+	/* 
+	 * In older versions XTranslateCoordinates was used here.
+	 */
+	do {
+		window_get_cache_rect(w, &r);
+		xoff += r.r_left;
+		yoff += r.r_top;
+		if (xv_get(w, WIN_BORDER)) {
+			++xoff;
+			++yoff;
+		}
+	} while ((w = xv_get(w, XV_OWNER)));
+
+	event_set_x(&event, ev->x_root - xoff);
+	event_set_y(&event, ev->y_root - yoff);
+
+	event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
+	event.ie_time.tv_usec =
+			(((unsigned long)ev->time) % 1000) * 1000;
+
+	if (sit->flags & DND_FORWARDED_FLAG) local_flags |= DND_FORWARDED;
+
+	event_set_flags(&event, local_flags);
+	event_set_xevent(&event, cM);
+
+	if (win_post_event(eventObject, &event, NOTIFY_IMMEDIATE)
+			!= NOTIFY_OK)
+		return (DND_ERROR);
+
+	return DND_SUCCEEDED;
+}
+
 static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 									XMotionEvent *ev)
 {
 	const char *debugname = 0;
 	XEvent cM;
-	Event event;
 
 	cM.xclient.type = ClientMessage;
 	cM.xclient.format = 32;
@@ -729,84 +612,13 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 		}
 
 		if (eventObject) {
-			int x, y;
-			long local_flags = DND_LOCAL;
-
-			event_init(&event);
-			event_set_window(&event, eventObject);
-			switch (subtype) {
-				case EnterNotify:
-					event_set_id(&event, LOC_WINENTER);
-					break;
-				case LeaveNotify:
-					event_set_id(&event, LOC_WINEXIT);
-					break;
-				case MotionNotify:
-					event_set_id(&event, LOC_DRAG);
-					break;
-			}
-			event_set_action(&event, ACTION_DRAG_PREVIEW);
-
-			/* XXX: This can be improved.  Roundtrip for local preview
-			 * events is not neccessary.
-			 */
-#ifdef BEFORE_DRA_CHANGED
-			SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", ev->root, sit->window));
-			{
-				Window child;
-				if (!XTranslateCoordinates(ev->display, ev->root,
-					(Window)sit->window, ev->x_root, ev->y_root,&x,&y, &child))
-				{
-					/* XXX: Different Screens */
-					return (DND_ERROR);
-				}
-			}
-
-#else /* BEFORE_DRA_CHANGED */
-			/* try to avoid XTranslateCoordinates - but just try */
-			{
-				int xoff = 0, yoff = 0;
-				Xv_window w = eventObject;
-				Rect r;
-
-				do {
-					window_get_cache_rect(w, &r);
-					xoff += r.r_left;
-					yoff += r.r_top;
-					if (xv_get(w, WIN_BORDER)) {
-						++xoff;
-						++yoff;
-					}
-				} while ((w = xv_get(w, XV_OWNER)));
-
-				x = ev->x_root - xoff;
-				y = ev->y_root - yoff;
-			}
-#endif /* BEFORE_DRA_CHANGED */
-
-			event_set_x(&event, x);
-			event_set_y(&event, y);
-
-			event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
-			event.ie_time.tv_usec =
-					(((unsigned long)ev->time) % 1000) * 1000;
-
-			if (sit->flags & DND_FORWARDED_FLAG) local_flags |= DND_FORWARDED;
-
-			event_set_flags(&event, local_flags);
-			event_set_xevent(&event, &cM);
-
-			if (win_post_event(eventObject, &event, NOTIFY_IMMEDIATE)
-					!= NOTIFY_OK)
-				return (DND_ERROR);
-
-			return DND_SUCCEEDED;
+			return local_preview(eventObject, subtype, ev, sit, &cM);
 		}
 		return DndSendEvent(ev->display, &cM, debugname);
 	}
 }
 
-static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
+static int SendDndEvent(Dnd_info *dnd, DndMsgType type, int subtype,
 							XButtonEvent *ev)
 {
 	/* XKeyEvent, XButtonEvent and XMotionEvent have the same fields
@@ -865,8 +677,6 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 
 				debugname = "_SUN_DRAGDROP_TRIGGER";
 				cM.xclient.message_type = dnd->atom[TRIGGER];
-				cM.xclient.serial = 0L;	/* XXX: This is incorrect. */
-				cM.xclient.send_event = True;
 				cM.xclient.window = dnd->dropSite.window;
 				cM.xclient.data.l[0] = (Atom) xv_get(DND_PUBLIC(dnd), SEL_RANK);
 				cM.xclient.data.l[1] = ev->time;
@@ -980,54 +790,9 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, long subtype,
 				}
 
 				if (eventObject) {
-					int x, y;
-					Window child;
-					long local_flags = DND_LOCAL;
-
-					event_init(&event);
-					event_set_window(&event, eventObject);
-					switch (subtype) {
-						case EnterNotify:
-							event_set_id(&event, LOC_WINENTER);
-							break;
-						case LeaveNotify:
-							event_set_id(&event, LOC_WINEXIT);
-							break;
-						case MotionNotify:
-							event_set_id(&event, LOC_DRAG);
-							break;
-					}
-					event_set_action(&event, ACTION_DRAG_PREVIEW);
-
-					/* XXX: This can be improved.  Roundtrip for local preview
-					 * events is not neccessary.
-					 */
-					SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", ev->root, dnd->siteRects[dnd->eventSiteIndex].window));
-					if (!XTranslateCoordinates(ev->display, ev->root,
-							(Window)dnd->siteRects[dnd->eventSiteIndex].window,
-							ev->x_root, ev->y_root, &x, &y, &child)) {
-						/* XXX: Different Screens */
-						return (DND_ERROR);
-					}
-
-					event_set_x(&event, x);
-					event_set_y(&event, y);
-
-					event.ie_time.tv_sec = ((unsigned long)ev->time) / 1000;
-					event.ie_time.tv_usec =
-							(((unsigned long)ev->time) % 1000) * 1000;
-
-					if (dnd->siteRects[dnd->eventSiteIndex].flags &
-							DND_FORWARDED_FLAG) local_flags |= DND_FORWARDED;
-
-					event_set_flags(&event, local_flags);
-					event_set_xevent(&event, &cM);
-
-					if (win_post_event(eventObject, &event, NOTIFY_IMMEDIATE)
-							!= NOTIFY_OK)
-						return (DND_ERROR);
-
-					return DND_SUCCEEDED;
+					return local_preview(eventObject, subtype,
+								(XMotionEvent *)ev,
+								dnd->siteRects + dnd->eventSiteIndex, &cM);
 				}
 			}
 			break;
@@ -1054,71 +819,6 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 				__FILE__, __LINE__, e->type);
 		return DND_ERROR;
 	}
-
-#ifdef BEFORE_OLWM_CONVERTED_XDNDAWARE
-#ifdef NO_XDND
-#else /* NO_XDND */
-	/* wenn hier (siteindex == DND_NO_SITE && e->type == MotionNotify),
-	 * dann kommen wir aus find_site und haben nichts gefunden -
-	 * jetzt kuemmern wir uns mal um XDND:
-	 */
-
-	SERVERTRACE((TLXDND+20, "%s: siteindex=%d\n", __FUNCTION__, siteindex));
-	if (siteindex == DND_NO_SITE && e->type == MotionNotify) {
-		Window toplev = find_xdnd_top_level(dnd, e);
-		int act_format = 0;
-		Atom act_typeatom;
-		unsigned long items, rest;
-		unsigned char *bp;
-
-		SERVERTRACE((TLXDND+20, "%s: toplev=%lx\n", __FUNCTION__, toplev));
-		if (toplev) {
-			if (toplev == dnd->last_top_win) {
-				/* brauche das Prop nicht neu zu lesen... */
-				if (dnd->last_top_win_is_aware) {
-					/* send_preview position */
-					send_xdnd_position(dnd, toplev, &e->xmotion);
-				}
-			}
-			else {
-				/* a different top level window */
-				/* so, this is enter and/or leave */
-				if (dnd->last_top_win_is_aware) {
-					send_xdnd_leave(e->xmotion.display, dnd->last_top_win,
-											dnd,e->xmotion.time);
-				}
-
-				dnd->last_top_win = toplev;
-				dnd->last_top_win_is_aware = FALSE;
-				dnd->xdnd_status_from_last_top_win_seen = FALSE;
-				if (XGetWindowProperty(e->xmotion.display, toplev,
-						dnd->atom[INTEREST],
-						0L, 10L, FALSE, dnd->atom[INTEREST], &act_typeatom,
-						&act_format, &items, &rest, &bp) == Success &&
-					act_format == 32)
-				{
-					/* this is one of us - we don't need any Xdnd things */
-					XFree(bp);
-				}
-				else if (XGetWindowProperty(e->xmotion.display, toplev,
-						dnd->atom[XdndAware],
-						0L, 10L, FALSE, XA_ATOM, &act_typeatom,
-						&act_format, &items, &rest, &bp) == Success &&
-					act_format == 32)
-				{
-					Atom *ip = (Atom *)bp;
-					int targets_version = (int)(*ip);
-
-					XFree(bp);
-
-					send_xdnd_enter(dnd, toplev, &e->xmotion, targets_version);
-				}
-			}
-		}
-	}
-
-#endif /* NO_XDND */
-#endif /* BEFORE_OLWM_CONVERTED_XDNDAWARE */
 
 	SERVERTRACE((TLXDND, "%s ------------------------\n", __FUNCTION__));
 	/* No Site yet */
@@ -1171,13 +871,6 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 static int find_site(Dnd_info *dnd, XMotionEvent *e)
 {
 	int i;
-
-#ifdef BEFORE_OLWM_CONVERTED_XDNDAWARE
-	if (POINT_IN_SITE(dnd->siteRects[dnd->lastSiteIndex], e->x_root, e->y_root))
-	{
-		return send_preview_event(dnd, dnd->lastSiteIndex, (XEvent *) e);
-	}
-#endif /* BEFORE_OLWM_CONVERTED_XDNDAWARE */
 
 	/* Determine the number of the screen that the mouse is currently in. */
 	if (dnd->lastRootWindow != e->root) {	/* Same root window? */
@@ -1423,7 +1116,7 @@ static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
 
 		xv_set(server, XV_KEY_DATA, dndKey, False, NULL);
 
-		if ((value=SendDndEvent(dnd,Dnd_Trigger_Local,0L,buttonEvent))
+		if ((value=SendDndEvent(dnd,Dnd_Trigger_Local,0,buttonEvent))
 				== DND_SUCCEEDED) {
 			if ((int)xv_get(server, XV_KEY_DATA, dndKey))
 				value = DND_SUCCEEDED;
@@ -1433,7 +1126,7 @@ static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
 		return (value);
 	}
 	else {
-		if (SendDndEvent(dnd, Dnd_Trigger_Remote, 0L, buttonEvent)
+		if (SendDndEvent(dnd, Dnd_Trigger_Remote, 0, buttonEvent)
 				== DND_SUCCEEDED) {
 			int value;
 
@@ -1486,74 +1179,6 @@ static int delegate_convert_selection(Selection_owner selown, Atom *type,
 	 * where we know nothing....
 	 */ 
 	return (*cf)(dnd_public, type, value, length, format);
-}
-
-static void init_toplevels(Display *dpy, Window parent, Atom wmstate,
-						Window *tls, int *cntp)
-{
-	int act_format = 0;
-	Atom act_typeatom;
-	unsigned long items, rest;
-	unsigned char *bp;
-	unsigned i, nch;
-	Window u, *ch;
-
-	if (XGetWindowProperty(dpy, parent, wmstate,
-				0L, 1000L, FALSE, wmstate, &act_typeatom,
-				&act_format, &items, &rest, &bp) == Success &&
-			act_format == 32)
-	{
-		XFree(bp);
-		tls[*cntp] = parent;
-		++(*cntp);
-		return;
-	}
-	XQueryTree(dpy, parent, &u, &u, &ch, &nch);
-	for (i = 0; i < nch; i++) {
-		init_toplevels(dpy, ch[i], wmstate, tls, cntp);
-	}
-
-	if (ch) XFree(ch);
-}
-
-static void fill_dnd_toplevel_cache_slow(Dnd_info *dnd, Xv_window dragsource, Atom wmstate)
-{
-	Xv_screen screen = XV_SCREEN_FROM_WINDOW(dragsource);
-	Window *toplevels;
-	Xv_window xvroot = xv_get(screen, XV_ROOT);
-	Window root = xv_get(xvroot, XV_XID);
-	Display *dpy = (Display *)xv_get(dragsource, XV_DISPLAY);
-	int idx = 0;
-
-	toplevels = xv_alloc_n(Window, 100L); /* 100 should be enough */
-	init_toplevels(dpy, root, wmstate, toplevels, &idx);
-	toplevels[idx] = None;
-	dnd->tl_cache = toplevels;
-}
-
-static void fill_dnd_toplevel_cache(Dnd_info *dnd, Xv_window dragsource, Atom wmstate)
-{
-	Selection_requestor sr;
-	Window *result;
-	unsigned long length;
-	int format;
-
-	if (dnd->tl_cache) xv_free(dnd->tl_cache) ;
-
-	sr = xv_create(dragsource, SELECTION_REQUESTOR,
-						SEL_RANK_NAME, "_SUN_DRAGDROP_DSDM",
-						SEL_TYPE_NAME, "_DRA_TOP_LEVEL_WINDOWS",
-						NULL);
-
-	result = (Window *)xv_get(sr, SEL_DATA, &length, &format);
-	if (length == SEL_ERROR) {
-		dnd->tl_cache = NULL;
-		fill_dnd_toplevel_cache_slow(dnd, dragsource, wmstate);
-	}
-	else {
-		dnd->tl_cache = result;
-	}
-	xv_destroy(sr);
 }
 
 #endif /* NO_XDND */
@@ -1993,11 +1618,6 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 #else /* NO_XDND */
 	if (! dnd_key) dnd_key = xv_unique_key();
 
-	dnd->last_top_win = None;
-	dnd->last_top_win_is_aware = FALSE;
-	dnd->xdnd_status_from_last_top_win_seen = FALSE;
-	fill_dnd_toplevel_cache(dnd, dnd->parent, dnd->atom[WMSTATE]);
-
 	/* our research about KDE tools (konqueror, kwrite, amarok)
 	 * have shown that when you drag files from konqueror,
 	 * if the applications ask the dragger to convert 'text/plain'
@@ -2110,16 +1730,6 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 				if (dsdm_present)
 					(void)send_preview_event(dnd, DND_NO_SITE, ev);
 				stop = True;
-
-#ifdef NO_XDND
-#else /* NO_XDND */
-				/* Send XdndLeave if necessary */
-				if (dnd->last_top_win != None && dnd->last_top_win_is_aware) {
-					send_xdnd_leave(ev->xany.display, dnd->last_top_win,
-												dnd, lasttime);
-				}
-#endif /* NO_XDND */
-
 				break;
 
 			case WIN_CLIENT_MESSAGE:
@@ -2136,6 +1746,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 				else 
 				/* derzeit fangen wir damit nicht viel an */
 				if (ev->xclient.message_type == dnd->atom[XdndStatus]) {
+					int accepted = (ev->xclient.data.l[1] & 1);
 
 					SERVERTRACE((TLXDND, "\nXdndStatus:\n"));
 					SERVERTRACE((TLXDND, "data[0] = %lx       window\n",
@@ -2152,19 +1763,10 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 					SERVERTRACE((TLXDND+10, "data[4] = %ld       action\n",
 								ev->xclient.data.l[4]));
 
-					/* is that still interesting ?
-					 * The mouse might have been moved to a different
-					 * target window
-					 */
-					if (ev->xclient.data.l[0] == dnd->last_top_win) {
-						int accepted = (ev->xclient.data.l[1] & 1);
-
-						dnd->xdnd_status_from_last_top_win_seen = TRUE;
-						if (dnd->xdnd_last_status_was_accept != accepted) {
-							dnd->xdnd_last_status_was_accept = accepted;
-							UpdateGrabCursor(dnd, EnterNotify,
-										! accepted, lasttime);
-						}
+					if (dnd->xdnd_last_status_was_accept != accepted) {
+						dnd->xdnd_last_status_was_accept = accepted;
+						UpdateGrabCursor(dnd, EnterNotify,
+									! accepted, lasttime);
 					}
 				}
 				break;
@@ -2219,142 +1821,6 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 		status = SendTrigger(dnd, info, &ev->xbutton,
 								(int)win_data(dpy, dnd->dropSite.window));
 	}
-#ifdef NO_XDND
-#else /* NO_XDND */
-	else if (status != DND_ROOT) {
-		Window toplev = find_xdnd_top_level(dnd, ev);
-		Window drop_window = 0;
-		int is_xterm = FALSE;
-
-		status = DND_ILLEGAL_TARGET;
-
-		if (toplev) {
-			if (toplev == dnd->last_top_win) {
-				/* no 'last minute change', we know everything */
-				/* however, the whole 'status seen' and 'accepted' thing
-				 * seems to be a bit funny: when I drag a file to 
-				 * amarok and drag around a little, amarok send 'not accept'
-				 * messages. BUT if I drop very quicky (before) any status
-				 * messages came in, the drop message is sent and then
-				 * amarok requests the files....
-				 *
-				 * Conclusion: send the drop in any case (having seen
-				 * the aware property)
-				 */
-				if (dnd->last_top_win_is_aware) {
-					drop_window = toplev;
-				}
-			}
-			else {
-				int act_format = 0;
-				Atom act_typeatom;
-				unsigned long items, rest;
-				unsigned char *bp;
-
-				/* oh - a last minute change - we know nothing */
-
-				if (XGetWindowProperty(ev->xany.display, toplev,
-					dnd->atom[XdndAware], 0L, 1000L, FALSE, XA_ATOM, &act_typeatom,
-					&act_format, &items, &rest, &bp) == Success &&
-					act_format == 32)
-				{
-					XFree(bp);
-
-					/* no XdndStatus seen, ??? we send the drop anyway */
-					drop_window = toplev;
-				}
-			}
-
-			if (! drop_window) {
-				/* now, we want to be able to drop on xterms:
-				 * all you need to do is giving xterm a translation of the form
-				 *
-				 * XTerm*vt100.translations: #override\n\
-				 *     ...
-				 *     ...
-				 *    <ClientMessage>XdndDrop : insert-selection(XdndSelection)
-				 *
-				 *  ???????????????????????????
-				 *
-				 * Actually, this was a nice idea, however, the insert-selection
-				 * action of xterm assumes (and checks...) that the triggering
-				 * event is a button event...
-				 *
-				 * So, the next idea was to send it a Btn2Up event - but then
-				 * we would have to become PRIMARY owner....
-				 *
-				 * Now, we send it a Btn5Up event: to make this work on the
-				 * xterm side, we have to add a translation
-				 *  ....
-				 *    <Btn5Up>: insert-selection(XdndSelection)
-				 *
-				 * and set
-				 *
-				 *    XTerm*vt100.allowSendEvents: True
-				 *
-				 *
-				 * I know, I know, Button 5 is used by mouse wheels......
-				 * BUT - we can use a lot of modifiers, for example
-				 * shift ctrl button1 button2 button3
-				 * Then, the required Translation reads
-				 *
-				 *  Button1 Button2 Button3 Shift Ctrl<Btn5Up>: insert-selection(XdndSelection)
-				 */
-				Display *dpy = ev->xany.display;
-				XClassHint classhint;
-
-				if (XGetClassHint(dpy, toplev, &classhint)) {
-					if (0 == strcmp(classhint.res_class, "XTerm")) {
-						/* now, in a classical xterm, the VT100 widget is the
-						 * (only) child of the toplevel window
-						 */
-						Window rt, par, *ch = 0;
-						unsigned int numch;
-
-						if (XQueryTree(dpy, toplev, &rt, &par, &ch, &numch)) {
-							if (numch == 1) {
-								drop_window = ch[0];
-								is_xterm = TRUE;
-							}
-							if (ch) XFree(ch);
-						}
-					}
-					XFree(classhint.res_class);
-					XFree(classhint.res_name);
-				}
-			}
-
-			if (drop_window) {
-				if (is_xterm) {
-					XEvent xb;
-
-					xb.xbutton.type = ButtonRelease;
-					xb.xbutton.display = ev->xany.display;
-
-					xb.xbutton.window = drop_window;
-					xb.xbutton.root = ev->xbutton.root;
-					xb.xbutton.subwindow = ev->xbutton.subwindow;
-					xb.xbutton.time = ev->xbutton.time + 1;
-					xb.xbutton.x = ev->xbutton.x;
-					xb.xbutton.y = ev->xbutton.y;
-					xb.xbutton.x_root = ev->xbutton.x_root;
-					xb.xbutton.y_root = ev->xbutton.y_root;
-					xb.xbutton.state = (ShiftMask | ControlMask |
-								Button1Mask | Button2Mask | Button3Mask);
-					xb.xbutton.button = 5;
-					xb.xbutton.same_screen = TRUE;
-
-					SERVERTRACE((TLXDND, "sending ButtonRelease to XTerm\n"));
-					DndSendEvent(ev->xany.display, &xb, "ButtonRelease");
-				}
-				else {
-					send_xdnd_drop(dnd, drop_window, &ev->xbutton);
-				}
-				status = DND_SUCCEEDED;
-			}
-		}
-	}
-#endif /* NO_XDND */
 
   BreakOut:
 	/* If the dnd pkg created a transient selection and the dnd operation
@@ -2718,15 +2184,12 @@ static int dnd_destroy(Dnd dnd_public, Destroy_status status)
 
 	if (status == DESTROY_CLEANUP) {
 		SERVERTRACE((333, "%s(%ld)\n", __FUNCTION__, dnd));
-		if (dnd->dsdm_selreq) xv_destroy(dnd->dsdm_selreq);
-		if (dnd->window) xv_destroy(dnd->window);
 		if (dnd->basic_data_atoms) xv_free(dnd->basic_data_atoms);
 
 #ifdef NO_XDND
 #else /* NO_XDND */
 		if (dnd->xdnd_owner)
 			xv_destroy(dnd->xdnd_owner);
-		if (dnd->tl_cache) xv_free(dnd->tl_cache);
 #endif /* NO_XDND */
 
 		if (dnd->siteRects) {
