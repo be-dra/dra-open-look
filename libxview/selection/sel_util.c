@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.40 2026/08/05 21:33:00 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.41 2026/09/29 18:36:09 dra Exp $";
 #endif
 #endif
 
@@ -113,11 +113,12 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
 										Window   win)
 {
     XEvent         event;
-    Atom  prop = xv_sel_get_property(srv, dpy );
     XWindowAttributes  winAttr;
     int  status = xv_sel_add_prop_notify_mask( dpy, win, &winAttr );
 
-    XChangeProperty(dpy, win, prop, XA_STRING, 8, PropModeReplace, NULL, 0);
+	/* nowadays XA_CUT_BUFFER7 is probably VERY unused */
+    XChangeProperty(dpy, win, XA_CUT_BUFFER7, XA_CUT_BUFFER7, 8,
+								PropModeReplace, NULL, 0);
 
     /* Wait for the PropertyNotify */
     if (!xv_sel_block_for_event(dpy,&event,3,sel_prop_time,NULL,NULL,NULL)) {
@@ -128,7 +129,7 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
 		return ( (Time) NULL );
     }
 
-    xv_sel_free_property(srv, dpy, prop );
+    XDeleteProperty(dpy, win, XA_CUT_BUFFER7);
 
     /*
      * If we have added PropertyChangeMask to the win, reset the mask to
