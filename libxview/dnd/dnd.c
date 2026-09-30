@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.45 2026/09/29 06:41:42 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.47 2026/09/29 20:15:59 dra Exp $ ";
 #endif
 #endif
 
@@ -151,6 +151,7 @@ typedef struct dnd_info {
 	Selection_owner xdnd_owner;
 	int xdnd_used_version;
 	char xdnd_last_status_was_accept;
+	char was_xterm;
 #endif /* NO_XDND */
 } Dnd_info;
 
@@ -1149,6 +1150,22 @@ static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
 #ifdef NO_XDND
 #else /* NO_XDND */
 
+static void delegate_convert_done(Selection_owner xdnd, Xv_opaque buf,
+									Atom target)
+{
+	Drag_drop dnd_public = xv_get(xdnd, XV_KEY_DATA, dnd_key);
+	Dnd_info *dnd = DND_PRIVATE(dnd_public);
+
+	/* we come here when we have processed a selection request
+	 * In the xterm case, we should give up out selection(s)
+	 */
+	if (dnd->was_xterm) {
+		if (dnd->transientSel) {
+			xv_set(dnd_public, SEL_OWN, False, NULL);
+		}
+		dnd->was_xterm = FALSE;
+	}
+}
 
 typedef int (*convert_func)(Selection_owner,Atom *,Xv_opaque *, unsigned long *,int *);
 
@@ -1334,6 +1351,92 @@ static int IsV2App(Display *dpy, Window window, Dnd_info *dnd, XButtonEvent *ev)
 	}
 }
 /* DND_HACK end */
+
+#define	DND_XTERM 66
+
+static int is_xterm(Window topwin, XButtonEvent *ev)
+{
+	Window dropwin;
+
+	/* now, we want to be able to drop on xterms:
+	 * all you need to do is giving xterm a translation of the form
+	 *
+	 * XTerm*vt100.translations: #override\n\
+	 *     ...
+	 *     ...
+	 *    <ClientMessage>XdndDrop : insert-selection(XdndSelection)
+	 *
+	 *  ???????????????????????????
+	 *
+	 * Actually, this was a nice idea, however, the insert-selection
+	 * action of xterm assumes (and checks...) that the triggering
+	 * event is a button event...
+	 *
+	 * So, the next idea was to send it a Btn2Up event - but then
+	 * we would have to become PRIMARY owner....
+	 *
+	 * Now, we send it a Btn5Up event: to make this work on the
+	 * xterm side, we have to add a translation
+	 *  ....
+	 *    <Btn5Up>: insert-selection(XdndSelection)
+	 *
+	 * and set
+	 *
+	 *    XTerm*vt100.allowSendEvents: True
+	 *
+	 *
+	 * I know, I know, Button 5 is used by mouse wheels......
+	 * BUT - we can use a lot of modifiers, for example
+	 * shift ctrl button1 button2 button3
+	 * Then, the required Translation reads
+	 *
+	 *  Button1 Button2 Button3 Shift Ctrl<Btn5Up>: insert-selection(XdndSelection)
+	 */
+	Display *dpy = ev->display;
+	XClassHint classhint;
+
+	if (XGetClassHint(dpy, topwin, &classhint)) {
+		if (0 == strcmp(classhint.res_class, "XTerm")) {
+			/* now, in a classical xterm, the VT100 widget is the
+			 * (only) child of the toplevel window
+			 */
+			Window rt, par, *ch = 0;
+			unsigned int numch;
+
+			if (XQueryTree(dpy, topwin, &rt, &par, &ch, &numch)) {
+				if (numch == 1) {
+					XEvent xb;
+
+					dropwin = ch[0];
+
+					xb.xbutton.type = ButtonRelease;
+
+					xb.xbutton.window = dropwin;
+					xb.xbutton.root = ev->root;
+					xb.xbutton.subwindow = ev->subwindow;
+					xb.xbutton.time = ev->time + 1;
+					xb.xbutton.x = ev->x;
+					xb.xbutton.y = ev->y;
+					xb.xbutton.x_root = ev->x_root;
+					xb.xbutton.y_root = ev->y_root;
+					xb.xbutton.state = (ShiftMask | ControlMask |
+								Button1Mask | Button2Mask | Button3Mask);
+					xb.xbutton.button = 5;
+					xb.xbutton.same_screen = TRUE;
+
+					SERVERTRACE((TLXDND, "sending ButtonRelease to XTerm\n"));
+					DndSendEvent(dpy, &xb, "ButtonRelease");
+					return DND_XTERM;
+				}
+				if (ch) XFree(ch);
+			}
+		}
+		XFree(classhint.res_class);
+		XFree(classhint.res_name);
+	}
+	return DND_ERROR;
+}
+
 /*
  * See if the window has set the  _SUN_DRAGDROP_INTEREST atom.  If so, see if
  * the point at which the drop occured happed within a registered drop site.
@@ -1425,6 +1528,8 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 				 * V2 application.
 				 */
 				if (!interest_prop) {
+					if (is_xterm(child, ev) == DND_XTERM)
+						return DND_XTERM;
 					return (IsV2App(dpy, child, dnd, ev));
 				}
 				else {
@@ -1489,7 +1594,7 @@ static Atom InternSelection(Xv_server server, int n, XID xid)
     return xv_get(server, SERVER_ATOM, buf);
 }
 
-static int get_selection(Dnd_info *dnd, Display *dpy)
+static int get_selection(Dnd_info *dnd, Display *dpy, struct timeval *lasttim)
 {
 	int i = 0;
 	Atom seln;
@@ -1514,7 +1619,11 @@ static int get_selection(Dnd_info *dnd, Display *dpy)
 		seln = InternSelection(server, i, xid);
 		if (XGetSelectionOwner(dpy, seln) == None) {
 			dnd->transientSel = True;
-			xv_set(DND_PUBLIC(dnd), SEL_RANK, seln, SEL_OWN, True, NULL);
+			xv_set(DND_PUBLIC(dnd),
+						SEL_RANK, seln,
+						SEL_TIME, lasttim,
+						SEL_OWN, TRUE,
+						NULL);
 			break;
 		}
 	}
@@ -1539,19 +1648,22 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	Xv_Drawable_info *info;
 	Window_info *win_info;
 	unsigned long lasttime;
+	struct timeval lasttimval;
 	int i;
 	Atom *tl;
 	Xv_server srv;
 	DndSiteRects *lastsite = NULL;
 
+	dnd->was_xterm = FALSE;
 	event_init(&event);
 	DRAWABLE_INFO_MACRO(dnd->parent, info);
 	dpy = xv_display(info);
 	srv = XV_SERVER_FROM_WINDOW(dnd->parent);
 	lasttime = server_get_timestamp(srv);
+	server_set_timestamp(srv, &lasttimval, 0L);
 
 	/* Assure that we have a selection to use. */
-	if (get_selection(dnd, dpy) == DND_SELECTION)
+	if (get_selection(dnd, dpy, &lasttimval) == DND_SELECTION)
 		return (DND_SELECTION);
 
 	/* in our first version, we entered (hardcoded) 'text/plain'
@@ -1632,10 +1744,14 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 		dnd->xdnd_owner = xv_create(dnd->parent, SELECTION_OWNER,
 				SEL_RANK, dnd->atom[XdndSelection],
 				SEL_CONVERT_PROC, delegate_convert_selection,
+				SEL_DONE_PROC, delegate_convert_done,
 				XV_KEY_DATA, dnd_key, dnd_public,
 				NULL);
 	}
-	xv_set(dnd->xdnd_owner, SEL_OWN, TRUE, NULL);
+	xv_set(dnd->xdnd_owner,
+			SEL_TIME,  &lasttimval,
+			SEL_OWN, TRUE,
+			NULL);
 #endif /* NO_XDND */
 
 	/* Need to grab the keyboard to get STOP key events. */
@@ -1820,6 +1936,18 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 		 */
 		status = SendTrigger(dnd, info, &ev->xbutton,
 								(int)win_data(dpy, dnd->dropSite.window));
+	}
+	else if (status == DND_XTERM) {
+		/* we sent an artificial ButtonRelease and expect the
+		 * xterm to perform selection requests against XdndSelection
+		 * We want to give up the (two) selection as soon as and
+		 * an xterm requests had a positive reply....
+		 */
+		status = DND_SUCCEEDED;
+		dnd->was_xterm = TRUE;
+/* 		if (dnd->transientSel) { */
+/* 			xv_set(dnd_public, SEL_OWN, False, NULL); */
+/* 		} */
 	}
 
   BreakOut:
