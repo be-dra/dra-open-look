@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.47 2026/09/29 20:15:59 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.48 2026/10/01 04:53:27 dra Exp $ ";
 #endif
 #endif
 
@@ -127,8 +127,6 @@ typedef struct dnd_info {
     int			 drop_target_y;
     Dnd_site_desc   	 dropSite;
     struct timeval	 timeout;
-/*     Xv_opaque		 window; */
-/*     Selection_requestor	 dsdm_selreq; */
     DndSiteRects	*siteRects;
     int			 lastSiteIndex;
     int			 eventSiteIndex;
@@ -138,8 +136,6 @@ typedef struct dnd_info {
     /* DND_HACK begin */
     short		 is_old;
     /* DND_HACK end */
-    int			 incr_size;
-    int			 incr_mode;  	/* Response from dsdm in INCR. */
     Window               lastRootWindow;
     int                  screenNumber;
 
@@ -229,6 +225,7 @@ static int contact_dsdm(Dnd_info	*dnd)
 	}
 
 	siteRects = (DndSiteRects *)xv_get(selreq, SEL_DATA, &length, &format);
+	if (length == SEL_ERROR) return FALSE;
 
 	if (siteRects) dnd->siteRects = siteRects;
 
@@ -236,9 +233,9 @@ static int contact_dsdm(Dnd_info	*dnd)
 	dnd->lastSiteIndex = DND_NO_SITE;
 	dnd->eventSiteIndex = DND_NO_SITE;
 
-	if (!dnd->siteRects)
-		return (False);
-	return (True);
+	if (!dnd->siteRects) return FALSE;
+
+	return TRUE;
 }
 
 /* 
