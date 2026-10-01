@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.23 2026/09/28 08:49:17 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.24 2026/10/01 04:27:52 dra Exp $ ";
 #endif
 #endif
 
@@ -770,8 +770,7 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
 									XV_SHOW, FALSE,
 									NULL);
 				screen->dsdm_selreq = xv_create(mywin, SELECTION_REQUESTOR,
-									SEL_RANK, xv_get(screen->server,
-											SERVER_ATOM, "_SUN_DRAGDROP_DSDM"),
+									SEL_RANK_NAME, "_SUN_DRAGDROP_DSDM",
 									NULL);
 			}
 			value = screen->dsdm_selreq;
