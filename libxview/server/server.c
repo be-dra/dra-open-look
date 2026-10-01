@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.63 2026/09/29 18:25:07 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.65 2026/10/01 05:05:59 dra Exp $";
 #endif
 #endif
 
@@ -1044,6 +1044,8 @@ static void server_initialize_atoms(Server_info *server)
 		"XV_DO_DRAG_MOVE",
 		"XV_SELECTION_0",
 		"XV_SELECTION_1",
+		"XV_SELECTION_2",
+		"XV_SELECTION_3",
 		"XdndActionAsk",
 		"XdndActionCopy",
 		"XdndActionDescription",
@@ -1073,7 +1075,20 @@ static void server_initialize_atoms(Server_info *server)
 		"_DRA_TALK_REGISTER",
 		"_DRA_TALK_SERVER",
 		"_DRA_TALK_TRIGGER",
+		"_DRA_TALK_CLIENT0",
+		"_DRA_TALK_CLIENT1",
+		"_DRA_TALK_CLIENT2",
 		"_DRA_TRACE",
+		"_DRA_SEARCH_PATTERN",
+		"_DRA_IGNORE_CASE",
+		"_DRA_DIR_RESCAN",
+		"_DRA_VOLUME_RAISE",
+		"_DRA_VOLUME_LOWER",
+		"_DRA_AUDIO_MUTE",
+		"_DRA_MAIL_TEXT",
+		"_DRA_CALENDAR",
+		"_DRA_STRING_IS_CONTENTS",
+		"_DRA_LOAD",
 		"_MOTIF_WM_INFO",
 		"_MOTIF_WM_MENU",
 		"_MOTIF_WM_MESSAGES",
