@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.16 2026/07/27 12:30:59 dra Exp $";
+static char     sccsid[] = "@(#)cursor.c 20.55 93/06/28 DRA: RCS  $Id: cursor.c,v 2.18 2026/09/30 16:51:22 dra Exp $";
 #endif
 #endif
 
@@ -37,14 +37,24 @@ typedef enum {
     CURSOR_TYPE_TEXT	/* uses CURSOR_STRING */
 } Cursor_type;
 
-typedef struct cursor_table_entry {
-    unsigned char  *src_bits;
-    unsigned char  *mask_bits;
-    int             width;
-    int             height;
-    int             x_offset;   /* pixel x-offset of text baseline */
-    int             y_offset;   /* pixel y-offset of text baseline */
-} Cursor_table_entry;
+/* typedef struct cursor_table_entry { */
+/*     unsigned char  *src_bits; */
+/*     unsigned char  *mask_bits; */
+/*     int             width; */
+/*     int             height; */
+	/* pixel x-offset of text baseline */
+/*     int             x_offset; */
+	/* pixel y-offset of text baseline */
+/*     int             y_offset; */
+/* } Cursor_table_entry; */
+
+typedef struct {
+	int size_ok;
+	XColor bg;	/* background color of cursor */
+	XColor fg;	/* foreground color of cursor */
+} Cursor_root_cache;
+
+static int root_key = 0;
 
 typedef struct {
     Xv_opaque	    public_self;	/* back pointer */
@@ -293,17 +303,13 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 
 	unsigned int best_height;
 	unsigned int best_width;
-	XColor bg;	/* background color of cursor */
-	XColor fg;	/* foreground color of cursor */
 	Colormap cmap;
 	int src_char;
 	Display *display;
 	Xv_Font textfont, cursor_font;
 	int bytelength, charlength;
-	int screen_nbr;
 	Pixmap mask_pixmap, src_pixmap;
 	Screen_visual *visual;
-	Status status;
 	XID xid;
 	XFontStruct *xfs;
     int descent = 0;
@@ -312,6 +318,7 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
     XCharStruct chstr;
 	unsigned pixheight, pixwidth;
 	char buf[2];
+	Cursor_root_cache *cache;
 	wchar_t wcstr[MAXWC];
 
 	display = xv_display(info);
@@ -368,11 +375,35 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 	pixheight = (unsigned) (ascent+descent+10);
 	pixwidth = chstr.width;
 
-	/* See if we can create a cursor of this size */
-	status = XQueryBestCursor(display, xid, pixwidth,
-			pixheight, &best_width, &best_height);
-	if (!status || best_width < pixwidth || best_height < pixheight)
-		return XV_ERROR;
+	if (! root_key) root_key = xv_unique_key();
+
+	cache = (Cursor_root_cache *)xv_get(cursor->root, XV_KEY_DATA, root_key);
+	if (! cache) {
+		int screen_nbr;
+		Status status;
+
+		cache = xv_alloc(Cursor_root_cache);
+
+		/* a few roundtrips we want to perform only once */
+
+		/* See if we can create a cursor of this size */
+		status = XQueryBestCursor(display, xid, pixwidth,
+				pixheight, &best_width, &best_height);
+		if (!status || best_width < pixwidth || best_height < pixheight)
+			return XV_ERROR;
+
+		cache->size_ok = TRUE;
+		/* Define foreground and background colors */
+		screen_nbr = (int)xv_get(xv_screen(info), SCREEN_NUMBER);
+		cache->fg.flags = cache->bg.flags = DoRed | DoGreen | DoBlue;
+		cache->fg.pixel = BlackPixel(display, screen_nbr);
+		cmap = xv_get(xv_cms(info), XV_XID);
+		XQueryColor(display, cmap, &cache->fg);
+		cache->bg.pixel = WhitePixel(display, screen_nbr);
+		XQueryColor(display, cmap, &cache->bg);
+
+		xv_set(cursor->root, XV_KEY_DATA, root_key, cache, NULL);
+	}
 
 	/* Create mask and source pixmaps */
 	mask_pixmap = XCreatePixmap(display, xid, pixwidth, pixheight, 1);
@@ -431,18 +462,10 @@ static Xv_opaque create_text_cursor(Cursor_info *cursor, Xv_Drawable_info *info)
 									cursor->string, charlength);
 	}
 
-	/* Define foreground and background colors */
-	screen_nbr = (int)xv_get(xv_screen(info), SCREEN_NUMBER);
-	fg.flags = bg.flags = DoRed | DoGreen | DoBlue;
-	fg.pixel = BlackPixel(display, screen_nbr);
-	cmap = xv_get(xv_cms(info), XV_XID);
-	XQueryColor(display, cmap, &fg);
-	bg.pixel = WhitePixel(display, screen_nbr);
-	XQueryColor(display, cmap, &bg);
-
 	/* Create Pixmap Cursor */
 	cursor->cursor_id = XCreatePixmapCursor(display, src_pixmap, mask_pixmap,
-			&fg, &bg, (unsigned)(-chstr.lbearing), (unsigned)ascent);
+			&cache->fg, &cache->bg, (unsigned)(-chstr.lbearing),
+			(unsigned)ascent);
 
 	/* Free the src_pixmap and mask_pixmap */
 
