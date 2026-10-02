@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.41 2026/09/29 18:36:09 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.42 2026/10/01 16:23:00 dra Exp $";
 #endif
 #endif
 
@@ -129,15 +129,15 @@ Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
 		return ( (Time) NULL );
     }
 
-    XDeleteProperty(dpy, win, XA_CUT_BUFFER7);
-
     /*
      * If we have added PropertyChangeMask to the win, reset the mask to
      * it's original state.
      */
-    if ( status )
-        XSelectInput( dpy, win, winAttr.your_event_mask  );
+    if (status) XSelectInput(dpy, win, winAttr.your_event_mask);
 
+    XDeleteProperty(dpy, win, XA_CUT_BUFFER7);
+
+	if (srv) server_set_timestamp(srv, NULL, event.xproperty.time);
     return event.xproperty.time;
 }
 
