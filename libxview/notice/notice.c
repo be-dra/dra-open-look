@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.20 2026/09/13 19:18:29 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.21 2026/10/03 07:55:25 dra Exp $ ";
 #endif
 #endif
 
@@ -3281,7 +3281,7 @@ static void notice_subframe_layout(Notice_info	*notice, Bool do_msg, Bool do_but
 				 */
 				win_change_property(notice->sub_frame,
 						(Attr_attribute)SERVER_WM_DEFAULT_BUTTON, XA_INTEGER,
-						32, (unsigned char *)data, 6);
+						32, (unsigned char *)data, 6, FALSE);
 			}
 		}
 	}
@@ -3292,7 +3292,7 @@ static void notice_subframe_layout(Notice_info	*notice, Bool do_msg, Bool do_but
 		 */
 		win_change_property(notice->sub_frame,
 				(Attr_attribute)SERVER_WM_DEFAULT_BUTTON, XA_INTEGER,
-				32, NULL, 0);
+				32, NULL, 0, FALSE);
 	}
 
 	notice->need_layout = 0;
