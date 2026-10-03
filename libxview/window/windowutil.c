@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.22 2026/08/06 09:03:08 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.23 2026/10/03 07:54:42 dra Exp $";
 #endif
 #endif
 /*
@@ -970,7 +970,7 @@ Xv_private void win_set_wm_command(Xv_window window)
 				win_get_cmdline_option(window, str, appl_cmdline);
 				win_change_property(window, (Attr_attribute) SERVER_WM_COMMAND,
 						XA_STRING, 8,
-						(unsigned char *)str, (int)strlen(str) + 1);
+						(unsigned char *)str, (int)strlen(str) + 1, FALSE);
 				xv_free(str);
 			}
 			else {
@@ -1000,7 +1000,7 @@ Xv_private void win_set_wm_command(Xv_window window)
 		 * length append on WM_COMMAND.
 		 */
 		win_change_property(window, (Attr_attribute) SERVER_WM_COMMAND,
-				XA_STRING, 8, NULL, 0);
+				XA_STRING, 8, NULL, 0, FALSE);
 	}
 }
 
