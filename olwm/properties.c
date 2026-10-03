@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.12 2026/09/18 16:25:09 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.13 2026/10/03 06:16:10 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -374,11 +374,7 @@ PropGetWMNormalHints(dpy,win,sizeHints,preICCCM)
  * PropGetWMProtocols - get the protocols in which the client will participate.
  *	Convert the individual atoms into protocol flags.
  */
-Bool
-PropGetWMProtocols(dpy,win,protocols)
-	Display	*dpy;
-	Window	win;
-	int	*protocols;
+Bool PropGetWMProtocols(Display *dpy, Window win, int *protocols)
 {
 	Atom	*atomList;
 	int	i,count;
@@ -416,6 +412,8 @@ PropGetWMProtocols(dpy,win,protocols)
 			*protocols |= IS_WS_PROPS;
 		else if (atomList[i] == AtomAllowIconSize)
 			*protocols |= ALLOW_ICON_SIZE;
+		else if (atomList[i] == AtomPinState)
+			*protocols |= PUSHPIN_STATE;
 	}
 
 	XFree((char *)atomList);
