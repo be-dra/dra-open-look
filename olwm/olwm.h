@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.4 2025/06/20 20:37:00 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.5 2026/10/03 06:16:14 dra Exp $ */
 /* #ident	"@(#)olwm.h	26.27	93/06/28 SMI" */
 
 /*
@@ -48,15 +48,16 @@
 #define		SAVE_YOURSELF		(1<<1)
 #define		DELETE_WINDOW		(1<<2)
 
-#  define		HAS_PROPWIN		(1<<3)
-#  define		GROUP_MANAGED	(1<<4)
-#  define		WARP_BACK		(1<<5)
-#  define		SECONDARY_BASE	(1<<6)
-#  define       NO_WARPING      (1<<7)
-#  define       IS_WS_PROPS     (1<<8)
-#  define       WARP_TO_PIN     (1<<9)
-#  define       OWN_HELP        (1<<10)
-#  define       ALLOW_ICON_SIZE (1<<11)
+#define		HAS_PROPWIN		(1<<3)
+#define		GROUP_MANAGED	(1<<4)
+#define		WARP_BACK		(1<<5)
+#define		SECONDARY_BASE	(1<<6)
+#define     NO_WARPING      (1<<7)
+#define     IS_WS_PROPS     (1<<8)
+#define     WARP_TO_PIN     (1<<9)
+#define     OWN_HELP        (1<<10)
+#define     ALLOW_ICON_SIZE (1<<11)
+#define     PUSHPIN_STATE   (1<<12)
 
 /* Workspace Background Styles */
 typedef enum { WkspDefault, WkspColor, WkspPixmap } WorkspaceStyle;
