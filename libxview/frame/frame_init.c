@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.19 2026/08/07 13:53:12 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.22 2026/10/03 07:55:39 dra Exp $ ";
 #endif
 #endif
 
@@ -183,7 +183,7 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	property_array[2] = (Atom) xv_get(xv_server(info), SERVER_WM_SAVE_YOURSELF);
 
 	win_change_property(frame_public, (long)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
-			(unsigned char *)property_array, 3);
+			(unsigned char *)property_array, 3, FALSE);
 
 	/* Set WM_CLIENT_MACHINE property */
 	WMMachineName.value = (unsigned char *)hostname;
@@ -197,7 +197,7 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	XChangeProperty(xv_display(info), xid,
 					xv_get(xv_server(info), SERVER_ATOM, "WM_LOCALE_NAME"),
 					XA_STRING, 8, PropModeReplace,
-					(unsigned char *)display_lang, strlen(display_lang));
+					(unsigned char *)display_lang, (int)strlen(display_lang));
 
 	XChangeProperty(xv_display(info), xid,
 					xv_get(xv_server(info), SERVER_ATOM, "WM_CLIENT_LEADER"),
@@ -489,7 +489,7 @@ static int frame_fit_direction(Frame_class_info *frame, Window_attribute directi
     Frame           frame_public = FRAME_PUBLIC(frame);
     register Xv_Window sw;
     Rect            rect, rbound;
-    int *value = (direction==WIN_DESIRED_WIDTH) ?&rect.r_width :&rect.r_height;
+    short *value =(direction==WIN_DESIRED_WIDTH) ?&rect.r_width :&rect.r_height;
 
     rbound = rect_null;
     FRAME_EACH_SHOWN_SUBWINDOW(frame, sw)
@@ -943,12 +943,11 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 			break;
 
 		case FRAME_BUSY:
-			status_set(frame, busy, FALSE);
 			if ((int)attrs[1]) {
 				if (xv_deaf(frame_public, TRUE) != XV_OK) {
 					xv_error(frame_public,
-							ERROR_STRING,
-							XV_MSG("Attempt to make frame deaf failed"), NULL);
+						ERROR_STRING,XV_MSG("Attempt to make frame deaf failed"),
+						NULL);
 					result = XV_ERROR;
 					break;
 				}
@@ -958,8 +957,8 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 			else {
 				if (xv_deaf(frame_public, FALSE) != XV_OK) {
 					xv_error(frame_public,
-							ERROR_STRING,
-							XV_MSG("Attempt to make frame undeaf failed"), NULL);
+						ERROR_STRING,XV_MSG("Attempt to make frame undeaf failed"),
+						NULL);
 					result = XV_ERROR;
 					break;
 				}
