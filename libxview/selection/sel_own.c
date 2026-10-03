@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.55 2026/09/06 07:11:54 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.56 2026/10/03 07:57:36 dra Exp $";
 #endif
 #endif
 
@@ -24,45 +24,48 @@ static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.5
 static int (*OldErrorHandler)(Display *, XErrorEvent *);
 Xv_private_data XContext  reqCtx;
 
-static int SelLoseOwnership( Sel_owner_info *sel_owner)
+static int SelLoseOwnership(Sel_owner_info *sel_owner, int from_sel_clear)
 {
-    struct  timeval  time;
+	struct timeval time;
 
-    /*
-     * If we are processing a transaction now, don't lose the ownership
-     * until we are done.
-     */
-    if ( sel_owner->status & SEL_BUSY )  {
-	sel_owner->status |= SEL_LOSE;
-	return FALSE;
-    }
+	/*
+	 * If we are processing a transaction now, don't lose the ownership
+	 * until we are done.
+	 */
+	if (sel_owner->status & SEL_BUSY) {
+		sel_owner->status |= SEL_LOSE;
+		return FALSE;
+	}
 
-    /*
-     * Compatibility routine between the old and the new selection packages.
-     * When the textsw is converted to use the new selection package, this
-     * routine can be deleted.
-     */
-    xv_sel_free_compat_data( sel_owner->dpy, sel_owner->selection );
+	/*
+	 * Compatibility routine between the old and the new selection packages.
+	 * When the textsw is converted to use the new selection package, this
+	 * routine can be deleted.
+	 */
+	xv_sel_free_compat_data(sel_owner->dpy, sel_owner->selection);
 
-    XSetSelectionOwner( sel_owner->dpy, sel_owner->selection,
-		       None, sel_owner->time );
+	if (! from_sel_clear) {
+		/* after a SelectionClear event, this is not necessary */
+		XSetSelectionOwner(sel_owner->dpy, sel_owner->selection, None,
+										sel_owner->time);
+	}
 
-    if ( sel_owner->lose_proc != NULL )
-        (* sel_owner->lose_proc)( sel_owner->public_self );
+	if (sel_owner->lose_proc != NULL)
+		(*sel_owner->lose_proc) (sel_owner->public_self);
 
-    /*
-     * Set the time to zero so that when we become the selection owner
-     * again we get the correct time.
-     */
-    time.tv_sec = 0;
-    time.tv_usec = 0;
-    xv_set( sel_owner->public_self, SEL_TIME, &time, NULL );
+	/*
+	 * Set the time to zero so that when we become the selection owner
+	 * again we get the correct time.
+	 */
+	time.tv_sec = 0;
+	time.tv_usec = 0;
+	xv_set(sel_owner->public_self, SEL_TIME, &time, NULL);
 
-    sel_owner->time = 0;
-    sel_owner->own = FALSE;
+	sel_owner->time = 0;
+	sel_owner->own = FALSE;
 
-    XDeleteContext( sel_owner->dpy, sel_owner->xid, selCtx );
-    return TRUE;
+	XDeleteContext(sel_owner->dpy, sel_owner->xid, selCtx);
+	return TRUE;
 }
 
 static void RegisterSelClient(Sel_owner_info *owner, int flag)
@@ -123,7 +126,7 @@ static void RegisterSelClient(Sel_owner_info *owner, int flag)
 			if (infoPtr->client->xid != owner->xid) {
 				/* only lose ownership if you actually own the selection */
 				if (infoPtr->client->own) {
-					SelLoseOwnership(infoPtr->client);
+					SelLoseOwnership(infoPtr->client, FALSE);
 				}
 			}
 
@@ -373,7 +376,7 @@ static void SelClean(Sel_owner_info *owner)
 	 */
 	if (owner->status & SEL_LOSE) {
 		owner->status = 0;
-		SelLoseOwnership(owner);
+		SelLoseOwnership(owner, FALSE);
 	}
 	if (owner->req == NULL)
 		return;
@@ -1105,7 +1108,7 @@ Xv_private void xv_sel_handle_selection_clear(XSelectionClearEvent *clrEv)
 	   was sent.  If it was owned after the clear event was sent, then
 	   don't lose the selection. */
 	if (owner->own && (owner->time <= clrEv->time)) {
-		SelLoseOwnership(owner);
+		SelLoseOwnership(owner, TRUE);
 	}
 }
 
@@ -1177,7 +1180,7 @@ static Xv_opaque sel_owner_set_avlist(Selection_owner sel_owner_public,
 			case SEL_OWN:
 				if (sel_owner->own != (Bool) attrs[1]) {
 					if (!(Bool) attrs[1])
-						SelLoseOwnership(sel_owner);
+						SelLoseOwnership(sel_owner, FALSE);
 					else
 						owner = TRUE;
 				}
@@ -1246,7 +1249,7 @@ static int sel_owner_destroy(Selection_owner sel_owner_public, Destroy_status st
 
 	while ((si = xv_get(sel_owner_public, SEL_FIRST_ITEM))) xv_destroy(si);
 
-	if (sel_owner->own) SelLoseOwnership(sel_owner);
+	if (sel_owner->own) SelLoseOwnership(sel_owner, FALSE);
 
     if (sel_owner->propInfo) {
     	if (sel_owner->propInfoDataAlloced && sel_owner->propInfo->data)
