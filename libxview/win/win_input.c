@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.61 2026/09/16 13:30:50 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.62 2026/10/03 07:53:14 dra Exp $";
 #endif
 #endif
 
@@ -2585,6 +2585,16 @@ static int process_clientmessage_events(Xv_object window,
 								 (unsigned long)clientmessage->data.l[1]);
 					event_set_action(event, ACTION_TAKE_FOCUS);
 					break;
+				case SERVER_WM_PIN_STATE_TYPE:
+					server_set_timestamp(server_public, &event->ie_time,
+								 (unsigned long)clientmessage->data.l[1]);
+					if (clientmessage->data.l[2]) {
+						event_set_action(event, ACTION_PININ);
+					}
+					else {
+						event_set_action(event, ACTION_PINOUT);
+					}
+					break;
 				default:
 					event_set_id(event, WIN_CLIENT_MESSAGE);
 					window_set_client_message(window, clientmessage);
@@ -3052,7 +3062,16 @@ static int process_property_events(Xv_object window, XPropertyEvent *property,
 
 	switch (atom_type) {
 		case SERVER_WM_PIN_STATE_TYPE:
-			return (process_wm_pushpin_state(window, property->atom, event));
+			/* don't want to see "unused process_wm_pushpin_state" */
+			if (event) {
+				/* We get the pin state via a WM_PROTOCOLS message, so,
+				 * avoid XGetWindowProperty
+				 */
+				return 1;
+			}
+			else {
+				return (process_wm_pushpin_state(window,property->atom,event));
+			}
 		default:
 			event_set_id(event, WIN_PROPERTY_NOTIFY);
 	}
