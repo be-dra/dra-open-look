@@ -1,4 +1,4 @@
-/*	@(#)win_info.h 20.17 93/06/28 SMI  DRA: $Id: win_info.h,v 4.6 2026/04/02 16:31:52 dra Exp $	*/
+/*	@(#)win_info.h 20.17 93/06/28 SMI  DRA: $Id: win_info.h,v 4.7 2026/10/03 07:10:02 dra Exp $	*/
 
 /****************************************************************************/
 /*	
@@ -55,7 +55,8 @@ extern XID win_fdtonumber(Xv_object window);
 extern void win_free(Xv_object window);
 extern int win_is_mapped(Xv_object window);
 extern int win_view_state(Display *display, XID xid);
-extern void win_change_property(Xv_object, Attr_attribute, Atom, int, unsigned char *, int);
+extern void win_change_property(Xv_object, Attr_attribute, Atom, int,
+					unsigned char *, int, int doAppend);
 extern void win_get_property(Xv_object, Attr_attribute, long, long, Atom, unsigned long *, unsigned long *, unsigned char **);
 extern void win_bell(Xv_object window, struct timeval tv, Xv_object pw);
 void win_set_no_focus(Xv_object window, int state);
