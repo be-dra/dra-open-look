@@ -1,7 +1,7 @@
 #ifndef _OLWM_ATOM_H
 #define _OLWM_ATOM_H
 
-/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.17 2026/09/18 07:26:41 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.18 2026/10/03 06:15:11 dra Exp $ */
 enum atom_index_t {
 	OL_AtomColorMapWindows,
 	OL_AtomWMState,
@@ -11,7 +11,7 @@ enum atom_index_t {
 	OL_AtomSaveYourself,
 	OL_AtomDeleteWindow,
 	OL_AtomWinAttr,
-	OL_AtomPushpinState,
+	OL_AtomPinState,
 	OL_AtomWindowBusy,
 	OL_AtomLeftFooter,
 	OL_AtomRightFooter,
@@ -115,7 +115,7 @@ extern Atom atoms[];
 #define AtomSaveYourself atoms[OL_AtomSaveYourself]
 #define AtomDeleteWindow atoms[OL_AtomDeleteWindow]
 #define AtomWinAttr atoms[OL_AtomWinAttr]
-#define AtomPushpinState atoms[OL_AtomPushpinState]
+#define AtomPinState atoms[OL_AtomPinState]
 #define AtomWindowBusy atoms[OL_AtomWindowBusy]
 #define AtomLeftFooter atoms[OL_AtomLeftFooter]
 #define AtomRightFooter atoms[OL_AtomRightFooter]
