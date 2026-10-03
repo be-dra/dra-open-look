@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.9 2026/09/18 07:27:18 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.10 2026/10/03 06:16:20 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -296,7 +296,8 @@ void ClientUpdateWindowState(cli,event)
 
 /* ClientSendProtocol - send a protocol message to a client
  */
-static void ClientSendProtocol(Client *cli, Atom proto, Time evtime)
+static void ClientSendProtocol(Client *cli, Atom proto, Time evtime,
+						long d2, long d3, long d4)
 {
 	XEvent xcl;
 
@@ -307,9 +308,9 @@ static void ClientSendProtocol(Client *cli, Atom proto, Time evtime)
 	xcl.xclient.window = ClientPane(cli);
 	xcl.xclient.data.l[0] = proto;
 	xcl.xclient.data.l[1] = evtime;
-	xcl.xclient.data.l[2] = 0;
-	xcl.xclient.data.l[3] = 0;
-	xcl.xclient.data.l[4] = 0;
+	xcl.xclient.data.l[2] = d2;
+	xcl.xclient.data.l[3] = d3;
+	xcl.xclient.data.l[4] = d4;
 
 	XSendEvent(cli->dpy, xcl.xclient.window, False, NoEventMask, &xcl);
 }
@@ -379,23 +380,27 @@ Bool ClientShowHelp(Client *cli, int rootx, int rooty, char *hlp)
  */
 void ClientShowProps(Client *cli)
 {
-	ClientSendProtocol(cli, AtomShowProperties, LastEventTime);
+	ClientSendProtocol(cli, AtomShowProperties, LastEventTime, 0, 0, 0);
+}
+
+void ClientSendPinState(Client *cli, int pinin)
+{
+	if (cli->protocols & PUSHPIN_STATE) {
+		ClientSendProtocol(cli, AtomPinState, LastEventTime, pinin, 0, 0);
+	}
 }
 
 /* ClientKill - a client must be killed.  If it can handle the DELETE_WINDOW
  *	protocol, use it; otherwise, if we are forcing the client to go
  *	away, kill it.
  */
-void *
-ClientKill(cli,pforce)
-Client *cli;
-Bool pforce;
+void *ClientKill(Client *cli, Bool pforce)
 {
 	if (cli->framewin == NULL)
 		return NULL;
 
 	if (cli->protocols & DELETE_WINDOW) {
-		ClientSendProtocol(cli,AtomDeleteWindow,LastEventTime);
+		ClientSendProtocol(cli,AtomDeleteWindow,LastEventTime, 0, 0, 0);
 	} else {
 		if (pforce && ! cli->flags & CLOlwmOwned)
 			XKillClient(cli->dpy,ClientPane(cli));
@@ -1521,7 +1526,7 @@ void ClientSetFocus(Client *cli, Bool sendTF, Time evtime)
 	    case GloballyActive:
 	        if (sendTF)
 	        {
-		    ClientSendProtocol(cli, AtomTakeFocus, evtime);
+		    ClientSendProtocol(cli, AtomTakeFocus, evtime, 0, 0, 0);
 	        }
 	        break;
 	    }
@@ -1761,4 +1766,3 @@ void ClientDistributeProperty(Client *cli, XPropertyEvent	*event)
 		}
 	}
 }
-
