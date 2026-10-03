@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_treeop.c 20.55 93/06/28 DRA: $Id: win_treeop.c,v 4.1 2024/03/28 19:28:19 dra Exp $";
+static char     sccsid[] = "@(#)win_treeop.c 20.55 93/06/28 DRA: $Id: win_treeop.c,v 4.2 2026/10/03 07:10:11 dra Exp $";
 #endif
 #endif
 
@@ -319,7 +319,9 @@ Xv_private int win_view_state(Display *display, XID xid)
     }
 }
 
-Xv_private void win_change_property(Xv_object window, Attr_attribute property_name, Atom property_type, int data_size, unsigned char *property_data, int data_count)
+Xv_private void win_change_property(Xv_object window,
+		Attr_attribute property_name, Atom property_type, int data_size,
+		unsigned char *property_data, int data_count, int doAppend)
 {
     register Xv_Drawable_info *info;
     Atom            property;
@@ -327,7 +329,8 @@ Xv_private void win_change_property(Xv_object window, Attr_attribute property_na
     DRAWABLE_INFO_MACRO(window, info);
     property = (Atom) xv_get(xv_server(info), (Attr32_attribute)property_name);
     XChangeProperty(xv_display(info), xv_xid(info), property, property_type,
-		    data_size, PropModeReplace, property_data, data_count);
+		    data_size, (doAppend ? PropModeAppend : PropModeReplace),
+			property_data, data_count);
 }
 
 
