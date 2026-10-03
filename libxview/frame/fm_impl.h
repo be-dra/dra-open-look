@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.13 2026/07/18 19:31:40 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_impl.h 20.64 93/06/28 DRA: $Id: fm_impl.h,v 4.14 2026/10/03 05:25:17 dra Exp $ ";
 #endif
 #endif
 
@@ -143,6 +143,21 @@ typedef	struct	{
 #define	status_set(frame, field, value)	\
 	(frame)->status_bits.field = ((value) != FALSE)
 
+#define	FRAME_CMD_PRIVATE(f)	XV_PRIVATE(Frame_cmd_info, Xv_frame_cmd, f)
+
+typedef	struct	{
+    Frame	public_self;	/* back pointer to object */
+    WM_Win_Type	win_attr;	/* _OL_WIN_ATTR */
+
+    struct {
+	BIT_FIELD(pushpin_in);		/* is pushpin in or out */
+	BIT_FIELD(warp_pointer);	/* whether to warp the pointer when window is mapped */
+	BIT_FIELD(default_pin_state);   /* default (or initial) pin state */
+	BIT_FIELD(default_pin_state_valid);   /* whether default_pin_state has useful value */
+    } status_bits;
+	int panel_bordered;
+    Xv_window panel;
+} Frame_cmd_info;
 
 
 #define	FRAME_EACH_CHILD(first, child)	\
