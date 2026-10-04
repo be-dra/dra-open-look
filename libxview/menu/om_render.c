@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.15 2026/07/21 08:45:32 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.16 2026/10/03 20:50:43 dra Exp $";
 #endif
 #endif
 
@@ -2293,9 +2293,32 @@ static void compute_rects(Xv_menu_info *menu, struct inputevent *iep,
 	menu->menurect.r_height = mrect->r_height;
 
 	/* Convert to screen coordinates */
+#ifdef BEFORE_DRA_AVOIDS_XTRANSLATECOORD
 	win_translate_xy(iep->ie_win, rootwindow,
 						menu->menurect.r_left, menu->menurect.r_top,
 						&left, &top);
+	fprintf(stderr, "win_translate_xy: (%d, %d) -> (%d, %d)\n", 
+						menu->menurect.r_left, menu->menurect.r_top,
+						left, top);
+#else /* BEFORE_DRA_AVOIDS_XTRANSLATECOORD */
+	{
+		int xoff = 0, yoff = 0;
+		Rect r;
+		Xv_window w = event_window(iep);
+
+		do {
+			window_get_cache_rect(w, &r);
+			xoff += r.r_left;
+			yoff += r.r_top;
+			if (xv_get(w, WIN_BORDER)) {
+				++xoff;
+				++yoff;
+			}
+		} while ((w = xv_get(w, XV_OWNER)));
+		left = menu->menurect.r_left+xoff;
+		top = menu->menurect.r_top+yoff;
+	}
+#endif /* BEFORE_DRA_AVOIDS_XTRANSLATECOORD */
 	mrect->r_left = left;
 	mrect->r_top = top;
 
