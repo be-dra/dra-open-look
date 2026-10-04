@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.62 2026/10/03 07:53:14 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.63 2026/10/03 17:18:24 dra Exp $";
 #endif
 #endif
 
@@ -84,7 +84,6 @@ static int process_clientmessage_events(Xv_object window,
 						XClientMessageEvent *clientmessage, Event *event);
 static int process_property_events(Xv_object window, XPropertyEvent *property,
 									Event *event);
-static int process_wm_pushpin_state(Xv_object window, Atom atom, Event *event);
 
 struct _XKeytrans {
         struct _XKeytrans *next;/* next on list */
@@ -3048,36 +3047,6 @@ static int process_clientmessage_events(Xv_object window,
 	return FALSE;
 }
 
-static int process_property_events(Xv_object window, XPropertyEvent *property,
-									Event *event)
-{
-	Xv_Drawable_info *info;
-	Xv_opaque server_public;
-	Server_atom_type atom_type;
-
-	DRAWABLE_INFO_MACRO(window, info);
-	server_public = xv_server(info);
-	server_set_timestamp(server_public, &event->ie_time, property->time);
-	atom_type = server_get_atom_type(server_public, property->atom);
-
-	switch (atom_type) {
-		case SERVER_WM_PIN_STATE_TYPE:
-			/* don't want to see "unused process_wm_pushpin_state" */
-			if (event) {
-				/* We get the pin state via a WM_PROTOCOLS message, so,
-				 * avoid XGetWindowProperty
-				 */
-				return 1;
-			}
-			else {
-				return (process_wm_pushpin_state(window,property->atom,event));
-			}
-		default:
-			event_set_id(event, WIN_PROPERTY_NOTIFY);
-	}
-	return FALSE;
-}
-
 static int process_wm_pushpin_state(Xv_object window, Atom atom, Event *event)
 {
 	Xv_Drawable_info *info;
@@ -3114,6 +3083,30 @@ static int process_wm_pushpin_state(Xv_object window, Atom atom, Event *event)
 	}
 	XFree((char *)prop);
 	return 0;
+}
+
+static int process_property_events(Xv_object window, XPropertyEvent *property,
+									Event *event)
+{
+	Xv_Drawable_info *info;
+	Xv_opaque server_public;
+	Server_atom_type atom_type;
+
+	DRAWABLE_INFO_MACRO(window, info);
+	server_public = xv_server(info);
+	server_set_timestamp(server_public, &event->ie_time, property->time);
+	atom_type = server_get_atom_type(server_public, property->atom);
+
+	switch (atom_type) {
+		case SERVER_WM_PIN_STATE_TYPE:
+			/* if we ever come here, it must be a window manager that
+			 * doesn't understand our _OL_PIN_STATE in the WM_PROTOCOLS
+			 */
+			return process_wm_pushpin_state(window,property->atom,event);
+		default:
+			event_set_id(event, WIN_PROPERTY_NOTIFY);
+	}
+	return FALSE;
 }
 
 #ifdef SEEMS_UNUSED
