@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.11 2026/08/10 08:41:44 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.12 2026/10/02 12:02:25 dra Exp $ ";
 #endif
 #endif
 
@@ -312,23 +312,23 @@ Pkg_private void frame_update_status_win_color(Frame frame_public,
 }
 
 Pkg_private void frame_display_busy(Frame_class_info *frame, int status)
-
 {
-    Frame           frame_public = FRAME_PUBLIC(frame);
-    Xv_Drawable_info *info;
-    Xv_object       screen, server;
+	Frame frame_public;
+	Xv_Drawable_info *info;
+	Xv_object screen, server;
 	long lstatus = (long)status;
 
+	if (status == status_get(frame, busy)) return;  /* avoid XChangeProperty */
 
-    DRAWABLE_INFO_MACRO(frame_public, info);
-    screen = xv_get(frame_public, XV_SCREEN);
-    server = xv_get(screen, SCREEN_SERVER);
+	frame_public = FRAME_PUBLIC(frame);
+	DRAWABLE_INFO_MACRO(frame_public, info);
+	screen = xv_get(frame_public, XV_SCREEN);
+	server = xv_get(screen, SCREEN_SERVER);
 
-    XChangeProperty(xv_display(info), xv_xid(info),
-		    xv_get(server, SERVER_WM_WIN_BUSY), XA_INTEGER,
-		    32, PropModeReplace, (unsigned char *)&lstatus,
-		    1);
-    XFlush(xv_display(info));
+	XChangeProperty(xv_display(info), xv_xid(info),
+			xv_get(server, SERVER_WM_WIN_BUSY), XA_INTEGER,
+			32, PropModeReplace, (unsigned char *)&lstatus, 1);
+	XFlush(xv_display(info));
 }
 
 /*
