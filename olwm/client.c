@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.10 2026/10/03 06:16:20 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.11 2026/10/03 17:12:23 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -385,9 +385,7 @@ void ClientShowProps(Client *cli)
 
 void ClientSendPinState(Client *cli, int pinin)
 {
-	if (cli->protocols & PUSHPIN_STATE) {
-		ClientSendProtocol(cli, AtomPinState, LastEventTime, pinin, 0, 0);
-	}
+	ClientSendProtocol(cli, AtomPinState, LastEventTime, pinin, 0, 0);
 }
 
 /* ClientKill - a client must be killed.  If it can handle the DELETE_WINDOW
