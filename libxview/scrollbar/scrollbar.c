@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.10 2026/08/10 16:30:00 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.11 2026/10/04 12:10:09 dra Exp $ ";
 #endif
 #endif
 
@@ -1112,8 +1112,7 @@ static int scrollbar_handle_elevator_event(Xv_scrollbar_info *sb,
 							get_page_window(sb);
 							pn = (page_data_t *) xv_get(sb->page_window,
 									WIN_CLIENT_DATA);
-							win_translate_xy(SCROLLBAR_PUBLIC(sb),
-									xv_get(SCROLLBAR_PUBLIC(sb), XV_ROOT),
+							win_translate_to_screen(SCROLLBAR_PUBLIC(sb),
 									0, 0, &pn->root_x, &pn->root_y);
 							pn->pn_digits = 0;
 							pn->pagenumber = 0;
