@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.16 2026/10/03 20:50:43 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.18 2026/10/04 16:23:23 dra Exp $";
 #endif
 #endif
 
@@ -44,6 +44,7 @@ static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.
 #include <xview_private/scrn_impl.h>
 #include <xview_private/svr_impl.h>
 #include <xview_private/windowimpl.h>
+#include <xview_private/win_info.h>
 
 #include <xview_private/om_impl.h>
 
@@ -648,6 +649,9 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 		/* Use OpenWindows.WindowColor as background color.  */
 		cms_status = (int)xv_get(xv_cms(menu_window_info), CMS_STATUS_BITS);
 		if (!CMS_STATUS(cms_status, CMS_STATUS_CONTROL)) {
+			/* yes - this will perform the same XQueryColors over again
+			 * I tried to avoid this and failed!
+			 */
 			(void)xv_set_control_cms(m->window, menu_window_info, cms_status);
 			if (!m->ginfo)
 				m->ginfo = xv_init_olgx(m->window, &m->group_info->three_d,
@@ -915,7 +919,7 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 	xv_set(m->window, XV_RECT, &m->fs_menurect, NULL);
 	xv_set(m->shadow_window, XV_RECT, &shadowrect, NULL);
 
-	XFlush(XV_DISPLAY_FROM_WINDOW(m->window));
+/* 	do we need this? XFlush(XV_DISPLAY_FROM_WINDOW(m->window)); */
 
 	/* fix to make xv_window_loop work for menus */
 	if (WIN_IS_IN_LOOP) {
@@ -2301,23 +2305,8 @@ static void compute_rects(Xv_menu_info *menu, struct inputevent *iep,
 						menu->menurect.r_left, menu->menurect.r_top,
 						left, top);
 #else /* BEFORE_DRA_AVOIDS_XTRANSLATECOORD */
-	{
-		int xoff = 0, yoff = 0;
-		Rect r;
-		Xv_window w = event_window(iep);
-
-		do {
-			window_get_cache_rect(w, &r);
-			xoff += r.r_left;
-			yoff += r.r_top;
-			if (xv_get(w, WIN_BORDER)) {
-				++xoff;
-				++yoff;
-			}
-		} while ((w = xv_get(w, XV_OWNER)));
-		left = menu->menurect.r_left+xoff;
-		top = menu->menurect.r_top+yoff;
-	}
+	win_translate_to_screen(iep->ie_win, menu->menurect.r_left,
+						menu->menurect.r_top, &left, &top);
 #endif /* BEFORE_DRA_AVOIDS_XTRANSLATECOORD */
 	mrect->r_left = left;
 	mrect->r_top = top;
