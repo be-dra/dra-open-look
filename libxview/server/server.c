@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.65 2026/10/01 05:05:59 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.66 2026/10/04 12:10:34 dra Exp $";
 #endif
 #endif
 
@@ -1039,6 +1039,7 @@ static void server_initialize_atoms(Server_info *server)
 		"WM_STATE",
 		"WM_TAKE_FOCUS",
 		"WM_CLIENT_LEADER",
+		"WM_LOCALE_NAME",
 		"XV_DO_DRAG_COPY",
 		"XV_DO_DRAG_LOAD",
 		"XV_DO_DRAG_MOVE",
