@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.48 2026/10/01 04:53:27 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.49 2026/10/04 12:00:59 dra Exp $ ";
 #endif
 #endif
 
@@ -211,9 +211,8 @@ static int contact_dsdm(Dnd_info	*dnd)
 	Xv_window owner = xv_get(DND_PUBLIC(dnd), XV_OWNER);
 	Xv_screen screen = XV_SCREEN_FROM_WINDOW(owner);
 	Selection_requestor selreq = xv_get(screen, SCREEN_DSDM_REQUESTOR);
-	Xv_server server = XV_SERVER_FROM_WINDOW(owner);
 
-	xv_set(selreq, SEL_TYPE, MYATOM("_SUN_DRAGDROP_SITE_RECTS"), NULL);
+	xv_set(selreq, SEL_TYPE_NAME, "_SUN_DRAGDROP_SITE_RECTS", NULL);
 
 	/* Set the time if we know what it is. */
 	if ((time = (struct timeval *)xv_get(DND_PUBLIC(dnd), SEL_TIME)) != NULL)
@@ -464,8 +463,6 @@ static int local_preview(Xv_window eventObject, int subtype, XMotionEvent *ev,
 	Event event;
 	long local_flags = DND_LOCAL;
 	int xoff = 0, yoff = 0;
-	Rect r;
-	Xv_window w = eventObject;
 
 	event_init(&event);
 	event_set_window(&event, eventObject);
@@ -479,15 +476,7 @@ static int local_preview(Xv_window eventObject, int subtype, XMotionEvent *ev,
 	/* 
 	 * In older versions XTranslateCoordinates was used here.
 	 */
-	do {
-		window_get_cache_rect(w, &r);
-		xoff += r.r_left;
-		yoff += r.r_top;
-		if (xv_get(w, WIN_BORDER)) {
-			++xoff;
-			++yoff;
-		}
-	} while ((w = xv_get(w, XV_OWNER)));
+	win_translate_to_screen(eventObject, 0, 0, &xoff, &yoff);
 
 	event_set_x(&event, ev->x_root - xoff);
 	event_set_y(&event, ev->y_root - yoff);
