@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.3 2026/05/13 14:06:49 dra Exp $ ";
+static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.4 2026/10/04 12:07:27 dra Exp $ ";
 #endif
 #endif
 
@@ -76,26 +76,28 @@ typedef struct dnd_site_info {
 	} region;
 	unsigned int	 num_regions;
 } Dnd_site_info;
+
 static void TransCoords(Dnd_site_info *site, Dnd_rect_list *node)
 {
-    Xv_Window 	frame, window;
-    int		x, y;
+	Xv_Window frame, window;
+	int x, y;
 
-    frame = win_get_top_level(site->owner);
-    assert(frame != (Xv_opaque)XV_ERROR);
+	frame = win_get_top_level(site->owner);
+	assert(frame != (Xv_opaque) XV_ERROR);
 
-    x = node->rect.r_left;
-    y = node->rect.r_top;
-    window = site->owner;
+	x = node->rect.r_left;
+	y = node->rect.r_top;
+	window = site->owner;
 
-    while (window != frame) {
-	int bw = xv_get(window, WIN_BORDER);
-	x += xv_get(window, XV_X) + bw;
-	y += xv_get(window, XV_Y) + bw;
-	window = xv_get(window, XV_OWNER);
-    }
-    node->real_x = x;
-    node->real_y = y;
+	while (window != frame) {
+		int bw = xv_get(window, WIN_BORDER);
+
+		x += xv_get(window, XV_X) + bw;
+		y += xv_get(window, XV_Y) + bw;
+		window = xv_get(window, XV_OWNER);
+	}
+	node->real_x = x;
+	node->real_y = y;
 }
 
 static Xv_opaque DndDropAreaOps(Dnd_site_info	*site, Dnd_region_ops mode,
