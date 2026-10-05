@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.21 2026/10/03 07:55:25 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.22 2026/10/04 12:09:59 dra Exp $ ";
 #endif
 #endif
 
@@ -1158,7 +1158,7 @@ static void notice_prepare_for_shadow(Notice_info *notice, notice_prep_t *p)
 	if (notice->focus_specified) {
 		int new_x, new_y;
 
-		win_translate_xy(p->client_window, p->root_window,
+		win_translate_to_screen(p->client_window,
 				notice->focus_x, notice->focus_y, &new_x, &new_y);
 		p->x = p->old_mousex = new_x;
 		p->y = p->old_mousey = new_y;
