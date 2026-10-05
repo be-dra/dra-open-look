@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.63 2026/10/03 17:18:24 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.64 2026/10/04 11:19:33 dra Exp $";
 #endif
 #endif
 
@@ -2174,8 +2174,7 @@ Xv_private void win_get_cmdline_option(Xv_object window, char *str,
 	if (!root)
 		root = (int)xv_get(xv_root(icon_info), XV_XID);
 
-	win_translate_xy_internal(xv_display(info), xv_xid(icon_info), root, 0, 0,
-			&icon_x, &icon_y);
+	win_translate_to_screen(icon, 0, 0, &icon_x, &icon_y);
 
 	iconic[0] = '\0';
 	if (xv_get(window, FRAME_CLOSED))
@@ -2293,8 +2292,7 @@ Xv_private void win_set_wm_command_prop(Xv_object window, char **argv,
 		if (!root)
 			root = (int)xv_get(xv_root(icon_info), XV_XID);
 
-		win_translate_xy_internal(xv_display(info), xv_xid(icon_info), root, 0,
-				0, &icon_x, &icon_y);
+		win_translate_to_screen(icon, 0, 0, &icon_x, &icon_y);
 
 		if (! appl_set("-WP", appl_cmdline_argv, appl_cmdline_argc)) {
 			sprintf(icon_x_str, "%d", icon_x);
