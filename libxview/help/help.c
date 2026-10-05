@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.34 2026/07/18 20:31:41 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.35 2026/10/04 12:09:07 dra Exp $";
 #endif
 
 /*
@@ -334,14 +334,8 @@ Xv_private void xv_help_save_image(Xv_Window pw,
 		if (root_y < 0) root_y = 0;
 	}
 	else {
-		Xv_Drawable_info *src_info;
-
-		DRAWABLE_INFO_MACRO(pw, src_info);
-		win_translate_xy_internal(xv_display(src_info),
-					xv_xid(src_info), root,
-					mouse_x - HELP_IMAGE_WIDTH / 2,
-					mouse_y - HELP_IMAGE_HEIGHT / 2,
-					&root_x, &root_y);
+		win_translate_to_screen(pw, mouse_x - HELP_IMAGE_WIDTH / 2,
+					mouse_y - HELP_IMAGE_HEIGHT / 2, &root_x, &root_y);
 	}
 
 	XCopyArea(xv_display(info), root, xv_xid(info), gc_list[SCREEN_HELP_GC],
