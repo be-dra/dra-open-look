@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowloop.c 20.25 93/06/28 DRA: RCS $Id: windowloop.c,v 4.2 2024/09/15 09:34:38 dra Exp $ ";
+static char     sccsid[] = "@(#)windowloop.c 20.25 93/06/28 DRA: RCS $Id: windowloop.c,v 4.3 2026/10/04 12:09:46 dra Exp $ ";
 #endif
 #endif
 
@@ -103,7 +103,7 @@ Xv_private Xv_opaque _xv_block_loop(Frame frame)
 #endif
 
 	/* convert rect to screen coords */
-	win_translate_xy((Xv_opaque)fs->fs_windowfd, xv_get((Xv_opaque)fs->fs_windowfd, XV_ROOT),
+	win_translate_to_screen((Xv_opaque)fs->fs_windowfd,
 			rect.r_left, rect.r_top, &left, &top);
 	rect.r_left = left;
 	rect.r_top = top;
