@@ -27,8 +27,9 @@
 #include <xview/colorchsr.h>
 #include <xview_private/i18n_impl.h>
 #include <xview_private/attr_impl.h>
+#include <xview_private/win_info.h>
 
-char colortext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colortext.c,v 4.5 2026/09/22 17:28:12 dra Exp $";
+char colortext_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colortext.c,v 4.6 2026/10/04 11:21:17 dra Exp $";
 
 typedef void (*layout_proc_t)(Panel_item, Rect *);
 typedef struct {
@@ -174,8 +175,7 @@ static Frame create_color_frame(Panel_item abwb)
 	}
 	/* hilft aber nix */
 
-	win_translate_xy(pan, xv_get(pan, XV_ROOT), r.r_left, r.r_top+r.r_height,
-												&x, &y);
+	win_translate_to_screen(pan, r.r_left, r.r_top+r.r_height, &x, &y);
 
 	if (priv->saved_attrs) {
 		cch = xv_create(f, COLOR_CHOOSER,
