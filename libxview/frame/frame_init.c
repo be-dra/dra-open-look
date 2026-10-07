@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.22 2026/10/03 07:55:39 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.23 2026/10/06 21:21:19 dra Exp $ ";
 #endif
 #endif
 
@@ -133,7 +133,7 @@ static void frame_update_compose_led(Frame_class_info *frame, int state)
 				 * to divide by bytes per long 
 				 */
 				(unsigned)(sizeof(Frame_win_state) / sizeof(unsigned long)));
-		XFlush(xv_display(info));
+/* UNUSED_FLUSH? 		XFlush(xv_display(info)); */
 	}
 }
 
