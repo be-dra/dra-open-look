@@ -1,4 +1,4 @@
-/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.12 2026/09/18 07:26:09 dra Exp $ */
+/* @(#) win.h V1.5 96/06/10 06:16:14 $Id: win.h,v 2.13 2026/10/06 14:52:03 dra Exp $ */
 /* #ident	"@(#)win.h	26.43	93/06/28 SMI" */
 
 /*
@@ -38,7 +38,7 @@ typedef enum {
 } MenuIndex;
 
 typedef struct {
-	long flags;
+	long decor_flags;
 	MenuIndex menu_type;
 	int def_item;			/* default menu item */
 	int pushpin_initial_state;
@@ -63,6 +63,7 @@ typedef struct {
 #define WMDecorationResizeable  (1L<<4)
 #define WMDecorationIconName	(1L<<5)
 #define WMDecorationWarpToPin	(1L<<6)
+#define WMDecorationMenuQuit	(1L<<7)
 
 /*
  *	Window Manager State
@@ -153,14 +154,14 @@ typedef struct _client
  * pushpin or a limited menu.
  */
 #define ClientIsPopup(cli) \
-    ((cli)->wmDecors->flags & WMDecorationPushPin || \
+    ((cli)->wmDecors->decor_flags & WMDecorationPushPin || \
      (cli)->wmDecors->menu_type == MENU_LIMITED)
 
 #define ClientHasIcon(cli) \
     (! ((cli)->groupmask == GROUP_DEPENDENT || ClientIsPopup(cli)))
 
 #define ClientIsPinnable(cli) \
-    ((cli)->wmDecors->flags & WMDecorationPushPin)
+    ((cli)->wmDecors->decor_flags & WMDecorationPushPin)
 
 #define ClientIsResizeable(cli) \
     ((cli)->wmDecors->flags & WMDecorationResizeable)
