@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.11 2026/10/04 12:10:09 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.12 2026/10/06 21:24:12 dra Exp $ ";
 #endif
 #endif
 
@@ -1005,7 +1005,8 @@ static void update_pagewin(Xv_scrollbar_info *sb)
 		XClearWindow(dpy, (Window)xv_get(sb->page_window, XV_XID));
 		pagewin_paint((Window)xv_get(sb->page_window, XV_XID), pn);
 	}
-	XFlush(dpy);
+	/* no negative effects ... */
+/* UNUSED_FLUSH? 	XFlush(dpy); */
 }
 
 static void scrollbar_position_mouse(Xv_scrollbar_info *sb, int x, int y)
@@ -1073,7 +1074,7 @@ static void scrollbar_timer_start(Scrollbar scrollbar, int actiontype)
 	timer.it_interval.tv_usec = interval * 1000;
 	timer.it_interval.tv_sec = 0;
 
-	(void)notify_set_itimer_func((Notify_client) scrollbar,
+	notify_set_itimer_func(scrollbar,
 			scrollbar_timed_out, ITIMER_REAL, &timer, (struct itimerval *)NULL);
 }
 
