@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.10 2026/08/24 18:56:54 dra Exp $";
+char     tty_newtxt_c_sccsid[] = "@(#)tty_newtxt.c 1.45 93/06/28 DRA: $Id: tty_newtxt.c,v 4.12 2026/10/06 20:55:32 dra Exp $";
 #endif
 
 /*
@@ -505,6 +505,7 @@ Xv_private void tty_synccopyarea(Xv_opaque window)
 		dpy = xv_display(info);
 		win = xv_xid(info);
  
+		/* we leave this XSync, at least the function is tty_SYNCcopyarea */
 		XSync(dpy, FALSE);
 		if(XCheckWindowEvent(dpy, win, ExposureMask, &xevent))
 			if(xevent.type != NoExpose)
