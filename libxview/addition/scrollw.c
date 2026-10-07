@@ -35,7 +35,7 @@
 #include <olgx/olgx.h>
 #include <xview/win_notify.h>
 
-char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.9 2026/07/10 21:55:58 dra Exp $";
+char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.10 2026/10/06 21:16:36 dra Exp $";
 
 extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 
@@ -341,7 +341,6 @@ static void start_panning(Scrollwin_private *priv, Scrollpw_private *pwp, Event 
 			priv->restrict_panning ? pwp->vi.xid : None,
 			(Cursor)xv_get(priv->pan_cursor, XV_XID),
 			event_xevent(ev)->xbutton.time);
-	XFlush(pwp->vi.dpy);
 	priv->panning = TRUE;
 }
 
