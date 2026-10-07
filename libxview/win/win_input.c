@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.64 2026/10/04 11:19:33 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.65 2026/10/06 21:11:42 dra Exp $";
 #endif
 #endif
 
@@ -3150,7 +3150,7 @@ static int BlockForEvent(Display *display, XEvent *xevent, long usec,
 
 	(void)gettimeofday(&starttime, NULL);
 	XFlush(display);
-	XSync(display, False);
+/* UNUSED_SYNC? 	XSync(display, False); */
 	while (1) {
 		/*
 		 * Check for data on the connection.  Read it and scan it.
