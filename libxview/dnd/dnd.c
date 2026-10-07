@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.49 2026/10/04 12:00:59 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.50 2026/10/06 21:20:10 dra Exp $ ";
 #endif
 #endif
 
@@ -192,10 +192,7 @@ Pkg_private int DndSendEvent(Display *dpy, XEvent *event, const char *nam)
 
     status = XSendEvent(dpy, event->xany.window, False, NoEventMask,
 			(XEvent *) event);
-	if (debug_DND > 0) fprintf(stderr, "sent %s, before XSync\n", nam);
-    XFlush(dpy);
     (void) XSetErrorHandler(old_handler);
-	if (debug_DND > 0) fprintf(stderr, "              after XSync\n");
 
     if (status && ! sendEventError) return DND_SUCCEEDED;
     
@@ -1087,7 +1084,6 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 				time(0));
 	/* XXX: This will kill any events someone else has selected for. */
 	XSelectInput(dpy, event.xproperty.window, NoEventMask);
-	XFlush(dpy);
 
   BailOut:
 	return (status);
