@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.13 2026/10/03 06:16:10 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.14 2026/10/06 14:51:03 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -698,6 +698,8 @@ propGetOLDecor(dpy,win,atom,decorFlags)
 			*decorFlags |= WMDecorationPushPin;
 		else if (atomList[i] == AtomDecorIconName)
 			*decorFlags |= WMDecorationIconName;
+		else if (atomList[i] == AtomMenuFunctionQuit)
+			*decorFlags |= WMDecorationMenuQuit;
 	}
 
 	XFree((char *)atomList);
