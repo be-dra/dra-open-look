@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.11 2026/10/03 17:12:23 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.12 2026/10/06 14:51:55 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -953,7 +953,7 @@ ClientFullRestoreSizeToggle(cli,timestamp)
 Client	*cli;
 Time	timestamp;
 {
-	if (cli->wmDecors->flags & WMDecorationResizeable) {
+	if (cli->wmDecors->decor_flags & WMDecorationResizeable) {
 		(WinFunc(cli->framewin,fcore.fullrestoreToggle))(cli,timestamp);
 		(WinFunc(cli->iconwin,fcore.fullrestoreToggle))(cli,timestamp);
 	}
@@ -980,7 +980,7 @@ ClientResize(cli,trigger,which,callback,cbarg)
 	void	(*callback)();
 	void	*cbarg;
 {
-	if (cli->wmDecors->flags & WMDecorationResizeable)
+	if (cli->wmDecors->decor_flags & WMDecorationResizeable)
 	    UserResizeWin(cli, trigger, which, callback, cbarg);
 }
 
@@ -1618,7 +1618,7 @@ void ClientActivate(Display *dpy, Client *cli, Time time)
 		 * is the active client.  (See REMIND above.)
 		 */
 		if (cli->wmState == IconicState ||
-				!(cli->wmDecors->flags & WMDecorationHeader)) {
+				!(cli->wmDecors->decor_flags & WMDecorationHeader)) {
 			ClearSelections(dpy);
 			AddSelection(cli, time);
 		}
