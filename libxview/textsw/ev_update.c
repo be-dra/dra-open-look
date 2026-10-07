@@ -1,5 +1,5 @@
 #ifndef lint
-char     ev_update_c_sccsid[] = "@(#)ev_update.c 20.49 93/06/28 DRA: RCS $Id: ev_update.c,v 4.3 2025/01/08 08:14:23 dra Exp $";
+char     ev_update_c_sccsid[] = "@(#)ev_update.c 20.49 93/06/28 DRA: RCS $Id: ev_update.c,v 4.4 2026/10/06 20:35:32 dra Exp $";
 #endif
 
 /*
@@ -502,7 +502,7 @@ static void ev_copy_and_fix(Ev_handle view, Rect *new_rect, Rect *old_rect)
      * When partially obscured, sync with server so any graphics expose
      * events for that copy can be processed immediately.
      */
-    XSync(dpy, FALSE);
+	XSync(dpy, FALSE); /* seems to be necessary */
     /*
      * The repaint has to be done after the copy area because the line
      * table is already updated when it gets to this function.
