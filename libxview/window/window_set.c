@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.10 2026/07/19 13:49:09 dra Exp $";
+static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.11 2026/10/06 21:27:22 dra Exp $";
 #endif
 #endif
 
@@ -1194,7 +1194,6 @@ Xv_private void window_release_selectbutton(Xv_Window window, Event *event)
 		DRAWABLE_INFO_MACRO(window, info);
 		XAllowEvents(xv_display(info), AsyncBoth,
 				server_get_timestamp(xv_server(info)));
-		XFlush(xv_display(info));
 	}
 }
 
