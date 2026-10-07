@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.18 2026/10/04 16:23:23 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.19 2026/10/06 18:18:18 dra Exp $";
 #endif
 #endif
 
@@ -440,7 +440,6 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 {
 	register Xv_menu_info *m;
 	register Event *iep;
-	Xv_Color_info *color_info;
 
 	/*
 	 * Extra registers not available on 80386
@@ -454,7 +453,6 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 	int heightsum;
 	Menu gen_menu;
     Menu_gen_proc_t	gen_proc;
-	Xv_Drawable_info *menu_window_info;
 	int n = 0;	/* item number needing to be cleared */
 	int new_window;	/* TRUE or FALSE */
 
@@ -585,7 +583,8 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 						(Notify_func)menu_window_event_proc,
 						m->group_info->three_d ? FALSE : TRUE,	/* borders */
 							FALSE,	/* transparent */
-							m->group_info->vinfo->visual, &new_window);
+							m->group_info->vinfo->visual, group->client_window,
+							&new_window);
 		if (!m->window) {
 			xv_error(XV_NULL,
 					ERROR_STRING, XV_MSG("menu_create: unable to allocate menu window"),
@@ -594,8 +593,17 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 			cleanup(m, CLEANUP_ABORT);
 			return;
 		}
-		if (!new_window)
+		if (new_window) {
+			if (m->default_image.font == XV_NULL)
+				m->default_image.font =
+					m->default_qual_image.font =
+					m->default_key_image.font = xv_get(m->window, XV_FONT);
+			m->ginfo = xv_init_olgx(m->window, &m->group_info->three_d,
+										m->default_image.font);
+		}
+		else {
 			used_window_rect = *(Rect *) xv_get(m->window, XV_RECT);
+		}
 		xv_set(m->window, XV_KEY_DATA, MENU_WINDOW_MENU, m, NULL);
 		/* fix to make xv_window_loop work for menus */
 		if (WIN_IS_IN_LOOP)
@@ -631,41 +639,16 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 
 	m->glyph_font = xv_get(m->window, WIN_GLYPH_FONT);
 
-	color_info = (Xv_Color_info *) xv_get(group->client_window, WIN_COLOR_INFO);
-	DRAWABLE_INFO_MACRO(m->window, menu_window_info);
-	if (m->group_info->vinfo->visual ==
-						(Visual *) xv_get(group->client_window, XV_VISUAL))
-	{
-		xv_set(m->window, WIN_COLOR_INFO, color_info, NULL);
-	}
-
 	if (!m->ginfo)
 		m->ginfo = xv_init_olgx(m->window, &m->group_info->three_d,
 							m->default_image.font);
-
-	if (SCREEN_UIS_2D_BW!=xv_get(screen, SCREEN_UI_STYLE)) {
-		int cms_status;
-
-		/* Use OpenWindows.WindowColor as background color.  */
-		cms_status = (int)xv_get(xv_cms(menu_window_info), CMS_STATUS_BITS);
-		if (!CMS_STATUS(cms_status, CMS_STATUS_CONTROL)) {
-			/* yes - this will perform the same XQueryColors over again
-			 * I tried to avoid this and failed!
-			 */
-			(void)xv_set_control_cms(m->window, menu_window_info, cms_status);
-			if (!m->ginfo)
-				m->ginfo = xv_init_olgx(m->window, &m->group_info->three_d,
-									m->default_image.font);
-		}
-		xv_set(m->window, WIN_BACKGROUND_COLOR, 0, NULL);
-	}
 
 	/* Get the shadow window */
 	if (!m->shadow_window) {
 		m->shadow_window = screen_get_cached_window(screen,
 							(Notify_func)menu_shadow_event_proc, FALSE,
 							TRUE,	/* transparent */
-							group->vinfo->visual, &new_window);
+							group->vinfo->visual, XV_NULL, &new_window);
 		if (!m->shadow_window) {
 			xv_error(XV_NULL,
 								ERROR_STRING,
@@ -1924,7 +1907,7 @@ Pkg_private int menu_compute_max_item_size(Xv_menu_info *menu,
 	struct image *im = 0;
 	int margin = 0;
 	int heightsum = 0;
-	int mixcmd = 0, mixchc = 0, mixtogg = 0;
+/* 	int mixcmd = 0, mixchc = 0, mixtogg = 0; */
 	struct pr_size max_button_size;
 	int pushpin_height;
 	/* das ganze title_offset-Zeug dient nur dazu, die Hoehe eines
@@ -2002,11 +1985,11 @@ Pkg_private int menu_compute_max_item_size(Xv_menu_info *menu,
 		switch (mi->class) {
 			case MENU_COMMAND:
 				im->margin = 0;
-				mixcmd++;
+/* 				mixcmd++; */
 				break;
 			case MENU_CHOICE:
 				im->margin = 0;
-				mixchc++;
+/* 				mixchc++; */
 				break;
 			case MENU_TOGGLE:
 				/* see p_choice.c */
@@ -2014,7 +1997,7 @@ Pkg_private int menu_compute_max_item_size(Xv_menu_info *menu,
 				 *        im->margin = TOGGLE_Y_GAP;
 				 */
 				im->margin = 0;
-				mixtogg++;
+/* 				mixtogg++; */
 				break;
 			case MENU_MIXED:
 				MIXED();
