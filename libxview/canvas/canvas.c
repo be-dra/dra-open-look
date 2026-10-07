@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.13 2026/07/18 19:46:29 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.14 2026/10/06 21:17:38 dra Exp $ ";
 #endif
 #endif
 
@@ -284,7 +284,6 @@ static void start_panning(Canvas_info *priv, Xv_window pw, Event *ev)
 			GrabModeAsync, GrabModeAsync,
 			grabwindow, (Cursor)xv_get(priv->pan_cursor, XV_XID),
 			event_xevent(ev)->xbutton.time);
-	XFlush(dpy);
 	status_set(priv, panning);
 }
 
@@ -333,7 +332,6 @@ static void update_pw_panning(Canvas_info *priv, Xv_window pw, Event *ev)
 
 	update_common_panning(priv, dpy, xv_get(pw, XV_XID), ev);
 
-/* 	XSync(dpy, True); */
 #ifdef NOT_YET
 	if (x < priv->vminx) x = priv->vminx;
 	if (x > priv->vmaxx) x = priv->vmaxx;
