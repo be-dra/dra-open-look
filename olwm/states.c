@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.12 2026/09/18 07:28:07 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.13 2026/10/06 14:52:25 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -49,7 +49,7 @@ extern	void	IconPaneSetMask();
 
 static WMDecorations BaseWindow = {
     WMDecorationCloseButton | WMDecorationResizeable | WMDecorationHeader 
-	| WMDecorationIconName,
+	| WMDecorationIconName | WMDecorationMenuQuit,
     MENU_FULL,
     0,
     PIN_IN,
@@ -208,7 +208,7 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
 		if (transient) {
 			*decors = TransientWindow;
 			if (GRV.TransientsTitled)
-				decors->flags |= WMDecorationHeader;
+				decors->decor_flags |= WMDecorationHeader;
 		} else {
 			Atom *nwp;
 			unsigned long nitems, bytes_after;
@@ -218,7 +218,7 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
 						0L, 50L, XA_ATOM, 32, &nitems, &bytes_after);
 			if (nwp && nwp[0] == Atom_NET_WM_WINDOW_TYPE_UTILITY) {
 				*decors = OtherWindow;
-				decors->flags |= WMDecorationResizeable;
+				decors->decor_flags |= WMDecorationResizeable;
 			}
 		}
 	/*
@@ -280,7 +280,7 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
 		 * these windows.
 		 */
 		if (oldVersion && wmHints && (wmHints->flags & IconWindowHint))
-			decors->flags &= ~WMDecorationIconName;
+			decors->decor_flags &= ~WMDecorationIconName;
 
 		/*
 		 * Set cancel if something specified
@@ -303,7 +303,7 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
  	 * Apply DecorAdd flags
 	 */
 	if (PropGetOLDecorAdd(dpy, win, &decorFlags)) {
-		decors->flags |= decorFlags;
+		decors->decor_flags |= decorFlags;
 	}
 
 	{
@@ -325,7 +325,7 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
  	 * Apply DecorDel flags
 	 */
 	if (PropGetOLDecorDel(dpy, win, &decorFlags)) {
-		decors->flags &= ~decorFlags;
+		decors->decor_flags &= ~decorFlags;
 	}
 
 	/*
@@ -336,7 +336,7 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
 	mc.instance = cli->wmInstance;
 	if (ListApply(GRV.Minimals, matchInstClass, &mc) != NULL)
 	{
-	    decors->flags &= ~WMDecorationHeader;
+	    decors->decor_flags &= ~WMDecorationHeader;
 	}
 
 	/*
@@ -346,20 +346,20 @@ static WMDecorations *getOLWinDecors(Display *dpy, Window win, Bool transient,
 
 	/* No header implies no window button or pushpin. */
 
-	if (!(decors->flags & WMDecorationHeader)) {
-		decors->flags &= ~(WMDecorationHeaderDeco);
+	if (!(decors->decor_flags & WMDecorationHeader)) {
+		decors->decor_flags &= ~(WMDecorationHeaderDeco);
 	}
 
 	/* Can't have button and pushpin; pushpin wins. */
 
-        if ((decors->flags & WMDecorationCloseButton) &&
-            (decors->flags & WMDecorationPushPin))
-                decors->flags &= ~(WMDecorationCloseButton);
+        if ((decors->decor_flags & WMDecorationCloseButton) &&
+            (decors->decor_flags & WMDecorationPushPin))
+                decors->decor_flags &= ~(WMDecorationCloseButton);
 
 	/* Don't warp to the pin if there's no pin. */
 
-	if (!(decors->flags & WMDecorationPushPin))
-	    decors->flags &= ~WMDecorationWarpToPin;
+	if (!(decors->decor_flags & WMDecorationPushPin))
+	    decors->decor_flags &= ~WMDecorationWarpToPin;
 
         return decors;
 }
@@ -1735,11 +1735,11 @@ void StateUpdateDecorAdd(Client *cli, XPropertyEvent *event)
 	int decorFlags = 0;
 
 	if (PropGetOLDecorAdd(event->display, event->window, &decorFlags)) {
-		cli->wmDecors->flags |= decorFlags;
+		cli->wmDecors->decor_flags |= decorFlags;
 	}
 
 	/* currently, we only handle _OL_DECOR_RESIZE */
-	if (cli->wmDecors->flags & WMDecorationResizeable) {
+	if (cli->wmDecors->decor_flags & WMDecorationResizeable) {
 		struct _winresize **rc = cli->framewin->resizeCorner;
 		if (rc[0] == NULL) {
 			CreateResizeCorners(event->display, cli->framewin);
@@ -1759,11 +1759,11 @@ void StateUpdateDecorDel(Client *cli, XPropertyEvent *event)
 	int decorFlags = 0;
 
 	if (PropGetOLDecorDel(event->display, event->window, &decorFlags)) {
-		cli->wmDecors->flags &= ~decorFlags;
+		cli->wmDecors->decor_flags &= ~decorFlags;
 	}
 
 	/* currently, we only handle _OL_DECOR_RESIZE */
-	if (! (cli->wmDecors->flags & WMDecorationResizeable)) {
+	if (! (cli->wmDecors->decor_flags & WMDecorationResizeable)) {
 		struct _winresize **rc = cli->framewin->resizeCorner;
 		if (rc[0] != NULL) {
 			XUnmapWindow(event->display, rc[0]->core.self);
