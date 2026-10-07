@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.12 2026/10/02 12:02:25 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.13 2026/10/06 21:21:19 dra Exp $ ";
 #endif
 #endif
 
@@ -200,7 +200,7 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 					max_right_width, OLGX_NORMAL | OLGX_MORE_ARROW);
 		}
 
-		XFlush(xv_display(info));
+/* UNUSED_FLUSH? 		XFlush(xv_display(info)); */
 	}
 	else {
 		*left_start = margin;
@@ -328,7 +328,7 @@ Pkg_private void frame_display_busy(Frame_class_info *frame, int status)
 	XChangeProperty(xv_display(info), xv_xid(info),
 			xv_get(server, SERVER_WM_WIN_BUSY), XA_INTEGER,
 			32, PropModeReplace, (unsigned char *)&lstatus, 1);
-	XFlush(xv_display(info));
+/* UNUSED_FLUSH? 	XFlush(xv_display(info)); */
 }
 
 /*
