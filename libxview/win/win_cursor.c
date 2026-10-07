@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_cursor.c 20.24 93/06/28 DRA: $Id: win_cursor.c,v 4.1 2024/03/28 19:28:19 dra Exp $";
+static char     sccsid[] = "@(#)win_cursor.c 20.24 93/06/28 DRA: $Id: win_cursor.c,v 4.2 2026/10/06 21:10:05 dra Exp $";
 #endif
 #endif
 
@@ -27,7 +27,10 @@ static void win_setmouseposition_internal(Display *dpy, Window xid,int x, int y,
 {
     /* if the src window is none, the move is independent */
     XWarpPointer(dpy, None, xid, 0, 0, 0, 0, x, y);
-    XSync(dpy, 0);
+	/* I thought we need this XSync for "timed" scrollbar updates
+	 * but there was no visible change
+	 */
+/* 	XSync(dpy, 0); */
     XAllowEvents(dpy, SyncPointer, t);
 }
 
