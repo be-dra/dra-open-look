@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.42 2026/10/01 16:23:00 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.43 2026/10/06 21:29:23 dra Exp $";
 #endif
 #endif
 
@@ -353,7 +353,6 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 	timeout.tv_usec = 0;
 
 	(void)gettimeofday(&starttime, NULL);
-	XSync(display, False);
 	while (1) {
 		/*
 		 * Check for data on the connection.  Read it and scan it.
