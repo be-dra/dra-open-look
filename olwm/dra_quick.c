@@ -8,7 +8,7 @@
 #include <X11/Xatom.h>
 #include <olgx/olgx.h>
 
-char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.29 2026/07/27 20:39:14 dra Exp $";
+char dra_quick_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dra_quick.c,v 1.30 2026/10/06 14:52:22 dra Exp $";
 
 typedef struct _quick_dupl {
 	int startx; /* where the ACTION_SELECT down happened */
@@ -333,7 +333,7 @@ Bool dra_quick_duplicate_select(Display *dpy, XEvent *event,
 		qd = scr->qc;
 		qd->windowToClear = event->xbutton.window;
 
-		if (cli->wmDecors->flags & WMDecorationIconName) {
+		if (cli->wmDecors->decor_flags & WMDecorationIconName) {
 			qd->baseline = cli->iconwin->nameY + 2;
 		}
 		else {
