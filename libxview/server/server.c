@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.66 2026/10/04 12:10:34 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.67 2026/10/06 21:29:50 dra Exp $";
 #endif
 #endif
 
@@ -6403,6 +6403,7 @@ static Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 				ATTR_CONSUME(*attrs);
 				break;
 			case SERVER_SYNC:
+				SERVERTRACE((700, "SERVER_SYNC\n"));
 				XSync((Display *) server->xdisplay, (int)attrs[1]);
 				ATTR_CONSUME(*attrs);
 				break;
@@ -6414,6 +6415,7 @@ static Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 					 */
 					Display *display = (Display *) server->xdisplay;
 
+					SERVERTRACE((700, "SERVER_SYNC_AND_PROCESS_EVENTS\n"));
 					XSync(display, 0);
 					xv_input_pending(display, 0);	/* process pending queued events */
 				}
