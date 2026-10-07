@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.24 2026/10/01 04:27:52 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.25 2026/10/06 18:19:15 dra Exp $ ";
 #endif
 #endif
 
@@ -101,6 +101,7 @@ typedef struct _screen_info {
 #define	SCREEN_PRIVATE(screen) XV_PRIVATE(Screen_info, Xv_screen_struct, screen)
 #define	SCREEN_PUBLIC(screen)	XV_PUBLIC(screen)
 
+Xv_private Cms xv_set_control_cms(Xv_Window window_public, Xv_Drawable_info *info, int cms_status);
 Xv_private Xv_opaque cms_default_colormap(Xv_Server server, Display	*display,
 							int screen_number, XVisualInfo *vinfo);
 
@@ -789,7 +790,7 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
  */
 Xv_private Xv_Window screen_get_cached_window(Xv_Screen screen_public,
     Notify_func	event_proc, int borders, int transp, Visual *visual,
-    int	*is_new_window)
+	Xv_window clwin, int *is_new_window)
 {
 	Screen_info *screen = SCREEN_PRIVATE(screen_public);
 	Xv_cached_window *cached_window;
@@ -833,6 +834,21 @@ Xv_private Xv_Window screen_get_cached_window(Xv_Screen screen_public,
 				WIN_SAVE_UNDER, TRUE,
 				XV_SHOW, FALSE,
 				NULL);
+
+		if (SCREEN_UIS_2D_BW != screen->ui_style) {
+			Xv_Drawable_info *menu_window_info;
+			int cms_status;
+
+			DRAWABLE_INFO_MACRO(cached_window->window, menu_window_info);
+			/* Use OpenWindows.WindowColor as background color.  */
+			cms_status = (int)xv_get(xv_cms(menu_window_info), CMS_STATUS_BITS);
+			if (!CMS_STATUS(cms_status, CMS_STATUS_CONTROL)) {
+				Cms cms = xv_set_control_cms(cached_window->window,
+									menu_window_info, cms_status);
+				xv_set(cached_window->window, WIN_CMS, cms, NULL);
+			}
+			xv_set(cached_window->window, WIN_BACKGROUND_COLOR, 0, NULL);
+		}
 	}
 
 	{
