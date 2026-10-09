@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.50 2026/10/06 21:20:10 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.51 2026/10/08 16:35:12 dra Exp $ ";
 #endif
 #endif
 
@@ -190,8 +190,7 @@ Pkg_private int DndSendEvent(Display *dpy, XEvent *event, const char *nam)
     sendEventError = False;
     old_handler = XSetErrorHandler(sendEventErrorHandler);
 
-    status = XSendEvent(dpy, event->xany.window, False, NoEventMask,
-			(XEvent *) event);
+    status = XSendEvent(dpy, event->xany.window, False, NoEventMask, event);
     (void) XSetErrorHandler(old_handler);
 
     if (status && ! sendEventError) return DND_SUCCEEDED;
@@ -852,25 +851,38 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 	return (DND_SUCCEEDED);
 }
 
-static int find_site(Dnd_info *dnd, XMotionEvent *e)
+static int determine_site_index(Dnd_info *dnd, Display *dpy, Window rt,
+							int xroot, int yroot)
 {
 	int i;
 
 	/* Determine the number of the screen that the mouse is currently in. */
-	if (dnd->lastRootWindow != e->root) {	/* Same root window? */
-		dnd->lastRootWindow = e->root;	/* Cache root window */
-		for (i = 0; i < ScreenCount(e->display); i++) {
-			if (e->root == RootWindowOfScreen(ScreenOfDisplay(e->display, i)))
+	if (dnd->lastRootWindow != rt) {	/* Same root window? */
+		dnd->lastRootWindow = rt;	/* Cache root window */
+		for (i = 0; i < ScreenCount(dpy); i++) {
+			if (rt == RootWindowOfScreen(ScreenOfDisplay(dpy, i)))
 				dnd->screenNumber = i;
 		}
 	}
 
 	for (i = 0; i < dnd->numSites; i++) {
-		if (SCREENS_MATCH(dnd, i) &&
-				POINT_IN_SITE(dnd->siteRects[i], e->x_root, e->y_root)) {
-			dnd->lastSiteIndex = i;
-			return send_preview_event(dnd, dnd->lastSiteIndex, (XEvent *) e);
+		if (SCREENS_MATCH(dnd,i)
+			&& POINT_IN_SITE(dnd->siteRects[i], xroot, yroot))
+		{
+			return i;
 		}
+	}
+	return DND_NO_SITE;
+}
+
+static int find_site(Dnd_info *dnd, XMotionEvent *e)
+{
+	int indx;
+
+	indx = determine_site_index(dnd, e->display, e->root, e->x_root, e->y_root);
+	if (indx >= 0) {
+		dnd->lastSiteIndex = indx;
+		return send_preview_event(dnd, dnd->lastSiteIndex, (XEvent *) e);
 	}
 	return send_preview_event(dnd, DND_NO_SITE, (XEvent *) e);
 }
@@ -1260,7 +1272,7 @@ static int ConstructSiteList(Display *dpy, Window dest_window, long *prop,
 }
 
 static int FindDropSite(Dnd_info *dnd, Dnd_site_desc *dsl, /* drop site list */
- unsigned int nsites, Dnd_site_desc *site)
+						unsigned int nsites, Dnd_site_desc *site)
 {
 	int i, j;
 
@@ -1631,10 +1643,9 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	Window_info *win_info;
 	unsigned long lasttime;
 	struct timeval lasttimval;
-	int i;
+	int i, indx;
 	Atom *tl;
 	Xv_server srv;
-	DndSiteRects *lastsite = NULL;
 
 	dnd->was_xterm = FALSE;
 	event_init(&event);
@@ -1895,41 +1906,54 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	}
 
 	xb = &ev->xbutton;
-	if (dnd->lastSiteIndex >= 0) {
-		lastsite = dnd->siteRects + dnd->lastSiteIndex;
+	indx = determine_site_index(dnd, xb->display, xb->root, xb->x_root,
+												xb->y_root);
+	if (indx >= 0) {
+		DndSiteRects *dropped_site = dnd->siteRects + indx;
 
-		if (POINT_IN_SITE(*lastsite, xb->x_root, xb->y_root)) {
-			if (lastsite->flags & DND_XDND_AWARE) {
+		if (dropped_site->flags & DND_XDND_AWARE) {
+			/* this is a DndSiteRect that has been constructed for a window
+			 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
+			 */
+			send_xdnd_drop(dnd, (Window)dropped_site->window, xb);
+		}
+		else {
+			DndRect r;
+			Dnd_site_desc sd;
 
-				/* this is a DndSiteRect that has been constructed for a window
-				 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
-				 */
-				send_xdnd_drop(dnd, (Window)lastsite->window, xb);
-				goto BreakOut;
-			}
+			r.x = dropped_site->x;
+			r.y = dropped_site->y;
+			r.w = dropped_site->w;
+			r.h = dropped_site->h;
+			sd.nrects = 1;
+			sd.rect = &r;
+			sd.window = dropped_site->window;
+			sd.site_id = dropped_site->site_id;
+			sd.flags = dropped_site->flags;
+			dnd->dropSite = sd;
+			status = SendTrigger(dnd, info, xb,
+							(int)win_data(dpy, (Window)dropped_site->window));
 		}
 	}
+	else {
+		if ((status = Verification(xb, dnd)) == DND_SUCCEEDED) {
+			/* If drop site is within same process, optimize! */
 
-	if ((status = Verification(xb, dnd)) == DND_SUCCEEDED) {
-		/* If drop site is within same process, optimize! */
-
-		/* MULTI_DISPLAY: the notion "same process" is a little dangerous in
-		 * multi-display-applications
-		 */
-		status = SendTrigger(dnd, info, &ev->xbutton,
-								(int)win_data(dpy, dnd->dropSite.window));
-	}
-	else if (status == DND_XTERM) {
-		/* we sent an artificial ButtonRelease and expect the
-		 * xterm to perform selection requests against XdndSelection
-		 * We want to give up the (two) selection as soon as and
-		 * an xterm requests had a positive reply....
-		 */
-		status = DND_SUCCEEDED;
-		dnd->was_xterm = TRUE;
-/* 		if (dnd->transientSel) { */
-/* 			xv_set(dnd_public, SEL_OWN, False, NULL); */
-/* 		} */
+			/* MULTI_DISPLAY: the notion "same process" is a little dangerous in
+			 * multi-display-applications
+			 */
+			status = SendTrigger(dnd, info, xb,
+									(int)win_data(dpy, dnd->dropSite.window));
+		}
+		else if (status == DND_XTERM) {
+			/* we sent an artificial ButtonRelease and expect the
+			 * xterm to perform selection requests against XdndSelection
+			 * We want to give up the (two) selection as soon as and
+			 * an xterm requests had a positive reply....
+			 */
+			status = DND_SUCCEEDED;
+			dnd->was_xterm = TRUE;
+		}
 	}
 
   BreakOut:
