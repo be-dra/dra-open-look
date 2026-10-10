@@ -1,5 +1,5 @@
 #ifndef lint
-char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.9 2026/07/16 14:01:36 dra Exp $ ";
+char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.10 2026/10/09 11:55:49 dra Exp $ ";
 #endif
 
 /*
@@ -2548,12 +2548,32 @@ static Xv_opaque openwin_get(Openwin owin_public, int *get_status,
 		case OPENWIN_SPLIT_DESTROY_PROC:
 			v = (Xv_opaque) (owin->split_destroy_proc);
 			break;
+
+		case XV_CHILDREN:
+			{
+				Window *w = va_arg(valist, Window *);
+				int retval, len = va_arg(valist, int);
+				Openwin_view_info *v;
+
+				*w++ = xv_get(owin_public, XV_XID);
+				--len;
+				retval = 1;
+				for (v = owin->views; v != NULL; v = v->next_view) {
+					int subval = xv_get(VIEW_PUBLIC(v), XV_CHILDREN, w, len);
+					w += subval;
+					len -= subval;
+					retval += subval;
+				}
+				return (Xv_opaque)retval;
+			}
+			break;
 		default:
 			xv_check_bad_attr(OPENWIN, attr);
 			*get_status = XV_ERROR;
 	}
 	return (v);
 }
+
 static void openwin_remove_scrollbars(Openwin_view_info *view)
 {
 	Scrollbar vsb, hsb;
@@ -2801,12 +2821,46 @@ static int openwin_view_init(Openwin parent, Openwin_view slf,
 static Xv_opaque openwin_view_get(Openwin_view self, int *status,
 									Attr_attribute attr, va_list valist)
 {
-	if (attr == OPENWIN_VIEW_PAINT_WINDOW) {
-		Openwin_view_info *priv = VIEW_PRIVATE(self);
+	Openwin_view_info *v = VIEW_PRIVATE(self);
 
-		*status = XV_OK;
-		return priv->pw;
+	*status = XV_OK;
+	switch (attr) {
+		case OPENWIN_VIEW_PAINT_WINDOW:
+			return v->pw;
+
+		case XV_CHILDREN:
+			{
+				Window *w = va_arg(valist, Window *);
+				int retval, len = va_arg(valist, int);
+
+				*w++ = xv_get(self, XV_XID);
+				--len;
+				retval = 1;
+				if (v->sb[0]) {
+					int subval = xv_get(v->sb[0], XV_CHILDREN, w, len);
+
+					w += subval;
+					len -= subval;
+					retval += subval;
+				}
+				if (v->sb[1]) {
+					int subval = xv_get(v->sb[1], XV_CHILDREN, w, len);
+
+					w += subval;
+					len -= subval;
+					retval += subval;
+				}
+				if (v->pw) {
+					int subval = xv_get(v->pw, XV_CHILDREN, w, len);
+
+					w += subval;
+					len -= subval;
+					retval += subval;
+				}
+				return (Xv_opaque)retval;
+			}
 	}
+
 	*status = XV_ERROR;
 	return (Xv_opaque)XV_OK;
 }
