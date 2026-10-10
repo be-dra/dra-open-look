@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.23 2026/10/06 21:21:19 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.24 2026/10/09 11:55:56 dra Exp $ ";
 #endif
 #endif
 
@@ -2514,6 +2514,30 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 		case FRAME_SHOW_RESIZE_CORNER:
 			attr = (Frame_attribute) ATTR_NOP(attr);
 			return (Xv_opaque) status_get(frame, show_resize_corner);
+
+		case XV_CHILDREN:
+			{
+				Xv_window win;
+				Window *w = va_arg(valist, Window *);
+				int retval, len = va_arg(valist, int);
+
+				*w++ = xv_get(frame_public, XV_XID);
+				--len;
+				retval = 1;
+				if (frame->footer) {
+					*w++ = xv_get(frame->footer, XV_XID);
+					--len;
+					++retval;
+				}
+				FRAME_EACH_SUBWINDOW(frame, win)
+					int subval = (int)xv_get(win, XV_CHILDREN, w, len);
+					w += subval;
+					len -= subval;
+					retval += subval;
+				FRAME_END_EACH
+				return (Xv_opaque)retval;
+			}
+			break;
 
 		default:
 			if (xv_check_bad_attr(FRAME_CLASS, attr) == XV_ERROR) {
