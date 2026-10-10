@@ -1,4 +1,4 @@
-char p_get_sccsid[] = "@(#)p_get.c 20.38 93/06/28 DRA: $Id: p_get.c,v 4.3 2025/11/01 14:55:10 dra Exp $";
+char p_get_sccsid[] = "@(#)p_get.c 20.38 93/06/28 DRA: $Id: p_get.c,v 4.4 2026/10/09 11:55:37 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -143,6 +143,24 @@ Pkg_private Xv_opaque panel_get_attr(Panel panel_public, int *status,
 		case WIN_TYPE:	/* SunView1.X compatibility */
 			return (Xv_opaque) PANEL_TYPE;
 
+		case XV_CHILDREN:
+			{
+				Window *w = va_arg(valist, Window *);
+				int retval, len = va_arg(valist, int);
+    			Item_info *ip;
+
+				*w++ = xv_get(panel_public, XV_XID);
+				--len;
+				retval = 1;
+				for (ip = panel->items; ip; ip = ip->next) {
+					int subval = xv_get(ITEM_PUBLIC(ip), XV_CHILDREN, w, len);
+					w += subval;
+					len -= subval;
+					retval += subval;
+				}
+				return (Xv_opaque)retval;
+			}
+			break;
 		default:
 			xv_check_bad_attr(PANEL, attr);
 			*status = XV_ERROR;
