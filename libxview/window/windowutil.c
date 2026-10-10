@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.25 2026/10/06 21:26:53 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.27 2026/10/09 15:06:22 dra Exp $";
 #endif
 #endif
 /*
@@ -1226,7 +1226,19 @@ static Window *collect_descendants(Server_info *srv, Window xid,
 Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 							int deafBit, Bool flag)
 {
+	typedef enum {
+		AQT_ALWAYS, /* always perform XQueryTree */
+		AQT_ONCE,   /* perform XQueryTree once for each toplevel */
+		AQT_NEVER   /* perform no CQueryTree */
+	} aqt_enum;
+	static Defaults_pairs aqt_pairs[] = {
+		{ "always",		AQT_ALWAYS },  /* original state */
+		{ "once",	AQT_ONCE },        /* much better, worked */
+		{ "never",	AQT_NEVER },       /* latest attempt */
+		{ NULL,		AQT_NEVER }
+	};
 	Window_info *win;
+	aqt_enum aqt;
 
 	if (!topLevel) return XV_OK;
 
@@ -1249,9 +1261,9 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 		set_flag_cursor(topLevel, pointer, flag);
 	}
 
-	if (defaults_get_boolean("window.avoidQueryTree", "Window.AvoidQueryTree",
-										True))
-	{
+	aqt = defaults_get_enum("window.avoidQueryTree","Window.AvoidQueryTree",
+					aqt_pairs);
+	if (aqt != AQT_ALWAYS) {
 		Xv_server server;
 		Xv_Drawable_info *info;
 		unsigned long idx;
@@ -1268,7 +1280,9 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 		 * 
 		 * However, think of OPENWIN view splitting and joining. So, the UI
 		 * is not as static as I thought initially.
-		 * Therefore, have a look at window_init and window_destroy_win_struct.
+		 * Therefore, have a look at XV_END_CREATE in window_set_avlist
+		 * and window_destroy_win_struct. In both cases we set
+		 * aqt_descendants to NULL
 		 */
 
 		DRAWABLE_INFO_MACRO(topLevel, info);
@@ -1285,10 +1299,23 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 										"Window.AvoidQueryTreeCount", 16);
 			}
 			win->aqt_descendants = xv_alloc_n(Window, win->aqt_allocated);
-			idx  = 0L;
 
-			win->aqt_descendants = collect_descendants(srv, queryXid, &idx,
+			if (aqt == AQT_ONCE) {
+				idx  = 0L;
+				win->aqt_descendants = collect_descendants(srv, queryXid, &idx,
 									&win->aqt_allocated, win->aqt_descendants);
+			}
+			else {
+				int count = (int)xv_get(topLevel, XV_CHILDREN,
+									win->aqt_descendants, win->aqt_allocated);
+
+				SERVERTRACE((700, "XV_CHILDREN returns %d\n", count));
+				if (count >= win->aqt_allocated) {
+					fprintf(stderr, "%s-%d: aqt_allocated too small, need %d\n",
+									__FILE__, __LINE__, count + 10);
+					server_update_aqt(srv, count + 10);
+				}
+			}
 		}
 
 		for (idx = 0; idx < win->aqt_allocated; idx++) {
