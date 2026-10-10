@@ -1,4 +1,4 @@
-/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.6 2026/08/26 20:27:18 dra Exp $      */
+/*      @(#)generic.h 20.45 93/06/28 SMI   DRA: $Id: generic.h,v 4.7 2026/10/09 09:20:24 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -135,6 +135,7 @@ typedef enum {
 	XV_HELP			= GENERIC_ATTR(ATTR_STRING,	 80),
 	XV_HELP_STRING_FILENAME	= GENERIC_ATTR(ATTR_STRING,	 82),
 	XV_SHOW			= GENERIC_ATTR(ATTR_BOOLEAN,	 81),
+	XV_CHILDREN     = GENERIC_ATTR(ATTR_OPAQUE_PAIR, 83), /* --G */
 	/*
 	 * Required by package implementations, used only by xv_create 
 	 */
