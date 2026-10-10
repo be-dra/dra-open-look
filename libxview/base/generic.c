@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.10 2026/09/07 10:07:50 dra Exp $";
+static char     sccsid[] = "@(#)generic.c 20.25 91/02/27  DRA: $Id: generic.c,v 4.11 2026/10/09 09:22:17 dra Exp $";
 #endif
 #endif
 
@@ -521,6 +521,10 @@ Xv_private Xv_opaque generic_get(Xv_object object, int *status,
 			break;
 		case XV_SELF:
 			result = object;
+			break;
+
+		case XV_CHILDREN:
+			result = XV_NULL;
 			break;
 
 		default:
