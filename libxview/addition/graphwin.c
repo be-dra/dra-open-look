@@ -5,7 +5,7 @@
 #include <xview/help.h>
 #include <xview/font.h>
 
-char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.40 2026/09/12 05:05:17 dra Exp $";
+char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.42 2026/10/11 06:40:10 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -32,7 +32,7 @@ typedef enum {
 typedef struct _graphobj {
 	Xv_opaque               public_self;
 	struct _graphobj        *next;
-	GraphRect                    rect, label_rect, image_rect;
+	GraphRect               rect, label_rect, image_rect;
 	char                    *label;
 	int                     label_gravity;
 	int                     space;
@@ -113,12 +113,18 @@ static void repaint_obj(Graphwin_private *priv, graphlist it)
 	OPENWIN_EACH_PW(GRAPHPUB(priv), pw)
 		xv_get(pw, SCROLLPW_INFO, &vi);
 		XClearArea(vi.dpy, vi.xid, 
-					grs.rect.r_left - vi.scr_x, grs.rect.r_top - vi.scr_y,
-					(unsigned)grs.rect.r_width, (unsigned)grs.rect.r_height,
+					grs.rect.gr_left - vi.scr_x, grs.rect.gr_top - vi.scr_y,
+					(unsigned)grs.rect.gr_width, (unsigned)grs.rect.gr_height,
 					FALSE);
 		xv_set(GROBJPUB(it), GRAPH_DRAW, &grs, NULL);
 	OPENWIN_END_EACH
 }
+
+#define rect_intersectsgrect(r1,r2) \
+	((r1)->r_left<(r2)->gr_left+(r2)->gr_width && \
+	 (r1)->r_top<(r2)->gr_top+(r2)->gr_height &&  \
+	 (r2)->gr_left<(r1)->r_left+(r1)->r_width && \
+	 (r2)->gr_top<(r1)->r_top+(r1)->r_height)
 
 static void graphwin_repaint_from_expose(Graphwin_private *priv,
 							Scrollwin_repaint_struct *rs)
@@ -144,7 +150,7 @@ static void graphwin_repaint_from_expose(Graphwin_private *priv,
 	gors.gi = &gi;
 	for (it = priv->first; it; it = it->next) {
 		if (! it->no_redisplay && it->state.visible) {
-			if (rect_intersectsrect(&rs->virt_rect, &it->rect)) {
+			if (rect_intersectsgrect(&rs->virt_rect, &it->rect)) {
 				gors.rect = it->rect;
 				gors.image_rect = it->image_rect;
 				gors.state = it->state;
@@ -169,14 +175,14 @@ static void update_virtual_size(Graphwin_private *priv)
 	priv->nitems = 0;
 	for (it = priv->first; it; it = it->next) {
 		++priv->nitems;
-		if (it->rect.r_width > 0 && it->rect.r_height > 0) {
-			tmpwhole.r_left = MIN(whole.r_left, it->rect.r_left);
-			tmpwhole.r_top = MIN(whole.r_top, it->rect.r_top);
+		if (it->rect.gr_width > 0 && it->rect.gr_height > 0) {
+			tmpwhole.r_left = MIN(whole.r_left, it->rect.gr_left);
+			tmpwhole.r_top = MIN(whole.r_top, it->rect.gr_top);
 			tmpwhole.r_width = MAX(whole.r_left + whole.r_width,
-								it->rect.r_left + (int)it->rect.r_width)
+								it->rect.gr_left + (int)it->rect.gr_width)
 							- tmpwhole.r_left;
 			tmpwhole.r_height = MAX(whole.r_top + whole.r_height,
-								it->rect.r_top + (int)it->rect.r_height)
+								it->rect.gr_top + (int)it->rect.gr_height)
 							- tmpwhole.r_top;
 			whole = tmpwhole;
 		}
@@ -194,8 +200,8 @@ static void update_virtual_size(Graphwin_private *priv)
 		priv->no_redisplay = TRUE;
 		for (it = priv->first; it; it = it->next) {
 			xv_set(GROBJPUB(it),
-					XV_X, it->rect.r_left + deltax,
-					XV_Y, it->rect.r_top + deltay,
+					XV_X, it->rect.gr_left + deltax,
+					XV_Y, it->rect.gr_top + deltay,
 					NULL);
 		}
 		priv->no_redisplay = FALSE;
@@ -241,8 +247,8 @@ static void internal_drag_objects(Graphwin_private *priv, Scrollpw_info *vinfo)
 			grs.rect = it->rect;
 			grs.image_rect = it->image_rect;
 			grs.state = it->state;
-			grs.rect.r_left += deltax;
-			grs.rect.r_top += deltay;
+			grs.rect.gr_left += deltax;
+			grs.rect.gr_top += deltay;
 
 			xv_set(GROBJPUB(it), GRAPH_DRAW, &grs, NULL);
 		}
@@ -261,13 +267,13 @@ static void perform_frame_catch(Graphwin_private *priv,
 	GraphRect frame;
 	graphlist it;
 
-	frame.r_left = MINi(es->virt_x, priv->vdown_x);
-	frame.r_top = MINi(es->virt_y, priv->vdown_y);
-	frame.r_width = ABSo(es->virt_x - priv->vdown_x);
-	frame.r_height = ABSo(es->virt_y - priv->vdown_y);
+	frame.gr_left = MINi(es->virt_x, priv->vdown_x);
+	frame.gr_top = MINi(es->virt_y, priv->vdown_y);
+	frame.gr_width = ABSo(es->virt_x - priv->vdown_x);
+	frame.gr_height = ABSo(es->virt_y - priv->vdown_y);
 
 	for (it = priv->first; it; it = it->next) {
-		if (rect_intersectsrect(&frame, &it->rect)) {
+		if (grect_intersectsgrect(&frame, &it->rect)) {
 			if (toggle) it->state.selected = ! it->state.selected;
 			else it->state.selected = TRUE;
 		}
@@ -287,8 +293,8 @@ static void move_selected(Graphwin_private *priv)
 	for (it = priv->first; it; it = it->next) {
 		if (it->state.selected) {
 			xv_set(GROBJPUB(it),
-					XV_X, it->rect.r_left + deltax,
-					XV_Y, it->rect.r_top + deltay,
+					XV_X, it->rect.gr_left + deltax,
+					XV_Y, it->rect.gr_top + deltay,
 					NULL);
 		}
 	}
@@ -298,6 +304,10 @@ static void move_selected(Graphwin_private *priv)
 	xv_set(GRAPHPUB(priv), SCROLLWIN_TRIGGER_REPAINT, NULL);
 }
 
+#define grect_includespoint(r,x,y) \
+	((x) >= (r)->gr_left && (y) >= (r)->gr_top && \
+	 (x)<(r)->gr_left+(r)->gr_width && (y)<(r)->gr_top+(r)->gr_height)
+
 static graphlist find_caught(graphlist it, int x, int y)
 {
 	graphlist hit;
@@ -306,7 +316,7 @@ static graphlist find_caught(graphlist it, int x, int y)
 	if ((hit = find_caught(it->next, x, y))) return hit;
 	if (!it->state.visible) return (graphlist)0;
 
-	if (rect_includespoint(&it->rect, x, y)) {
+	if (grect_includespoint(&it->rect, x, y)) {
 		if (xv_get(GROBJPUB(it), GRAPH_CATCH, x, y)) return it;
 	}
 
@@ -1555,15 +1565,15 @@ static void graphobj_draw(Graphobj_private *priv, Graphobj_repaint_struct *grs,
 
 	if (_xv_is_multibyte && gi->fs) {
 		XmbDrawImageString(vi->dpy, vi->xid, gi->fs, gi->gc,
-			SCR_WIN_X(vi, grs->rect.r_left + priv->label_rect.r_left),
-			SCR_WIN_Y(vi, grs->rect.r_top + priv->label_rect.r_top +ascent),
+			SCR_WIN_X(vi, grs->rect.gr_left + priv->label_rect.gr_left),
+			SCR_WIN_Y(vi, grs->rect.gr_top + priv->label_rect.gr_top +ascent),
 			priv->label,
 			(int)strlen(priv->label));
 	}
 	else {
 		XDrawImageString(vi->dpy, vi->xid, gi->gc,
-			SCR_WIN_X(vi, grs->rect.r_left + priv->label_rect.r_left),
-			SCR_WIN_Y(vi, grs->rect.r_top + priv->label_rect.r_top +ascent),
+			SCR_WIN_X(vi, grs->rect.gr_left + priv->label_rect.gr_left),
+			SCR_WIN_Y(vi, grs->rect.gr_top + priv->label_rect.gr_top +ascent),
 			priv->label,
 			(int)strlen(priv->label));
 	}
@@ -1577,19 +1587,19 @@ static void make_label_rect(Graphobj_private *priv)
 
 	if (priv->label) {
 		xv_get(font, FONT_STRING_DIMS, priv->label, &dims);
-		priv->label_rect.r_width = dims.width;
+		priv->label_rect.gr_width = dims.width;
 	}
 	else {
 		xv_get(font, FONT_STRING_DIMS, "A", &dims);
-		priv->label_rect.r_width = 0;
+		priv->label_rect.gr_width = 0;
 	}
-	priv->label_rect.r_height = priv->owner->ascent + priv->owner->descent;
+	priv->label_rect.gr_height = priv->owner->ascent + priv->owner->descent;
 
 	/* INCOMPLETE, this is only correct as long as
 	 * the font is not rescaled
 	 */
-	priv->label_rect.r_height = (priv->label_rect.r_height * 100) / scale;
-	priv->label_rect.r_width = (priv->label_rect.r_width * 100) / scale;
+	priv->label_rect.gr_height = (priv->label_rect.gr_height * 100) / scale;
+	priv->label_rect.gr_width = (priv->label_rect.gr_width * 100) / scale;
 }
 
 static void make_rect(Graphobj_private *priv)
@@ -1600,84 +1610,84 @@ static void make_rect(Graphobj_private *priv)
 
 	switch (priv->label_gravity) {
 		case NorthWestGravity:
-			r->r_width = MAXi(lr->r_width, ir->r_width);
-			r->r_height = lr->r_height + ir->r_height + priv->space;
-			lr->r_left = 0;
-			lr->r_top = 0;
-			ir->r_left = 0;
-			ir->r_top = lr->r_height + priv->space;
+			r->gr_width = MAXi(lr->gr_width, ir->gr_width);
+			r->gr_height = lr->gr_height + ir->gr_height + priv->space;
+			lr->gr_left = 0;
+			lr->gr_top = 0;
+			ir->gr_left = 0;
+			ir->gr_top = lr->gr_height + priv->space;
 			break;
 
 		case NorthGravity:
-			r->r_width = MAXi(lr->r_width, ir->r_width);
-			r->r_height = lr->r_height + ir->r_height + priv->space;
-			lr->r_left = (r->r_width - lr->r_width) / 2;
-			ir->r_left = (r->r_width - ir->r_width) / 2;
-			lr->r_top = 0;
-			ir->r_top = lr->r_height + priv->space;
+			r->gr_width = MAXi(lr->gr_width, ir->gr_width);
+			r->gr_height = lr->gr_height + ir->gr_height + priv->space;
+			lr->gr_left = (r->gr_width - lr->gr_width) / 2;
+			ir->gr_left = (r->gr_width - ir->gr_width) / 2;
+			lr->gr_top = 0;
+			ir->gr_top = lr->gr_height + priv->space;
 			break;
 
 		case NorthEastGravity:
-			r->r_width = MAXi(lr->r_width, ir->r_width);
-			r->r_height = lr->r_height + ir->r_height + priv->space;
-			lr->r_left = r->r_width - lr->r_width;
-			ir->r_left = r->r_width - ir->r_width;
-			lr->r_top = 0;
-			ir->r_top = lr->r_height + priv->space;
+			r->gr_width = MAXi(lr->gr_width, ir->gr_width);
+			r->gr_height = lr->gr_height + ir->gr_height + priv->space;
+			lr->gr_left = r->gr_width - lr->gr_width;
+			ir->gr_left = r->gr_width - ir->gr_width;
+			lr->gr_top = 0;
+			ir->gr_top = lr->gr_height + priv->space;
 			break;
 
 		case WestGravity:
-			r->r_width = lr->r_width + ir->r_width + priv->space;
-			r->r_height = MAXi(lr->r_height, ir->r_height);
-			lr->r_left = 0;
-			lr->r_top = (r->r_height - lr->r_height) / 2;
-			ir->r_left = lr->r_width + priv->space;
-			ir->r_top = (r->r_height - ir->r_height) / 2;
+			r->gr_width = lr->gr_width + ir->gr_width + priv->space;
+			r->gr_height = MAXi(lr->gr_height, ir->gr_height);
+			lr->gr_left = 0;
+			lr->gr_top = (r->gr_height - lr->gr_height) / 2;
+			ir->gr_left = lr->gr_width + priv->space;
+			ir->gr_top = (r->gr_height - ir->gr_height) / 2;
 			break;
 
 		case CenterGravity:
-			r->r_width = MAXi(lr->r_width, ir->r_width);
-			r->r_height = MAXi(lr->r_height, ir->r_height);
-			lr->r_left = (r->r_width - lr->r_width) / 2;
-			lr->r_top = (r->r_height - lr->r_height) / 2;
-			ir->r_left = (r->r_width - ir->r_width) / 2;
-			ir->r_top = (r->r_height - ir->r_height) / 2;
+			r->gr_width = MAXi(lr->gr_width, ir->gr_width);
+			r->gr_height = MAXi(lr->gr_height, ir->gr_height);
+			lr->gr_left = (r->gr_width - lr->gr_width) / 2;
+			lr->gr_top = (r->gr_height - lr->gr_height) / 2;
+			ir->gr_left = (r->gr_width - ir->gr_width) / 2;
+			ir->gr_top = (r->gr_height - ir->gr_height) / 2;
 			break;
 
 		case EastGravity:
-			r->r_width = lr->r_width + ir->r_width + priv->space;
-			r->r_height = MAXi(lr->r_height, ir->r_height);
-			lr->r_left = ir->r_width + priv->space;
-			lr->r_top = (r->r_height - lr->r_height) / 2;
-			ir->r_left = 0;
-			ir->r_top = (r->r_height - ir->r_height) / 2;
+			r->gr_width = lr->gr_width + ir->gr_width + priv->space;
+			r->gr_height = MAXi(lr->gr_height, ir->gr_height);
+			lr->gr_left = ir->gr_width + priv->space;
+			lr->gr_top = (r->gr_height - lr->gr_height) / 2;
+			ir->gr_left = 0;
+			ir->gr_top = (r->gr_height - ir->gr_height) / 2;
 			break;
 
 		case SouthWestGravity:
-			r->r_width = MAXi(lr->r_width, ir->r_width);
-			r->r_height = lr->r_height + ir->r_height + priv->space;
-			lr->r_left = 0;
-			lr->r_top = ir->r_height + priv->space;
-			ir->r_left = 0;
-			ir->r_top = 0;
+			r->gr_width = MAXi(lr->gr_width, ir->gr_width);
+			r->gr_height = lr->gr_height + ir->gr_height + priv->space;
+			lr->gr_left = 0;
+			lr->gr_top = ir->gr_height + priv->space;
+			ir->gr_left = 0;
+			ir->gr_top = 0;
 			break;
 
 		case SouthGravity:
-			r->r_width = MAXi(lr->r_width, ir->r_width);
-			r->r_height = lr->r_height + ir->r_height + priv->space;
-			lr->r_left = (r->r_width - lr->r_width) / 2;
-			ir->r_left = (r->r_width - ir->r_width) / 2;
-			lr->r_top = ir->r_height + priv->space;
-			ir->r_top = 0;
+			r->gr_width = MAXi(lr->gr_width, ir->gr_width);
+			r->gr_height = lr->gr_height + ir->gr_height + priv->space;
+			lr->gr_left = (r->gr_width - lr->gr_width) / 2;
+			ir->gr_left = (r->gr_width - ir->gr_width) / 2;
+			lr->gr_top = ir->gr_height + priv->space;
+			ir->gr_top = 0;
 			break;
 
 		case SouthEastGravity:
-			r->r_width = MAXi(lr->r_width, ir->r_width);
-			r->r_height = lr->r_height + ir->r_height + priv->space;
-			lr->r_left = r->r_width - lr->r_width;
-			ir->r_left = r->r_width - ir->r_width;
-			lr->r_top = ir->r_height + priv->space;
-			ir->r_top = 0;
+			r->gr_width = MAXi(lr->gr_width, ir->gr_width);
+			r->gr_height = lr->gr_height + ir->gr_height + priv->space;
+			lr->gr_left = r->gr_width - lr->gr_width;
+			ir->gr_left = r->gr_width - ir->gr_width;
+			lr->gr_top = ir->gr_height + priv->space;
+			ir->gr_top = 0;
 			break;
 
 		default:
@@ -1695,11 +1705,11 @@ static Xv_opaque graphobj_set(Xv_opaque self, Attr_avlist avlist)
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case XV_X:
-			priv->rect.r_left = (int)A1;
+			priv->rect.gr_left = (int)A1;
 			ADONE;
 
 		case XV_Y:
-			priv->rect.r_top = (int)A1;
+			priv->rect.gr_top = (int)A1;
 			ADONE;
 
 		case XV_LABEL:
@@ -1730,11 +1740,11 @@ static Xv_opaque graphobj_set(Xv_opaque self, Attr_avlist avlist)
 			ADONE;
 
 		case GRAPH_IMAGE_RECT:
-			r = (Rect *)A1;
-			priv->image_rect.r_left = r->r_left;
-			priv->image_rect.r_top = r->r_top;
-			priv->image_rect.r_width = r->r_width;
-			priv->image_rect.r_height = r->r_height;
+			r = (Rect *)A1;         /* careful Rect vs GraphRect */
+			priv->image_rect.gr_left = r->r_left;
+			priv->image_rect.gr_top = r->r_top;
+			priv->image_rect.gr_width = r->r_width;
+			priv->image_rect.gr_height = r->r_height;
 			need_rect = TRUE;
 			ADONE;
 
@@ -1790,11 +1800,19 @@ static Xv_opaque graphobj_get(Xv_opaque self, int *status, Attr_attribute attr,
 		case GRAPH_ENTER_BEFORE: return (Xv_opaque)FALSE;
 		case XV_SHOW: return (Xv_opaque)priv->state.visible;
 		case XV_LABEL: return (Xv_opaque)priv->label;
-		case XV_X: return (Xv_opaque)priv->rect.r_left;
-		case XV_Y: return (Xv_opaque)priv->rect.r_top;
-		case XV_WIDTH: return (Xv_opaque)priv->rect.r_width;
-		case XV_HEIGHT: return (Xv_opaque)priv->rect.r_height;
-		case XV_RECT: return (Xv_opaque)&priv->rect;
+		case XV_X: return (Xv_opaque)priv->rect.gr_left;
+		case XV_Y: return (Xv_opaque)priv->rect.gr_top;
+		case XV_WIDTH: return (Xv_opaque)priv->rect.gr_width;
+		case XV_HEIGHT: return (Xv_opaque)priv->rect.gr_height;
+		case XV_RECT:
+			xv_error(self,
+				ERROR_PKG, GRAPHOBJ,
+				ERROR_LAYER, ERROR_PROGRAM,
+				ERROR_CANNOT_GET, attr,
+				ERROR_SEVERITY, ERROR_NON_RECOVERABLE,
+				NULL);
+			return XV_NULL; /* use GRAPH_RECT */
+		case GRAPH_RECT: return (Xv_opaque)&priv->rect;
 		case GRAPH_CATCH: return (Xv_opaque)TRUE;
 		case GRAPH_NEXT_ITEM:
 			if (priv->next) return GROBJPUB(priv->next);
