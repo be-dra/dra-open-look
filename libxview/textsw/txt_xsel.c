@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.62 2026/07/15 18:34:47 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.63 2026/10/11 07:19:25 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -822,10 +822,13 @@ Pkg_private int textsw_new_sel_paste(Textsw_view_private vp, Event *ev,
 	 */
 	pos = (Es_index)xv_get(tsw, TEXTSW_INSERTION_POINT);
 
-	/* preparation of the "word paste" case */
+	/* preparation of the "word paste" case:
+	 * we fill wbuf with the characters before and after pos.
+	 */
 	wbuf[0] = '\0';
 	if (pos == 0) xv_get(tsw, TEXTSW_CONTENTS, pos, wbuf+1, 1);
 	else xv_get(tsw, TEXTSW_CONTENTS, pos-1, wbuf, 2);
+	wbuf[2] = '\0';
 
 	ev_set(vp->e_view, EV_CHAIN_DELAY_UPDATE, FALSE, NULL);
 	EV_SET_INSERT(priv->views, pos, temp);
