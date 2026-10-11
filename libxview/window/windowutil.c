@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.27 2026/10/09 15:06:22 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.28 2026/10/10 19:48:04 dra Exp $";
 #endif
 #endif
 /*
@@ -1261,7 +1261,7 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 		set_flag_cursor(topLevel, pointer, flag);
 	}
 
-	aqt = defaults_get_enum("window.avoidQueryTree","Window.AvoidQueryTree",
+	aqt = defaults_get_enum("window.performQueryTree","Window.PerformQueryTree",
 					aqt_pairs);
 	if (aqt != AQT_ALWAYS) {
 		Xv_server server;
@@ -1295,8 +1295,8 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 			queryXid = xv_xid(info);
 			if (win->aqt_allocated == 0) {
 				win->aqt_allocated = defaults_get_integer(
-										"window.avoidQueryTreeCount",
-										"Window.AvoidQueryTreeCount", 16);
+										"window.performQueryTreeCount",
+										"Window.PerformQueryTreeCount", 30);
 			}
 			win->aqt_descendants = xv_alloc_n(Window, win->aqt_allocated);
 
