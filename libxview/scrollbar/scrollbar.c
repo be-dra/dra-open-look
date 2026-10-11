@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.12 2026/10/06 21:24:12 dra Exp $ ";
+static char     sccsid[] = "@(#)sb.c 1.53 93/06/28 DRA: $Id: scrollbar.c,v 1.13 2026/10/10 12:08:39 dra Exp $ ";
 #endif
 #endif
 
@@ -859,7 +859,7 @@ typedef struct {
 	int x_offset, ascent, hmargin, vmargin, visible, yoff;
 } page_data_t;
 
-static void pagewin_paint(Window xid, page_data_t *pn)
+static void page_window_paint(Window xid, page_data_t *pn)
 {
 	if (Dimension(pn->ginfo) == OLGX_3D_COLOR) {
 		olgx_draw_box(pn->ginfo, xid, 0, 0,
@@ -870,11 +870,11 @@ static void pagewin_paint(Window xid, page_data_t *pn)
 					0, OLGX_NORMAL);
 }
 
-static void pw_events(Xv_window win, Event *ev)
+static void page_window_events(Xv_window page_window, Event *ev)
 {
 	if (event_action(ev) == WIN_REPAINT) {
-		pagewin_paint((Window)xv_get(win, XV_XID),
-						(page_data_t *)xv_get(win, WIN_CLIENT_DATA));
+		page_window_paint((Window)xv_get(page_window, XV_XID),
+						(page_data_t *)xv_get(page_window, WIN_CLIENT_DATA));
 	}
 }
 
@@ -930,7 +930,7 @@ static void get_page_window(Xv_scrollbar_info *sb)
 					WIN_BORDER, (Dimension(pn->ginfo) != OLGX_3D_COLOR),
 					WIN_CMS, xv_get(SCROLLBAR_PUBLIC(sb), WIN_CMS),
 					WIN_CONSUME_EVENTS, WIN_REPAINT, NULL,
-					WIN_EVENT_PROC, pw_events,
+					WIN_EVENT_PROC, page_window_events,
 					WIN_SAVE_UNDER, TRUE,
 					WIN_TOP_LEVEL_NO_DECOR, TRUE,
 					WIN_CLIENT_DATA, pn,
@@ -1003,7 +1003,7 @@ static void update_pagewin(Xv_scrollbar_info *sb)
 	xv_set_avlist(sb->page_window, a);
 	if (need_paint) {
 		XClearWindow(dpy, (Window)xv_get(sb->page_window, XV_XID));
-		pagewin_paint((Window)xv_get(sb->page_window, XV_XID), pn);
+		page_window_paint((Window)xv_get(sb->page_window, XV_XID), pn);
 	}
 	/* no negative effects ... */
 /* UNUSED_FLUSH? 	XFlush(dpy); */
