@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.56 2026/08/26 12:10:49 dra Exp $";
+char     txt_move_c_sccsid[] = "@(#)txt_move.c 20.91 93/06/28 DRA: $Id: txt_move.c,v 4.57 2026/10/11 07:19:15 dra Exp $";
 #endif
 
 /*
@@ -312,6 +312,7 @@ Pkg_private int textsw_do_remote_drag_copy_move(Textsw_view_private view, Event 
 	if (ro_bdry + 1 == ES_INFINITY)
 		ro_bdry = 0;
 
+	/* pos ist the Es_index where the drop takes place */
 	pos = ev_resolve_xy(view->e_view, event_x(ie), event_y(ie));
 
 	if (pos < ro_bdry) {
@@ -409,7 +410,9 @@ Pkg_private int textsw_do_remote_drag_copy_move(Textsw_view_private view, Event 
 	ev_set(view->e_view, EV_CHAIN_DELAY_UPDATE, FALSE, NULL);
 	EV_SET_INSERT(priv->views, pos, temp);
 
-	/* preparation of the "word drop" case */
+	/* preparation of the "word drop" case:
+	 * we fill wbuf with the characters before and after pos.
+	 */
 	wbuf[0] = '\0';
 	if (pos == 0) xv_get(tsw, TEXTSW_CONTENTS, pos, wbuf+1, 1);
 	else xv_get(tsw, TEXTSW_CONTENTS, pos-1, wbuf, 2);
