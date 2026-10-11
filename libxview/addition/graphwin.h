@@ -4,7 +4,7 @@
 #include <xview/xview.h>
 #include <xview/scrollw.h>
 
-/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.14 2026/09/12 05:05:11 dra Exp $" */
+/* "@(#) %M% V%I% %E% %U% $Id: graphwin.h,v 1.15 2026/10/10 21:12:22 dra Exp $" */
 
 extern const Xv_pkg xv_graphwin_pkg;
 #define GRAPHWIN &xv_graphwin_pkg
@@ -63,6 +63,7 @@ typedef enum {
 	GRAPH_LABEL_GRAVITY = GRAPH_ATTR(ATTR_INT, 44),                /* CSG */
 	GRAPH_DRAGGABLE     = GRAPH_ATTR(ATTR_BOOLEAN, 45),            /* CSG */
 	GRAPH_MOVABLE       = GRAPH_ATTR(ATTR_BOOLEAN, 46),            /* CSG */
+	GRAPH_RECT          = GRAPH_ATTR(ATTR_RECT_PTR, 47),            /* CSG */
 
 	/* for graphics painter */
 	GRAPH_USE_NORMAL_CONTEXT = GRAPH_ATTR(ATTR_NO_VALUE, 50),
@@ -121,8 +122,8 @@ typedef struct {
 } Graph_private_info;
 
 typedef struct {
-	int r_left, r_top;
-	short r_width, r_height;
+	int gr_left, gr_top;
+	short gr_width, gr_height;
 } GraphRect;
 
 typedef struct {
@@ -138,5 +139,11 @@ typedef struct {
 } Graphwin_repaint_struct;
 
 typedef void (*Graphwin_notify_proc_t)(Graphwin, Graphwin_notification, Event *);
-;
+
+#define grect_intersectsgrect(r1,r2) \
+	((r1)->gr_left<(r2)->gr_left+(r2)->gr_width && \
+	 (r1)->gr_top<(r2)->gr_top+(r2)->gr_height &&  \
+	 (r2)->gr_left<(r1)->gr_left+(r1)->gr_width && \
+	 (r2)->gr_top<(r1)->gr_top+(r1)->gr_height)
+
 #endif
