@@ -34,7 +34,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.38 2026/08/04 20:21:31 dra Exp $";
+char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.40 2026/10/10 21:11:50 dra Exp $";
 #endif
 
 /*******************************************************************
@@ -351,7 +351,7 @@ static void update_list(MultiLevelList_private *priv, int paint_panel)
 	level_descr *stack = priv->levelstack;
 	int sp = priv->stackptr;
 	mllist_ptr curlev, p;
-	int num, i, j, sel;
+	int num, i, sel;
 	int has_sublevel = FALSE;
 	Attr_avlist attrs;
 
@@ -377,7 +377,7 @@ static void update_list(MultiLevelList_private *priv, int paint_panel)
 		attrs[i++] = XV_NULL;
 
 		attrs[i++] = (Attr_attribute)PANEL_LIST_GLYPHS;
-		for (j = 0, p = curlev->firstchild; p; j++, p = p->next) {
+		for (p = curlev->firstchild; p; p = p->next) {
 			if (p->has_sublevel) {
 				p->mllist_private[PL_GLYPH_INDEX] = priv->dot;
 				attrs[i++] = (Attr_attribute)priv->dot;
@@ -390,7 +390,7 @@ static void update_list(MultiLevelList_private *priv, int paint_panel)
 		attrs[i++] = XV_NULL;
 
 		attrs[i++] = (Attr_attribute)PANEL_LIST_MASK_GLYPHS;
-		for (j = 0, p = curlev->firstchild; p; j++, p = p->next) {
+		for (p = curlev->firstchild; p; p = p->next) {
 			if (p->has_sublevel) {
 				p->mllist_private[PL_MASK_INDEX] = priv->dot;
 				attrs[i++] = (Attr_attribute)priv->dot;
@@ -1212,8 +1212,8 @@ static Xv_opaque mllist_set(Multi_level_list self, Attr_avlist avlist)
 	return XV_OK;
 }
 
-/*ARGSUSED*/
-static Xv_opaque mllist_get(Multi_level_list self, int *status, Attr_attribute attr, va_list vali)
+static Xv_opaque mllist_get(Multi_level_list self, int *status,
+							Attr_attribute attr, va_list vali)
 {
 	MultiLevelList_private *priv = MLLPRIV(self);
 
@@ -1241,6 +1241,16 @@ static Xv_opaque mllist_get(Multi_level_list self, int *status, Attr_attribute a
 		case PANEL_LIST_WIDTH:
 		case PANEL_ITEM_MENU:
 			return xv_get(priv->list, (unsigned)attr, va_arg(vali, int));
+
+		case XV_CHILDREN:
+			{
+				Window *w = va_arg(vali, Window *);
+
+				*w++ = xv_get(priv->bar_window, XV_XID);
+				*w++ = xv_get(xv_get(priv->list, PANEL_LIST_SCROLLBAR), XV_XID);
+				return (Xv_opaque)2;
+			}
+			break;
 
 		default:
 			*status = xv_check_bad_attr(MULTI_LEVEL_LIST, attr);
