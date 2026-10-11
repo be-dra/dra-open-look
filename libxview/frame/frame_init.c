@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.24 2026/10/09 11:55:56 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.25 2026/10/10 19:08:08 dra Exp $ ";
 #endif
 #endif
 
@@ -2524,6 +2524,11 @@ static Xv_opaque frame_get_attr(Frame frame_public, int *status,
 				*w++ = xv_get(frame_public, XV_XID);
 				--len;
 				retval = 1;
+				if (frame->focus_window) {
+					*w++ = xv_get(frame->focus_window, XV_XID);
+					--len;
+					++retval;
+				}
 				if (frame->footer) {
 					*w++ = xv_get(frame->footer, XV_XID);
 					--len;
