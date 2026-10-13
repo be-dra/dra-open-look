@@ -1,12 +1,12 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.67 2026/10/06 21:29:50 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.68 2026/10/11 09:23:11 dra Exp $";
 #endif
 #endif
 
 /*
- *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
- *	pending in the U.S. and foreign countries. See LEGAL_NOTICE 
+ *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
+ *	pending in the U.S. and foreign countries. See LEGAL_NOTICE
  *	file for terms of the license.
  */
 
@@ -313,7 +313,7 @@ static void server_build_keymap_table(Server_info *server)
 		XK_Pause,
 #ifndef XK_Scroll_Lock
 			NIL,
-#else    
+#else
 			/* BUG: Only in R4. */
 			XK_Scroll_Lock,                 		/* XK_Scroll_Lock */
 #endif /* XK_Scroll_Lock */
@@ -349,7 +349,7 @@ static void server_build_keymap_table(Server_info *server)
 		NIL, NIL, NIL, NIL, NIL, NIL, NIL,
 
 		/* Misc Functions */
-	 
+
 		XK_Select,
 		XK_Print,
 		XK_Execute,
@@ -362,7 +362,7 @@ static void server_build_keymap_table(Server_info *server)
 		XK_Cancel,
 		XK_Help,
 		SHIFT_BREAK,					/* XK_Break */
-		
+
 		NIL, NIL, NIL, NIL, NIL, NIL, NIL, NIL, NIL,
 		NIL, NIL, NIL, NIL, NIL, NIL, NIL, NIL, NIL,
 
@@ -456,7 +456,7 @@ static void server_build_keymap_table(Server_info *server)
 		KEY_RIGHT(15),					/* XK_R15 */
 
 		/* Modifiers */
-	 
+
 		SHIFT_LEFT,					/* XK_Shift_L    */
 		SHIFT_RIGHT,					/* XK_Shift_R    */
 		SHIFT_CTRL,					/* XK_Control_L  */
@@ -771,11 +771,11 @@ static int svr_parse_display(char *display_name)
 	 strncpy(displaybuf, display_name, sizeof(displaybuf)-1);
 	 if ((display_ptr = XV_INDEX(displaybuf,':')) == NULL) return (-1);
 	 *(display_ptr++) = '\0';
- 
+
 	 /* displaybuf now contains only a null-terminated host name, and
 	 * display_ptr points to the display number.
 	 * If the display number is missing there is an error. */
-		  
+
 	if (*display_ptr == '\0') return(-1);
 
 	/*
@@ -797,7 +797,7 @@ static int svr_parse_display(char *display_name)
 			*(numbuf_ptr++) = *(screen_ptr++);
 		}
 	}
-	
+
 	/*
 	 * If the spec doesn't include a screen number, add ".0" (or "0" if
          * only "." is present.)
@@ -878,9 +878,9 @@ static void update_atom_list(Server_info *server, Atom atom)
 	unsigned int slot;
 	Server_atom_list *atom_list_tail, *atom_list_head;
 
-	/* Our list is made up of blocks of atoms.  When 
+	/* Our list is made up of blocks of atoms.  When
 	 * a block is full, we allocate a new block.  These
-	 * blocks of data are needed when the server is 
+	 * blocks of data are needed when the server is
 	 * destroyed.  We use them to free up all the
 	 * XContext manager stuff.
 	 */
@@ -1248,7 +1248,7 @@ static void server_journal_sync_event(Xv_Server server_public, int type)
 #endif
 
 	/* Ref (khbdrfvk_mbfrv) */
-	XSync(dpy, 0);	/* make sure journal process has been 
+	XSync(dpy, 0);	/* make sure journal process has been
 					 * scheduled and is waiting for the sync
 					 * event */
 	SERVERTRACE((45, "sending  JOURNAL_SYNC to root %lx\n", cme->window));
@@ -1277,7 +1277,7 @@ static void server_init_atoms(Xv_Server server_public)
 	Atom atom;
 
 	if (x_init_threads_called > 0) {
-		/* das ist der Zustand ab dem 12.07.2022 - da haben die 
+		/* das ist der Zustand ab dem 12.07.2022 - da haben die
 		 * Idioten angefangen, XInitThreads aufzurufen, auch wenn die
 		 * Applikation single threaded ist (was die in der Xlib
 		 * natuerlich nicht wissen koennen).
@@ -1293,7 +1293,7 @@ static void server_init_atoms(Xv_Server server_public)
 
 	/* I wonder what that "journalling" is all about.
 	 * Obviously, an application starts in "journalling" mode if
-	 * the atom JOURNAL_SYNC exists. So "somebody outside" must have 
+	 * the atom JOURNAL_SYNC exists. So "somebody outside" must have
 	 * created it.
 	 * [[ for example
 	 *       xprop -root -format JOURNAL_SYNC 8s -set JOURNAL_SYNC lala
@@ -1304,7 +1304,7 @@ static void server_init_atoms(Xv_Server server_public)
 	 * There are a few places in XView where (in the journalling case)
 	 * ClientMessage events of type JOURNAL_SYNC (SERVER_JOURNAL_SYNC_ATOM)
 	 * are sent to the root window via the function server_journal_sync_event.
-	 * 
+	 *
 	 * om_render.c: menu_render, cleanup
 	 * notice_pt.c: notice_prepare_for_shadow, notice_block_popup
 	 * txt_edit.c: textsw_do_input
@@ -1320,7 +1320,7 @@ static void server_init_atoms(Xv_Server server_public)
 	 * However, I did not find any software that handles such ClientMessages
 	 * on the root window....
 	 *
-	 * May I assume that this is something similar to vkbd - you can find 
+	 * May I assume that this is something similar to vkbd - you can find
 	 * libxview sending client messages to some selection owner for
 	 * _OL_SOFT_KEYS_PROCESS ....
 	 *
@@ -1382,8 +1382,8 @@ static void server_init_atoms(Xv_Server server_public)
 }
 
 /*
- * The following table describes the default key mappings for special 
- * XView keys. The first default key mapping is attempted. If this 
+ * The following table describes the default key mappings for special
+ * XView keys. The first default key mapping is attempted. If this
  * fails, then the machine we're on probably doesn't
  * have sufficient function keys, so we try the second mapping, and
  * so on. Right now, the rest of XView only supports the default mapping
@@ -1452,11 +1452,11 @@ static Xv_opaque server_init_x(char *server_name)
 /*
  * keycode_in_map(map, keycode)
  *
- * returns the associated modifier index if the specified keycode is in the 
+ * returns the associated modifier index if the specified keycode is in the
  * given modifier map. Otherwise, returns -1.
  */
 
-/* als hier noch stand 'KeyCode keycode', kam beim Aufruf noch eine 
+/* als hier noch stand 'KeyCode keycode', kam beim Aufruf noch eine
  * Warnung 'arg 2 with different width; ...
  *
  * Wenn man genau nachschaut, ist hier ' typedef unsigned char KeyCode; '
@@ -1499,7 +1499,7 @@ static int find_free_row(XModifierKeymap *map)
 	for (row = Mod1MapIndex; row <= Mod5MapIndex; row++) {
 		base = row * map->max_keypermod;
 		for (offset = 0; (offset < map->max_keypermod)  &&
-			(map->modifiermap[base + offset] == 0); 
+			(map->modifiermap[base + offset] == 0);
 			offset++);
 		if (offset == map->max_keypermod) {
 			return(row);
@@ -1550,10 +1550,10 @@ static void determine_dynamic_modifier_keysyms(fkey_set_t *keyset)
 	keyset->ksyms[0] = pasteks;
 	keyset->ksyms[1] = cutks;
 
-	/* propsks is not really important - the other two are for the 
+	/* propsks is not really important - the other two are for the
 	 * 'quick' operations
 	 */
-	keyset->ksyms[2] = propsks; 
+	keyset->ksyms[2] = propsks;
 }
 
 /*
@@ -1680,7 +1680,7 @@ Xv_private void server_refresh_modifiers(Xv_opaque server_public, Bool update_ma
 
 		/*
 		 * Attempt to install the modifier mapping.
-		 * If successful, exit this function. If not, try another 
+		 * If successful, exit this function. If not, try another
 		 * set of keysyms.
 		 */
 		if (updated) {
@@ -1781,7 +1781,7 @@ typedef struct {
 	int width;
 	int height;
 	int popup_relative;
-	int avoid_query_tree_count;
+	int perform_query_tree_count;
 	int manage_wins;
 	int base_scale;
 	int use_base_scale; /* == base_scale except WIN_SCALE_DEFAULT */
@@ -1908,12 +1908,12 @@ static Permprop_res_res_t res_base[] = {
 	{ "xvwp.popup_scale", PRC_D, DAP_enum, OFF(popup_scale), (Ppmt)scale_enum },
 
 	/* must be before the last, see ref (chjbvhjsdfgv) */
-	{ "avoidQueryTreeCount",PRC_U, DAP_int,OFF(avoid_query_tree_count), 16 },
+	{ "performQueryTreeCount",PRC_U, DAP_int,OFF(perform_query_tree_count), 30},
 
 	/* special handling: must be last, see ref (drghjbvewrfvdfgh) */
 	{ "xvwp.window_menu.default", PRC_D, DAP_int, OFF(win_menu_default), 0 }
 	/* das hier nicht auf 2 setzen, Index 2 ist
-	 * der 'moveButton' -  siehe windowMenuFullButtons in usermenu.c 
+	 * der 'moveButton' -  siehe windowMenuFullButtons in usermenu.c
 	 */
 };
 
@@ -1940,7 +1940,7 @@ static Permprop_res_res_t res_popup_menu[] = {
 	{ "window_menu.default", PRC_D, DAP_int,
 				PERM_OFF(xvwp_popup_t,win_menu_default), 0 }
 	/* das hier nicht auf 2 setzen, Index 2 ist
-	 * der 'moveButton' -  siehe windowMenuFullButtons in usermenu.c 
+	 * der 'moveButton' -  siehe windowMenuFullButtons in usermenu.c
 	 */
 };
 
@@ -1997,7 +1997,7 @@ static char *colorname(int val, int start)
 		if (val >= fore_start) val = 0;
 	}
 
-	sprintf(buf, "#%02x%02x%02x", 
+	sprintf(buf, "#%02x%02x%02x",
 				my_colors[val+start].red,
 				my_colors[val+start].green,
 				my_colors[val+start].blue);
@@ -2065,7 +2065,7 @@ static void configure_popup(xvwp_popup_t p, int base_x, int base_y)
 		/* hier kommt etwas heraus, was (noch) nicht die XView-Attribute
 		 * wiederspiegelt - vielleicht hilft das hier:
 		 */
-		xv_set(XV_SERVER_FROM_WINDOW(p->frame), 
+		xv_set(XV_SERVER_FROM_WINDOW(p->frame),
 				SERVER_SYNC_AND_PROCESS_EVENTS,
 				NULL);
 		/* das hat schon MANCHMAL geholfen, aber nicht verlaesslich */
@@ -2390,7 +2390,7 @@ static Notify_value base_interposer(Frame fram, Notify_event event,
 					hlp = hlpbuf;
 				}
 				else {
-					sprintf(hlpbuf, "%s:base_window_footer", 
+					sprintf(hlpbuf, "%s:base_window_footer",
 						(char *)xv_get(srv, XV_APP_HELP_FILE));
 
 					hlp = hlpbuf;
@@ -2398,7 +2398,7 @@ static Notify_value base_interposer(Frame fram, Notify_event event,
 			}
 			else {
 				if (hlp[0] == ':') {
-					sprintf(hlpbuf, "%s%s", 
+					sprintf(hlpbuf, "%s%s",
 						(char *)xv_get(srv, XV_APP_HELP_FILE), hlp);
 
 					hlp = hlpbuf;
@@ -2645,7 +2645,7 @@ static int note_apply(Frame f)
 				p->height = (int)xv_get(p->frame, XV_HEIGHT);
 				p->show = (int)xv_get(p->frame, XV_SHOW);
 
-				if (xv_get(p->frame, XV_IS_SUBTYPE_OF, FRAME_CMD)) 
+				if (xv_get(p->frame, XV_IS_SUBTYPE_OF, FRAME_CMD))
 					p->pushpin_in = (int)xv_get(p->frame, FRAME_CMD_PIN_STATE);
 				else p->pushpin_in = FALSE;
 
@@ -3268,19 +3268,19 @@ static void xvwp_connect(Xv_server srv, char *base_inst_name)
 	srvpriv->xvwp->data.popups = (xvwp_popup_t)0;
 	srvpriv->xvwp->data.menus = (xvwp_menu_t)0;
 
-    xv_add_custom_attrs(FRAME_CLASS, 
+    xv_add_custom_attrs(FRAME_CLASS,
 				XV_SHOW, "xv_show",
 				NULL);
 
-    xv_add_custom_attrs(FRAME_BASE, 
+    xv_add_custom_attrs(FRAME_BASE,
 				FRAME_CLOSED, "frame_closed",
 				NULL);
 
-    xv_add_custom_attrs(FRAME_CMD, 
+    xv_add_custom_attrs(FRAME_CMD,
 				FRAME_CMD_PUSHPIN_IN, "frame_cmd_pushpin_in",
 				NULL);
 
-    xv_add_custom_attrs(MENU, 
+    xv_add_custom_attrs(MENU,
 				MENU_DEFAULT, "menu_default",
 				NULL);
 
@@ -3322,29 +3322,29 @@ static void xvwp_connect(Xv_server srv, char *base_inst_name)
 	snprintf(srvpriv->xvwp->xvwp_prefix, sizeof(srvpriv->xvwp->xvwp_prefix),
 			"%s.%s.", xv_instance_app_name, base_inst_name);
 	Permprop_res_read_dbs(srvpriv->xvwp->xvwp_xrmdb, srvpriv->xvwp->xvwp_prefix,
-				(char *)&srvpriv->xvwp->data, res_base, 
+				(char *)&srvpriv->xvwp->data, res_base,
 				(unsigned)PERM_NUMBER(res_base));
 
-	defaults_set_integer("window.avoidQueryTreeCount",
-						srvpriv->xvwp->data.avoid_query_tree_count);
+	defaults_set_integer("window.performQueryTreeCount",
+						srvpriv->xvwp->data.perform_query_tree_count);
 
-	srvpriv->xvwp->data.use_base_scale = 
+	srvpriv->xvwp->data.use_base_scale =
 		((srvpriv->xvwp->data.base_scale == WIN_SCALE_DEFAULT)
 				? global_scale
 				: srvpriv->xvwp->data.base_scale);
-	srvpriv->xvwp->data.use_popup_scale = 
+	srvpriv->xvwp->data.use_popup_scale =
 		((srvpriv->xvwp->data.popup_scale == WIN_SCALE_DEFAULT)
 				? global_scale
 				: srvpriv->xvwp->data.popup_scale);
 
 	if (xv_get(srv, XV_WANT_ROWS_AND_COLUMNS)) {
 		Permprop_res_read_dbs(srvpriv->xvwp->xvwp_xrmdb, srvpriv->xvwp->xvwp_prefix,
-						(char *)&srvpriv->xvwp->data, res_rc, 
+						(char *)&srvpriv->xvwp->data, res_rc,
 						(unsigned)PERM_NUMBER(res_rc));
 	}
 	else {
 		Permprop_res_read_dbs(srvpriv->xvwp->xvwp_xrmdb, srvpriv->xvwp->xvwp_prefix,
-						(char *)&srvpriv->xvwp->data, res_nonrc, 
+						(char *)&srvpriv->xvwp->data, res_nonrc,
 						(unsigned)PERM_NUMBER(res_nonrc));
 	}
 
@@ -3515,7 +3515,7 @@ static void xvwp_connect(Xv_server srv, char *base_inst_name)
 	if (srvpriv->xvwp->argv_contains.iconic &&
 		defaults_exists("window.iconic","Window.Iconic"))
 	{
-		int iconic=defaults_get_boolean("window.iconic","Window.Iconic",FALSE);	
+		int iconic=defaults_get_boolean("window.iconic","Window.Iconic",FALSE);
 		sprintf(res_buf, "%sframe_closed", srvpriv->xvwp->xvwp_prefix);
 		defaults_set_boolean(res_buf, iconic);
 	}
@@ -3633,7 +3633,7 @@ static void note_popup_dying(Frame popup, int unused_key, Xv_opaque dt)
 	 * WIRKLICH nur noch ein Object... damit aber funktioniert
 	 * find_instance nicht mehr.
 	 */
-	
+
 	inst->data.popups = unlink_popup(inst->data.popups, data);
 
 	data->frame = XV_NULL;
@@ -4458,7 +4458,7 @@ static void server_set_any_menu(Menu menu, const char *name,
 			/* das ist ein Scrollbar-Menu - die koennen (join views)
 			 * einfach verschwinden...
 			 */
-			
+
 			xv_set(menu, XV_KEY_DATA, xvwp_key, p, NULL);
 			notify_interpose_destroy_func(menu, sbmenu_destruction);
 		}
@@ -4475,7 +4475,7 @@ static void server_set_any_menu(Menu menu, const char *name,
 }
 
 /* this function is called (at least) from om_set.c`menu_sets from
- * the XV_SET_MENU case 
+ * the XV_SET_MENU case
  */
 Xv_private void server_set_menu(Menu menu, Xv_opaque panelitem_window_or_server)
 {
@@ -4599,18 +4599,25 @@ Xv_private void server_update_aqt(Server_info *server, int count)
 	xvwp_t *inst = server->xvwp;
 
 	if (! inst) {
-		fprintf(stderr, "%s: %s-%d: cannot save avoid_query_tree_count %d\n",
+		fprintf(stderr, "%s: %s-%d: cannot save perform_query_tree_count %d\n",
 						xv_instance_app_name, __FILE__, __LINE__, count);
 		return;
 	}
 
-	inst->data.avoid_query_tree_count = count;
+	inst->data.perform_query_tree_count = count;
 
 	/* ref (chjbvhjsdfgv) */
 	Permprop_res_update_dbs(inst->xvwp_xrmdb, inst->xvwp_prefix,
 					(char *)&inst->data,
 					res_base + PERM_NUMBER(res_base) - 2, 1);
-	Permprop_res_store_db(inst->xvwp_xrmdb[PRC_U], inst->appfiles[PRC_U]);
+	/* this turns out to be quite dangerous - the user specific entries
+	 * in the application resource file can be "default empty"
+	 */
+/* 	Permprop_res_store_db(inst->xvwp_xrmdb[PRC_U], inst->appfiles[PRC_U]); */
+	fprintf(stderr,
+		"%s: %s-%d: should enter perform_query_tree_count %d into the resource file\n",
+						xv_instance_app_name, __FILE__, __LINE__, count);
+	
 }
 
 /*
@@ -4844,7 +4851,7 @@ static void server_set_locale(Server_info  *server)
 			locale = setlocale(Ollc_const[i].posix, NULL);
 
 			if (locale != NULL) {
-				SERVERTRACE((777, "%s: setlocale(%d) = '%s'\n", __FUNCTION__, 
+				SERVERTRACE((777, "%s: setlocale(%d) = '%s'\n", __FUNCTION__,
 							Ollc_const[i].posix, locale));
 				oi->locale = strdup(locale);
 				init_ollc(oi, OLLC_FROM_POSIX);
@@ -4925,7 +4932,7 @@ static void server_effect_locale(Server_info *server, char	*character_set)
 		 */
 
 		/* why is that ???? */
-		/* ich wuerde das gern abschwaechen: 
+		/* ich wuerde das gern abschwaechen:
 		 * Wenn basicLocale multibyte ist, muessen das die anderen
 		 * auch sein...
 		 */
@@ -5348,7 +5355,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 		/*
 		 * Get locale characteristic informations from Xrm.
 		 */
-		defaults_set_locale(server->ollc[OLLC_BASICLOCALE].locale, 
+		defaults_set_locale(server->ollc[OLLC_BASICLOCALE].locale,
 							(Xv_generic_attr)0);
 		need_im = defaults_get_boolean("xview.needIm",
 								"Xview.NeedIm", TRUE);
@@ -5369,7 +5376,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	}
 
 	/*
-	 * End of Sundae buyback code replacement for 
+	 * End of Sundae buyback code replacement for
 	 *    defaults_load_db(filename);
 	 *    defaults_load_db((char *) NULL);
 	 */
@@ -5438,7 +5445,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 		server->shiftmask_duplicate = CTRLMASK;
 
 	server->shiftmask_constrain = defaults_get_enum(
-								"openWindows.modifier.constrain", 
+								"openWindows.modifier.constrain",
 			  					"OpenWindows.Modifier.Constrain", shiftmasks);
 	if (server->shiftmask_constrain == 0)
 		server->shiftmask_constrain = CTRLMASK;
@@ -5474,7 +5481,7 @@ static int server_init(Xv_opaque parent, Xv_server server_public,
 	server->nbuttons = XGetPointerMapping(server->xdisplay, pmap, 256);
 	if (server->nbuttons < 3)
 		server->but_two_mod =
-				string_to_modmask(server, 
+				string_to_modmask(server,
 							defaults_get_string("mouse.modifier.button2",
 										"Mouse.Modifier.Button2", "Shift"));
 
@@ -5557,13 +5564,13 @@ static int server_destroy(Xv_Server server_public, Destroy_status status)
 	    Server_info *new_server;
 
 		/* If we are removing the default server while other
-		 * valid server still remain, we must insure that 
-		 * a new default server is assigned from the list of 
+		 * valid server still remain, we must insure that
+		 * a new default server is assigned from the list of
 		 * remaining servers.
 		 */
 	    if ((new_server = (Server_info *)(XV_SL_SAFE_NEXT(server)))) {
 		xv_default_server = SERVER_PUBLIC(new_server);
-		xv_default_display = new_server->xdisplay; 
+		xv_default_display = new_server->xdisplay;
 		xv_default_screen = new_server->screens[0];
 	    } else {
 	        /* Remove our scheduler else will deref null server */
@@ -5621,12 +5628,12 @@ static void destroy_atoms(Server_info *server)
     Server_atom_list    *head, *node;
     unsigned int         number_of_blocks;
     unsigned int         i;
- 
+
     head = (Server_atom_list *)xv_get(SERVER_PUBLIC(server), XV_KEY_DATA,
                                                     server->atom_list_head_key);    node = head;
-            
+
     number_of_blocks = (server->atom_list_number -1)/SERVER_LIST_SIZE;
- 
+
                 /* Each atom that is stored by the atom manager has a
                  * string associated with it and two X contexts.  If
                  * the server is being destroyed, we free the strings
@@ -5636,20 +5643,20 @@ static void destroy_atoms(Server_info *server)
     for (i = 0; i <= number_of_blocks; i++) {
         unsigned int count,
                      j;
- 
+
         if (i != number_of_blocks)
             count = SERVER_LIST_SIZE;
         else
             count = (server->atom_list_number -1)%SERVER_LIST_SIZE;
- 
+
         for (j = 0; j < count; j++) {
             char        *atomName;
             XrmQuark     quark;
- 
+
             XFindContext(server->xdisplay, server->atom_mgr[NAME],
                         (XContext)node->list[j], &atomName);
             quark = XrmStringToQuark(atomName);
- 
+
             XDeleteContext(server->xdisplay, server->atom_mgr[ATOM],
                           (XContext)quark);
             XDeleteContext(server->xdisplay, server->atom_mgr[NAME],
@@ -5659,7 +5666,7 @@ static void destroy_atoms(Server_info *server)
     }
                         /* Free up the atom manager stuff */
     head = (Server_atom_list *)xv_get(SERVER_PUBLIC(server), XV_KEY_DATA,
-                                                    server->atom_list_head_key); 
+                                                    server->atom_list_head_key);
 
     while ((node = (Server_atom_list *) (XV_SL_SAFE_NEXT(head))))
         xv_free(XV_SL_REMOVE_AFTER(head, head));
@@ -5676,7 +5683,7 @@ static Notify_value scheduler(int n, Notify_client *clients)
 
 	/* If xv_default_server is NULL we return because, scheduler()
 	 * dereferences it.  The problem is that default_scheduler will
-	 * process the xv_destroy(server) (nulling xv_default_server). 
+	 * process the xv_destroy(server) (nulling xv_default_server).
 	 * The second problem here is that scheduler assumes that
 	 * there will always be an xv_default_server.  This is not true.  In
 	 * a multi server env, the xv_default_server could be destroyed but
@@ -5711,7 +5718,7 @@ static Notify_value scheduler(int n, Notify_client *clients)
  * XLockDisplay rekursiv aufgerufen.
  *
  * Aber das ist nur die erste Stelle..... die Xlib scheint selbst
- * (UNGEFRAGT) XInitThreads aufzurufen. 
+ * (UNGEFRAGT) XInitThreads aufzurufen.
  * Hier aber [[ https://x.org/releases/X11R7.5/doc/libX11/libX11.html ]]
  * wird gesagt
  * "It is recommended that single-threaded programs not call this function."
@@ -5827,7 +5834,7 @@ Xv_private Server_atom_type server_get_atom_type(Xv_Server server_public,
     Server_info        *server = SERVER_PRIVATE(server_public);
 
 
-    if (XFindContext(server->xdisplay, server->atom_mgr[TYPE], 
+    if (XFindContext(server->xdisplay, server->atom_mgr[TYPE],
 		     (XContext)atom, &xtype) != XCNOENT)
 	{
 		return (Server_atom_type)xtype;
@@ -6060,7 +6067,7 @@ static Xv_font server_load_fixedwidth_font(Xv_server server, char *instnam)
 	if (! font)
 		font = xv_find(XV_NULL, FONT, FONT_NAME, "screen-bold-14", NULL);
 
-	if (! font) 
+	if (! font)
 		font = find_font_with_preferences((Display *)xv_get(server, XV_DISPLAY),
 							"bold", 'r', 140,
 							"lucida sans typewriter",
@@ -6078,7 +6085,7 @@ static Xv_font server_load_fixedwidth_font(Xv_server server, char *instnam)
 			exit(1);
 		}
 	}
-	
+
 	return font;
 }
 
@@ -6135,10 +6142,10 @@ static int lock_global_X_resource(Xv_server srv, const char *atomname,
 	lock.pid = pid;
 	lock.xid = xid;
 
-	XChangeProperty(dpy, root, at, typ, 32, PropModeAppend, 
+	XChangeProperty(dpy, root, at, typ, 32, PropModeAppend,
 				(unsigned char *)&lock, (int)(sizeof(lock)/sizeof(lock.pid)));
 
-	/* now the X server has serialized simultaneous requests! 
+	/* now the X server has serialized simultaneous requests!
 	 * We read the first xlockinfo_t and check whether it conatins OUR OWN
 	 * data;
 	 */
@@ -6351,9 +6358,9 @@ static void server_semantic_map_offset(Xv_server server_public,
 	/*
 	 * Get Meta, Alt masks
 	 */
-	meta_modmask = (unsigned int)xv_get(server_public, 
+	meta_modmask = (unsigned int)xv_get(server_public,
 						SERVER_META_MOD_MASK);
-	alt_modmask = (unsigned int)xv_get(server_public, 
+	alt_modmask = (unsigned int)xv_get(server_public,
 						SERVER_ALT_MOD_MASK);
 
 	*offset = 0;
@@ -6688,26 +6695,26 @@ Xv_private void server_set_fullscreen(Xv_Server server_public,int in_fullscreen)
  *        server_*node_from_*,
  * 	  server_add_xevent_*,
  *	  server_do_xevent_callback,
- *       
+ *
  * together implement the support X event callback mechanism.
  *
  * Server_info *server->idproclist points to a linked list of entries
  * 	each entry containing an id (=0 for app, =a unique handle otherwise)
  *      and a pointer to a callback function.
- * 
+ *
  * Server_info *server->xidlist points a linked list of entries
  * 	each entry containing a window xid, and a pointer (->idmasklist) to a
- *	to linked list of (Server_mask_list *) described next.  
- * 
+ *	to linked list of (Server_mask_list *) described next.
+ *
  * Server_info *server->xidlist->idmasklist  points a linked list of entries
  * 	each entry containing a id (=0 for app, =a unique value otherwise),
  *      an event mask, and a pointer to an item in the first linked list,
  *	namely, server->idproclist.
  *
- * All linked lists are created and used using XV_SL_* macros.  
+ * All linked lists are created and used using XV_SL_* macros.
  * Important note: There is no explicit head for each list.  The first entry
  * in the list, if one exists, is the head.
- *  
+ *
  */
 
 #ifdef _XV_DEBUG
@@ -7213,7 +7220,7 @@ static Server_atom_type save_atom(Server_info *server, Atom	atom, Server_atom_ty
 {
 	(void) XSaveContext(server->xdisplay, server->atom_mgr[TYPE],
 			 (XContext) atom, (caddr_t) type);
-	return (type); 
+	return (type);
 }
 
 Xv_private void xv_string_to_rgb(char *buffer, unsigned char *red, unsigned char *green, unsigned char *blue)
@@ -7230,14 +7237,14 @@ Xv_private void xv_string_to_rgb(char *buffer, unsigned char *red, unsigned char
 
 static unsigned int string_to_modmask(Server_info *srv, char *str)
 {
-	if (strcmp(str, "Shift") == 0) 
+	if (strcmp(str, "Shift") == 0)
 		return ShiftMask;
-	else if (strcmp(str, "Ctrl") == 0) 
+	else if (strcmp(str, "Ctrl") == 0)
 		return ControlMask;
-	else if (strcmp(str, "Meta") == 0) 
+	else if (strcmp(str, "Meta") == 0)
 		return srv->meta_modmask;
 	else  { /* Punt for now, just return Mod1Mask */
-		/* What really needs to be done here is look up the 
+		/* What really needs to be done here is look up the
 		   modifier mapping from the server and add the new modifier
 		   keys we are now interested in.   			     */
 		server_warning(XV_MSG("Only support Shift, Ctrl and Meta as mouse button modifiers"));
@@ -7249,7 +7256,7 @@ static unsigned int string_to_modmask(Server_info *srv, char *str)
  * This file contains only one exported function:
  *
  *	Xv_private int
- *	server_parse_keystr(server_public, keystr, keysym, code, 
+ *	server_parse_keystr(server_public, keystr, keysym, code,
  *				modifiers, diamond_mask, qual_str)
  *	Xv_server	server_public;
  *	CHAR		*keystr;
@@ -7259,13 +7266,13 @@ static unsigned int string_to_modmask(Server_info *srv, char *str)
  *	unsigned int	diamond_mask;
  *	char		*qual_str;
  *
- * It parses strings that specify key combinations. It was 
+ * It parses strings that specify key combinations. It was
  * introduced for Menu Accelerators, but it should be shared by
  * mouseless as well. It recognizes Xt, OLIT, and XView syntax:
  *	Xt: 		[modifier...] '<keypress>' key
  *	OLIT:		[OLITmodifier...] '<'key'>'
  *	XView:		[modifier ['+' modifier] '+'] key
- *	modifier:	'meta' | 'shift' | 'alt' | 'hyper' | 'ctrl' | 
+ *	modifier:	'meta' | 'shift' | 'alt' | 'hyper' | 'ctrl' |
  *			'mod1' | ... | 'mod5'
  *	OLITmodifier:	modifier | 'm' | 's' | 'a' | 'h' | 'c'
  *	key:		all print characters and keysym names (e.g.
@@ -7300,7 +7307,7 @@ typedef struct {
 } AVState;
 
 typedef enum {
-	modifMeta, modifShift, modifAlt, modifCtrl, modifSuper, modifHyper, 
+	modifMeta, modifShift, modifAlt, modifCtrl, modifSuper, modifHyper,
 	modifLock, modifModeswitch,
 	modifMod1, modifMod2, modifMod3, modifMod4, modifMod5,
 	modifNone
@@ -7331,7 +7338,7 @@ AVKeyword keywordTbl[] = {
 { XV_PROC_CODE("Hyper"), modifHyper },
 { XV_PROC_CODE("Lock"), modifLock },
 { XV_PROC_CODE("ModeSwitch"), modifModeswitch },
-{ XV_PROC_CODE("Mod1"), modifMod1 }, 
+{ XV_PROC_CODE("Mod1"), modifMod1 },
 { XV_PROC_CODE("Mod2"), modifMod2 },
 { XV_PROC_CODE("Mod3"), modifMod3 },
 { XV_PROC_CODE("Mod4"), modifMod4 },
@@ -7513,7 +7520,7 @@ static void avGetOLITAcceleratorValue(AcceleratorValue	*avp, CHAR *pos)
 			pos += 1 + STRSPN( pos+1, XV_PROC_CODE(" \t") );
 		if( *pos )
 		avp->error = 1;
-	} 
+	}
 	return;
 	}
 
@@ -7570,7 +7577,7 @@ static void avAddModif(AcceleratorValue 	*avp, AVModif			modif)
 	if( modif == modifNone )
 	avp->none = 1;
 	else {
-	avp->some = 1; 
+	avp->some = 1;
 		switch( modif ) {
 	case modifMeta:	avp->meta = 1;	break;
 	case modifShift:avp->shift = 1;	break;
@@ -7628,9 +7635,9 @@ static CHAR *avAddKey(AcceleratorValue	*avp, CHAR			*pos)
 /*
  * Parses 'keystr' and fills in:
  *	keysym		- keysym of key combination
- *	code		- keycode of key 
+ *	code		- keycode of key
  *	modifiers	- e.g. ShiftMask | ControlMask
- *	qual_str	- same as modifiers, but in string form. 
+ *	qual_str	- same as modifiers, but in string form.
  *			  If any mask in modifiers is the same as
  *			  diamond_mask, it is skipped. e.g.
  *			  For diamond_mask = Meta, the mask
@@ -7657,7 +7664,7 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 	}
 
 	/*
-	 * Get server private data and display connection handle 
+	 * Get server private data and display connection handle
 	 */
 	server = SERVER_PRIVATE(server_public);
 	dpy = server->xdisplay;
@@ -7691,8 +7698,8 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 	 *  Shift+a, Shift+A, A
 	 *  Shift+plus, Shift+equals, plus
 	 *
-	 * It is not recommended to use ShiftMask, but we try to be 
-	 * compatible with strings that have shift and (un)shifted 
+	 * It is not recommended to use ShiftMask, but we try to be
+	 * compatible with strings that have shift and (un)shifted
 	 * keysyms in them.
 	 *
 	 * Basically:
@@ -7703,10 +7710,10 @@ Xv_private int server_parse_keystr(Xv_server server_public, CHAR *keystr, KeySym
 	 */
 
 	/*
-	 * Check if keysym is shifted. This is done by checking if the 
-	 * returned keysym is in entry # 1 in the keysym list for the 
+	 * Check if keysym is shifted. This is done by checking if the
+	 * returned keysym is in entry # 1 in the keysym list for the
 	 * keycode.
-	 * So, first we get the keycode using XKeysymToKeycode(), then we 
+	 * So, first we get the keycode using XKeysymToKeycode(), then we
 	 * check using XKeycodeToKeysym().
 	 */
 	keycode = *code = XKeysymToKeycode(dpy, av.keysym);
