@@ -1,12 +1,12 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.8 2026/08/06 08:46:08 dra Exp $";
+static char     sccsid[] = "@(#)xv_olgx.c 1.34 93/06/28 DRA: RCS $Id: xv_olgx.c,v 2.9 2026/10/13 17:09:44 dra Exp $";
 #endif
 #endif
 
 /*
- *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
- *	pending in the U.S. and foreign countries. See LEGAL_NOTICE 
+ *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
+ *	pending in the U.S. and foreign countries. See LEGAL_NOTICE
  *	file for terms of the license.
  */
 
@@ -37,15 +37,19 @@ typedef struct ginfo_list_struct {
     struct ginfo_list_struct  *next;
 } Ginfo_list;
 
+static Attr_attribute xv_olgx_key = 0;
 
 Xv_private Cms xv_set_control_cms(Xv_Window window_public,
 							Xv_Drawable_info *info, int cms_status)
 {
 	Cms cms;
 	char cms_name[25];
-	Xv_singlecolor *cms_colors;
 	Xv_singlecolor color;
 	Visual *visual;
+	Cms wcms = xv_cms(info);
+	int size = (int)xv_get(wcms, CMS_SIZE);
+
+	if (xv_olgx_key == 0) xv_olgx_key = xv_unique_key();
 
 	/* Copy the foreground color from the current CMS to the new
 	 * Control CMS.
@@ -54,14 +58,23 @@ Xv_private Cms xv_set_control_cms(Xv_Window window_public,
 		color.red = color.green = color.blue = 0;
 	}
 	else {
-		cms_colors = (Xv_singlecolor *) xv_malloc(sizeof(Xv_singlecolor) *
-											xv_get(xv_cms(info), CMS_SIZE));
-		(void)xv_get(xv_cms(info), CMS_COLORS, cms_colors);
+		Xv_singlecolor *cms_colors;
+
+		cms_colors = (Xv_singlecolor *)xv_get(wcms,
+											XV_KEY_DATA, xv_olgx_key);
+		if (! cms_colors) {
+			cms_colors = (Xv_singlecolor *)xv_malloc(sizeof(Xv_singlecolor) *
+											size);
+
+			SERVERTRACE((100, "%s(%ld, screen=%ld)\n",__FUNCTION__,
+							window_public,xv_screen(info)));
+			(void)xv_get(wcms, CMS_COLORS, cms_colors);
+			xv_set(wcms, XV_KEY_DATA, xv_olgx_key, cms_colors, NULL);
+		}
 		/* ... stores result in cms_colors */
 		color.red = cms_colors[1].red;
 		color.green = cms_colors[1].green;
 		color.blue = cms_colors[1].blue;
-		free(cms_colors);
 	}
 	visual = (Visual *) xv_get(window_public, XV_VISUAL, NULL);
 	CMS_CONTROL_CMS_NAME(cms_name, (unsigned long)visual, color);
@@ -85,7 +98,6 @@ Xv_private Cms xv_set_control_cms(Xv_Window window_public,
 Xv_public Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 									Xv_Font text_font)
 {
-	static Attr_attribute screen_ginfo = 0;
 	Cms cms;
 	unsigned long cms_size;
 	int cms_status = 0;
@@ -106,7 +118,7 @@ Xv_public Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 
 	int three_d_state;
 
-	if (screen_ginfo == 0) screen_ginfo = xv_unique_key();
+	if (xv_olgx_key == 0) xv_olgx_key = xv_unique_key();
 
 	/*
 	 * Initialize the OPEN LOOK Graphics Library
@@ -187,7 +199,7 @@ Xv_public Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	glyph_font_struct = (XFontStruct *) xv_get(glyph_font, FONT_INFO);
 
 	screen = xv_screen(info);
-	first = (Ginfo_list *) xv_get(screen, XV_KEY_DATA, screen_ginfo);
+	first = (Ginfo_list *) xv_get(screen, XV_KEY_DATA, xv_olgx_key);
 	last = first;
 	match = 0;
 	for (ginfo_list = first; ginfo_list; ginfo_list = ginfo_list->next) {
@@ -198,7 +210,7 @@ Xv_public Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 					ginfo_list->ginfo->glyphfont == glyph_font_struct) {
 					match = 1;
 				}
-			} 
+			}
 			else {
 				/* single byte: compare the XView-handles of both fonts */
 				if (ginfo_list->glyph_font == glyph_font &&
@@ -225,7 +237,7 @@ Xv_public Graphics_info * xv_init_olgx(Xv_Window win, int *three_d,
 	if (last)
 		last->next = ginfo_list;
 	else
-		xv_set(screen, XV_KEY_DATA, screen_ginfo, ginfo_list, NULL);
+		xv_set(screen, XV_KEY_DATA, xv_olgx_key, ginfo_list, NULL);
 
 	display = xv_display(info);
 	screen_number = (int)xv_get(screen, SCREEN_NUMBER);
