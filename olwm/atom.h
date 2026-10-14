@@ -1,7 +1,7 @@
 #ifndef _OLWM_ATOM_H
 #define _OLWM_ATOM_H
 
-/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.18 2026/10/03 06:15:11 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: atom.h,v 2.19 2026/10/13 09:10:09 dra Exp $ */
 enum atom_index_t {
 	OL_AtomColorMapWindows,
 	OL_AtomWMState,
@@ -90,6 +90,7 @@ enum atom_index_t {
 	OL_AtomSunDragDropDSDM,
 	OL_AtomSunDragDropSiteRects,
 	OL_AtomTopLevels,
+	OL_AtomXdndAware,
 	_NET_WM_WINDOW_TYPE,
 	_NET_WM_WINDOW_TYPE_UTILITY,
 	_NET_WM_STATE,
@@ -194,6 +195,7 @@ extern Atom atoms[];
 #define AtomSunDragDropDSDM atoms[OL_AtomSunDragDropDSDM]
 #define AtomSunDragDropSiteRects atoms[OL_AtomSunDragDropSiteRects]
 #define AtomTopLevels atoms[OL_AtomTopLevels]
+#define AtomDisguiseXdndAware atoms[OL_AtomXdndAware]
 #define Atom_NET_WM_WINDOW_TYPE atoms[_NET_WM_WINDOW_TYPE]
 #define Atom_NET_WM_WINDOW_TYPE_UTILITY atoms[_NET_WM_WINDOW_TYPE_UTILITY]
 #define Atom_NET_WM_STATE atoms[_NET_WM_STATE]
