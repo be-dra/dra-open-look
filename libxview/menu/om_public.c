@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.12 2026/10/06 21:22:33 dra Exp $";
+static char     sccsid[] = "@(#)om_public.c 20.146 93/06/28 DRA: $Id: om_public.c,v 4.14 2026/10/13 16:43:25 dra Exp $";
 #endif
 #endif
 
@@ -334,8 +334,10 @@ Pkg_private void menu_done(Xv_menu_info *m)
 	 * Call the generate and notify procedures.
 	 * Should handle special case of selection = 0.
 	 */
-	/* Sync the server */
-/* UNUSED_SYNC? 	XSync(display, False); */
+	/* Sync the server - when we don't call XSync here, the menu will be
+	 * displayed (with invoked menu item) as long as the callback runs....
+	 */
+	XSync(display, False);
 	m->group_info->notify_proc = m->notify_proc;
 	if (!m->group_info->notify_proc)
 		m->group_info->notify_proc = MENU_DEFAULT_NOTIFY_PROC;
