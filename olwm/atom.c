@@ -1,5 +1,5 @@
 /* #ident	"@(#)atom.c	26.24	93/06/28 SMI" */
-char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.18 2026/09/18 07:26:46 dra Exp $";
+char atom_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: atom.c,v 2.19 2026/10/13 09:10:09 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -166,6 +166,7 @@ void InitAtoms(Display *dpy)
 		"_SUN_DRAGDROP_DSDM",
 		"_SUN_DRAGDROP_SITE_RECTS",
 		"_DRA_TOP_LEVEL_WINDOWS",
+		"_DRA_DRAGDROP_XDND_AWARE",
 		"_NET_WM_WINDOW_TYPE",
 		"_NET_WM_WINDOW_TYPE_UTILITY",
 		"_NET_WM_STATE",
