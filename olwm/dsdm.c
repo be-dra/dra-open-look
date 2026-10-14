@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.8 2026/09/19 11:30:02 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.9 2026/10/13 09:10:09 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -383,7 +383,7 @@ static void ProcessInterestProperty(Display *dpy, WinGeneric *winInfo,
  * information.  Add the top-level window's site information and the site 
  * forwarding information to the site database.
  */
-static void FindDropSites(Display *dpy)
+static void FindDropSites(Display *dpy, int client_understands_xdnd)
 {
 	Window junk, root, *children;
 	int s, i, nchildren;
@@ -491,40 +491,42 @@ static void FindDropSites(Display *dpy)
 
 				SubtractWindowFromVisibleRegion(dpy, winInfo, visrgn);
 			}
-			if (client->flags & OL_use_dndaware) {
-				if (winInfo->core.kind == WIN_FRAME) {
-					paneInfo = (WinPane *) PANEOFCLIENT(client);
+			if (client_understands_xdnd) {
+				if (client->flags & OL_use_dndaware) {
+					if (winInfo->core.kind == WIN_FRAME) {
+						paneInfo = (WinPane *) PANEOFCLIENT(client);
 
-					if (paneInfo) {
-						/* how does such a property look like if it should
-						 * represent the whole top window ?
-						 */
-						long pseudositedata[] = {
-							DND_VERSION,
-							1,
-							paneInfo->core.self,  /* window */
-							123456,   /* site_id */
-							xv_DND_XDND_AWARE |xv_DND_ENTERLEAVE |xv_DND_MOTION,
-							xv_DND_RECT_SITE,
-							1,   /* num rects */
-							0,  /* x */
-							0,  /* y */
-							paneInfo->core.width,
-							paneInfo->core.height
-						};
-						int dl= sizeof(pseudositedata)/sizeof(long);
+						if (paneInfo) {
+							/* how does such a property look like if it should
+							 * represent the whole top window ?
+							 */
+							long pseudositedata[] = {
+								DND_VERSION,
+								1,
+								paneInfo->core.self,  /* window */
+								123456,   /* site_id */
+								xv_DND_XDND_AWARE |xv_DND_ENTERLEAVE |xv_DND_MOTION,
+								xv_DND_RECT_SITE,
+								1,   /* num rects */
+								0,  /* x */
+								0,  /* y */
+								paneInfo->core.width,
+								paneInfo->core.height
+							};
+							int dl= sizeof(pseudositedata)/sizeof(long);
 
-						framergn = GetWindowRegion(dpy, winInfo, True);
-						XIntersectRegion(framergn, visrgn, framergn);
-						toprgn = GetWindowRegion(dpy, (WinGeneric *)paneInfo,False);
-						XOffsetRegion(toprgn, xoff, yoff);
-						XSubtractRegion(framergn, toprgn, framergn);
-						ProcessInterestProperty(dpy, winInfo,s, pseudositedata,
-								dl, framergn,
-								paneInfo->core.x + winInfo->core.x,
-								paneInfo->core.y + winInfo->core.y);
-						XDestroyRegion(framergn);
-						XDestroyRegion(toprgn);
+							framergn = GetWindowRegion(dpy, winInfo, True);
+							XIntersectRegion(framergn, visrgn, framergn);
+							toprgn = GetWindowRegion(dpy, (WinGeneric *)paneInfo,False);
+							XOffsetRegion(toprgn, xoff, yoff);
+							XSubtractRegion(framergn, toprgn, framergn);
+							ProcessInterestProperty(dpy, winInfo,s, pseudositedata,
+									dl, framergn,
+									paneInfo->core.x + winInfo->core.x,
+									paneInfo->core.y + winInfo->core.y);
+							XDestroyRegion(framergn);
+							XDestroyRegion(toprgn);
+						}
 					}
 				}
 			}
@@ -629,7 +631,8 @@ static void WriteSiteRectList(Display *dpy, Window win, Atom prop)
  *
  * Do the actual work to convert a single DSDM target.
  */
-static Bool convertTarget(Display *dpy, Window requestor, Atom target, Atom property)
+static Bool convertTarget(Display *dpy, Window requestor, Atom target,
+					Atom property, int *client_understands_xdnd)
 {
     unsigned long data[100];	/* long enough for most return values */
     unsigned char *propdata = (unsigned char *) data;
@@ -643,6 +646,7 @@ static Bool convertTarget(Display *dpy, Window requestor, Atom target, Atom prop
 		data[nelements++] = AtomSunDragDropSiteRects;
 		data[nelements++] = AtomUser;
 		data[nelements++] = AtomTopLevels;
+		data[nelements++] = AtomDisguiseXdndAware;
 		type = XA_ATOM;
 		format = 32;
 	}
@@ -681,8 +685,29 @@ static Bool convertTarget(Display *dpy, Window requestor, Atom target, Atom prop
 		}
 		else return False;
 	}
+	else if (target == AtomDisguiseXdndAware) {
+		/* we are able (and willing) to "disguise" XdndAware windows
+		 * a if they had registered real drop sites. However, if we
+		 * send those pseudo drop sites to clients that are not aware of
+		 * that feature, that client might not work as expected.
+		 *
+		 * So, in order to send pseudo drop sites **only** to clients that
+		 * are able to handle them correctly, we expect such clients to
+		 * perform a MULTIPLE request for "_DRA_DRAGDROP_XDND_AWARE", 
+		 * and "_SUN_DRAGDROP_SITE_RECTS" (MULTIPLE to avoid race conditions)
+		 */
+		if (client_understands_xdnd) {
+			*client_understands_xdnd = 1;
+			data[0] = 1;
+			nelements = 1;
+			type = XA_INTEGER;
+			format = 32;
+		}
+		else return False;
+	}
 	else if (target == AtomSunDragDropSiteRects) {
-		FindDropSites(dpy);
+		FindDropSites(dpy,
+					client_understands_xdnd ? *client_understands_xdnd : 0);
 		WriteSiteRectList(dpy, requestor, property);
 		FreeDropSites();
 		return True;
@@ -741,6 +766,8 @@ static void handleDSDMrequest(XEvent *event)
 	if (selectionOwned) {
 		if (request->target == AtomMultiple) {
 			if (request->property != None) {
+				int client_understands_xdnd = 0;
+
 				pairs = GetWindowProperty(request->display, request->requestor,
 						request->property, 0L, 100000L,
 						AtomAtomPair, 32, &nitems, &remain);
@@ -757,7 +784,8 @@ static void handleDSDMrequest(XEvent *event)
 
 						if (!convertTarget(request->display,
 										request->requestor, pairs[i],
-										pairs[i + 1])) {
+										pairs[i + 1],
+										&client_understands_xdnd)) {
 							pairs[i + 1] = None;
 							writeback = True;
 						}
@@ -780,7 +808,7 @@ static void handleDSDMrequest(XEvent *event)
 
 			dra_olwm_trace(300, "rcv selection request for %ld\n", request->target);
 			if (convertTarget(request->display, request->requestor,
-							request->target, request->property)) {
+							request->target, request->property, NULL)) {
 				reply.property = request->property;
 			}
 		}
