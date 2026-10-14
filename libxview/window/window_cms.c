@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_cms.c 20.57 93/06/28 DRA: $Id: window_cms.c,v 4.2 2026/07/19 13:49:18 dra Exp $";
+static char     sccsid[] = "@(#)window_cms.c 20.57 93/06/28 DRA: $Id: window_cms.c,v 4.3 2026/10/13 14:40:57 dra Exp $";
 #endif
 #endif
 
@@ -113,14 +113,16 @@ with a static visual"), ERROR_PKG, WINDOW,
 					CMS_TYPE, cms_data->type,
 					CMS_SIZE, cms_data->size,
 					CMS_INDEX, cms_data->index,
-					CMS_COLOR_COUNT,
-					cms_data->rgb_count, CMS_COLORS, cms_colors, NULL);
+					CMS_COLOR_COUNT, cms_data->rgb_count,
+					CMS_COLORS, cms_colors,
+					NULL);
 		}
 		else {
 			xv_set(cms,
 					CMS_INDEX, cms_data->index,
 					CMS_COLOR_COUNT, cms_data->rgb_count,
-					CMS_COLORS, cms_colors, NULL);
+					CMS_COLORS, cms_colors,
+					NULL);
 		}
 	}
 	else {
@@ -128,7 +130,8 @@ with a static visual"), ERROR_PKG, WINDOW,
 		xv_set(cms,
 				CMS_INDEX, cms_data->index,
 				CMS_COLOR_COUNT, cms_data->rgb_count,
-				CMS_COLORS, cms_colors, NULL);
+				CMS_COLORS, cms_colors,
+				NULL);
 	}
 
 	xv_free(cms_colors);
@@ -142,105 +145,105 @@ with a static visual"), ERROR_PKG, WINDOW,
 	}
 }
 
-Pkg_private void window_set_cms(Xv_Window win_public, Cms cms, int cms_bg, int cms_fg)
+Pkg_private void window_set_cms(Xv_Window win_public, Cms cms, int cms_bg,
+						int cms_fg)
 {
-    Window_info    		*win = WIN_PRIVATE(win_public);
-    Xv_Drawable_info 		*info;
-    XSetWindowAttributes 	attrs;
-    Colormap			old_cmap, new_cmap;
-    unsigned long 	        new_fg, new_bg, old_fg, old_bg, val_mask = 0;
+	Window_info *win = WIN_PRIVATE(win_public);
+	Xv_Drawable_info *info;
+	XSetWindowAttributes attrs;
+	Colormap old_cmap, new_cmap;
+	unsigned long new_fg, new_bg, old_fg, old_bg, val_mask = 0;
 
-    if ( !cms )
-      return;
-    
-    /* This hack is here so that Guide 1.1 can still work on monochrome */
-    DRAWABLE_INFO_MACRO(win_public, info);
-    if ((xv_depth(info) < 2) && ((int)xv_get(cms, CMS_SIZE) > 2))
-      return;
+	if (!cms)
+		return;
 
-    if (XVisualIDFromVisual((Visual *)xv_get(win_public, XV_VISUAL)) != 
-	XVisualIDFromVisual((Visual *)xv_get(cms, XV_VISUAL))) {
-	    xv_error(XV_NULL, 
-		     ERROR_STRING,
-		     XV_MSG("Can not set a CMS on a window that was created with a different visual"),
-		     ERROR_PKG, WINDOW,
-		     NULL);
-	    return;
-    }
-    
-    old_fg = xv_fg(info);
-    new_fg = (unsigned long)xv_get(cms, CMS_PIXEL, cms_fg, 0);
-    old_bg = xv_bg(info);
-    new_bg = (unsigned long)xv_get(cms, CMS_PIXEL, cms_bg, 0);
-    old_cmap = (Colormap)xv_get(xv_cms(info), XV_XID);
-    new_cmap = (Colormap)xv_get(cms, XV_XID);
-    
-    xv_cms(info) = cms;
-    
-    if (old_cmap != new_cmap){
-            window_set_cmap_property(win_public);
-	    attrs.colormap = new_cmap;
-	    val_mask |= CWColormap;
-    }
+	/* This hack is here so that Guide 1.1 can still work on monochrome */
+	DRAWABLE_INFO_MACRO(win_public, info);
+	if ((xv_depth(info) < 2) && ((int)xv_get(cms, CMS_SIZE) > 2))
+		return;
 
-    xv_cms_fg(info) = cms_fg;
-    if (old_fg != new_fg) {
-	    attrs.border_pixel = xv_fg(info) = new_fg;
-	    val_mask |= CWBorderPixel;
-    }
-    xv_cms_bg(info) = cms_bg;
-    if (old_bg != new_bg) {
-	xv_bg(info) = new_bg;
-	/* Transparent windows have no background color */
-	if (!win->transparent) {
-	    attrs.background_pixel = new_bg;
-	    val_mask |= CWBackPixel;
+	if (XVisualIDFromVisual((Visual *) xv_get(win_public, XV_VISUAL)) !=
+			XVisualIDFromVisual((Visual *) xv_get(cms, XV_VISUAL))) {
+		xv_error(XV_NULL,
+				ERROR_STRING, XV_MSG("Can not set a CMS on a window that was created with a different visual"),
+				ERROR_PKG, WINDOW,
+				NULL);
+		return;
 	}
-    }
-    if (val_mask) {
-	XChangeWindowAttributes(xv_display(info), xv_xid(info),
+
+	old_fg = xv_fg(info);
+	new_fg = (unsigned long)xv_get(cms, CMS_PIXEL, cms_fg, 0);
+	old_bg = xv_bg(info);
+	new_bg = (unsigned long)xv_get(cms, CMS_PIXEL, cms_bg, 0);
+	old_cmap = (Colormap) xv_get(xv_cms(info), XV_XID);
+	new_cmap = (Colormap) xv_get(cms, XV_XID);
+
+	xv_cms(info) = cms;
+
+	if (old_cmap != new_cmap) {
+		window_set_cmap_property(win_public);
+		attrs.colormap = new_cmap;
+		val_mask |= CWColormap;
+	}
+
+	xv_cms_fg(info) = cms_fg;
+	if (old_fg != new_fg) {
+		attrs.border_pixel = xv_fg(info) = new_fg;
+		val_mask |= CWBorderPixel;
+	}
+	xv_cms_bg(info) = cms_bg;
+	if (old_bg != new_bg) {
+		xv_bg(info) = new_bg;
+		/* Transparent windows have no background color */
+		if (!win->transparent) {
+			attrs.background_pixel = new_bg;
+			val_mask |= CWBackPixel;
+		}
+	}
+	if (val_mask) {
+		XChangeWindowAttributes(xv_display(info), xv_xid(info),
 				val_mask, &attrs);
-	if (val_mask & CWBackPixel) {
-	    XClearWindow(xv_display(info), xv_xid(info));
+		if (val_mask & CWBackPixel) {
+			XClearWindow(xv_display(info), xv_xid(info));
+		}
 	}
-    }
 
-    /*
-     * The colormap segment change is posted to the passed object. 
-     * The assumption is that the object understands how to propagate the 
-     * change in its environment. An example might be an object like canvas 
-     * that has multiple windows. 
-     */
-    if (win->created) {
-        xv_set(win_public, WIN_CMS_CHANGE, NULL);
-    }
+	/*
+	 * The colormap segment change is posted to the passed object. 
+	 * The assumption is that the object understands how to propagate the 
+	 * change in its environment. An example might be an object like canvas 
+	 * that has multiple windows. 
+	 */
+	if (win->created) {
+		xv_set(win_public, WIN_CMS_CHANGE, NULL);
+	}
 }
 
 Pkg_private void window_set_cmap_property(Xv_Window win_public)
 {
-    Colormap cmap, default_cmap;
-    Xv_Drawable_info *info, *frame_info;
-    Frame frame_public;
-    Atom atom;
+	Colormap cmap, default_cmap;
+	Xv_Drawable_info *info, *frame_info;
 
-    DRAWABLE_INFO_MACRO(win_public, info);
-    cmap = (Colormap)xv_get(xv_cms(info), XV_XID, 0);
-    default_cmap = DefaultColormap(xv_display(info), 
-				   (int)xv_get(xv_screen(info), SCREEN_NUMBER));
+	DRAWABLE_INFO_MACRO(win_public, info);
+	cmap = (Colormap) xv_get(xv_cms(info), XV_XID, 0);
+	default_cmap = DefaultColormap(xv_display(info),
+			(int)xv_get(xv_screen(info), SCREEN_NUMBER));
 
-    /* 
-     * Tell window manager to install colormap if we aren't using the default.
-     * We don't want to set it on the frame, because they are handled by the
-     * window manager automatically.
-     */
-    if ((cmap != default_cmap) &&
-	!(int)xv_get(win_public, XV_IS_SUBTYPE_OF, FRAME_CLASS, 0)) {
-	frame_public = (Frame)xv_get(win_public, WIN_FRAME);
-        DRAWABLE_INFO_MACRO(frame_public, frame_info);
-	
-	atom = (Atom)xv_get(xv_server(info), SERVER_ATOM,
-			    "WM_COLORMAP_WINDOWS");
-	XChangeProperty(xv_display(info), xv_xid(frame_info), atom, XA_WINDOW,
-			32, PropModeAppend, (unsigned char *)&xv_xid(info), 1);
-    }
+	/* 
+	 * Tell window manager to install colormap if we aren't using the default.
+	 * We don't want to set it on the frame, because they are handled by the
+	 * window manager automatically.
+	 */
+	if ((cmap != default_cmap) &&
+			!(int)xv_get(win_public, XV_IS_SUBTYPE_OF, FRAME_CLASS, 0)) {
+		Atom atom;
+		Frame frame_public;
+
+		frame_public = (Frame) xv_get(win_public, WIN_FRAME);
+		DRAWABLE_INFO_MACRO(frame_public, frame_info);
+
+		atom = xv_get(xv_server(info), SERVER_ATOM, "WM_COLORMAP_WINDOWS");
+		XChangeProperty(xv_display(info), xv_xid(frame_info), atom, XA_WINDOW,
+				32, PropModeAppend, (unsigned char *)&xv_xid(info), 1);
+	}
 }
