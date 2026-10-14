@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.6 2026/07/21 06:49:07 dra Exp $ ";
+static char     sccsid[] = "@(#)svrim_pblc.c 20.63 93/06/28 DRA: RCS $Id: svrim_pblc.c,v 2.7 2026/10/13 21:18:28 dra Exp $ ";
 #endif
 #endif
 
@@ -149,204 +149,221 @@ static int server_image_create_internal(Xv_opaque parent,
 static Xv_opaque server_image_set_internal(Server_image srvim_public,
 										Attr_attribute *avlist)
 {
+	Attr_attribute *attrs;
+	Server_image_info *server_image = SERVER_IMAGE_PRIVATE(srvim_public);
+	Xv_Screen screen = server_image->screen;
+	short new_pixmap = FALSE, new_bits = FALSE;
+	short new_x_bits = FALSE;
+	Xv_Drawable_info *info;
+	Pixrect *rpr = &(((Xv_server_image *) srvim_public)->pixrect);
+	int width_set = -1, height_set = -1, depth_set = -1;
 
-    Attr_attribute	    *attrs;
-    Server_image_info 	    *server_image = 
-				SERVER_IMAGE_PRIVATE(srvim_public);
-    Xv_Screen       	    screen = server_image->screen;
-    short		    new_pixmap = FALSE, new_bits = FALSE;
-    short		    new_x_bits = FALSE;
-    Xv_Drawable_info 	    *info;
-    Pixrect 		    *rpr = 
-			&(((Xv_server_image *) srvim_public)->pixrect);
+	DRAWABLE_INFO_MACRO(srvim_public, info);
 
-    DRAWABLE_INFO_MACRO(srvim_public, info);
+	/* Pixmap id of 0 implies that the pixmap is yet to be created. */
+	new_pixmap = (xv_xid(info) == 0) ? TRUE : FALSE;
 
-    /* Pixmap id of 0 implies that the pixmap is yet to be created. */
-    new_pixmap  = (xv_xid(info) == 0) ? TRUE : FALSE;
+	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
+		switch (attrs[0]) {
+			case XV_WIDTH:
+				if (((int)attrs[1] != 0) && (rpr->pr_size.x != (int)attrs[1])) {
+					rpr->pr_size.x = (int)attrs[1];
+					new_pixmap = TRUE;
+				}
+				width_set = (int)attrs[1];
+				break;
 
-    for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
-	switch (attrs[0]) {
-	  case XV_WIDTH:
-	    if (((int) attrs[1] != 0) && 
-		    (rpr->pr_size.x != (int) attrs[1])) {
-		rpr->pr_size.x = (int) attrs[1];
-		new_pixmap = TRUE;
-	    }
-	    break;
+			case XV_HEIGHT:
+				if (((int)attrs[1] != 0) && (rpr->pr_size.y != (int)attrs[1])) {
+					rpr->pr_size.y = (int)attrs[1];
+					new_pixmap = TRUE;
+				}
+				height_set = (int)attrs[1];
+				break;
 
-	  case XV_HEIGHT:
-	    if (((int) attrs[1] != 0) &&
-		    (rpr->pr_size.y != (int) attrs[1])) {
-		rpr->pr_size.y = (int) attrs[1];
-		new_pixmap = TRUE;
-	    }
-	    break;
+			case SERVER_IMAGE_DEPTH:
+				if (rpr->pr_depth != (int)attrs[1]) {
+					rpr->pr_depth = (int)attrs[1];
+					new_pixmap = TRUE;
+				}
+				depth_set = (int)attrs[1];
+				break;
 
-	  case SERVER_IMAGE_SAVE_PIXMAP:
-	      server_image->save_pixmap = (int)attrs[1];
-	      break;
+			case SERVER_IMAGE_SAVE_PIXMAP:
+				server_image->save_pixmap = (int)attrs[1];
+				break;
 
-	  case SERVER_IMAGE_PIXMAP: {
-		Display		*display;
-	      	unsigned int	width, height, depth, border_width;
-	      	int		x, y;
-	      	Window		root;
+			case SERVER_IMAGE_PIXMAP:
+				{
+					Display *display;
+					unsigned int width, height, depth, border_width;
+					int x, y;
+					Window root;
 
-		if (xv_xid(info) != (Drawable)attrs[1]) {
-	      	    display = (Display *) 
-			    	xv_get(xv_get(screen, SCREEN_SERVER), XV_DISPLAY);
+					if (xv_xid(info) != (Drawable) attrs[1]) {
+						display = (Display *)
+								xv_get(xv_get(screen, SCREEN_SERVER),
+								XV_DISPLAY);
 
-	      	    if (XGetGeometry(display, (Drawable)attrs[1], &root, &x, &y,
-			&width, &height, &border_width, &depth) == 0) { 
-		        xv_error(XV_NULL,
-		      	    ERROR_STRING,
-		      	        XV_MSG("SERVER_IMAGE_PIXMAP: Unable to get geometry"),
-		      	    ERROR_PKG, SERVER_IMAGE,
-		      	    NULL);
-		  	    return ((Xv_opaque) XV_ERROR);
-	      	    }
+						/* we try to avoid the roundtrip XGetGeometry:
+						 * if XV_WIDTH, XV_HEIGHT, SERVER_IMAGE_DEPTH have
+						 * just been set (withing THIS xv_set), we will
+						 * believe it.
+						 */
+						if (width_set > 0 && height_set > 0 && depth_set > 0) {
+							width = width_set;
+							height = height_set;
+							depth = depth_set;
+						}
+						else {
+							if (XGetGeometry(display, (Drawable)attrs[1], &root,
+										&x, &y, &width, &height, &border_width,
+										&depth) == 0) {
+								xv_error(XV_NULL, ERROR_STRING,
+									XV_MSG("SERVER_IMAGE_PIXMAP: Unable to get geometry"),
+									ERROR_PKG, SERVER_IMAGE,
+									NULL);
+								return ((Xv_opaque) XV_ERROR);
+							}
+						}
 
-	      	    if (!server_image->save_pixmap && xv_xid(info)) {
-		        XFreePixmap(display, xv_xid(info));
-		    }
+						if (!server_image->save_pixmap && xv_xid(info)) {
+							XFreePixmap(display, xv_xid(info));
+						}
 
-		    rpr->pr_depth = depth;
-		    rpr->pr_width = width;
-		    rpr->pr_height = height;
+						rpr->pr_depth = depth;
+						rpr->pr_width = width;
+						rpr->pr_height = height;
 
-		    xv_xid(info) = (Drawable)attrs[1];
-		    xv_visual(info) = (Screen_visual *)xv_get(screen,
-		        SCREEN_IMAGE_VISUAL, xv_xid(info), rpr->pr_depth);
-		    xv_plane_mask(info) = ~0;
-		    xv_is_bitmap(info) = (depth == 1) ? 1 : 0;
+						xv_xid(info) = (Drawable) attrs[1];
+						xv_visual(info) = (Screen_visual *) xv_get(screen,
+								SCREEN_IMAGE_VISUAL, xv_xid(info),
+								rpr->pr_depth);
+						xv_plane_mask(info) = ~0;
+						xv_is_bitmap(info) = (depth == 1) ? 1 : 0;
+					}
+
+					new_pixmap = FALSE;
+					break;
+				}
+
+			case SERVER_IMAGE_BITS:
+				if ((char *)attrs[1] != NULL) {
+					rpr->pr_data = (char *)attrs[1];
+					new_bits = TRUE;
+				}
+				break;
+
+			case SERVER_IMAGE_X_BITS:
+				if ((char *)attrs[1] != NULL) {
+					rpr->pr_data = (char *)attrs[1];
+					new_x_bits = TRUE;
+				}
+				break;
+
+			case SERVER_IMAGE_COLORMAP:{
+					info->cms = (Cms) xv_find(screen, CMS,
+							XV_AUTO_CREATE, FALSE,
+							CMS_NAME, (char *)attrs[1], NULL);
+					if (info->cms == XV_NULL) {
+						char error[60];
+
+						sprintf(error,
+								XV_MSG("Colormap segment %s not found"),
+								(char *)attrs[1]);
+						xv_error(XV_NULL,
+								ERROR_STRING, error,
+								ERROR_PKG, SERVER_IMAGE, NULL);
+						info->cms = (Cms) xv_get(screen, SCREEN_DEFAULT_CMS);
+					}
+					info->bg =
+							(unsigned long)xv_get(info->cms,
+							CMS_BACKGROUND_PIXEL);
+					info->fg =
+							(unsigned long)xv_get(info->cms,
+							CMS_FOREGROUND_PIXEL);
+					break;
+				}
+
+			case SERVER_IMAGE_CMS:
+				if (attrs[1])
+					info->cms = (Cms) attrs[1];
+				break;
+
+			default:
+				(void)xv_check_bad_attr(SERVER_IMAGE, attrs[0]);
+				break;
+		}
+	}
+
+	/*
+	 * A Pixmap is created under 2 conditions:
+	 *   1. A pixmap is yet to be created for this server image.
+	 *   2. The dimensions/depth of this pixmap has changed. Destroy the 
+	 *      current pixamp and allocate a new pixmap.
+	 */
+	if (new_pixmap == TRUE) {
+		Display *display;
+
+		display = (Display *) xv_get(xv_get(screen, SCREEN_SERVER), XV_DISPLAY);
+
+		if (!server_image->save_pixmap && xv_xid(info)) {
+			XFreePixmap(display, xv_xid(info));
 		}
 
-		new_pixmap = FALSE;
-		break;
-	  }
-
-	  case SERVER_IMAGE_DEPTH:
-	    if (rpr->pr_depth != (int) attrs[1]) {
-		rpr->pr_depth = (int) attrs[1];
-		new_pixmap = TRUE;
-	    }
-	    break;
-
-	  case SERVER_IMAGE_BITS:
-	    if ((char *)attrs[1] != NULL) {
-	        rpr->pr_data = (char *) attrs[1];
-	        new_bits = TRUE;
-	    }
-	    break;
-
-	  case SERVER_IMAGE_X_BITS:
-	    if ((char *)attrs[1] != NULL) {
-	        rpr->pr_data = (char *) attrs[1];
-	        new_x_bits = TRUE;
-	    }
-	    break;
-
-	  case SERVER_IMAGE_COLORMAP:{
-		info->cms = (Cms) xv_find(screen, CMS, 
-					  XV_AUTO_CREATE, FALSE,
-					  CMS_NAME, (char *) attrs[1], 
-					  NULL);
-		if (info->cms == XV_NULL) {
-		    char            error[60];
-		    sprintf(error, 
-			XV_MSG("Colormap segment %s not found"), 
-			(char *) attrs[1]);
-		    xv_error(XV_NULL,
-			     ERROR_STRING, error,
-			     ERROR_PKG, SERVER_IMAGE,
-			     NULL);
-		    info->cms = (Cms) xv_get(screen, SCREEN_DEFAULT_CMS);
+		if (!(xv_xid(info) =
+						XCreatePixmap(display,
+								xv_get(xv_get(screen, XV_ROOT), XV_XID),
+								(unsigned)rpr->pr_size.x,
+								(unsigned)rpr->pr_size.y,
+								(unsigned)rpr->pr_depth))) {
+			xv_error(XV_NULL, ERROR_STRING,
+					XV_MSG("Server Image creation failed"), ERROR_PKG,
+					SERVER_IMAGE, NULL);
+			return ((Xv_opaque) XV_ERROR);
 		}
-		info->bg = (unsigned long) xv_get(info->cms, CMS_BACKGROUND_PIXEL);
-		info->fg = (unsigned long) xv_get(info->cms, CMS_FOREGROUND_PIXEL);
-		break;
-	    }
 
-	  case SERVER_IMAGE_CMS:
-	    if (attrs[1])
-	      info->cms = (Cms)attrs[1];
-	    break;
-	    
-	  default:
-	    (void) xv_check_bad_attr(SERVER_IMAGE, attrs[0]);
-	    break;
-	}
-    }
-
-    /*
-     * A Pixmap is created under 2 conditions:
-     *   1. A pixmap is yet to be created for this server image.
-     *   2. The dimensions/depth of this pixmap has changed. Destroy the 
-     *      current pixamp and allocate a new pixmap.
-     */
-    if (new_pixmap == TRUE) {
-	Display        *display;
-
-	display = (Display *) xv_get(xv_get(screen, SCREEN_SERVER), XV_DISPLAY);
-
-	if (!server_image->save_pixmap && xv_xid(info)) {
-	    XFreePixmap(display, xv_xid(info));
+		xv_is_bitmap(info) = (rpr->pr_depth == 1) ? 1 : 0;
+		xv_visual(info) = (Screen_visual *) xv_get(screen,
+				SCREEN_IMAGE_VISUAL, xv_xid(info), rpr->pr_depth);
+		xv_plane_mask(info) = ~0;
+		if (xv_cms(info) == XV_NULL) {
+			xv_cms(info) = (Cms) xv_get(screen, SCREEN_DEFAULT_CMS);
+			xv_bg(info) = xv_is_bitmap(info) ? 0 :
+					xv_get(info->cms, CMS_BACKGROUND_PIXEL);
+			xv_fg(info) = xv_is_bitmap(info) ? 1 :
+					xv_get(info->cms, CMS_FOREGROUND_PIXEL);
+		}
 	}
 
-	if (!(xv_xid(info) = 
-		XCreatePixmap(display,
-		    xv_get(xv_get(screen, XV_ROOT), XV_XID),
-		    (unsigned)rpr->pr_size.x, (unsigned)rpr->pr_size.y, (unsigned)rpr->pr_depth))) {
-	    		xv_error(XV_NULL,
-		     	    ERROR_STRING,
-			    XV_MSG("Server Image creation failed"),
-		     	    ERROR_PKG, SERVER_IMAGE,
-		     	    NULL);
-	     		return ((Xv_opaque) XV_ERROR);
-	}
+	if ((new_bits == TRUE) || (new_x_bits == TRUE)) {
+		Pixrect *pr;
 
-	xv_is_bitmap(info) = (rpr->pr_depth == 1) ? 1 : 0;
-	xv_visual(info) = (Screen_visual *)xv_get(screen,
-	    SCREEN_IMAGE_VISUAL, xv_xid(info), rpr->pr_depth);
-	xv_plane_mask(info) = ~0;
-	if (xv_cms(info) == XV_NULL) {
-	    xv_cms(info) = (Cms) xv_get(screen, SCREEN_DEFAULT_CMS);
-	    xv_bg(info) = xv_is_bitmap(info) ? 0 : 
-				xv_get(info->cms, CMS_BACKGROUND_PIXEL);
-	    xv_fg(info) = xv_is_bitmap(info) ? 1 : 
-				xv_get(info->cms, CMS_FOREGROUND_PIXEL);
-	}
-    } 
+		if (xv_cms(info) == XV_NULL) {
+			xv_cms(info) = (Cms) xv_get(screen, SCREEN_DEFAULT_CMS);
+			xv_bg(info) = xv_is_bitmap(info) ? 0 :
+					xv_get(info->cms, CMS_BACKGROUND_PIXEL);
+			xv_fg(info) = xv_is_bitmap(info) ? 1 :
+					xv_get(info->cms, CMS_FOREGROUND_PIXEL);
+		}
 
-    if ((new_bits == TRUE) || (new_x_bits == TRUE)) {
-	Pixrect        *pr;
-
-	if (xv_cms(info) == XV_NULL) {
-	    xv_cms(info) = (Cms) xv_get(screen, SCREEN_DEFAULT_CMS);
-	    xv_bg(info) = xv_is_bitmap(info) ? 0 : 
-				xv_get(info->cms, CMS_BACKGROUND_PIXEL);
-	    xv_fg(info) = xv_is_bitmap(info) ? 1 : 
-				xv_get(info->cms, CMS_FOREGROUND_PIXEL);
-	}
-
-	pr = (Pixrect *) xv_mem_point(rpr->pr_width, rpr->pr_height,
+		pr = (Pixrect *) xv_mem_point(rpr->pr_width, rpr->pr_height,
 				rpr->pr_depth, (short *)rpr->pr_data);
-	xv_set_gc_op(xv_display(info), info,
-	    	xv_gc(srvim_public, info), PIX_SRC,
-		XV_USE_CMS_FG, XV_DEFAULT_FG_BG);
+		xv_set_gc_op(xv_display(info), info,
+				xv_gc(srvim_public, info), PIX_SRC,
+				XV_USE_CMS_FG, XV_DEFAULT_FG_BG);
 
-	XSetPlaneMask(xv_display(info), xv_gc(srvim_public, info),
-			  (unsigned long)((0x1 << rpr->pr_depth) - 1));
+		XSetPlaneMask(xv_display(info), xv_gc(srvim_public, info),
+				(unsigned long)((0x1 << rpr->pr_depth) - 1));
 
-	xv_rop_mpr_internal(xv_display(info), xv_xid(info),
-	    xv_gc(srvim_public, info), 0, 0, rpr->pr_width,
-	    rpr->pr_height, (Xv_opaque)pr, 0, 0, info,
-	    (new_bits == TRUE) ? TRUE : FALSE);
+		xv_rop_mpr_internal(xv_display(info), xv_xid(info),
+				xv_gc(srvim_public, info), 0, 0, rpr->pr_width,
+				rpr->pr_height, (Xv_opaque) pr, 0, 0, info,
+				(new_bits == TRUE) ? TRUE : FALSE);
 
-	xv_free((char *) pr);
-    }
-    return ((Xv_opaque) XV_OK);
+		xv_free((char *)pr);
+	}
+	return ((Xv_opaque) XV_OK);
 }
 
 
