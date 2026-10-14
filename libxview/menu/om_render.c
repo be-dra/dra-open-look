@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.19 2026/10/06 18:18:18 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.21 2026/10/13 16:25:02 dra Exp $";
 #endif
 #endif
 
@@ -68,7 +68,6 @@ typedef void (*scrn_win_ev_proc_t)(Xv_opaque, Event *);
  * XView Private
  */
 extern Graphics_info *xv_init_olgx(Xv_Window, int *, Xv_Font);
-Xv_private Cms xv_set_control_cms(Xv_Window window_public, Xv_Drawable_info *info, int cms_status);
 Xv_private void xv_help_save_image(Xv_Window pw, int client_width, int client_height, int mouse_x, int mouse_y);
 Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data, Event *client_event);
 
@@ -902,7 +901,7 @@ Pkg_private void menu_render(Xv_menu_info *menu, Xv_menu_group_info *group,
 	xv_set(m->window, XV_RECT, &m->fs_menurect, NULL);
 	xv_set(m->shadow_window, XV_RECT, &shadowrect, NULL);
 
-/* 	do we need this? XFlush(XV_DISPLAY_FROM_WINDOW(m->window)); */
+	XFlush(XV_DISPLAY_FROM_WINDOW(m->window));
 
 	/* fix to make xv_window_loop work for menus */
 	if (WIN_IS_IN_LOOP) {
