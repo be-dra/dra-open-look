@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.51 2026/10/08 16:35:12 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.52 2026/10/13 17:08:44 dra Exp $ ";
 #endif
 #endif
 
@@ -128,9 +128,10 @@ typedef struct dnd_info {
     Dnd_site_desc   	 dropSite;
     struct timeval	 timeout;
     DndSiteRects	*siteRects;
+    unsigned int	 numSites;
+	int              contains_xdnd;
     int			 lastSiteIndex;
     int			 eventSiteIndex;
-    unsigned int	 numSites;
 	Atom         *basic_data_atoms;
 	int           num_bda;
     /* DND_HACK begin */
@@ -154,7 +155,8 @@ typedef struct dnd_info {
 /* trace level: */
 #define TLXDND 411
 
-static int dnd_key = 0;
+static int dnd_key = 0, dnd_is_xdnd_key, dnd_transient_key;
+
 
 #define MYATOM(name)	(Atom)xv_get(server, SERVER_ATOM, name)
 #define POINT_IN_SITE(sr, px, py) \
@@ -198,18 +200,46 @@ Pkg_private int DndSendEvent(Display *dpy, XEvent *event, const char *nam)
     return DND_ERROR;
 }
 
-static int contact_dsdm(Dnd_info	*dnd)
+static void note_dsdm_reply(Selection_requestor sr, Atom target, Atom type,
+					Xv_opaque value, unsigned long length, int format)
+{
+	Xv_window win = xv_get(sr, XV_OWNER);
+	Xv_server srv = XV_SERVER_FROM_WINDOW(win);
+	Dnd_info *dnd = (Dnd_info *)xv_get(sr, XV_KEY_DATA, dnd_key);
+
+	if (target == xv_get(srv, SERVER_ATOM, "_SUN_DRAGDROP_SITE_RECTS")) {
+		if (length == SEL_ERROR) {
+			dnd->siteRects = NULL;
+			return;
+		}
+		dnd->numSites = length / (sizeof(DndSiteRects) / sizeof(long));
+		dnd->lastSiteIndex = DND_NO_SITE;
+		dnd->eventSiteIndex = DND_NO_SITE;
+		dnd->siteRects = (DndSiteRects *)value;
+	}
+	else if (target == xv_get(srv, SERVER_ATOM, "_DRA_DRAGDROP_XDND_AWARE")) {
+		if (length == SEL_ERROR) {
+			dnd->siteRects = NULL;
+			return;
+		}
+		dnd->contains_xdnd = TRUE;
+	}
+}
+
+static int contact_dsdm(Dnd_info *dnd)
 {
 	unsigned long length;
 	int format;
 	struct timeval *time;
-	DndSiteRects *siteRects;
 	Xv_window owner = xv_get(DND_PUBLIC(dnd), XV_OWNER);
 	Xv_screen screen = XV_SCREEN_FROM_WINDOW(owner);
 	Selection_requestor selreq = xv_get(screen, SCREEN_DSDM_REQUESTOR);
 
-	xv_set(selreq, SEL_TYPE_NAME, "_SUN_DRAGDROP_SITE_RECTS", NULL);
-
+	dnd->contains_xdnd = FALSE;
+	xv_set(selreq,
+				SEL_REPLY_PROC, note_dsdm_reply,
+				XV_KEY_DATA, dnd_key, dnd,
+				NULL);
 	/* Set the time if we know what it is. */
 	if ((time = (struct timeval *)xv_get(DND_PUBLIC(dnd), SEL_TIME)) != NULL)
 		xv_set(selreq, SEL_TIME, time, NULL);
@@ -219,14 +249,16 @@ static int contact_dsdm(Dnd_info	*dnd)
 		dnd->siteRects = NULL;
 	}
 
-	siteRects = (DndSiteRects *)xv_get(selreq, SEL_DATA, &length, &format);
-	if (length == SEL_ERROR) return FALSE;
+	/* must be a multiple request! */
+	xv_set(selreq, 
+				SEL_TYPE_NAMES,
+					"_DRA_DRAGDROP_XDND_AWARE",
+					"_SUN_DRAGDROP_SITE_RECTS",
+					NULL,
+				NULL);
 
-	if (siteRects) dnd->siteRects = siteRects;
-
-	dnd->numSites = length / (sizeof(DndSiteRects) / sizeof(long));
-	dnd->lastSiteIndex = DND_NO_SITE;
-	dnd->eventSiteIndex = DND_NO_SITE;
+	/* the work will be done in the note_dsdm_reply */
+	xv_get(selreq, SEL_DATA, &length, &format);
 
 	if (!dnd->siteRects) return FALSE;
 
@@ -816,7 +848,7 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 			}
 			UpdateGrabCursor(dnd, EnterNotify, FALSE, e->xmotion.time);
 		}
-		/* Moved out of the event site */
+		return DND_SUCCEEDED;
 	}
 	else if (i != siteindex) {
 		/* Tell the old site goodbye */
@@ -837,6 +869,7 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 			UpdateGrabCursor(dnd, EnterNotify, FALSE, e->xmotion.time);
 		}
 		/* Moving through the current event site */
+		return DND_SUCCEEDED;
 	}
 	else if (i == siteindex) {
 		SERVERTRACE((TLXDND, "%s: flags=%x, fl&mot %x\n", __FUNCTION__,
@@ -847,8 +880,22 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 								MotionNotify, &e->xmotion) != DND_SUCCEEDED)
 				return DND_ERROR;
 		}
+		return DND_SUCCEEDED;
 	}
-	return (DND_SUCCEEDED);
+
+	/* if we come here, we have several possibilities: */
+	/* first: we have a 'full featured' olwm */
+	if (dnd->contains_xdnd) {
+		/* then we are over the root window or some non-dnd-window */
+		return DND_SUCCEEDED;
+	}
+
+	/* otherwise: we must be aware that there are drop sites of any kind:
+	 * XdndAware or _SUN_DRAGDROP_INTEREST
+	 */
+	fprintf(stderr, "%s-%d: INCOMPLETE: NOT YET IMPLEMENTED\n",
+						__FILE__, __LINE__);
+	return DND_SUCCEEDED;
 }
 
 static int determine_site_index(Dnd_info *dnd, Display *dpy, Window rt,
@@ -1632,7 +1679,6 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 {
 	Dnd_info *dnd = DND_PRIVATE(dnd_public);
 	int status = DND_SUCCEEDED,
-			dsdm_present = False,
 			button_released = False, win_was_deaf = False,
 			stop = False;	/* Stop key pressed */
 	Display *dpy;
@@ -1646,6 +1692,12 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	int i, indx;
 	Atom *tl;
 	Xv_server srv;
+
+	if (! dnd_key) {
+		dnd_key = xv_unique_key();
+		dnd_transient_key = xv_unique_key();
+		dnd_is_xdnd_key = xv_unique_key();
+	}
 
 	dnd->was_xterm = FALSE;
 	event_init(&event);
@@ -1721,7 +1773,6 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 
 #ifdef NO_XDND
 #else /* NO_XDND */
-	if (! dnd_key) dnd_key = xv_unique_key();
 
 	/* our research about KDE tools (konqueror, kwrite, amarok)
 	 * have shown that when you drag files from konqueror,
@@ -1767,8 +1818,7 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 
 	/* Contact DSDM. */
 	if (XGetSelectionOwner(dpy, dnd->atom[DSDM]) != None) {
-		if (contact_dsdm(dnd))
-			dsdm_present = True;	/* XXX: sort list */
+		contact_dsdm(dnd);
 	}
 
 	ev = &xevent;
@@ -1827,17 +1877,14 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 			case LOC_DRAG:
 				lasttime = ev->xmotion.time;
 				server_set_timestamp(srv, NULL, lasttime);
-				if (dsdm_present) {
-					SERVERTRACE((TLXDND+15, "%s: LOC_DRAG\n", __FUNCTION__));
-					find_site(dnd, &ev->xmotion);
-				}
+				SERVERTRACE((TLXDND+15, "%s: LOC_DRAG\n", __FUNCTION__));
+				find_site(dnd, &ev->xmotion);
 				break;
 			case ACTION_STOP:
 				lasttime = ev->xkey.time;
 				server_set_timestamp(srv, NULL, lasttime);
 				/* Send LeaveNotify if necessary */
-				if (dsdm_present)
-					(void)send_preview_event(dnd, DND_NO_SITE, ev);
+				(void)send_preview_event(dnd, DND_NO_SITE, ev);
 				stop = True;
 				break;
 
@@ -2348,8 +2395,6 @@ typedef struct dnd_drop_site {
     Xv_drop_site         drop_item;
 } Dnd_drop_site;
 
-static int dnd_is_xdnd_key, dnd_transient_key = 0;
-
 static int SendACK(Selection_requestor sel_req, Event *ev)
 {
 	Xv_Server server = XV_SERVER_FROM_WINDOW(event_window(ev));
@@ -2385,13 +2430,10 @@ Xv_public Xv_opaque dnd_decode_drop(Selection_requestor sel_req, Event *event)
 					event_action(event) == ACTION_DRAG_MOVE))
 		return (DND_ERROR);
 
-	if (!dnd_transient_key) {
+	if (! dnd_key) {
+		dnd_key = xv_unique_key();
 		dnd_transient_key = xv_unique_key();
-
-#ifdef NO_XDND
-#else /* NO_XDND */
 		dnd_is_xdnd_key = xv_unique_key();
-#endif /* NO_XDND */
 	}
 
 	cM = (XClientMessageEvent *) event_xevent(event);
