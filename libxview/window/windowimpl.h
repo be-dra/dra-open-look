@@ -1,4 +1,4 @@
-/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.7 2026/09/27 20:37:53 dra Exp $      */
+/*      @(#)windowimpl.h 20.83 93/06/28 SMI   DRA $Id: windowimpl.h,v 4.8 2026/10/14 21:51:31 dra Exp $      */
 
 /***********************************************************************/
 /*	                      window_impl.h			       */
@@ -125,6 +125,10 @@ typedef struct window_info {
     Win_drop_site_list  *dropSites;		  /* Drop sites in the window */
     Win_drop_site_list  *dropInterest; /* Only used in top-level windows.
 					* Holds the list of drop items.       */
+
+	/* cache window attributes to avoid a few round trips */
+	int c_win_gravity;
+	int c_bit_gravity;
 
     /* margin info */
     short		 top_margin;
