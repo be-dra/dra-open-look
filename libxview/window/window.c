@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.11 2026/08/02 18:40:00 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.12 2026/10/14 21:51:31 dra Exp $";
 #endif
 #endif
 
@@ -462,65 +462,74 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 
 Pkg_private XID window_new(Display *display, Xv_opaque screen, Window_info *win, Colormap cmap_id, Xv_Drawable_info *parent_info)
 {
-    Window                  new_window;
-    XSetWindowAttributes    attrs;
-    Rect            	    rect;
-    unsigned long   	    value_mask = 0;
-    Xv_object       	    win_public = win->public_self;
-    Xv_Drawable_info        *info;
-    int			     transparent;
+	Window new_window;
+	XSetWindowAttributes attrs;
+	Rect rect;
+	unsigned long value_mask = 0;
+	Xv_object win_public = win->public_self;
+	Xv_Drawable_info *info;
+	int transparent;
 
-    DRAWABLE_INFO_MACRO(win_public, info);
+	DRAWABLE_INFO_MACRO(win_public, info);
 
-    if (!parent_info) {
-        new_window = RootWindow(display, (int)xv_get(screen, SCREEN_NUMBER));
-        win_x_getrect(display, new_window, &rect);
-        window_update_cache_rect(win_public, &rect);
-    } else {
-	/* A BadMatch will occur if you specify background_pixmap to None with
-	 * parent of a different depth.  Therefore we treat this situation as
-	 * if the application did not ask for WIN_TRANSPARENT.
-	 */
-	transparent = (win->transparent && (xv_depth(info) == xv_depth(parent_info)));
-        attrs.event_mask = win->xmask;
-        value_mask = CWEventMask;
-        if (!win->input_only) {
-            /* BitGravity/background/Cmap are invalid for InputOnly windows */
-            attrs.bit_gravity = NorthWestGravity;
-            value_mask |= CWBitGravity;
-            attrs.colormap = (cmap_id) ? cmap_id : CopyFromParent;
-            value_mask |= CWColormap;
-            if (!transparent) {
-                attrs.background_pixel = xv_bg(info);
-                value_mask |= CWBackPixel;
-                attrs.border_pixel = xv_fg(info);
-                value_mask |= CWBorderPixel;
-            }
-        }
+	if (!parent_info) {
+		int sn = (int)xv_get(screen, SCREEN_NUMBER);
 
-        if (transparent) {
-            value_mask |= CWBackPixmap;
-            attrs.background_pixmap = None;
-        }
-	if (win->cursor) {
-	    value_mask |= CWCursor;
-	    attrs.cursor = (Cursor)xv_get(win->cursor, XV_XID);
+		new_window = RootWindow(display, sn);
+		rect.r_top = rect.r_left = 0;
+		rect.r_width = DisplayWidth(display, sn);
+		rect.r_height = DisplayHeight(display, sn);
+		window_update_cache_rect(win_public, &rect);
 	}
-        new_window = XCreateWindow(display, xv_xid(parent_info),
-		        win->cache_rect.r_left, win->cache_rect.r_top,
-		        (unsigned)win->cache_rect.r_width,
+	else {
+		/* A BadMatch will occur if you specify background_pixmap to None with
+		 * parent of a different depth.  Therefore we treat this situation as
+		 * if the application did not ask for WIN_TRANSPARENT.
+		 */
+		transparent = (win->transparent
+				&& (xv_depth(info) == xv_depth(parent_info)));
+		attrs.event_mask = win->xmask;
+		value_mask = CWEventMask;
+		if (!win->input_only) {
+			/* BitGravity/background/Cmap are invalid for InputOnly windows */
+			attrs.bit_gravity = NorthWestGravity;
+			value_mask |= CWBitGravity;
+			attrs.colormap = (cmap_id) ? cmap_id : CopyFromParent;
+			value_mask |= CWColormap;
+			if (!transparent) {
+				attrs.background_pixel = xv_bg(info);
+				value_mask |= CWBackPixel;
+				attrs.border_pixel = xv_fg(info);
+				value_mask |= CWBorderPixel;
+			}
+		}
+
+		if (transparent) {
+			value_mask |= CWBackPixmap;
+			attrs.background_pixmap = None;
+		}
+		if (win->cursor) {
+			value_mask |= CWCursor;
+			attrs.cursor = (Cursor) xv_get(win->cursor, XV_XID);
+		}
+		/* they say this is the default: */
+		win->c_win_gravity = NorthWestGravity;
+		win->c_bit_gravity = NorthWestGravity;
+
+		new_window = XCreateWindow(display, xv_xid(parent_info),
+				win->cache_rect.r_left, win->cache_rect.r_top,
+				(unsigned)win->cache_rect.r_width,
 				(unsigned)win->cache_rect.r_height,
-		        (unsigned)(win->has_border ? WIN_DEFAULT_BORDER_WIDTH : 0),
-		        (int)(win->input_only ? 0 : xv_depth(info)),
-		        (unsigned)(win->input_only ? InputOnly : CopyFromParent),
-			xv_visual(info)->vinfo->visual ? xv_visual(info)->vinfo->visual : CopyFromParent,
-		        value_mask,
-		        &attrs);
+				(unsigned)(win->has_border ? WIN_DEFAULT_BORDER_WIDTH : 0),
+				(int)(win->input_only ? 0 : xv_depth(info)),
+				(unsigned)(win->input_only ? InputOnly : CopyFromParent),
+				xv_visual(info)->vinfo->visual ? xv_visual(info)->vinfo->
+				visual : CopyFromParent, value_mask, &attrs);
 
-    }
-    XSaveContext(display, new_window, CONTEXT, (caddr_t)win_public);
+	}
+	XSaveContext(display, new_window, CONTEXT, (caddr_t) win_public);
 
-    return new_window;
+	return new_window;
 }
 
 Xv_private void window_set_bit_gravity(Xv_Window win_public, int value)
