@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.5 2026/08/26 11:52:00 dra Exp $ ";
+static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.6 2026/10/14 18:05:31 dra Exp $ ";
 #endif
 #endif
 
@@ -93,6 +93,10 @@ typedef enum {
 	DND_TIMEOUT_VALUE		= DND_ATTR(ATTR_LONG,		25),
 	DND_BASIC_DATA_NAMES    = DND_ATTR_LIST(ATTR_NULL, ATTR_STRING,	  22),
 	DND_BASIC_DATA_ATOMS    = DND_ATTR_LIST(ATTR_NULL, ATTR_LONG,	  23),
+
+	/* private attribute - for subclasses */
+	DND_SEND_DROP           = DND_ATTR(ATTR_OPAQUE,	24),
+
 	/* Private Drop Site Item attrs */
 	DROP_SITE_SIZE			= DND_ATTR(ATTR_INT,		95),
 	/* Public Drop Site Item attrs */
