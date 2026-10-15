@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.52 2026/10/13 17:08:44 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.53 2026/10/14 18:06:26 dra Exp $ ";
 #endif
 #endif
 
@@ -466,6 +466,15 @@ static void send_xdnd_drop(Dnd_info *dnd, Window tgt, XButtonEvent *xb)
 {
 	XEvent cM;
 
+	/* An idiotic protocol really - they don't even send the drop
+	 * position (although there is plenty of space in the Client message)
+	 * the receiver is supposed to save the last XdndPosition message's
+	 * information.
+	 * We send a last (artificial) XdndPosition message with the 
+	 * drop coordinates...
+	 */
+	send_xdnd_position(dnd, tgt, (XMotionEvent *)xb);
+
 	cM.xclient.type = ClientMessage;
 	cM.xclient.display = xb->display;
 	cM.xclient.format = 32;
@@ -477,10 +486,8 @@ static void send_xdnd_drop(Dnd_info *dnd, Window tgt, XButtonEvent *xb)
 	cM.xclient.data.l[3] = 0;
 	cM.xclient.data.l[4] = 0;
 
-	DndSendEvent(xb->display, &cM, "XdndDrop");
-
 	SERVERTRACE((TLXDND, "sending XdndDrop to %lx\n", tgt));
-	DndSendEvent(xb->display, &cM, "XdndPosition");
+	DndSendEvent(xb->display, &cM, "XdndDrop");
 }
 
 #endif /* NO_XDND */
@@ -1675,7 +1682,7 @@ extern Xv_object xview_x_input_readevent(Display *display, Event *event,
 								Xv_object req_window, int block, int type,
 								unsigned int xevent_mask, XEvent *rep);
 
-Xv_public int dnd_send_drop(Drag_drop dnd_public)
+static int internal_send_drop(Drag_drop dnd_public)
 {
 	Dnd_info *dnd = DND_PRIVATE(dnd_public);
 	int status = DND_SUCCEEDED,
@@ -2020,6 +2027,15 @@ Xv_public int dnd_send_drop(Drag_drop dnd_public)
 	return (status);
 }
 
+Xv_public int dnd_send_drop(Drag_drop dnd_public)
+{
+	int retval = DND_ERROR;
+
+	/* we want to give subclasses a chance */
+	xv_set(dnd_public, DND_SEND_DROP, &retval, NULL);
+	return retval;
+}
+
 
 /* This ***new*** function - YES, Xv_public - can be used by a
  * 'preview receiver' to reject a drop....
@@ -2305,6 +2321,15 @@ static Xv_opaque dnd_set_avlist(Dnd dnd_public, Attr_attribute *avlist)
 				/* do not consume it */
 				break;
 #endif /* NO_XDND */
+			case DND_SEND_DROP:
+				{
+					int retval, *retvalptr = (int *)attrs[1];
+
+					retval = internal_send_drop(dnd_public);
+					if (retvalptr) *retvalptr = retval;
+				}
+				ADONE;
+
 			case XV_END_CREATE:
 				break;
 			default:
