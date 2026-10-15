@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.11 2026/10/06 21:27:22 dra Exp $";
+static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.12 2026/10/14 21:51:31 dra Exp $";
 #endif
 #endif
 
@@ -326,6 +326,7 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 				case WIN_BIT_GRAVITY:
 					win_attrs_mask |= CWBitGravity;
 					win_attrs.bit_gravity = (int)attrs[1];
+					win->c_bit_gravity = win_attrs.bit_gravity;
 					ADONE;
 
 				case WIN_DESIRED_WIDTH:
@@ -736,6 +737,7 @@ static Xv_opaque window_set_avlist_tier3(Xv_Window win_public,
 		case WIN_WINDOW_GRAVITY:
 			*win_attrs_mask |= CWWinGravity;
 			win_attrs->win_gravity = (int)attrs[1];
+			win->c_win_gravity = win_attrs->win_gravity;
 			ADONE;
 
 		case WIN_GRAB_ALL_INPUT:
