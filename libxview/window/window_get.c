@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.9 2026/10/09 11:54:56 dra Exp $";
+static char     sccsid[] = "@(#)window_get.c 20.109 93/06/28 DRA: $Id: window_get.c,v 4.10 2026/10/14 21:51:31 dra Exp $";
 #endif
 #endif
 
@@ -195,6 +195,7 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 			}
 
 		case WIN_BIT_GRAVITY:
+#ifdef BEFORE_AVOID_ROUNDTRIPS
 			{
 				XWindowAttributes win_attrs;
 
@@ -202,6 +203,9 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 						&win_attrs);
 				v = (Xv_opaque) win_attrs.bit_gravity;
 			}
+#else /*  BEFORE_AVOID_ROUNDTRIPS */
+			v = (Xv_opaque) win->c_bit_gravity;
+#endif /*  BEFORE_AVOID_ROUNDTRIPS */
 			break;
 
 		case WIN_CMD_LINE:
@@ -352,6 +356,7 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 			break;
 
 		case WIN_WINDOW_GRAVITY:
+#ifdef BEFORE_AVOID_ROUNDTRIPS
 			{
 				XWindowAttributes win_attrs;
 
@@ -359,6 +364,9 @@ Pkg_private Xv_opaque window_get_attr(Xv_Window win_public, int *status, Attr_at
 						&win_attrs);
 				v = (Xv_opaque) win_attrs.win_gravity;
 			}
+#else /*  BEFORE_AVOID_ROUNDTRIPS */
+			v = (Xv_opaque)win->c_win_gravity;
+#endif /*  BEFORE_AVOID_ROUNDTRIPS */
 			break;
 
 		case WIN_X:
