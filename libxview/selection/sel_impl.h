@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.35 2026/08/06 14:09:40 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.36 2026/10/15 17:00:20 dra Exp $";
 #endif
 #endif
 
@@ -235,7 +235,7 @@ Xv_private void xv_sel_send_old_owner_sel_clear(Display *dpy, Atom selection, Wi
 Xv_private void xv_sel_set_compat_data(Display *dpy, Atom selection, Window xid, int clientType);
 Pkg_private Sel_owner_info  *xv_sel_find_selection_data(Display *,Atom,Window);
 Pkg_private Sel_owner_info * xv_sel_set_selection_data(Display *dpy, Atom selection, Sel_owner_info *sel_owner);
-Xv_private Time xv_sel_get_last_event_time(Xv_server , Display  *, Window);
+Xv_private Time xv_sel_get_last_event_time(Xv_server, Display *, Window, int);
 
 typedef int (*x_predicate_func_t)(Display *, XEvent *, XPointer);
 Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
