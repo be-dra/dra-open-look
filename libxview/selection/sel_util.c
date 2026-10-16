@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.43 2026/10/06 21:29:23 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.44 2026/10/15 17:02:00 dra Exp $";
 #endif
 #endif
 
@@ -109,12 +109,21 @@ static int sel_prop_time(Display *display, XEvent *xevent, char *args)
  * REMINDER: This needs to be changed to a more efficient way of getting
  *  last event time.
 */
-Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display  *dpy,
-										Window   win)
+Xv_private Time xv_sel_get_last_event_time(Xv_server srv, Display *dpy,
+										Window win, int forceProp)
 {
     XEvent         event;
     XWindowAttributes  winAttr;
-    int  status = xv_sel_add_prop_notify_mask( dpy, win, &winAttr );
+    int  status;
+
+	/* first, we try the server's last time */
+	if (! forceProp) {
+		Xv_opaque srvtime = server_get_timestamp(srv);
+
+		if (srvtime) return (Time)srvtime;
+	}
+
+    status = xv_sel_add_prop_notify_mask( dpy, win, &winAttr );
 
 	/* nowadays XA_CUT_BUFFER7 is probably VERY unused */
     XChangeProperty(dpy, win, XA_CUT_BUFFER7, XA_CUT_BUFFER7, 8,
