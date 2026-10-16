@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.68 2026/10/11 09:23:11 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.69 2026/10/15 17:04:52 dra Exp $";
 #endif
 #endif
 
@@ -1824,6 +1824,7 @@ typedef struct _xvwp {
 	Xv_font font_for_root_and_frame;
 	int orig_base_scale; /* Zustand beim letzten reset */
 	int orig_popup_scale; /* Zustand beim letzten reset */
+	int want_color;
 	xvwp_popup_t secondaries;
 } xvwp_t;
 
@@ -1831,6 +1832,8 @@ typedef void (*menu_cb_t)(Menu, Menu_item);
 typedef Menu (*menu_gen_proc_t)(Menu, Menu_generate);
 typedef void (*pin_proc_t)(Menu, int, int);
 typedef int (*measfunc)(Xv_server, int);
+
+static void create_winpropwin(Xv_server srv, xvwp_t *inst);
 
 static Xv_singlecolor *my_colors = 0;
 static int fore_start;
@@ -2030,6 +2033,9 @@ static void popup_propwin(xvwp_t *inst, Frame fram)
 	frame_get_rect(fram, &b_rect);
 
 	if (! inst->p_pos_def_spec) {
+		Xv_server srv = XV_SERVER_FROM_WINDOW(fram);
+
+		if (! inst->propwin) create_winpropwin(srv, inst);
 		/* not yet filled */
 		xv_set(inst->propwin, XV_SHOW, XV_AUTO_CREATE, NULL);
 	}
@@ -3658,7 +3664,6 @@ static void fill_me(Frame prop)
 	Server_info *srvpriv = SERVER_PRIVATE(srv);
 	xvwp_t *inst = srvpriv->xvwp;
 	Xv_screen screen = XV_SCREEN_FROM_WINDOW(prop);
-	int want_color = (int)xv_get(prop, XV_KEY_DATA, XV_DEPTH);
 	Panel pan = xv_get(prop, FRAME_PROPS_PANEL);
 	int color_columns;
 	Cms cms = xv_get(pan, WIN_CMS);
@@ -3670,7 +3675,7 @@ static void fill_me(Frame prop)
 	color_columns = (int)sqrt((double)fore_start) - 1;
 	if (color_columns < 1) color_columns = 1;
 
-	if (want_color) {
+	if (inst->want_color) {
 		cms = xv_create(screen, CMS,
 				CMS_CONTROL_CMS, TRUE,
 				CMS_SIZE, CMS_CONTROL_COLORS + total_num_colors,
@@ -3683,7 +3688,7 @@ static void fill_me(Frame prop)
 				FRAME_PROPS_CREATE_ITEM,
 					FRAME_PROPS_ITEM_SPEC, &color_choice, -1, PANEL_CHOICE,
 					PANEL_DISPLAY_LEVEL, PANEL_CURRENT,
-					PANEL_INACTIVE, ! want_color,
+					PANEL_INACTIVE, ! inst->want_color,
 					PANEL_CHOICE_NCOLS, color_columns,
 					PANEL_LABEL_STRING, XV_MSG("Window Color:"),
 					XV_HELP_DATA, "windowprops:xvwp_back_color",
@@ -3707,7 +3712,7 @@ static void fill_me(Frame prop)
 			XV_KEY_DATA_REMOVE_PROC, SERVER_IMAGE_BITS, destroy_obj,
 			NULL);
 
-	if (! want_color) {
+	if (! inst->want_color) {
 		xv_set(color_choice, PANEL_CHOICE_IMAGES, clip, 0, NULL);
 	}
 	else {
@@ -3745,7 +3750,7 @@ static void fill_me(Frame prop)
 					FRAME_PROPS_ITEM_SPEC,
 						&color_choice, FRAME_PROPS_MOVE, PANEL_CHOICE,
 					PANEL_DISPLAY_LEVEL, PANEL_CURRENT,
-					PANEL_INACTIVE, ! want_color,
+					PANEL_INACTIVE, ! inst->want_color,
 					PANEL_CHOICE_NCOLS, color_columns,
 					PANEL_LABEL_STRING, XV_MSG("Foreground Color:"),
 					XV_HELP_DATA, "windowprops:xvwp_fore_color",
@@ -3757,7 +3762,7 @@ static void fill_me(Frame prop)
 				XV_HELP_DATA, "windowprops:xvwp_fore_color_menu",
 				NULL);
 
-	if (! want_color) {
+	if (! inst->want_color) {
 		xv_set(color_choice, PANEL_CHOICE_IMAGES, clip, XV_NULL, NULL);
 	}
 	else {
@@ -4101,13 +4106,11 @@ static void xvwp_install(Frame base)
 	Xv_server srv = XV_SERVER_FROM_WINDOW(base);
 	Server_info *srvpriv = SERVER_PRIVATE(srv);
 	xvwp_t *inst = srvpriv->xvwp;
-	char *app, buf[200];
 	Display *dpy;
 	Window xid;
 	Xv_screen screen;
 	screen_ui_style_t ui_style;
 	Atom atoms[8], show_props_atom;
-	int want_color;
 	int cnt = 0;
 
 	if (inst->installed) return;
@@ -4119,7 +4122,7 @@ static void xvwp_install(Frame base)
 	xid = (Window)xv_get(base, XV_XID);
 	screen = XV_SCREEN_FROM_WINDOW(base);
 	ui_style = (screen_ui_style_t)xv_get(screen, SCREEN_UI_STYLE);
-	want_color = (ui_style != SCREEN_UIS_2D_BW);
+	inst->want_color = (ui_style != SCREEN_UIS_2D_BW);
 
 
 	xvwp_set_base_position(base);
@@ -4149,7 +4152,7 @@ static void xvwp_install(Frame base)
 						XA_INTEGER, 32, PropModeReplace,
 						(unsigned char *)&inst->data.win_menu_default, 1);
 
-	if (want_color && (inst->data.back.indx != 0 ||
+	if (inst->want_color && (inst->data.back.indx != 0 ||
 		inst->data.fore.indx != 0 || inst->argv_contains.fg))
 	{
 		int myind;
@@ -4230,24 +4233,7 @@ static void xvwp_install(Frame base)
 	}
 
 	inst->data.base = base;
-
-	app = (char *)xv_get(srv, XV_APP_NAME);
-	if (! app) app = (char *)xv_get(base, XV_LABEL);
-	if (! app) app = "no app name ???";
-
-	sprintf(buf, "%s: %s", app, XV_MSG("Window Properties"));
-	inst->propwin = xv_create(base, FRAME_PROPS,
-				XV_LABEL, buf,
-				XV_INSTANCE_NAME, "windowprops",
-				XV_HELP_DATA, "windowprops:winpropwin",
-				FRAME_SHOW_FOOTER, TRUE,
-				FRAME_PROPS_APPLY_PROC, note_apply,
-				FRAME_PROPS_RESET_PROC, note_reset,
-				FRAME_PROPS_DATA_ADDRESS, &inst->data,
-				FRAME_PROPS_CREATE_CONTENTS_PROC, fill_me,
-				XV_KEY_DATA, XV_DEPTH, want_color,
-				XV_SET_POPUP, XV_AUTO_CREATE, XV_SHOW, XV_WIDTH, NULL,
-				NULL);
+	inst->propwin = XV_NULL;
 
 	xv_set(base,
 				WIN_CONSUME_EVENTS, WIN_REPAINT, ACTION_HELP, NULL,
@@ -4494,11 +4480,36 @@ Xv_private void server_set_menu(Menu menu, Xv_opaque panelitem_window_or_server)
 	}
 }
 
+static void create_winpropwin(Xv_server srv, xvwp_t *inst)
+{
+	char *app, buf[200];
+
+	app = (char *)xv_get(srv, XV_APP_NAME);
+	if (! app) app = (char *)xv_get(inst->data.base, XV_LABEL);
+	if (! app) app = "no app name ???";
+
+	sprintf(buf, "%s: %s", app, XV_MSG("Window Properties"));
+	inst->propwin = xv_create(inst->data.base, FRAME_PROPS,
+				XV_LABEL, buf,
+				XV_INSTANCE_NAME, "windowprops",
+				XV_HELP_DATA, "windowprops:winpropwin",
+				FRAME_SHOW_FOOTER, TRUE,
+				FRAME_PROPS_APPLY_PROC, note_apply,
+				FRAME_PROPS_RESET_PROC, note_reset,
+				FRAME_PROPS_DATA_ADDRESS, &inst->data,
+				FRAME_PROPS_CREATE_CONTENTS_PROC, fill_me,
+				XV_SET_POPUP, XV_AUTO_CREATE, XV_SHOW, XV_WIDTH, NULL,
+				NULL);
+}
+
 static void server_show_propwin(Server_info *srvpriv)
 {
 	xvwp_t *inst = srvpriv->xvwp;
 
-	popup_propwin(inst, xv_get(inst->propwin, XV_OWNER));
+	if (! inst->propwin) {
+		create_winpropwin(SERVER_PUBLIC(srvpriv), inst);
+	}
+	popup_propwin(inst, inst->data.base);
 }
 
 static void server_appl_set_busy(Server_info *srvpriv, int busy, Frame except)
