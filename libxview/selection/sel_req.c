@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.60 2026/05/03 01:34:26 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.61 2026/10/15 17:03:56 dra Exp $";
 #endif
 #endif
 
@@ -438,8 +438,10 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 
 	replyInfo->sri_property = xv_sel_get_property(replyInfo->sri_srv, replyInfo->sri_dpy);
 	replyInfo->sri_requestor = win;
-	if (time == 0)
-		replyInfo->sri_time = xv_sel_get_last_event_time(srv, replyInfo->sri_dpy, win);
+	if (time == 0) {
+		replyInfo->sri_time = xv_sel_get_last_event_time(srv,
+									replyInfo->sri_dpy, win, FALSE);
+	}
 	else
 		replyInfo->sri_time = time;
 
@@ -845,7 +847,9 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	XPropertyEvent *propEv;
 	XWindowAttributes winAttr;
 	Sel_incr_context ic;
-	int status = xv_sel_add_prop_notify_mask(ev->display, reply->sri_requestor,
+	int status;
+
+	status = xv_sel_add_prop_notify_mask(ev->display, reply->sri_requestor,
 											&winAttr);
 
 	/*
@@ -1303,7 +1307,7 @@ static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
 		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
         struct timeval tv;
 
-		xt = xv_sel_get_last_event_time(srv, dpy, xid);
+		xt = xv_sel_get_last_event_time(srv, dpy, xid, FALSE);
 		xv_sel_cvt_xtime_to_timeval(xt, &tv);
 		xv_set(requestor, SEL_TIME, &tv, NULL);
 	}
@@ -1766,7 +1770,7 @@ int sel_post_req(Selection_requestor sel)
 		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
         struct timeval tv;
 
-		XTime = xv_sel_get_last_event_time(srv, dpy, xid );
+		XTime = xv_sel_get_last_event_time(srv, dpy, xid, FALSE);
 		xv_sel_cvt_xtime_to_timeval(XTime, &tv);
 		xv_set(sel, SEL_TIME, &tv, NULL);
     }
