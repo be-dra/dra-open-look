@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.56 2026/10/03 07:57:36 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.57 2026/10/15 17:00:07 dra Exp $";
 #endif
 #endif
 
@@ -199,8 +199,7 @@ static int sel_set_ownership(Sel_owner_info *sel_owner)
 #else /* BEFORE_DRA_CHANGED */
 	if (owner->time == 0) {
 		owner->time = xv_sel_get_last_event_time(srv, sel_owner->dpy,
-												sel_owner->xid);
-		server_set_timestamp(srv, NULL, owner->time);
+												sel_owner->xid, FALSE);
 	}
 	lastEventTime = server_get_timestamp(srv);
 #endif /* BEFORE_DRA_CHANGED */
@@ -221,7 +220,7 @@ static int sel_set_ownership(Sel_owner_info *sel_owner)
 
 			/* this can only mean "owner->time too old" */
 			owner->time = xv_sel_get_last_event_time(srv, sel_owner->dpy,
-														sel_owner->xid);
+														sel_owner->xid, TRUE);
 
 			xv_sel_cvt_xtime_to_timeval(owner->time, &tv);
 			xv_set(sel_owner_public, SEL_TIME, &tv, NULL);
