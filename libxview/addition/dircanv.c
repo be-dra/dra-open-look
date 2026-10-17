@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.62 2026/09/13 07:52:21 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.63 2026/10/16 11:45:01 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -470,180 +470,6 @@ static short check_feature_multiselect(Dir_private *priv, dir_event_ptr dev)
 	return 1;
 }
 
-static int delegate_conversion(Selection_owner selown, Atom *type,
-				Xv_opaque *value, unsigned long *length, int *format)
-{
-	typedef int (*convert_func)(Selection_owner,Atom *,Xv_opaque *,
-										unsigned long *,int *);
-	Drag_drop dragdrop = xv_get(selown, XV_KEY_DATA, dirpw_key);
-	Xv_opaque server = XV_SERVER_FROM_WINDOW(xv_get(dragdrop, XV_OWNER));
-	convert_func cf = (convert_func)xv_get(dragdrop, SEL_CONVERT_PROC);
-	int retval;
-	Atom requested = *type;
-	static char big_filename[1000];
-
-	SERVERTRACE((300, "delegate_conversion called for target '%s'\n",
-			(char *)xv_get(server, SERVER_ATOM_NAME, *type)));
-
-	if (*type == (Atom)xv_get(server, SERVER_ATOM, "text/plain")) {
-		*type = XA_STRING;
-	}
-	else if (*type == (Atom)xv_get(server, SERVER_ATOM, "text/uri-list")) {
-		char *fn;
-
-		/* ask the convert_proc of the dragdrop object */
-		retval = (*cf)(dragdrop, type, value, length, format);
-		if (retval) return retval;
-
-		*type =  (Atom)xv_get(server, SERVER_ATOM, "FILE_NAME");
-
-		retval = (*cf)(dragdrop, type, value, length, format);
-		if (! retval) return retval;
-
-		fn = (char *)*value;
-
-		sprintf(big_filename, "file://%s\r\n", fn);
-
-		*type = XA_STRING;
-		*format = 8;
-		*length = strlen(big_filename);
-		*value = (Xv_opaque)big_filename;
-
-		return TRUE;
-	}
-	/* a few requests will be rejected silently */
-	else if (*type == (Atom)xv_get(server, SERVER_ATOM, "text/x-moz-url")) {
-		/* mozilla expects something like UTF-16 .... */
-		return FALSE;
-	}
-	else if (*type == (Atom)xv_get(server, SERVER_ATOM, "text/unicode")) {
-		/* mozilla , funny */
-		return FALSE;
-	}
-	else if (*type == (Atom)xv_get(server, SERVER_ATOM, "application/x-moz-file")) {
-		/* mozilla , funny */
-		return FALSE;
-	}
-
-	retval = (*cf)(dragdrop, type, value, length, format);
-
-	if (! retval) {
-		fprintf(stderr, "dnd.c: cannot convert '%s'\n", 
-						(char *)xv_get(server, SERVER_ATOM_NAME, requested));
-	}
-	return retval;
-}
-
-static void try_xdnd_drop(Xv_server server, Dir_private *priv, Window pwxid)
-{
-	long lasttime = server_get_timestamp(server);
-	Display *dpy = (Display *)xv_get(server, XV_DISPLAY);
-	Window root, ch;
-	int rx, ry, x, y;
-	unsigned int mask;
-	Window dest, frm;
-	int nx, ny, sx, sy;
-
-	XQueryPointer(dpy, pwxid, &root, &ch, &rx, &ry, &x, &y, &mask);
-	/* now, at least root, sx and sy are correct */
-
-	sx = rx;
-	sy = ry;
-	dest = root;
-	frm = ch = root;
-	while (ch && XTranslateCoordinates(dpy,dest,frm,sx,sy,&nx,&ny,&ch)) {
-		int act_format = 0;
-		Atom act_typeatom;
-		unsigned long items, rest;
-		unsigned char *bp;
-		Atom wmstate = (Atom)xv_get(server, SERVER_ATOM, "WM_STATE");
-		Atom XdndAware = (Atom)xv_get(server, SERVER_ATOM, "XdndAware");
-
-		if (XGetWindowProperty(dpy, frm, wmstate,
-				0L, 1000L, FALSE, wmstate, &act_typeatom,
-				&act_format, &items, &rest, &bp) == Success &&
-			act_format == 32)
-		{
-			dest = frm;
-			XFree(bp);
-
-			/* now, dest is a top level window and might have
-			 * the XdndAware property
-			 */
-			if (XGetWindowProperty(dpy, dest, XdndAware, 0L, 1000L, FALSE,
-				XA_ATOM, &act_typeatom,&act_format,&items,&rest,&bp)==Success &&
-				act_format == 32)
-			{
-				extern int DndSendEvent(Display *dpy, XEvent *event, const char *nam);
-				XClientMessageEvent cM;
-				Xv_opaque xdndowner;
-
-				XFree(bp);
-
-				if (! dirpw_key) dirpw_key = xv_unique_key();
-
-				xdndowner = xv_get(priv->dragdrop, XV_KEY_DATA, dirpw_key);
-				if (! xdndowner) {
-					xdndowner = xv_create(DIRPUB(priv), SELECTION_OWNER,
-							SEL_RANK_NAME, "XdndSelection",
-							SEL_CONVERT_PROC, delegate_conversion,
-							XV_KEY_DATA, dirpw_key, priv->dragdrop,
-							NULL);
-					xv_set(priv->dragdrop,
-							XV_KEY_DATA, dirpw_key, xdndowner,
-							NULL);
-				}
-				xv_set(xdndowner, SEL_OWN, TRUE, NULL);
-
-				cM.type = ClientMessage;
-				cM.display = dpy;
-				cM.format = 32;
-				cM.message_type = (Atom)xv_get(server, SERVER_ATOM, "XdndEnter");
-				cM.window = dest;
-				cM.data.l[0] = pwxid;
-				cM.data.l[1] = (3 << 24);
-				cM.data.l[2] = (Atom)xv_get(server, SERVER_ATOM, "text/plain");
-				cM.data.l[3] = (Atom)xv_get(server, SERVER_ATOM, "text/uri-list");
-				cM.data.l[4] = (Atom)xv_get(server, SERVER_ATOM, "FILE_NAME");
-
-				DndSendEvent(dpy, (XEvent *)&cM, "direvent-enter");
-
-				cM.type = ClientMessage;
-				cM.display = dpy;
-				cM.format = 32;
-				cM.message_type = (Atom)xv_get(server, SERVER_ATOM, "XdndPosition");
-				cM.window = dest;
-				cM.data.l[0] = pwxid;
-				cM.data.l[1] = 0;
-				cM.data.l[2] = ((rx << 16) | ry);
-				cM.data.l[3] = lasttime;
-				cM.data.l[4] = (Atom)xv_get(server, SERVER_ATOM, "XdndActionCopy");
-
-				DndSendEvent(dpy, (XEvent *)&cM, "direvent-position");
-
-				cM.type = ClientMessage;
-				cM.display = dpy;
-				cM.format = 32;
-				cM.message_type = (Atom)xv_get(server, SERVER_ATOM, "XdndDrop");
-				cM.window = dest;
-				cM.data.l[0] = pwxid;
-				cM.data.l[1] = 0;
-				cM.data.l[2] = lasttime;
-				cM.data.l[3] = 0;
-				cM.data.l[4] = 0;
-
-				DndSendEvent(dpy, (XEvent *)&cM, "direvent-drop");
-				return;
-			}
-			break;
-		}
-		sx = nx;
-		sy = ny;
-		dest = frm;
-		frm = ch;
-	}
-}
-
 static void repaint_file(Dir_private *priv, int this)
 {
 	int x, y;
@@ -664,7 +490,6 @@ static short drag_and_drop(Dir_private *priv, dir_event_ptr dev)
 	int allow_drag_move, do_move;
 	Dir_entry_t *vis;
 	int dropstat, i, cnt = 0, vcnt = priv->visible_num;
-	Xv_server server;
 
 	if (priv->inhibit & DIR_INHIBIT_DRAG) return 0;
 
@@ -718,20 +543,6 @@ static short drag_and_drop(Dir_private *priv, dir_event_ptr dev)
 				}
 			}
 			xv_set(DIRPUB(priv), DIR_CHANGE_SELECTED, priv->num_sel = 0, NULL);
-
-			break;
-
-		case DND_ILLEGAL_TARGET:
-			server = XV_SERVER_FROM_WINDOW(DIRPUB(priv));
-			/* this is our hack (see srv_get.c) to find out where we are
-			 * running under an official SUN libxview
-			 */
-			if (xv_get(server, SERVER_WM_NONE)) {
-				/* not 0 meaning an official SUN libxview
-				 * which is not 'XdndAware'
-				 */
-				try_xdnd_drop(server, priv, dev->vinfo->xid);
-			}
 
 			break;
 
