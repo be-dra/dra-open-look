@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.6 2026/07/20 14:02:08 dra Exp $ ";
+static char     sccsid[] = "@(#)icon.c 20.16 90/02/26 DRA: RCS $Id: icon.c,v 4.7 2026/10/17 15:55:16 dra Exp $ ";
 #endif
 #endif
 
@@ -760,16 +760,14 @@ static void icon_set_wrk_space_color(Icon icon_public)
 			sprintf(msg,
 					XV_MSG("icon: color name \"%s\" not in database"),
 					color_name);
-			xv_error(XV_NULL, ERROR_SEVERITY, ERROR_RECOVERABLE,
-					ERROR_STRING, msg, ERROR_PKG, ICON, NULL);
-		}
-		else if (!XAllocColor(display, cmap, &color)) {
-			xv_error(XV_NULL, ERROR_SEVERITY, ERROR_RECOVERABLE,
-					ERROR_STRING,
-					XV_MSG("icon: all color cells are allocated"),
-					ERROR_PKG, ICON, NULL);
+			xv_error(XV_NULL,
+					ERROR_SEVERITY, ERROR_RECOVERABLE,
+					ERROR_STRING, msg,
+					ERROR_PKG, ICON,
+					NULL);
 		}
 		else {
+			xv_get(xv_cms(info), CMS_PIXEL_FROM_XCOLOR, &color);
 			valid_color = TRUE;
 		}
 	}
