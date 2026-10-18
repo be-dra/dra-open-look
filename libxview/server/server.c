@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.69 2026/10/15 17:04:52 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.70 2026/10/17 10:50:39 dra Exp $";
 #endif
 #endif
 
@@ -2232,37 +2232,22 @@ static wm_type_t determine_window_manager(Xv_server srv)
 {
 	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
 	Window root = DefaultRootWindow(dpy);
-	Atom typeatom;
-	int act_format;
-	unsigned long nelem, rest;
-	unsigned char *data;
+	Atom *atoms;
+	int i, count;
 
-	if (XGetWindowProperty(dpy, root, xv_get(srv, SERVER_ATOM,"_MOTIF_WM_INFO"),
-					0L, 30L, False, xv_get(srv, SERVER_ATOM, "_MOTIF_WM_INFO"),
-					&typeatom, &act_format, &nelem, &rest,
-					&data) == Success)
-	{
-		XFree(data);
-		if (typeatom == xv_get(srv, SERVER_ATOM, "_MOTIF_WM_INFO")
-			&& act_format == 32)
-		{
+	atoms = XListProperties(dpy, root, &count);
+	for (i = 0; i < count; i++) {
+		if (atoms[i] == xv_get(srv, SERVER_ATOM, "_MOTIF_WM_INFO")) {
+			XFree((char *)atoms);
 			return WM_MWM;
 		}
-	}
-
-	if (XGetWindowProperty(dpy, root,
-					xv_get(srv, SERVER_ATOM, "_SUN_WM_PROTOCOLS"),
-					0L, 30L, False, XA_ATOM,
-					&typeatom, &act_format, &nelem, &rest,
-					&data) == Success)
-	{
-		XFree(data);
-
-		if (typeatom == XA_ATOM && act_format == 32) {
+		if (atoms[i] == xv_get(srv, SERVER_ATOM, "_SUN_WM_PROTOCOLS")) {
+			XFree((char *)atoms);
 			return WM_OLWM;
 		}
 	}
 
+	XFree((char *)atoms);
 	return WM_OTHER;
 }
 
