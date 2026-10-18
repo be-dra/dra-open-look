@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)cms.c 1.17 91/03/18 DRA: RCS $Id: cms.c,v 2.4 2026/02/12 11:01:17 dra Exp $";
+static char     sccsid[] = "@(#)cms.c 1.17 91/03/18 DRA: RCS $Id: cms.c,v 2.5 2026/10/17 17:28:22 dra Exp $";
 #endif
 #endif
 
@@ -146,6 +146,27 @@ static int cms_get_colors(Cms_info *cms, unsigned long cms_index,
 	return (XV_OK);
 }
 
+static int get_pixel_from_xcolor(Cms_info *cms, XColor *xcol)
+{
+	Visual *vi = cms->visual->vinfo->visual;
+
+	if (vi->class >= TrueColor) {
+		/* the values in xcol->red etc look like 0xa200.... */
+		xcol->pixel = ((((xcol->red>>8)<<cms->red_shift) & vi->red_mask)
+			| (((xcol->green>>8) << cms->green_shift) & vi->green_mask) 
+			| (((xcol->blue>>8) << cms->blue_shift) & vi->blue_mask)); 
+	}
+	else {
+		Xv_server server = xv_get(cms->screen, SCREEN_SERVER);
+		Display *display = (Display *) xv_get(server, XV_DISPLAY);
+
+		if (!XAllocColor(display, cms->cmap->id, xcol)) {
+			return XV_ERROR;
+		}
+	}
+	return XV_OK;
+}
+
 static int cms_alloc_static_colors(Display *display, Cms_info *cms,
 				Xv_Colormap *cmap, XColor *xcolors, unsigned long cms_index,
 				unsigned long cms_count)
@@ -158,13 +179,12 @@ static int cms_alloc_static_colors(Display *display, Cms_info *cms,
 
 	for (i = 0; i <= cms_count - 1; i++) {
 		pixel = &cms->index_table[cms_index + i];
+		XColor *xcol = xcolors + i;
 
 		/* static cms pixels are write-once only */
 		if (*pixel == XV_INVALID_PIXEL) {
-			if (!XAllocColor(display, cmap->id, xcolors + i)) {
-				return (XV_ERROR);
-			}
-			*pixel = (xcolors + i)->pixel;
+			get_pixel_from_xcolor(cms, xcol);
+			*pixel = xcol->pixel;
 		}
 	}
 
@@ -425,6 +445,33 @@ Xv_private Xv_opaque cms_default_colormap(Xv_Server server, Display	*display,
 	return ((Xv_opaque) colormap);
 }
 
+static void determine_shifts(Cms_info *cms)
+{
+	Visual *vi = cms->visual->vinfo->visual;
+	unsigned long pix;
+
+	pix = vi->red_mask;
+	cms->red_shift = 0;
+	while ((pix & 1) == 0) {
+		++cms->red_shift;
+		pix >>= 1;
+	}
+
+	pix = vi->green_mask;
+	cms->green_shift = 0;
+	while ((pix & 1) == 0) {
+		++cms->green_shift;
+		pix >>= 1;
+	}
+
+	pix = vi->blue_mask;
+	cms->blue_shift = 0;
+	while ((pix & 1) == 0) {
+		++cms->blue_shift;
+		pix >>= 1;
+	}
+}
+
 static int cms_init(Xv_Screen parent, Cms cms_public, Attr_avlist avlist, int *dummy)
 {
 	Cms_info *cms = NULL;
@@ -443,6 +490,7 @@ static int cms_init(Xv_Screen parent, Cms cms_public, Attr_avlist avlist, int *d
 	cms->screen = parent ? parent : xv_default_screen;
 	cms->type = XV_STATIC_CMS;
 	cms->visual = (Screen_visual *) xv_get(cms->screen, SCREEN_DEFAULT_VISUAL);
+	determine_shifts(cms);
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch ((int)attrs[0]) {
@@ -507,8 +555,10 @@ static int cms_init(Xv_Screen parent, Cms cms_public, Attr_avlist avlist, int *d
 
 		visual = (Screen_visual *) xv_get(cms->screen, SCREEN_VISUAL, mask,
 				&template);
-		if (visual)
+		if (visual) {
 			cms->visual = visual;
+			determine_shifts(cms);
+		}
 	}
 
 	/* 
@@ -749,6 +799,12 @@ static Xv_opaque cms_get_attr(Cms cms_public, int *status,
 				value = (Xv_opaque) cms->index_table[index];
 				break;
 			}
+
+    	case CMS_PIXEL_FROM_XCOLOR:
+			xcol = va_arg(args, XColor *);
+			get_pixel_from_xcolor(cms, xcol);
+			value = xcol->pixel;
+			break;
 
 		case CMS_SIZE:
 			value = (Xv_opaque) cms->size;
