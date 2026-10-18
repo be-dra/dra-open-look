@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.25 2026/10/06 18:19:15 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.26 2026/10/17 15:55:28 dra Exp $ ";
 #endif
 #endif
 
@@ -401,9 +401,7 @@ static GC *screen_get_cached_gc_list(Screen_info *screen, Xv_Window window)
 						gc_value.foreground = xv_fg(info);
 					}
 					else {
-						XAllocColor(dpy,
-							DefaultColormap(dpy, screen->number),
-							&color);
+						xv_get(xv_cms(info), CMS_PIXEL_FROM_XCOLOR, &color);
 						gc_value.foreground = color.pixel;
 						screen->input_pixel = color.pixel;
 					}
