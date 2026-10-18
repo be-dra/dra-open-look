@@ -1,4 +1,4 @@
-/*	@(#)cms.h 20.12 89/08/17 SMI   DRA: RCS $Id: cms.h,v 2.3 2025/07/06 11:19:00 dra Exp $	*/
+/*	@(#)cms.h 20.12 89/08/17 SMI   DRA: RCS $Id: cms.h,v 2.4 2026/10/17 15:21:55 dra Exp $	*/
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
  *	pending in the U.S. and foreign countries. See LEGAL NOTICE 
@@ -85,6 +85,7 @@ typedef enum {
     CMS_PIXEL		= CMS_ATTR(ATTR_INT,                	50),
     CMS_CMS_DATA	= CMS_ATTR(ATTR_OPAQUE,		    	55),
     CMS_CONTROL_CMS	= CMS_ATTR(ATTR_BOOLEAN,            	60),
+    CMS_PIXEL_FROM_XCOLOR = CMS_ATTR(ATTR_OPAQUE,       60), /* --G */
     /*
      * Private attributes.
      */
