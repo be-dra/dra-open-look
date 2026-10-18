@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.23 2026/10/15 16:58:01 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.24 2026/10/17 17:30:16 dra Exp $ ";
 #endif
 #endif
 
@@ -790,13 +790,16 @@ static void notice_drawbox(Xv_Window pw, struct rect *rectp, int quadrant,
 		XColor xbg, xbg2, xbg3, xhigh;
 		Colormap cmap;
 
+	 	/* As the three bg, bg2, bg3 are equal, we need to do the same 
+		 * calculation for the emanation shadow colors as in the 3D color case.
+		 */
 		xbg.pixel = bg;
 		cmap = DefaultColormap(display, (int)xv_get(screen, SCREEN_NUMBER));
 		XQueryColor(display, cmap, &xbg);
 		olgx_calculate_3Dcolors((XColor *) NULL, &xbg, &xbg2, &xbg3, &xhigh);
-		XAllocColor(display, cmap, &xbg2);
-		XAllocColor(display, cmap, &xbg3);
+		xv_get(cms, CMS_PIXEL_FROM_XCOLOR, &xbg2);
 		bg2 = xbg2.pixel;
+		xv_get(cms, CMS_PIXEL_FROM_XCOLOR, &xbg3);
 		bg3 = xbg3.pixel;
 	}
 
