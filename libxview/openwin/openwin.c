@@ -1,5 +1,5 @@
 #ifndef lint
-char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.10 2026/10/09 11:55:49 dra Exp $ ";
+char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.11 2026/10/17 16:40:04 dra Exp $ ";
 #endif
 
 /*
@@ -178,14 +178,12 @@ static void openwin_set_bg_color(Openwin owin_public)
 	Xv_Drawable_info *info;
 
 	DRAWABLE_INFO_MACRO(owin_public, info);
-	if (XAllocColor(xv_display(info),
-			(Colormap)xv_get(xv_cms(info), XV_XID, 0),
-			&(owin->background)) == 1) {
-		XSetWindowBackground(xv_display(info), xv_xid(info),
+	xv_get(xv_get(owin_public, WIN_CMS),
+					CMS_PIXEL_FROM_XCOLOR, &owin->background);
+	XSetWindowBackground(xv_display(info), xv_xid(info),
 				     owin->background.pixel);
-		SERVERTRACE((500, "%s: %s: XClearWindow, bg=%lx\n", xv_app_name, __FUNCTION__, owin->background.pixel));
-		XClearWindow(xv_display(info), xv_xid(info));
-	}
+	SERVERTRACE((500, "%s: %s: XClearWindow, bg=%lx\n", xv_app_name, __FUNCTION__, owin->background.pixel));
+	XClearWindow(xv_display(info), xv_xid(info));
 }
 #endif /* NO_OPENWIN_PAINT_BG */
 
