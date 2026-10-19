@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.18 2026/07/30 15:04:56 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.19 2026/10/18 09:10:22 dra Exp $";
 #endif
 
 /*
@@ -1500,8 +1500,9 @@ fprintf(stderr, "%s: pw=%ld, view=%ld\n", __FUNCTION__, xself, view);
 			XV_HEIGHT, xv_get(view, XV_HEIGHT),
 			NULL);
 
-	vp->drop_site = xv_create(xself, DROP_SITE_ITEM,
-				DROP_SITE_REGION, &vp->rect,
+	xv_create(xself, DROP_SITE_ITEM,
+				DROP_SITE_TYPE, DND_WINDOW_SITE,
+				DROP_SITE_REGION, xself,
 				NULL);
 
 	return XV_OK;
