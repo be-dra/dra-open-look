@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_disp_c_sccsid[] = "@(#)txt_disp.c 20.31 93/06/28 DRA: $Id: txt_disp.c,v 4.3 2026/07/30 07:44:44 dra Exp $";
+char     txt_disp_c_sccsid[] = "@(#)txt_disp.c 20.31 93/06/28 DRA: $Id: txt_disp.c,v 4.4 2026/10/18 09:10:17 dra Exp $";
 #endif
 
 /*
@@ -111,12 +111,6 @@ Pkg_private void textsw_resize(Textsw_view_private view)
     view->rect.r_top = view->e_view->rect.r_top;
     view->rect.r_height -= view->rect.r_top;
     ev_set(view->e_view, EV_RECT, &view->rect, NULL);
-	if (view->drop_site) {
-    	xv_set(view->drop_site,
-					DROP_SITE_DELETE_REGION, NULL,
-			    	DROP_SITE_REGION, &view->rect,
-			    	NULL);
-	}
 }
 
 Pkg_private void textsw_do_resize(Textsw_view abstract)
