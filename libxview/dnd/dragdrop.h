@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.6 2026/10/14 18:05:31 dra Exp $ ";
+static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.7 2026/10/18 08:33:30 dra Exp $ ";
 #endif
 #endif
 
@@ -54,7 +54,6 @@ typedef enum {
 #define DND_DEFAULT_SITE        (1<<2)
 
 #define DND_RECT_SITE		0
-	/* XXX: Currently, only rect sites are supported. */
 #define DND_WINDOW_SITE		1
 
 #define DND_VERSION		0
@@ -99,10 +98,9 @@ typedef enum {
 
 	/* Private Drop Site Item attrs */
 	DROP_SITE_SIZE			= DND_ATTR(ATTR_INT,		95),
+
 	/* Public Drop Site Item attrs */
-#ifdef WINDOW_SITES
 	DROP_SITE_TYPE			= DND_ATTR(ATTR_INT,		100),
-#endif /* WINDOW_SITES */
 	DROP_SITE_ID			= DND_ATTR(ATTR_LONG,		105),
 	DROP_SITE_EVENT_MASK		= DND_ATTR(ATTR_INT,		110),
 	DROP_SITE_REGION		= DND_ATTR(ATTR_OPAQUE,		115),
