@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.c 20.73 93/06/28 DRA: $Id: frame.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.c 20.73 93/06/28 DRA: $Id: frame.c,v 4.2 2026/10/18 21:03:48 dra Exp $ ";
 #endif
 #endif
 
@@ -16,6 +16,7 @@ static char     sccsid[] = "@(#)frame.c 20.73 93/06/28 DRA: $Id: frame.c,v 4.1 2
 #include <xview/server.h>
 #include <xview_private/draw_impl.h>
 #include <xview_private/windowimpl.h>
+#include <xview_private/win_info.h>
 #include <xview_private/scrn_impl.h>
 
 Xv_private void frame_cmdline_help(char *name)
@@ -64,10 +65,8 @@ Xv_public void frame_get_rect(Frame frame, Rect *rect)
 
 	if ((xwin_attr.map_state == IsViewable) || status_get(frame_info, iconic)) {
 		int x, y;
-		XID notused;
 
-		XTranslateCoordinates(display, win_xid,
-				(XID) xv_get(xv_root(info), XV_XID), 0, 0, &x, &y, &notused);
+		win_translate_to_screen(frame, 0, 0, &x, &y);
 		xwin_attr.x = x - left;
 		xwin_attr.y = y - top;
 	}
