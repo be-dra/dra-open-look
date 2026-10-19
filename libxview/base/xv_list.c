@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)xv_list.c 20.13 93/06/28  DRA: $Id: xv_list.c,v 4.1 2024/03/28 19:35:11 dra Exp $";
+static char     sccsid[] = "@(#)xv_list.c 20.13 93/06/28  DRA: $Id: xv_list.c,v 4.2 2026/10/18 20:07:10 dra Exp $";
 #endif
 #endif
 
@@ -30,15 +30,16 @@ Xv_private Xv_sl_link xv_sl_add_after(Xv_sl_head head, Xv_sl_link link, Xv_sl_li
 
 Xv_private Xv_sl_link xv_sl_remove_after(Xv_sl_head head, Xv_sl_link link)
 {
-    register Xv_sl_link result;
+	register Xv_sl_link result;
 
-    if (link != XV_SL_NULL) {
-	result = link->next;
-	link->next = result->next;
-    } else {
-	result = head;
-    }
-    return (result);
+	if (link != XV_SL_NULL) {
+		result = link->next;
+		link->next = result->next;
+	}
+	else {
+		result = head;
+	}
+	return (result);
 }
 
 Xv_private Xv_sl_link xv_sl_remove(Xv_sl_head head, Xv_sl_link link)
