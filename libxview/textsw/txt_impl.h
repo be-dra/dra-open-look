@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.68 2026/08/06 08:47:37 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.69 2026/10/18 09:10:43 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -125,7 +125,6 @@ typedef struct textsw_view_object {
 	Rect				  rect;
 	Ev_handle			  e_view;
 	long unsigned		  view_state;
-	Xv_drop_site		  drop_site;
 	int					  obscured;
 	Selection_requestor   selreq;
 } Textsw_view_privstruct;
