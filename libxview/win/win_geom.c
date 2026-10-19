@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.3 2026/10/04 11:19:56 dra Exp $";
+static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.4 2026/10/18 20:06:34 dra Exp $";
 #endif
 #endif
 
@@ -132,7 +132,8 @@ Xv_private void win_translate_to_screen(Xv_window win,
 			++yoff;
 		}
         info = WIN_PRIVATE(info->parent);
-	} while (info && info->parent);
+		w = info->parent;
+	} while (info && w && xv_get(w, XV_IS_SUBTYPE_OF, WINDOW));
 
 	*dst_x = src_x +xoff;
 	*dst_y = src_y +yoff;
