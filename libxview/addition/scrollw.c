@@ -35,7 +35,7 @@
 #include <olgx/olgx.h>
 #include <xview/win_notify.h>
 
-char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.10 2026/10/06 21:16:36 dra Exp $";
+char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.11 2026/10/18 09:09:27 dra Exp $";
 
 extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 
@@ -79,7 +79,6 @@ typedef struct _scrollview_struct {
 
 typedef struct _scrollpw_private {
 	Xv_opaque                   public_self;
-	Xv_drop_site                dropsite;
 	int                         sel_offset;
 	Scrollpw_info               vi;
 	Scrollwin_private           *priv;
@@ -534,16 +533,8 @@ static Notify_value scrollpw_events(Xv_opaque pw, Event *ev, Notify_arg arg, Not
 		case WIN_RESIZE:
 			val =  notify_next_event_func(pw, (Notify_event)ev, arg, type);
 
-			rect.r_width = pwp->vi.width = (int)xv_get(pw, XV_WIDTH);
-			rect.r_height = pwp->vi.height = (int)xv_get(pw, XV_HEIGHT);
-
-			if (pwp->dropsite) {
-				rect.r_left = rect.r_top = 0;
-				xv_set(pwp->dropsite,
-							DROP_SITE_DELETE_REGION_PTR, NULL,
-							DROP_SITE_REGION, &rect,
-							NULL);
-			}
+			pwp->vi.width = (int)xv_get(pw, XV_WIDTH);
+			pwp->vi.height = (int)xv_get(pw, XV_HEIGHT);
 
 			update_view_scrollbars(priv, pwp->vp->public_self, FALSE);
 			subclass_handle_event(priv, pwp, ev);
@@ -1117,7 +1108,6 @@ static int scrollpw_destroy(Scrollpw self, Destroy_status status)
 
 /* 		DTRACE(DTL_INTERN+10, "in scrollpw_destroy(%x)\n", self); */
 
-		if (pwp->dropsite) xv_destroy(pwp->dropsite);
 		memset((char *)pwp, 0, sizeof(*pwp));
 		xv_free((char *)pwp);
 	}
@@ -1128,15 +1118,13 @@ static Xv_opaque scrollpw_set(Scrollpw self, Attr_avlist avlist)
 {
 	register Attr_attribute *attrs;
 	Scrollpw_private *pwp = PWPRIV(self);
-	Rect rect;
 	Scrollwin_private *priv = pwp->priv;
 
 	for (attrs=avlist; *attrs; attrs=attr_next(attrs)) switch ((int)*attrs) {
 		case XV_END_CREATE:
 
-			rect.r_left = rect.r_top = 0;
-			rect.r_width = pwp->vi.width = (int)xv_get(self, XV_WIDTH);
-			rect.r_height = pwp->vi.height = (int)xv_get(self, XV_HEIGHT);
+			pwp->vi.width = (int)xv_get(self, XV_WIDTH);
+			pwp->vi.height = (int)xv_get(self, XV_HEIGHT);
 
 			if (priv->created) {    /* is a split */
 				Scrollpw other_pw;
@@ -1174,28 +1162,31 @@ static Xv_opaque scrollpw_set(Scrollpw self, Attr_avlist avlist)
 				priv->drop_kind = xv_get(SCRPUB(pwp->priv),SCROLLWIN_DROPPABLE);
 			}
 
-			/* the drop site implementation is rather funny !! */
 			switch (priv->drop_kind) {
 				case SCROLLWIN_DROP:
-					pwp->dropsite = xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_REGION, &rect,
+					xv_create(self, DROP_SITE_ITEM,
+								DROP_SITE_TYPE, DND_WINDOW_SITE,
+								DROP_SITE_REGION, self,
 								NULL);
 					break;
 				case SCROLLWIN_DEFAULT:
-					pwp->dropsite = xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_REGION, &rect,
+					xv_create(self, DROP_SITE_ITEM,
+								DROP_SITE_TYPE, DND_WINDOW_SITE,
+								DROP_SITE_REGION, self,
 								DROP_SITE_DEFAULT, TRUE,
 								NULL);
 					break;
 				case SCROLLWIN_DROP_WITH_PREVIEW:
-					pwp->dropsite = xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_REGION, &rect,
+					xv_create(self, DROP_SITE_ITEM,
+								DROP_SITE_TYPE, DND_WINDOW_SITE,
+								DROP_SITE_REGION, self,
 								DROP_SITE_EVENT_MASK, DND_ENTERLEAVE|DND_MOTION,
 								NULL);
 					break;
 				case SCROLLWIN_DEFAULT_WITH_PREVIEW:
-					pwp->dropsite = xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_REGION, &rect,
+					xv_create(self, DROP_SITE_ITEM,
+								DROP_SITE_TYPE, DND_WINDOW_SITE,
+								DROP_SITE_REGION, self,
 								DROP_SITE_DEFAULT, TRUE,
 								DROP_SITE_EVENT_MASK, DND_ENTERLEAVE|DND_MOTION,
 								NULL);
