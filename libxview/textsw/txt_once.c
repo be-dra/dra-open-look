@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.25 2026/08/06 08:47:37 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.26 2026/10/18 09:09:59 dra Exp $";
 #endif
 
 /*
@@ -1024,7 +1024,6 @@ contents or store the contents as a new file."),
 				}
 			}
 
-			xv_destroy(view->drop_site);
 			if (view->selreq) xv_destroy(view->selreq);
 			textsw_view_cleanup(view);
 			break;
