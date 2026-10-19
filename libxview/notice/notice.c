@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.24 2026/10/17 17:30:16 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.25 2026/10/18 21:03:40 dra Exp $ ";
 #endif
 #endif
 
@@ -2880,18 +2880,13 @@ static int notice_center(Notice_info *notice)
 		cY = mouse_position->r_top - (cHeight / 2);
 	}
 	else {
-		Xv_Drawable_info *p_info;
-		XID dummy;
-
 		/*
 		 * Calculations to center the sub_frame within the parent
 		 */
 
 		pWidth = xv_get(parent, XV_WIDTH);
 		pHeight = xv_get(parent, XV_HEIGHT);
-		DRAWABLE_INFO_MACRO(parent, p_info);
-		XTranslateCoordinates(dpy, xv_xid(p_info),
-				(XID) xv_get(xv_root(p_info), XV_XID), 0, 0, &pX, &pY, &dummy);
+		win_translate_to_screen(parent, 0, 0, &pX, &pY);
 
 		xDiff = (pWidth - cWidth) / 2;
 		yDiff = (pHeight - cHeight) / 2;
