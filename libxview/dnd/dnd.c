@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.53 2026/10/14 18:06:26 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.54 2026/10/19 17:06:46 dra Exp $ ";
 #endif
 #endif
 
@@ -223,6 +223,7 @@ static void note_dsdm_reply(Selection_requestor sr, Atom target, Atom type,
 			return;
 		}
 		dnd->contains_xdnd = TRUE;
+		xv_free(value);
 	}
 }
 
