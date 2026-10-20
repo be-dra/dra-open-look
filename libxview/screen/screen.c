@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.26 2026/10/17 15:55:28 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.28 2026/10/19 14:18:56 dra Exp $ ";
 #endif
 #endif
 
@@ -90,6 +90,7 @@ typedef struct _screen_info {
     int	num_sun_wm_protocols;	/* No. of protocols in above */
 	unsigned long input_pixel;
 	int olwm_managed;
+	int max_icon_size;
 	screen_ui_style_t ui_style;
 	Selection_requestor dsdm_selreq;
 	/* atoms I want to know in order to handle them */
@@ -668,6 +669,31 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
 												"_DRA_ENHANCED_OLWM");
 			break;
 
+		case SCREEN_MAX_ICON_SIZE:
+			if (screen->max_icon_size < 0) {
+				Display *dpy = (Display *)xv_get(screen->server, XV_DISPLAY);
+				int cnt;
+				Window root = xv_get(screen->root_window,XV_XID);
+				XIconSize *is = NULL;
+
+				if (XGetIconSizes(dpy, root, &is, &cnt) == 0) {
+					screen->max_icon_size = 0;
+				}
+				else {
+					int i;
+					int mx = 0;
+
+					for (i = 0; i < cnt; i++) {
+						if (is[i].max_width > mx) mx = is[i].max_width;
+						if (is[i].max_height > mx) mx = is[i].max_height;
+					}
+					screen->max_icon_size = mx;
+					XFree(is);
+				}
+			}
+			value = (Xv_opaque) screen->max_icon_size;
+			break;
+
 		case SCREEN_NUMBER:
 			value = (Xv_opaque) screen->number;
 			break;
@@ -979,6 +1005,7 @@ static  int screen_init(Xv_opaque parent, Xv_Screen screen_public,
 	screen->num_sun_wm_protocols = 0;
 
 	screen->sun_wm_p = xv_get(screen->server, SERVER_ATOM, "_SUN_WM_PROTOCOLS");
+	screen->max_icon_size = -1;
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch ((int)attrs[0]) {
