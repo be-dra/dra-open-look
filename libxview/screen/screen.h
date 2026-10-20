@@ -1,4 +1,4 @@
- /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.10 2026/09/28 08:48:56 dra Exp $     */
+ /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.11 2026/10/19 14:02:48 dra Exp $     */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -67,6 +67,7 @@ typedef enum {
 	SCREEN_BASIC_CURSOR 		 = SCREEN_ATTR(ATTR_OPAQUE, 18),
 	SCREEN_UI_STYLE 		     = SCREEN_ATTR(ATTR_ENUM, 16),
 	SCREEN_DSDM_REQUESTOR        = SCREEN_ATTR(ATTR_OPAQUE, 19),  /* G-- */
+	SCREEN_MAX_ICON_SIZE         = SCREEN_ATTR(ATTR_INT, 20),  /* G-- */
 	/*
 	 * Private attributes 
 	 */
