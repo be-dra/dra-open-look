@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.9 2026/10/13 09:10:09 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.10 2026/10/19 18:45:33 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -84,6 +84,7 @@ int _rt_count;
 	 XTranslateCoordinates args)
 
 
+#define xv_DND_NO_USE (1<<9)    /* this comes from 'no-drop-site-windows' */
 #define xv_DND_XDND_AWARE (1<<4)
 #define xv_DND_ENTERLEAVE (1<<0)
 #define xv_DND_MOTION (1<<1)
@@ -490,6 +491,7 @@ static void FindDropSites(Display *dpy, int client_understands_xdnd)
 				}
 
 				SubtractWindowFromVisibleRegion(dpy, winInfo, visrgn);
+				continue;
 			}
 			if (client_understands_xdnd) {
 				if (client->flags & OL_use_dndaware) {
@@ -526,8 +528,57 @@ static void FindDropSites(Display *dpy, int client_understands_xdnd)
 									paneInfo->core.y + winInfo->core.y);
 							XDestroyRegion(framergn);
 							XDestroyRegion(toprgn);
+
+							SubtractWindowFromVisibleRegion(dpy, winInfo,
+															visrgn);
+							continue;
 						}
 					}
+				}
+			}
+			/* if we come here, we might have a window like xterm that has
+			 * neither _SUN_DRAGDROP_INTEREST nor XdndAware.
+			 * Before we handled this case, the following happened:
+			 * Assume you have a big texteditor on the screen and (in front
+			 * of it ) an overlapping xterm. If you drag over the xterm,
+			 * the 'cursor feedback' was as if you were over a valid drop site
+			 * (although you were over the xterm) - and if you dropped there
+			 * the drop was processed by the text editor....
+			 */
+			if (winInfo->core.kind == WIN_FRAME) {
+				paneInfo = (WinPane *) PANEOFCLIENT(client);
+
+				if (paneInfo) {
+					long pseudositedata[] = {
+						DND_VERSION,
+						1,
+						paneInfo->core.self,  /* window */
+						654321,   /* site_id */
+						xv_DND_NO_USE,  /* see WriteSiteRectList */
+						xv_DND_RECT_SITE,
+						1,   /* num rects */
+						0,  /* x */
+						0,  /* y */
+						paneInfo->core.width,
+						paneInfo->core.height
+					};
+					int dl= sizeof(pseudositedata)/sizeof(long);
+
+					framergn = GetWindowRegion(dpy, winInfo, True);
+					XIntersectRegion(framergn, visrgn, framergn);
+					toprgn = GetWindowRegion(dpy, (WinGeneric *)paneInfo,False);
+					XOffsetRegion(toprgn, xoff, yoff);
+					XSubtractRegion(framergn, toprgn, framergn);
+					ProcessInterestProperty(dpy, winInfo,s, pseudositedata,
+							dl, framergn,
+							paneInfo->core.x + winInfo->core.x,
+							paneInfo->core.y + winInfo->core.y);
+					XDestroyRegion(framergn);
+					XDestroyRegion(toprgn);
+
+					SubtractWindowFromVisibleRegion(dpy, winInfo,
+													visrgn);
+					continue;
 				}
 			}
 		}
@@ -604,18 +655,20 @@ static void WriteSiteRectList(Display *dpy, Window win, Atom prop)
 	cur = array;
 	site = MasterSiteList;
 	while (site != NULL) {
-		region = (REGION *) site->region;
-		box = region->rects;
-		last = box + region->numRects;
-		for (; box < last; ++box) {
-			*cur++ = site->screen;
-			*cur++ = site->site_id;
-			*cur++ = site->window_id;
-			*cur++ = box->x1;
-			*cur++ = box->y1;
-			*cur++ = box->x2 - box->x1;
-			*cur++ = box->y2 - box->y1;
-			*cur++ = site->flags;
+		if ((site->flags & xv_DND_NO_USE) == 0) { 
+			region = (REGION *) site->region;
+			box = region->rects;
+			last = box + region->numRects;
+			for (; box < last; ++box) {
+				*cur++ = site->screen;
+				*cur++ = site->site_id;
+				*cur++ = site->window_id;
+				*cur++ = box->x1;
+				*cur++ = box->y1;
+				*cur++ = box->x2 - box->x1;
+				*cur++ = box->y2 - box->y1;
+				*cur++ = site->flags;
+			}
 		}
 		site = site->next;
 	}
@@ -687,7 +740,7 @@ static Bool convertTarget(Display *dpy, Window requestor, Atom target,
 	}
 	else if (target == AtomDisguiseXdndAware) {
 		/* we are able (and willing) to "disguise" XdndAware windows
-		 * a if they had registered real drop sites. However, if we
+		 * as if they had registered real drop sites. However, if we
 		 * send those pseudo drop sites to clients that are not aware of
 		 * that feature, that client might not work as expected.
 		 *
