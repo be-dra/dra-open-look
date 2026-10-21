@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.17 2026/09/04 17:01:22 dra Exp $";
+char filedrag_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filedrag.c,v 4.19 2026/10/20 18:31:26 dra Exp $";
 #endif
 
 typedef struct {
@@ -131,6 +131,8 @@ static int convert_text(FileDrag_private *priv, Xv_server server, Atom *type,
 
 	if (stat(priv->files[priv->current], &sb)) return FALSE;
 	if (! S_ISREG(sb.st_mode)) return FALSE;
+
+	if (priv->convert_string != FILEDRAG_CONTENTS_STRING) return FALSE;
 
 	*length = sb.st_size;
 
@@ -719,13 +721,24 @@ static Xv_opaque filedrag_set(FileDrag self, Attr_avlist avlist)
 			if (enab == FILEDRAG_NO_STRING &&
 				priv->convert_string != FILEDRAG_NO_STRING)
 			{
-				xv_set(self, ICCC_REMOVE_TARGET, XA_STRING, NULL);
+				xv_set(self,
+						ICCC_REMOVE_TARGET, XA_STRING,
+						DND_BASIC_DATA_NAMES,
+							"FILE_NAME",
+							NULL,
+						NULL);
 			}
 
 			if (enab != FILEDRAG_NO_STRING &&
 				priv->convert_string == FILEDRAG_NO_STRING)
 			{
-				xv_set(self, ICCC_ADD_TARGET, XA_STRING, NULL);
+				xv_set(self,
+						ICCC_ADD_TARGET, XA_STRING,
+						DND_BASIC_DATA_NAMES,
+							"FILE_NAME",
+							"STRING",
+							NULL,
+						NULL);
 			}
 
 			priv->convert_string = enab;
@@ -759,11 +772,21 @@ static Xv_opaque filedrag_set(FileDrag self, Attr_avlist avlist)
 			}
 
 			/* Convention: we are dragging **files**   */
-			xv_set(self,
-					DND_BASIC_DATA_NAMES,
-						"FILE_NAME",
-						NULL,
-					NULL);
+			if (priv->convert_string == FILEDRAG_NO_STRING) {
+				xv_set(self,
+						DND_BASIC_DATA_NAMES,
+							"FILE_NAME",
+							NULL,
+						NULL);
+			}
+			else {
+				xv_set(self,
+						DND_BASIC_DATA_NAMES,
+							"FILE_NAME",
+							"STRING",
+							NULL,
+						NULL);
+			}
 			break;
 
 		default: xv_check_bad_attr(FILEDRAG, A0);
