@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.10 2026/10/19 18:45:33 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.11 2026/10/20 19:27:28 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -50,6 +50,8 @@ char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.10 2026/10/19 18:4
  * them in the code must be coded as _XWhatever((arg, arg, ...)).  To enable, 
  * just add #define RTMETER.
  */
+
+/* #define RTMETER 1 */
 
 #ifdef RTMETER
 
@@ -280,14 +282,12 @@ static void ProcessInterestProperty(Display *dpy, WinGeneric *winInfo,
 	int junk;
 
 	if (array[cur] != DND_VERSION) {
-#ifdef DEBUG
 		char msg[100];
 
 		sprintf(msg,
 				"unknown drop interest property version (%d) on 0x%x\n",
 				array[cur], winInfo->core.self);
 		ErrorWarning(msg);
-#endif /* DEBUG */
 		return;
 	}
 
@@ -319,16 +319,12 @@ static void ProcessInterestProperty(Display *dpy, WinGeneric *winInfo,
 					if (0 == _XGetGeometry((dpy, areawin, &wjunk, &junk, &junk,
 											&width, &height, &border, &ujunk)))
 					{
-
-#ifdef DEBUG
 						char msg[100];
 
 						sprintf(msg,
 								"XGetGeometry failed on window 0x%x\n",
 								winInfo->core.self);
 						ErrorWarning(msg);
-#endif /* DEBUG */
-
 						continue;
 					}
 					(void)_XTranslateCoordinates((dpy, areawin,
@@ -341,7 +337,6 @@ static void ProcessInterestProperty(Display *dpy, WinGeneric *winInfo,
 				}
 				break;
 			default:
-#ifdef DEBUG
 				{
 					char msg[100];
 
@@ -350,7 +345,6 @@ static void ProcessInterestProperty(Display *dpy, WinGeneric *winInfo,
 							winInfo->core.self);
 					ErrorWarning(msg);
 				}
-#endif /* DEBUG */
 
 				XDestroyRegion(toprgn);
 				return;
@@ -415,13 +409,10 @@ static void FindDropSites(Display *dpy, int client_understands_xdnd)
 
 		if (_XQueryTree((dpy, root, &junk, &junk, &children,
 								(unsigned int *)&nchildren)) == 0) {
-
-#ifdef DEBUG
 			char msg[100];
 
 			(void)sprintf(msg, "XQueryTree failed on root window 0x%x", root);
 			ErrorWarning(msg);
-#endif /* DEBUG */
 
 			continue;
 		}
@@ -687,6 +678,13 @@ static void WriteSiteRectList(Display *dpy, Window win, Atom prop)
 static Bool convertTarget(Display *dpy, Window requestor, Atom target,
 					Atom property, int *client_understands_xdnd)
 {
+	/* the client_understands_xdnd pointer is only supplied if we are
+	 * called from within a MULTIPLE request. And it will point to
+	 * variable that contains 1 *only* if the same MULTIPLE request
+	 * contained a request for AtomDisguiseXdndAware = _DRA_DRAGDROP_XDND_AWARE
+	 * This indicates that the requesting client is able to recognize
+	 * the artificial Xdnd rectangles.
+	 */
     unsigned long data[100];	/* long enough for most return values */
     unsigned char *propdata = (unsigned char *) data;
     int format, nelements = 0;
