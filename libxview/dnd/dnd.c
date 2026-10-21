@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.54 2026/10/19 17:06:46 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.55 2026/10/20 18:32:02 dra Exp $ ";
 #endif
 #endif
 
@@ -1206,7 +1206,7 @@ static void delegate_convert_done(Selection_owner xdnd, Xv_opaque buf,
 	Dnd_info *dnd = DND_PRIVATE(dnd_public);
 
 	/* we come here when we have processed a selection request
-	 * In the xterm case, we should give up out selection(s)
+	 * In the xterm case, we should give up our selection(s)
 	 */
 	if (dnd->was_xterm) {
 		if (dnd->transientSel) {
@@ -1403,7 +1403,7 @@ static int IsV2App(Display *dpy, Window window, Dnd_info *dnd, XButtonEvent *ev)
 
 #define	DND_XTERM 66
 
-static int is_xterm(Window topwin, XButtonEvent *ev)
+static int is_xterm(Dnd_info *dnd, Window topwin, XButtonEvent *ev)
 {
 	Window dropwin;
 
@@ -1443,6 +1443,33 @@ static int is_xterm(Window topwin, XButtonEvent *ev)
 	 */
 	Display *dpy = ev->display;
 	XClassHint classhint;
+	int i, have_xa_string = FALSE;
+
+	/* just one moment: is it reasonable to play that pseudo-drop
+	 * game with xterm? Even if the user has configured it like this:
+	 * Btn1 Btn2 Btn3 s c<Btn5Up>: insert-selection(XdndSelection)
+	 * we know (as of 20.10.2026) what xterm will request:
+	 * UTF8_STRING
+	 * TEXT
+	 * COMPOUND_TEXT
+	 * STRING
+	 * Is there a way we can find out whether such a request can be
+	 * honored? Because otherwise it makes no sense to send that 
+	 * event - we should rather reply DND_ILLEGAL_TARGET...
+	 *
+	 * Convention: we expect XA_STRING in the basic_data_atoms
+	 */
+
+	for (i = 0; i < dnd->num_bda; i++) {
+		if (dnd->basic_data_atoms[i] == XA_STRING) {
+			have_xa_string = TRUE;
+			break;
+		}
+	}
+
+	if (! have_xa_string) {
+		return DND_ILLEGAL_TARGET;
+	}
 
 	if (XGetClassHint(dpy, topwin, &classhint)) {
 		if (0 == strcmp(classhint.res_class, "XTerm")) {
@@ -1577,7 +1604,7 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 				 * V2 application.
 				 */
 				if (!interest_prop) {
-					if (is_xterm(child, ev) == DND_XTERM)
+					if (is_xterm(dnd, child, ev) == DND_XTERM)
 						return DND_XTERM;
 					return (IsV2App(dpy, child, dnd, ev));
 				}
