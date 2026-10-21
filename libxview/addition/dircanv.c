@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.63 2026/10/16 11:45:01 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.64 2026/10/20 15:52:46 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -490,6 +490,7 @@ static short drag_and_drop(Dir_private *priv, dir_event_ptr dev)
 	int allow_drag_move, do_move;
 	Dir_entry_t *vis;
 	int dropstat, i, cnt = 0, vcnt = priv->visible_num;
+	char *errmsg = NULL;
 
 	if (priv->inhibit & DIR_INHIBIT_DRAG) return 0;
 
@@ -546,12 +547,39 @@ static short drag_and_drop(Dir_private *priv, dir_event_ptr dev)
 
 			break;
 
+		case DND_ERROR:
+			fprintf(stderr, "DND_ERROR\n");
+			errmsg = XV_MSG("Drag&Drop: unspecified error");
+			break;
+		case DND_ILLEGAL_TARGET:
+			errmsg = XV_MSG("Drag&Drop: illegal target");
+			break;
+		case DND_TIMEOUT:
+			errmsg = XV_MSG("Drag&Drop: timeout");
+			break;
+		case DND_SELECTION:
+			errmsg = XV_MSG("Drag&Drop: selection error");
+			break;
+
+		case DND_ABORTED: /* no need to tell the user */
+			break;
+
 		default:
 			break;
 	}
 
 	free((char *)files);
 	priv->selected_index = -1;
+	if (errmsg) {
+		Frame f = xv_get(DIRPUB(priv), WIN_FRAME);
+
+		if (f) {
+			xv_set(f,
+					FRAME_LEFT_FOOTER, errmsg,
+					WIN_ALARM,
+					NULL);
+		}
+	}
 	return 0;
 }
 
