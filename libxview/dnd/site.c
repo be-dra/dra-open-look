@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.6 2026/10/18 20:07:55 dra Exp $ ";
+static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.7 2026/10/21 11:04:09 dra Exp $ ";
 #endif
 #endif
 
@@ -15,7 +15,7 @@ static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.6 2026
 #include <xview/pkg.h>
 #include <xview/attr.h>
 #include <xview/rect.h>
-#include <xview/window.h>
+#include <xview/frame.h>
 #include <xview_private/xv_list.h>
 #include <xview_private/site_impl.h>
 #include <xview_private/windowimpl.h>
@@ -535,25 +535,49 @@ Xv_private int DndStoreSiteData(Xv_drop_site site_public, long **prop)
 Xv_private int DndSiteContains(Xv_drop_site site_public, int fx, int fy)
 {
 	Dnd_site_info *site = DND_SITE_PRIVATE(site_public);
-    Dnd_rect_list *rects;
+	Rect r;
 	int i;
 
 	if (!site->num_regions)
 		return FALSE;
 
-	for (i = 0, rects = (Dnd_rect_list *) (XV_SL_SAFE_NEXT(site->region.rects));
-		i < site->num_regions;
-		i++, rects = (Dnd_rect_list *) (XV_SL_SAFE_NEXT(rects)))
-	{
-		Rect rect;
+	if (dnds_status(site, is_window_region)) {
+    	Dnd_window_list *wins;
+		for (i=0, wins=(Dnd_window_list *)(XV_SL_SAFE_NEXT(site->region.windows));
+			i < site->num_regions;
+			i++, wins = (Dnd_window_list *) (XV_SL_SAFE_NEXT(wins)))
+		{
+			Xv_Window w = wins->window;
+			Rect *cr;
 
-		rect = rects->rect;
-		rect.r_left = rects->real_x;
-		rect.r_top = rects->real_y;
+			r = *((Rect *)xv_get(w, XV_RECT));
+			w = xv_get(w, XV_OWNER);
+			while (! xv_get(w, XV_IS_SUBTYPE_OF, FRAME)) {
+				cr = (Rect *)xv_get(w, XV_RECT);
+				r.r_left += cr->r_left;
+				r.r_top += cr->r_top;
+				w = xv_get(w, XV_OWNER);
+			} 
+			if (rect_includespoint(&r, fx, fy)) {
+				return TRUE;
+			}
+		}
+	}
+	else {
+    	Dnd_rect_list *rects;
+
+		for (i=0, rects=(Dnd_rect_list *)(XV_SL_SAFE_NEXT(site->region.rects));
+			i < site->num_regions;
+			i++, rects = (Dnd_rect_list *) (XV_SL_SAFE_NEXT(rects)))
+		{
+			r = rects->rect;
+			r.r_left = rects->real_x;
+			r.r_top = rects->real_y;
 
 
-		if (rect_includespoint(&rect, fx, fy)) {
-			return TRUE;
+			if (rect_includespoint(&r, fx, fy)) {
+				return TRUE;
+			}
 		}
 	}
 	return FALSE;
