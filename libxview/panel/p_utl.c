@@ -1,4 +1,4 @@
-char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.21 2026/08/06 08:45:21 dra Exp $";
+char p_utl_sccsid[] = "@(#)p_utl.c 20.100 93/06/28 DRA: $Id: p_utl.c,v 4.22 2026/10/23 07:15:33 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -740,69 +740,69 @@ Pkg_private void panel_paint_text(Xv_opaque	pw, XFontSet fs, Font	font_xid,
 Xv_public void panel_paint_svrim(Xv_Window pw, Pixrect *pr, int x, int y,
     int color_index, Pixrect *mask_pr)
 {
-    Display	   *display;
-    GC             *gc_list;
-    unsigned long   gc_mask;
-    XGCValues	    gc_value;
-    int		    mono_svrim_pw; /* paint window and Server Image are
-				    * 1 bit deep */
-    Xv_Drawable_info *svrim_info;  /* Server Image info */
-    Xv_Drawable_info *pw_info;	   /* paint window info */
-    Xv_Screen       screen;
-    XID		    xid;
+	Display *display;
+	GC *gc_list;
+	unsigned long gc_mask;
+	XGCValues gc_value;
+	int mono_svrim_pw;	/* paint window and Server Image are
+						 * 1 bit deep */
+	Xv_Drawable_info *svrim_info;	/* Server Image info */
+	Xv_Drawable_info *pw_info;	/* paint window info */
+	Xv_Screen screen;
+	XID xid;
 
-    DRAWABLE_INFO_MACRO(pw, pw_info);
-    display = xv_display(pw_info);
-    xid = xv_xid(pw_info);
-    screen = xv_screen(pw_info);
-    gc_list = (GC *)xv_get(screen, SCREEN_OLGC_LIST, pw);
-    if (color_index >= 0)
-	gc_value.foreground = xv_get(xv_cms(pw_info), CMS_PIXEL, color_index);
-    else
-	gc_value.foreground = xv_fg(pw_info);
-    gc_value.background = xv_bg(pw_info);
-    gc_mask = GCForeground | GCBackground;
-    mono_svrim_pw = FALSE;
-    if (PR_IS_SERVER_IMAGE(pr) && xv_depth(pw_info) == 1) {
-	DRAWABLE_INFO_MACRO((Xv_opaque) pr, svrim_info);
-	if (xv_depth(svrim_info) == 1) {
-	    mono_svrim_pw = TRUE;
-	    gc_value.ts_x_origin = x;
-	    gc_value.ts_y_origin = y;
-	    gc_value.stipple = xv_xid(svrim_info);
-	    gc_value.fill_style = FillOpaqueStippled;
-	    gc_mask |= GCTileStipXOrigin | GCTileStipYOrigin |
-		GCStipple | GCFillStyle;
+	DRAWABLE_INFO_MACRO(pw, pw_info);
+	display = xv_display(pw_info);
+	xid = xv_xid(pw_info);
+	screen = xv_screen(pw_info);
+	gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
+	if (color_index >= 0)
+		gc_value.foreground = xv_get(xv_cms(pw_info), CMS_PIXEL, color_index);
+	else
+		gc_value.foreground = xv_fg(pw_info);
+	gc_value.background = xv_bg(pw_info);
+	gc_mask = GCForeground | GCBackground;
+	mono_svrim_pw = FALSE;
+	if (PR_IS_SERVER_IMAGE(pr) && xv_depth(pw_info) == 1) {
+		DRAWABLE_INFO_MACRO((Xv_opaque) pr, svrim_info);
+		if (xv_depth(svrim_info) == 1) {
+			mono_svrim_pw = TRUE;
+			gc_value.ts_x_origin = x;
+			gc_value.ts_y_origin = y;
+			gc_value.stipple = xv_xid(svrim_info);
+			gc_value.fill_style = FillOpaqueStippled;
+			gc_mask |= GCTileStipXOrigin | GCTileStipYOrigin |
+					GCStipple | GCFillStyle;
+		}
 	}
-    }
 
-    if ( mask_pr ) {
-	Xv_Drawable_info * mask_info;
-	
-	DRAWABLE_INFO_MACRO((Xv_opaque)mask_pr, mask_info);
-	gc_value.clip_mask = xv_xid(mask_info);
-	gc_value.clip_x_origin = x;
-	gc_value.clip_y_origin = y;
-	gc_mask |= GCClipMask | GCClipXOrigin | GCClipYOrigin;
-    }
+	if (mask_pr) {
+		Xv_Drawable_info *mask_info;
 
-    XChangeGC(display, gc_list[SCREEN_NONSTD_GC],
-	      gc_mask, &gc_value);
-    if (mono_svrim_pw) {
-	/* Note: xv_rop_internal messes up on monochrome screens
-	 * whose BlackPixel is 0 and WhitePixel is 1.  Doing the
-	 * painting here fixes this problem.
-	 */
-	XFillRectangle(display, xid, gc_list[SCREEN_NONSTD_GC], x, y,
-		       (unsigned)pr->pr_width, (unsigned)pr->pr_height);
-    } else {
-	xv_rop_internal(display, xid, gc_list[SCREEN_NONSTD_GC],
-			x, y, pr->pr_width, pr->pr_height,
-			(Xv_opaque) pr, 0, 0, pw_info);
-    }
+		DRAWABLE_INFO_MACRO((Xv_opaque) mask_pr, mask_info);
+		gc_value.clip_mask = xv_xid(mask_info);
+		gc_value.clip_x_origin = x;
+		gc_value.clip_y_origin = y;
+		gc_mask |= GCClipMask | GCClipXOrigin | GCClipYOrigin;
+	}
 
-    if ( mask_pr )
-	XSetClipMask(display, gc_list[SCREEN_NONSTD_GC], None);
+	XChangeGC(display, gc_list[SCREEN_NONSTD_GC], gc_mask, &gc_value);
+	if (mono_svrim_pw) {
+		/* Note: xv_rop_internal messes up on monochrome screens
+		 * whose BlackPixel is 0 and WhitePixel is 1.  Doing the
+		 * painting here fixes this problem.
+		 */
+		XFillRectangle(display, xid, gc_list[SCREEN_NONSTD_GC], x, y,
+				(unsigned)pr->pr_width, (unsigned)pr->pr_height);
+	}
+	else {
+		xv_rop_internal(display, xid, gc_list[SCREEN_NONSTD_GC],
+				x, y, pr->pr_width, pr->pr_height,
+				(Xv_opaque) pr, 0, 0, pw_info);
+	}
+
+	if (mask_pr)
+		XSetClipMask(display, gc_list[SCREEN_NONSTD_GC], None);
 }
 
 
