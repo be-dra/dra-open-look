@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.13 2026/10/06 21:21:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.15 2026/10/22 17:29:43 dra Exp $ ";
 #endif
 #endif
 
@@ -40,7 +40,7 @@ Pkg_private void frame_display_label(Frame_class_info *frame)
 		    xv_get(srv, SERVER_ATOM, "_NET_WM_NAME"),
 		    xv_get(srv, SERVER_ATOM, "UTF8_STRING"),
 		    8, PropModeReplace, (unsigned char *)frame->label,
-			strlen(frame->label));
+			(int)strlen(frame->label));
 	}
 	else {
 		/* should we do anything here? Do we care about the funny
@@ -192,9 +192,6 @@ Pkg_private void frame_display_footer(Frame frame_public, int clear_first,
 					OLGX_NORMAL | OLGX_MORE_ARROW);
 		}
 		if (frame->right_footer != NULL) {
-			SERVERTRACE((100, "right footer: %03o %03o\n",
-					(unsigned char)frame->right_footer[0], 
-					(unsigned char)frame->right_footer[1]));
 			olgx_draw_text(frame->ginfo, xv_xid(info), frame->right_footer,
 					footer_width + margin - max_right_width, baseline,
 					max_right_width, OLGX_NORMAL | OLGX_MORE_ARROW);
