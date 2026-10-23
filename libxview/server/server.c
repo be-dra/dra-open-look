@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.70 2026/10/17 10:50:39 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.71 2026/10/22 10:40:35 dra Exp $";
 #endif
 #endif
 
@@ -1334,6 +1334,39 @@ static void server_init_atoms(Xv_Server server_public)
 	 * carry any useful informations....
 	 */
 
+	/* 2026-10-22: after a query the AI "gemini" told the following:
+	 *
+	 * The JOURNAL_SYNC mechanism in the XView sources originates from the
+	 * historical event journaling and testing framework developed by
+	 * Sun Microsystems during the OpenLook and XView era. It was designed
+	 * to record GUI macros, perform automated software testing, or
+	 * synchronously replay user inputs (playback).
+	 *
+	 * Detailed Functionality
+	 *
+	 * 1. Synchronization during Event Playback:
+	 *    When GUI tests or macros are replayed automatically, scripts often
+	 *    pump events (clicks, key presses) into the X server much faster than
+	 *    applications and window managers (olwm) can process them. Without
+	 *    synchronization, clients drop events or windows are still being
+	 *    constructed while the next event arrives. The JOURNAL_SYNC atom acted
+	 *    as a handshake marker between the test driver/journaler, the XView
+	 *    application, and the window manager.
+	 *
+	 * 2. ClientMessage to the Root Window:
+	 *    When XView reaches a specific synchronization point (e.g., after
+	 *    completing a rendering or event loop in journaling mode), a
+	 *    ClientMessage is sent to the root window.
+	 *
+	 *    Purpose: This served as a broadcast or control signal to the
+	 *    window manager (olwm) or other registered journaling processes 
+	 *    to indicate that a specific processing step ("sync point") has 
+	 *    been reached.
+	 *
+	 *    Process: The replaying process would wait until the corresponding
+	 *    feedback or state was confirmed via the atom or message before 
+	 *    feeding the next event from the journal log.
+	 */
 	/*
 	 * do not create the SERVER_JOURNAL_ATOM atom if it does not already
 	 * exists
