@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.28 2026/10/10 19:48:04 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.29 2026/10/22 17:31:09 dra Exp $";
 #endif
 #endif
 /*
@@ -868,6 +868,7 @@ Xv_public int xv_send_message(Xv_object window, Xv_opaque addresse,
 			(Window) XV_DUMMY_WINDOW : (Window) addresse;
 	XSendEvent(display, addresse, False, NoEventMask,
 			(XEvent *) & client_event);
+	XFlush(display);
 	return (XV_OK);
 }
 
