@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.21 2026/10/13 16:25:02 dra Exp $";
+static char     sccsid[] = "@(#)om_render.c 20.176 93/06/28 DRA: $Id: om_render.c,v 4.22 2026/10/23 07:05:22 dra Exp $";
 #endif
 #endif
 
@@ -2279,17 +2279,8 @@ static void compute_rects(Xv_menu_info *menu, struct inputevent *iep,
 	menu->menurect.r_height = mrect->r_height;
 
 	/* Convert to screen coordinates */
-#ifdef BEFORE_DRA_AVOIDS_XTRANSLATECOORD
-	win_translate_xy(iep->ie_win, rootwindow,
-						menu->menurect.r_left, menu->menurect.r_top,
-						&left, &top);
-	fprintf(stderr, "win_translate_xy: (%d, %d) -> (%d, %d)\n", 
-						menu->menurect.r_left, menu->menurect.r_top,
-						left, top);
-#else /* BEFORE_DRA_AVOIDS_XTRANSLATECOORD */
 	win_translate_to_screen(iep->ie_win, menu->menurect.r_left,
 						menu->menurect.r_top, &left, &top);
-#endif /* BEFORE_DRA_AVOIDS_XTRANSLATECOORD */
 	mrect->r_left = left;
 	mrect->r_top = top;
 
