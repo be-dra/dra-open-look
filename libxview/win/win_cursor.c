@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_cursor.c 20.24 93/06/28 DRA: $Id: win_cursor.c,v 4.2 2026/10/06 21:10:05 dra Exp $";
+static char     sccsid[] = "@(#)win_cursor.c 20.24 93/06/28 DRA: $Id: win_cursor.c,v 4.3 2026/10/23 20:11:25 dra Exp $";
 #endif
 #endif
 
@@ -64,51 +64,53 @@ Xv_private void win_getmouseposition(Xv_object window, int *x, int *y)
 
 XID win_findintersect(Xv_object window, int x, int y)
 {
-    /*
-     * Given x, y with respect to "window", win_findintersect() will return
-     * the xid of the window lies under that location, iff it is a child of
-     * "window".  Otherwise, WIN_NULLLINK will be returned.  If x, y is in
-     * "window", but "window" does not have a child, then it will return
-     * WIN_NULLLINK.
-     */
-    register Xv_Drawable_info *info;
-    Window          child;
-    int             dst_x, dst_y;
-    register Display *display;
-    XID             src_xid;
-    XID             dst_xid = (XID) WIN_NULLLINK;
+	/*
+	 * Given x, y with respect to "window", win_findintersect() will return
+	 * the xid of the window lies under that location, iff it is a child of
+	 * "window".  Otherwise, WIN_NULLLINK will be returned.  If x, y is in
+	 * "window", but "window" does not have a child, then it will return
+	 * WIN_NULLLINK.
+	 */
+	register Xv_Drawable_info *info;
+	Window child;
+	int dst_x, dst_y;
+	register Display *display;
+	XID src_xid;
+	XID dst_xid = (XID) WIN_NULLLINK;
 
 
-    DRAWABLE_INFO_MACRO(window, info);
-    display = xv_display(info);
-    src_xid = xv_xid(info);
+	DRAWABLE_INFO_MACRO(window, info);
+	display = xv_display(info);
+	src_xid = xv_xid(info);
 
-    if (XTranslateCoordinates(display, src_xid, src_xid, x, y,
-			      &dst_x, &dst_y, &child) == 0) {
-	return ((XID) WIN_NULLLINK);
-    }
-    if (child == 0) {
-	return ((XID) WIN_NULLLINK);
-    }
-    dst_xid = (XID) child;
-
-    /*
-     * Make use of the side-effect of XTranslateCoordinates to identify the
-     * desired child by translating to self.
-     */
-    for (;;) {
-	if (XTranslateCoordinates(display, src_xid, dst_xid, x, y,
-				  &dst_x, &dst_y, &child) == 0)
-	    return ((XID) WIN_NULLLINK);
-	if (!child)
-	    break;
-	else {
-	    src_xid = dst_xid;
-	    dst_xid = child;
-	    x = dst_x;
-	    y = dst_y;
+	SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", src_xid,src_xid));
+	if (XTranslateCoordinates(display, src_xid, src_xid, x, y,
+					&dst_x, &dst_y, &child) == 0) {
+		return ((XID) WIN_NULLLINK);
 	}
-    }
+	if (child == 0) {
+		return ((XID) WIN_NULLLINK);
+	}
+	dst_xid = (XID) child;
 
-    return (dst_xid);
+	/*
+	 * Make use of the side-effect of XTranslateCoordinates to identify the
+	 * desired child by translating to self.
+	 */
+	for (;;) {
+		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", src_xid,dst_xid));
+		if (XTranslateCoordinates(display, src_xid, dst_xid, x, y,
+						&dst_x, &dst_y, &child) == 0)
+			return ((XID) WIN_NULLLINK);
+		if (!child)
+			break;
+		else {
+			src_xid = dst_xid;
+			dst_xid = child;
+			x = dst_x;
+			y = dst_y;
+		}
+	}
+
+	return (dst_xid);
 }
