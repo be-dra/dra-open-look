@@ -35,7 +35,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.7 2025/06/04 20:01:50 dra Exp $";
+char colorchsr_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: colorchsr.c,v 4.8 2026/10/23 11:46:11 dra Exp $";
 #endif
 
 #define IMAGE_WIDTH 64
@@ -668,9 +668,14 @@ static char *make_help(Colorchooser_private *priv, char *str)
 	return xv_strsave(helpbuf);
 }
 
-static void free_help_data(Xv_opaque obj, int key, char *data)
+static void free_any_data(Xv_opaque obj, int key, char *data)
 {
-	if (key == XV_HELP && data) xv_free(data);
+	if (key == XV_HELP && data) {
+		xv_free(data);
+	}
+	else {
+		xv_destroy((Xv_object)data);
+	}
 }
 
 static void fill_me(Color_chooser self)
@@ -683,13 +688,13 @@ static void fill_me(Color_chooser self)
 /* 	int item_top; */
 	char *h1, *h2;
 	Panel_item preview;
-	Group g;
+	Group g, gr, gg, gb;
 
 	if (! priv->cms) priv->cms = create_palette(priv);
 	pan = xv_get(self, FRAME_PROPS_PANEL);
 	xv_set(pan,
 			XV_HELP_DATA, make_help(priv,"panel"),
-			XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+			XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 			NULL);
 
 	memset(image_data, CMS_CONTROL_COLORS, sizeof(image_data));
@@ -799,7 +804,7 @@ static void fill_me(Color_chooser self)
 				PANEL_LABEL_BOLD, TRUE,
 				PANEL_LABEL_STRING, XV_MSG("Preview:"),
 				XV_HELP_DATA, make_help(priv,"preview"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
@@ -807,7 +812,7 @@ static void fill_me(Color_chooser self)
 				PANEL_LABEL_IMAGE, priv->image,
 				PANEL_ITEM_COLOR, CMS_CONTROL_COLORS,
 				XV_HELP_DATA, make_help(priv,"preview"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC, &priv->h_slider, -1, PANEL_SLIDER,
@@ -823,7 +828,7 @@ static void fill_me(Color_chooser self)
 				PANEL_NOTIFY_PROC, hsv_slider_notify,
 				FRAME_PROPS_DATA_OFFSET, OFF(hsv.h),
 				XV_HELP_DATA, make_help(priv,"HueSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC, &priv->s_slider, -1, PANEL_SLIDER,
@@ -839,7 +844,7 @@ static void fill_me(Color_chooser self)
 				PANEL_NOTIFY_PROC, hsv_slider_notify,
 				FRAME_PROPS_DATA_OFFSET, OFF(hsv.s),
 				XV_HELP_DATA, make_help(priv,"SaturationSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC, &priv->v_slider, -1, PANEL_SLIDER,
@@ -855,7 +860,7 @@ static void fill_me(Color_chooser self)
 				PANEL_NOTIFY_PROC, hsv_slider_notify,
 				FRAME_PROPS_DATA_OFFSET, OFF(hsv.v),
 				XV_HELP_DATA, make_help(priv,"BrightnessSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_ALIGN_ITEMS,
 			NULL);
@@ -875,7 +880,7 @@ static void fill_me(Color_chooser self)
 				PANEL_CLIENT_DATA, 1,
 				XV_KEY_DATA, colch_key, priv,
 				XV_HELP_DATA, make_help(priv,"RSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				FRAME_PROPS_DATA_OFFSET, OFF(rgb.r),
 				NULL,
 			NULL);
@@ -886,14 +891,14 @@ static void fill_me(Color_chooser self)
 					&priv->r_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
 				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"RSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&r_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
 				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"RSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
@@ -910,7 +915,7 @@ static void fill_me(Color_chooser self)
 				PANEL_CLIENT_DATA, 2,
 				XV_KEY_DATA, colch_key, priv,
 				XV_HELP_DATA, make_help(priv,"GSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			NULL);
 
@@ -920,14 +925,14 @@ static void fill_me(Color_chooser self)
 					&priv->g_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
 				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"GSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&g_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
 				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"GSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
@@ -944,7 +949,7 @@ static void fill_me(Color_chooser self)
 				PANEL_CLIENT_DATA, 3,
 				XV_KEY_DATA, colch_key, priv,
 				XV_HELP_DATA, make_help(priv,"BSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			NULL);
 
@@ -954,14 +959,14 @@ static void fill_me(Color_chooser self)
 					&priv->b_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
 				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"BSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			FRAME_PROPS_CREATE_ITEM,
 				FRAME_PROPS_ITEM_SPEC,
 					&b_msg, FRAME_PROPS_NO_LAYOUT, PANEL_MESSAGE,
 				PANEL_LABEL_STRING, "255",
 				XV_HELP_DATA, make_help(priv,"BSlider"),
-				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
+				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_any_data,
 				NULL,
 			NULL);
 
@@ -978,7 +983,7 @@ static void fill_me(Color_chooser self)
 			GROUP_HORIZONTAL_OFFSET, 30 + r->r_width,
 			GROUP_ANCHOR_POINT, GROUP_NORTHEAST,
 			GROUP_MEMBERS,
-				xv_create(pan, GROUP,
+				gr = xv_create(pan, GROUP,
 						GROUP_TYPE, GROUP_COLUMN,
 						GROUP_COLUMN_ALIGNMENT, GROUP_VERTICAL_CENTERS,
 						GROUP_VERTICAL_SPACING, 4,
@@ -988,7 +993,7 @@ static void fill_me(Color_chooser self)
 							r_msg,
 							NULL,
 						NULL),
-				xv_create(pan, GROUP,
+				gg = xv_create(pan, GROUP,
 						GROUP_TYPE, GROUP_COLUMN,
 						GROUP_COLUMN_ALIGNMENT, GROUP_VERTICAL_CENTERS,
 						GROUP_VERTICAL_SPACING, 4,
@@ -998,7 +1003,7 @@ static void fill_me(Color_chooser self)
 							g_msg,
 							NULL,
 						NULL),
-				xv_create(pan, GROUP,
+				gb = xv_create(pan, GROUP,
 						GROUP_TYPE, GROUP_COLUMN,
 						GROUP_COLUMN_ALIGNMENT, GROUP_VERTICAL_CENTERS,
 						GROUP_VERTICAL_SPACING, 4,
@@ -1016,6 +1021,14 @@ static void fill_me(Color_chooser self)
 	xv_set(pan, XV_WIDTH, 8 + (int)xv_get(pan, XV_WIDTH), NULL);
 
 	xv_set(self,
+				XV_KEY_DATA, GROUP_TYPE, g,
+				XV_KEY_DATA_REMOVE_PROC, GROUP_TYPE, free_any_data,
+				XV_KEY_DATA, GROUP_HORIZONTAL_SPACING, gr,
+				XV_KEY_DATA_REMOVE_PROC,GROUP_HORIZONTAL_SPACING,free_any_data,
+				XV_KEY_DATA, GROUP_VERTICAL_SPACING, gg,
+				XV_KEY_DATA_REMOVE_PROC, GROUP_VERTICAL_SPACING, free_any_data,
+				XV_KEY_DATA, GROUP_ANCHOR_POINT, gb,
+				XV_KEY_DATA_REMOVE_PROC, GROUP_ANCHOR_POINT, free_any_data,
 				FRAME_PROPS_CREATE_BUTTONS,
 					FRAME_PROPS_APPLY, h1 = make_help(priv,"props_apply"),
 					FRAME_PROPS_RESET, h2 = make_help(priv,"props_reset"),
