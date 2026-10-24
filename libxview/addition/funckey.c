@@ -29,7 +29,7 @@
 #include <xview/defaults.h>
 #include <xview_private/i18n_impl.h>
 
-char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.27 2026/08/26 20:34:58 dra Exp $";
+char funckey_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: funckey.c,v 4.28 2026/10/23 13:23:09 dra Exp $";
 
 #define NUM_FUNC 12
 
@@ -1203,7 +1203,7 @@ static int funckeys_destroy(Function_keys self, Destroy_status status)
 	return XV_OK;
 }
 
-Function_keys xv_function_keys_from_server(Xv_server srv)
+Xv_public Function_keys xv_function_keys_from_server(Xv_server srv)
 {
 	if (fkey_key == 0) return XV_NULL;
 
