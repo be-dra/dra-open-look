@@ -26,7 +26,7 @@
  * 2550 Garcia Avenue
  * Mountain View, California  94043
 
-char group_c_sccsid[] = "@(#)group.c 2.28 92/08/03 Copyright 1991 Sun Microsystems RCS: $Id: group.c,v 4.2 2025/03/08 13:37:48 dra Exp $";
+char group_c_sccsid[] = "@(#)group.c 2.28 92/08/03 Copyright 1991 Sun Microsystems RCS: $Id: group.c,v 4.3 2026/10/23 13:23:03 dra Exp $";
  */
 
 /*
@@ -35,7 +35,7 @@ char group_c_sccsid[] = "@(#)group.c 2.28 92/08/03 Copyright 1991 Sun Microsyste
 
 #include <xview/group.h>
 
-char group_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: group.c,v 4.2 2025/03/08 13:37:48 dra Exp $";
+char group_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: group.c,v 4.3 2026/10/23 13:23:03 dra Exp $";
 
 typedef struct {
 	Xv_object public_self;
@@ -201,7 +201,7 @@ static void get_compass_point(Xv_opaque handle, GROUP_COMPASS_POINTS point, int 
 /*
  * Anchor a group
  */
-void group_anchor(Group group_public)
+Xv_public void group_anchor(Group group_public)
 {
 	int new_x;
 	int new_y;
@@ -1003,7 +1003,7 @@ static int group_destroy(Group group_public, Destroy_status status)
 	return XV_OK;
 }
 
-void group_layout(Group group_public)
+Xv_public void group_layout(Group group_public)
 {
 	Rect *r;
 	Group_public *parent;
