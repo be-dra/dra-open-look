@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.4 2026/10/18 20:06:34 dra Exp $";
+static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.5 2026/10/23 20:11:18 dra Exp $";
 #endif
 #endif
 
@@ -21,6 +21,7 @@ static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v
 #include <xview_private/draw_impl.h>
 #include <xview_private/windowimpl.h>
 #include <xview_private/win_info.h>
+#include <xview_private/svr_impl.h>
 
 /*
  * Geometry operations.
@@ -148,6 +149,7 @@ Xv_public int win_translate_xy(Xv_object src, Xv_object dst,
 
     DRAWABLE_INFO_MACRO(src, src_info);
     DRAWABLE_INFO_MACRO(dst, dst_info);
+	SERVERTRACE((960, "%s: %ld %ld\n", __FUNCTION__, src,dst));
     return (win_translate_xy_internal(xv_display(src_info), xv_xid(src_info),
 			     xv_xid(dst_info), src_x, src_y, dst_x, dst_y));
 }
@@ -156,64 +158,65 @@ Xv_private int win_translate_xy_internal(Display *display, XID src_id, XID dst_i
 {
     XID             child;
 
+	SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", src_id,dst_id));
     if (XTranslateCoordinates(display, src_id, dst_id, src_x, src_y,
 			      dst_x, dst_y, &child))
 	return (XV_OK);
     return (XV_ERROR);
 }
 
-Xv_private XID
-win_pointer_under(window, x, y)
-    Xv_opaque       window;
-    int             x, y;
+Xv_private XID win_pointer_under(Xv_opaque window, int x, int y)
 {
-    /*
-     * Given x, y with respect to "window", win_pointer_under() will return
-     * the xid of the window lies under that location. If there is no window,
-     * 0 will be returned.
-     */
-    register Xv_Drawable_info *info;
-    Window          child;
-    int             dst_x, dst_y;
-    register Display *display;
-    register XID    src_xid, root_xid;
-    XID             dst_xid = (XID) 0;
+	/*
+	 * Given x, y with respect to "window", win_pointer_under() will return
+	 * the xid of the window lies under that location. If there is no window,
+	 * 0 will be returned.
+	 */
+	register Xv_Drawable_info *info;
+	Window child;
+	int dst_x, dst_y;
+	register Display *display;
+	register XID src_xid, root_xid;
+	XID dst_xid = (XID) 0;
 
 
-    DRAWABLE_INFO_MACRO(window, info);
-    display = xv_display(info);
-    src_xid = xv_xid(info);
-    root_xid = (XID) xv_get(xv_root(info), XV_XID);
+	DRAWABLE_INFO_MACRO(window, info);
+	display = xv_display(info);
+	src_xid = xv_xid(info);
+	root_xid = (XID) xv_get(xv_root(info), XV_XID);
 
-    /*
-     * Make use of the side-effect of XTranslateCoordinates to identify the
-     * desired child by translating to self.
-     */
-    if (XTranslateCoordinates(display, src_xid, root_xid, x, y,
-			      &dst_x, &dst_y, &child) == 0)
-	return ((XID) 0);
+	/*
+	 * Make use of the side-effect of XTranslateCoordinates to identify the
+	 * desired child by translating to self.
+	 */
+	SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", src_xid,
+					root_xid));
+	if (XTranslateCoordinates(display, src_xid, root_xid, x, y, &dst_x, &dst_y,
+					&child) == 0)
+		return ((XID) 0);
 
-    if (!child)
-	return ((XID) 0);
-
-    src_xid = (XID) root_xid;
-    x = dst_x;
-    y = dst_y;
-    dst_xid = (XID) child;
-
-    for (;;) {
-	if (XTranslateCoordinates(display, src_xid, dst_xid, x, y,
-				  &dst_x, &dst_y, &child) == 0)
-	    return ((XID) 0);
 	if (!child)
-	    break;
-	else {
-	    src_xid = dst_xid;
-	    dst_xid = child;
-	    x = dst_x;
-	    y = dst_y;
-	}
-    }
+		return ((XID) 0);
 
-    return (dst_xid);
+	src_xid = (XID) root_xid;
+	x = dst_x;
+	y = dst_y;
+	dst_xid = (XID) child;
+
+	for (;;) {
+		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", src_xid,dst_xid));
+		if (XTranslateCoordinates(display, src_xid, dst_xid, x, y,
+						&dst_x, &dst_y, &child) == 0)
+			return ((XID) 0);
+		if (!child)
+			break;
+		else {
+			src_xid = dst_xid;
+			dst_xid = child;
+			x = dst_x;
+			y = dst_y;
+		}
+	}
+
+	return (dst_xid);
 }
