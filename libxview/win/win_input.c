@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.65 2026/10/06 21:11:42 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.66 2026/10/23 20:11:02 dra Exp $";
 #endif
 #endif
 
@@ -506,6 +506,8 @@ static void prepare_drag_preview_from_xdnd(Window_info *framepriv,
 	event_set_action(event, ACTION_DRAG_PREVIEW);
 	event_set_id(event, evid);
 
+	SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
+						xv_xid(info), dxid));
 	(void)win_translate_xy_internal(xv_display(info),
 						xv_xid(info), dxid,
 						framepriv->drop_x, framepriv->drop_y,
@@ -603,6 +605,8 @@ static void xdnd_drop_received(Xv_window window, Xv_server srv,
 	/* now we know what the 'real' target window is */
 	event_set_window(event, realdropwin);
 
+	SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
+						xv_xid(info), dxid));
 	win_translate_xy_internal(xv_display(info),
 							xv_xid(info), dxid,
 							framepriv->drop_x, framepriv->drop_y,
@@ -1054,10 +1058,11 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 				static int buf_length = 0;
 				KeySym ksym, sem_ksym, acc_ksym;
 				unsigned int key_value;
-				int modifiers = 0, acc_modifiers = 0, sem_action, keyboard_key;
+				int modifiers = 0, acc_modifiers = 0, sem_action=0,
+								keyboard_key;
 				int status = True, old_chars_matched =
 											compose_status->chars_matched;
-				Status ret_status;
+				Status ret_status = XLookupNone;
 				XIC ic = NULL;
 
 				if (event_type == KeyPress) {
@@ -2389,6 +2394,8 @@ static int process_clientmessage_events(Xv_object window,
 				/*
 				 * the xy is in the sender's coordinate, need to translate it
 				 */
+				SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
+						(XID) clientmessage->data.l[3], xv_xid(info)));
 				(void)win_translate_xy_internal(xv_display(info),
 												(XID) clientmessage->data.l[3],
 												xv_xid(info),
@@ -2426,6 +2433,8 @@ static int process_clientmessage_events(Xv_object window,
 				msg_x = (clientmessage->data.l[2] >> 16) & 0xffff;
 				msg_y = clientmessage->data.l[2] & 0xffff;
 
+				SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
+						xv_get(xv_root(info), XV_XID), xv_xid(info)));
 				(void)win_translate_xy_internal(xv_display(info),
 												xv_get(xv_root(info), XV_XID),
 												xv_xid(info), msg_x, msg_y,
@@ -2495,6 +2504,8 @@ static int process_clientmessage_events(Xv_object window,
 				}
 				event_set_flags(event, event_forwarded);
 
+				SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
+						xv_get(xv_root(info), XV_XID), xv_xid(info)));
 				(void)win_translate_xy_internal(xv_display(info),
 												xv_get(xv_root(info), XV_XID),
 												xv_xid(info), msg_x, msg_y,
@@ -2645,6 +2656,8 @@ static int process_clientmessage_events(Xv_object window,
 				SERVERTRACE((TLXDND+2, "XdndPosition from %lx at %d,%d act %d\n",
 								clientmessage->data.l[0], msg_x, msg_y, act));
 
+				SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
+						xv_get(xv_root(info), XV_XID), xv_xid(info)));
 				(void)win_translate_xy_internal(xv_display(info),
 									xv_get(xv_root(info), XV_XID),
 									xv_xid(info), msg_x, msg_y,
