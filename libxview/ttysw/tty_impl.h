@@ -1,4 +1,4 @@
-/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.38 2026/08/04 18:21:38 dra Exp $ */
+/*      @(#)tty_impl.h 20.37 93/06/28 SMI dra: $Id: tty_impl.h,v 4.39 2026/10/25 08:16:50 dra Exp $ */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents
@@ -116,6 +116,8 @@ extern struct ttyselection	null_ttyselection;
 
 enum ttysw_hdrstate { HS_BEGIN, HS_HEADER, HS_ICON, HS_ICONFILE, HS_FLUSH };
 
+struct ttysw_cim_size_secret;
+
 typedef struct ttysubwindow {
     Tty			public_self;		/* Back pointer to the object*/
 	long unsigned	magic;
@@ -205,6 +207,7 @@ typedef struct ttysubwindow {
 	char boldify;
 	Xv_font pixfont;
 	int tty_new_cursor_row, tty_new_cursor_col;
+	struct ttysw_cim_size_secret *secret;
 }   Ttysw;
 
 typedef Ttysw		*Ttysw_private;
