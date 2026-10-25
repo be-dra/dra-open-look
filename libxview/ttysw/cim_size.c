@@ -1,5 +1,5 @@
 #ifndef lint
-char     cim_size_c_sccsid[] = "@(#)cim_size.c 20.32 93/06/28 DRA: $Id: cim_size.c,v 4.6 2026/09/13 16:11:38 dra Exp $";
+char     cim_size_c_sccsid[] = "@(#)cim_size.c 20.32 93/06/28 DRA: $Id: cim_size.c,v 4.7 2026/10/25 08:17:42 dra Exp $";
 #endif
 
 /*
@@ -34,16 +34,19 @@ char     cim_size_c_sccsid[] = "@(#)cim_size.c 20.32 93/06/28 DRA: $Id: cim_size
 #include <xview_private/charscreen.h>
 #include <xview_private/portable.h>
 
-static char    *lines_ptr;
-static char     *mode_ptr;      /* BUG ALERT! Get rid of this global. */
-static char   **temp_image;
-static char     **temp_mode;    /* BUG ALERT! Get rid of this
-                                                 * global. */
-static char    *temp_lines_ptr;
-static char     *temp_mode_ptr; /* BUG ALERT! Get rid of this
-                                                 * global. */
-
-static int      maxright, maxbottom;
+typedef struct ttysw_cim_size_secret {
+	/* these were all static variables - I wanted them to become
+	 * instance variables but prevent anybody except cim_size.c
+	 * to have access to them
+	 */
+	char    *lines_ptr;
+	char     *mode_ptr;
+	char   **temp_image;
+	char     **temp_mode;
+	char    *temp_lines_ptr;
+	char     *temp_mode_ptr;
+	int      maxright, maxbottom;
+} former_static_t;
 
 /*
  * Initialize initial character image.
@@ -52,15 +55,19 @@ Pkg_private int xv_tty_imageinit(Ttysw *ttysw, Xv_object window)
 {
 	int maximagewidth, maximageheight;
 
+	if (! ttysw->secret) {
+		ttysw->secret = xv_alloc(former_static_t);
+	}
+
 	if (wininit(ttysw, window, &maximagewidth, &maximageheight) == 0)
 		return (0);
 	ttysw->ttysw_top = ttysw->ttysw_left = 0;
 	ttysw->curscol = ttysw->ttysw_left;
 	ttysw->cursrow = ttysw->ttysw_top;
-	maxright = x_to_col(maximagewidth);
-	if (maxright > 255)
-		maxright = 255;	/* line length is stored in a byte */
-	maxbottom = y_to_row(maximageheight);
+	ttysw->secret->maxright = x_to_col(maximagewidth);
+	if (ttysw->secret->maxright > 255)
+		ttysw->secret->maxright = 255;	/* line length is stored in a byte */
+	ttysw->secret->maxbottom = y_to_row(maximageheight);
 	xv_tty_imagealloc(ttysw, FALSE);
 	ttysw_pclearscreen(ttysw, 0, ttysw->ttysw_bottom + 1);	/* +1 to get remnant at
 															 * bottom */
@@ -73,6 +80,7 @@ Pkg_private int xv_tty_imageinit(Ttysw *ttysw, Xv_object window)
 Pkg_private void xv_tty_imagealloc(Ttysw *ttysw, int for_temp)
 					/* decide which data structure to go into */
 {
+	former_static_t *sec = ttysw->secret;
 	register char **newimage;
 	register char **newmode;
 	register int i;
@@ -96,8 +104,10 @@ Pkg_private void xv_tty_imagealloc(Ttysw *ttysw, int for_temp)
 	/*
 	 * Bound new screen dimensions
 	 */
-	ttysw->ttysw_right = (ttysw->ttysw_right < maxright) ? ttysw->ttysw_right : maxright;
-	ttysw->ttysw_bottom = (ttysw->ttysw_bottom < maxbottom) ? ttysw->ttysw_bottom : maxbottom;
+	ttysw->ttysw_right = (ttysw->ttysw_right < sec->maxright) ?
+								ttysw->ttysw_right : sec->maxright;
+	ttysw->ttysw_bottom = (ttysw->ttysw_bottom < sec->maxbottom) ?
+								ttysw->ttysw_bottom : sec->maxbottom;
 	/*
 	 * Let pty set terminal size
 	 */
@@ -127,17 +137,17 @@ Pkg_private void xv_tty_imagealloc(Ttysw *ttysw, int for_temp)
 		bold += bytes_per_char * ttysw->ttysw_right + 3;
 	}
 	if (for_temp) {
-		temp_image = newimage;
-		temp_mode = newmode;
-		temp_lines_ptr = newimage[0] - 1;
-		temp_mode_ptr = newmode[0] - 1;
+		sec->temp_image = newimage;
+		sec->temp_mode = newmode;
+		sec->temp_lines_ptr = newimage[0] - 2;
+		sec->temp_mode_ptr = newmode[0] - 2;
 
 	}
 	else {
 		ttysw->image = newimage;
 		ttysw->screenmode = newmode;
-		lines_ptr = newimage[0] - 1;
-		mode_ptr = newmode[0] - 1;
+		sec->lines_ptr = newimage[0] - 2;
+		sec->mode_ptr = newmode[0] - 2;
 
 	}
 }
@@ -149,23 +159,20 @@ Pkg_private void xv_tty_imagealloc(Ttysw *ttysw, int for_temp)
 /* ARGSUSED */
 Pkg_private void xv_tty_free_image_and_mode(Ttysw_private ttysw)
 {
+	former_static_t *sec = ttysw->secret;
 
-#ifdef AVOID_INVALID_POINTER_MESSAGE
-	if (lines_ptr) {
-		free((char *) (lines_ptr));
-		lines_ptr = NULL;
+	if (sec->lines_ptr) {
+		free((char *) (sec->lines_ptr));
+		sec->lines_ptr = NULL;
 	}
-#endif
 	if (ttysw->image) {
 		free((char **) ttysw->image);
 		ttysw->image = NULL;
 	}
-#ifdef AVOID_INVALID_POINTER_MESSAGE
-	if (mode_ptr) {
-		free((char *)(mode_ptr));
-		mode_ptr = NULL;
+	if (sec->mode_ptr) {
+		free((char *)(sec->mode_ptr));
+		sec->mode_ptr = NULL;
 	}
-#endif
 	if (ttysw->screenmode) {
 		free((char **)ttysw->screenmode);
 		ttysw->screenmode = NULL;
@@ -181,6 +188,7 @@ Pkg_private void xv_tty_free_image_and_mode(Ttysw_private ttysw)
 Pkg_private void ttysw_imagerepair(Ttysw_view_handle ttysw_view)
 {
 	Ttysw_private ttysw = TTY_FOLIO_FROM_TTY_VIEW_HANDLE(ttysw_view);
+	former_static_t *sec = ttysw->secret;
 	char **oldimage;
 	register int oldrow, row;
 	int oldbottom = ttysw->ttysw_bottom;
@@ -222,7 +230,7 @@ Pkg_private void ttysw_imagerepair(Ttysw_view_handle ttysw_view)
 	ttysw->ttysw_lpp = 0;
 
 	oldimage = ttysw->image;
-	ttysw->image = temp_image;	/* Hack around globals */
+	ttysw->image = sec->temp_image;	/* Hack around globals */
 
 	for (i = ttysw->ttysw_top; i < ttysw->ttysw_bottom; i++)	/* jcb */
 		setlinelength(ttysw, ttysw->image[i], 0);
@@ -248,15 +256,15 @@ Pkg_private void ttysw_imagerepair(Ttysw_view_handle ttysw_view)
 
 		if (sl > ttysw->ttysw_right)
 			sl = ttysw->ttysw_right;
-		XV_BCOPY(ttysw->image[oldrow], temp_image[row], (size_t)sl);
-		XV_BCOPY(ttysw->screenmode[oldrow], temp_mode[row], (size_t)sl);
-		setlinelength(ttysw, temp_image[row], sl);
+		XV_BCOPY(ttysw->image[oldrow], sec->temp_image[row], (size_t)sl);
+		XV_BCOPY(ttysw->screenmode[oldrow], sec->temp_mode[row], (size_t)sl);
+		setlinelength(ttysw, sec->temp_image[row], sl);
 	}
 	xv_tty_free_image_and_mode(ttysw);
-	ttysw->image = temp_image;
-	ttysw->screenmode = temp_mode;
-	lines_ptr = temp_lines_ptr;
-	mode_ptr = temp_mode_ptr;
+	ttysw->image = sec->temp_image;
+	ttysw->screenmode = sec->temp_mode;
+	sec->lines_ptr = sec->temp_lines_ptr;
+	sec->mode_ptr = sec->temp_mode_ptr;
 
 	/*
 	 * Move the cursor to its new position in the new coordinate system. If
