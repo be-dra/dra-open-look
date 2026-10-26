@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.44 2026/08/26 19:58:52 dra Exp $";
+char     txt_input_c_sccsid[] = "@(#)txt_input.c 20.109 93/06/28 DRA: $Id: txt_input.c,v 4.45 2026/10/25 09:44:27 dra Exp $";
 #endif
 
 /*
@@ -857,6 +857,89 @@ static int textsw_function_key_event(Textsw_view_private view, Event *ie, int *r
 	return (is_function_key_event);
 }
 
+static void start_panning(Textsw_private priv, Xv_window w, Event *ev)
+{
+	Textsw tsw = TEXTSW_PUBLIC(priv);
+	Display *dpy = (Display *)xv_get(w, XV_DISPLAY);
+	Window grabwindow;
+
+	priv->pan_y = event_y(ev); /* the left top corner to the 'pan point' */
+	priv->panvsb = xv_get(tsw, OPENWIN_VERTICAL_SCROLLBAR, w);
+	priv->pan_vstart = (int)xv_get(priv->panvsb, SCROLLBAR_VIEW_START);
+
+	/* let's try to use the view window for the panning */
+	grabwindow = xv_get(w, XV_XID);
+
+	if (! priv->pan_cursor) {
+		priv->pan_cursor = xv_create(tsw, CURSOR,
+						CURSOR_SRC_CHAR, OLC_PANNING_PTR,
+						CURSOR_MASK_CHAR, OLC_PANNING_PTR+1,
+						NULL);
+	}
+
+	/* grab the pointer for this paint window */
+	XGrabPointer(dpy, grabwindow, False,
+			(unsigned)(ButtonMotionMask | ButtonReleaseMask),
+			GrabModeAsync, GrabModeAsync,
+			grabwindow, (Cursor)xv_get(priv->pan_cursor, XV_XID),
+			event_xevent(ev)->xbutton.time);
+}
+
+static void update_view_panning(Textsw_private priv, Textsw_view_private view,
+											Event *ev)
+{
+	Display *dpy = (Display *)xv_get(event_window(ev), XV_DISPLAY);
+	Window xid = xv_get(event_window(ev), XV_XID);
+	XEvent event;
+	int y, cnt, delta_y;
+
+	/* get rid of OLD MotionNotify events, only take the last */
+	cnt = 0;
+	while (XCheckTypedWindowEvent(dpy, xid,MotionNotify,&event))
+		++cnt;
+
+	if (cnt) {
+/* 		DTRACE(DTL_EV + 50, "superfluous MotionNotify\n"); */
+		y = event.xmotion.y;
+	}
+	else {
+		y = (int)event_y(ev);
+	}
+
+	/* this will be complicated ...
+	 *  Scrollwin  uses XCopyArea
+	 *  Canvas     uses XMoveWindow
+	 *
+	 * what can we do?
+	 */
+	delta_y = y - priv->pan_y;
+	fprintf(stderr, "sx=%d  svs=%d  delta=%d  --> vs=%d\n", priv->pan_y,
+								priv->pan_vstart, delta_y,
+								priv->pan_vstart - delta_y);
+	/* not really good.... */
+	xv_set(priv->panvsb,
+				SCROLLBAR_VIEW_START, priv->pan_vstart - delta_y,
+				NULL);
+
+	XSync(dpy, False);
+}
+
+static void end_panning(Textsw_private priv, Textsw_view_private view, Event *ev)
+{
+	int delta_y;
+	Display *dpy = (Display *)xv_get(event_window(ev), XV_DISPLAY);
+
+	XUngrabPointer(dpy, event_xevent(ev)->xbutton.time);
+
+	delta_y = (int)event_y(ev) - priv->pan_y;
+	xv_set(priv->panvsb,
+				SCROLLBAR_VIEW_START, priv->pan_vstart - delta_y,
+				NULL);
+
+	ev_paint_view(view->e_view, VIEW_PUBLIC(view), event_xevent(ev));
+	priv->panvsb = XV_NULL;
+}
+
 static int textsw_mouse_event(Textsw_view_private view, Event *ie)
 {
 	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
@@ -866,12 +949,28 @@ static int textsw_mouse_event(Textsw_view_private view, Event *ie)
 
 	switch (action) {
 		case ACTION_SELECT:
+			if (down_event) {
+				Textsw tsw = TEXTSW_PUBLIC(priv);
+				Xv_server srv = XV_SERVER_FROM_WINDOW(tsw);
+				if (xv_get(srv, SERVER_EVENT_HAS_PAN_MODIFIERS, ie)) {
+					start_panning(priv, VIEW_PUBLIC(view), ie);
+					return TRUE;
+				}
+			}
+			else if (priv->panvsb) {
+				end_panning(priv, view, ie);
+				return TRUE;
+			}
 			textsw_new_sel_select(view, ie);
 			break;
 		case ACTION_ADJUST:
 			textsw_new_sel_adjust(view, ie);
 			break;
 		case LOC_DRAG:
+			if (action_select_is_down(ie) && (priv->panvsb != XV_NULL)) {
+				update_view_panning(priv, view, ie);
+				return TRUE;
+			}
 			textsw_new_sel_drag(view, ie);
 			break;
 		case LOC_WINENTER:
