@@ -1,4 +1,4 @@
-/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.69 2026/10/18 09:10:43 dra Exp $	*/
+/*	@(#)txt_impl.h 20.73 93/06/28 SMI  DRA: $Id: txt_impl.h,v 4.70 2026/10/25 09:44:22 dra Exp $	*/
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -240,6 +240,9 @@ typedef struct textsw_object {
 	/* formerly static variables */
 	int point_down_within_selection;
 	short dnd_last_click_x, dnd_last_click_y;
+	int pan_y, pan_vstart;
+	Scrollbar panvsb;
+	Xv_opaque pan_cursor;
 
 	struct {
 		Atom clipboard;
