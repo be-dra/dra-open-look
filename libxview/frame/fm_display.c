@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.15 2026/10/22 17:29:43 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_display.c 20.83 93/06/28 DRA: $Id: fm_display.c,v 4.16 2026/10/26 14:37:57 dra Exp $ ";
 #endif
 #endif
 
@@ -325,7 +325,11 @@ Pkg_private void frame_display_busy(Frame_class_info *frame, int status)
 	XChangeProperty(xv_display(info), xv_xid(info),
 			xv_get(server, SERVER_WM_WIN_BUSY), XA_INTEGER,
 			32, PropModeReplace, (unsigned char *)&lstatus, 1);
-/* UNUSED_FLUSH? 	XFlush(xv_display(info)); */
+	/* this is necessary: in many cases the application is
+	 * "non-X11-busy" after setting the FRAME_BUSY attribute,
+	 * so, the request would be kept in the output queue
+	 */
+	XFlush(xv_display(info));
 }
 
 /*
