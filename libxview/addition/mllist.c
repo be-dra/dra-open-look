@@ -34,7 +34,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.40 2026/10/10 21:11:50 dra Exp $";
+char mllist_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: mllist.c,v 1.41 2026/10/26 14:20:12 dra Exp $";
 #endif
 
 /*******************************************************************
@@ -1278,6 +1278,11 @@ static int mllist_destroy(Multi_level_list self, Destroy_status status)
 		}
 		if (priv->dot) xv_destroy(priv->dot);
 		if (priv->nodot) xv_destroy(priv->nodot);
+		if (priv->root) {
+			if (priv->root->label) xv_free(priv->root->label);
+			xv_free(priv->root);
+			priv->root = NULL;
+		}
 
 		xv_free(priv->levelstack);
 
