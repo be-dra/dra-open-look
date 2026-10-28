@@ -1,5 +1,5 @@
 #ifndef lint
-char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.16 2026/07/30 12:06:21 dra Exp $";
+char     tty_init_c_sccsid[] = "@(#)tty_init.c 20.71 93/06/28 DRA: $Id: tty_init.c,v 4.18 2026/10/27 19:00:57 dra Exp $";
 #endif
 
 /*
@@ -609,6 +609,11 @@ Pkg_private void ttysw_done(Ttysw_private ttysw_folio_private)
 			  ttysw_folio_private->ttysw_tty);
 #endif
 
+	if (ttysw_folio_private->secret) {
+		xv_tty_free_image_and_mode(ttysw_folio_private);
+		xv_free(ttysw_folio_private->secret);
+		ttysw_folio_private->secret = NULL;
+	}
     ttysel_destroy(ttysw_folio_private);
 
     if (ttysw_folio_private->ttysw_pty)
