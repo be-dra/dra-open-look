@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.25 2026/10/10 19:08:08 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.26 2026/10/29 18:20:30 dra Exp $ ";
 #endif
 #endif
 
@@ -147,7 +147,8 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	short userHeight = False, userWidth = False;
 	Attr_avlist attrs;
 	Xv_Drawable_info *info;
-	Atom property_array[3];
+	Atom property_array[8];
+	int nprots = 0;
 	XTextProperty WMMachineName;
 	char hostname[MAXHOSTNAMELEN + 1];
 	char *display_lang;
@@ -178,12 +179,11 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	frame->wmhints.flags |= InputHint;
 	frame->normal_hints.flags = 0;
 
-	property_array[0] = (Atom) xv_get(xv_server(info), SERVER_WM_TAKE_FOCUS);
-	property_array[1] = (Atom) xv_get(xv_server(info), SERVER_WM_DELETE_WINDOW);
-	property_array[2] = (Atom) xv_get(xv_server(info), SERVER_WM_SAVE_YOURSELF);
+	property_array[nprots++] = xv_get(xv_server(info), SERVER_WM_TAKE_FOCUS);
+	property_array[nprots++] = xv_get(xv_server(info), SERVER_WM_DELETE_WINDOW);
 
 	win_change_property(frame_public, (long)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
-			(unsigned char *)property_array, 3, FALSE);
+			(unsigned char *)property_array, nprots, FALSE);
 
 	/* Set WM_CLIENT_MACHINE property */
 	WMMachineName.value = (unsigned char *)hostname;
