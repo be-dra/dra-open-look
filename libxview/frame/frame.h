@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.12 2026/07/18 19:31:40 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.14 2026/10/29 15:15:21 dra Exp $ ";
 #endif
 #endif
 
@@ -214,6 +214,7 @@ typedef enum {
 	FRAME_MAX_SIZE		= FRAME_ATTR(ATTR_INT_PAIR,	 	 137),
 	FRAME_RESIZE_PANEL  = FRAME_ATTR(ATTR_BOOLEAN,       138),
 	FRAME_RESIZE_LAYOUT_PROC = FRAME_ATTR(ATTR_OPAQUE_PAIR,   139),
+	FRAME_SECONDARY_BASE_FOR = FRAME_ATTR(ATTR_OPAQUE,       141),
         /* ACC_XVIEW */
 	FRAME_MENUS		= FRAME_ATTR_LIST(ATTR_NULL,ATTR_OPAQUE,245),
 	FRAME_MENU_ADD		= FRAME_ATTR(ATTR_OPAQUE,		 246),
