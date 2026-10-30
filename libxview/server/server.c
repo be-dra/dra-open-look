@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.71 2026/10/22 10:40:35 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.72 2026/10/29 17:56:29 dra Exp $";
 #endif
 #endif
 
@@ -4128,7 +4128,7 @@ static void xvwp_install(Frame base)
 	Window xid;
 	Xv_screen screen;
 	screen_ui_style_t ui_style;
-	Atom atoms[8], show_props_atom;
+	Atom atoms[8];
 	int cnt = 0;
 
 	if (inst->installed) return;
@@ -4150,10 +4150,6 @@ static void xvwp_install(Frame base)
 
 	/* free desktop stuff: */
 	atoms[cnt++] = W_ATOM(base, "_NET_WM_PING");
-
-	/* only my modified olwm will understand that ! */
-	atoms[cnt++] = show_props_atom = W_ATOM(base, "_OL_SHOW_PROPS");
-	atoms[cnt++] = W_ATOM(base, _OL_OWN_HELP);
 
 	if (inst->data.manage_wins) {
 		atoms[cnt++] = W_ATOM(base, "_OL_GROUP_MANAGED");
@@ -4229,25 +4225,6 @@ static void xvwp_install(Frame base)
 					W_ATOM(base, "_OL_WIN_COLORS"), 32, PropModeReplace,
 					(unsigned char *)&win_colors,
 					(int)(sizeof(win_colors)/sizeof(win_colors.flags)));
-	}
-
-	if (inst->wm == WM_MWM) {
-		char mwmbuf[100];
-		Atom mwmmenu = W_ATOM(base, "_MOTIF_WM_MENU"),
-				mwmmess = W_ATOM(base, "_MOTIF_WM_MESSAGES");
-
-		XChangeProperty(dpy, xid, mwmmess,
-						XA_ATOM, 32, PropModeAppend,
-						(unsigned char *)&show_props_atom, 1);
-
-		sprintf(mwmbuf, "%s f.send_msg %ld", XV_MSG("Properties..."),
-						show_props_atom);
-		XChangeProperty(dpy, xid, mwmmenu, mwmmenu, 8, PropModeReplace,
-						(unsigned char *)mwmbuf, (int)strlen(mwmbuf) + 1);
-
-		XChangeProperty(dpy, xid, W_ATOM(base, "WM_PROTOCOLS"),
-						XA_ATOM, 32, PropModeAppend,
-						(unsigned char *)&mwmmess, 1);
 	}
 
 	inst->data.base = base;
@@ -4585,28 +4562,11 @@ static Notify_value secondary_base_interposer(Frame f, Notify_event nev,
 	return notify_next_event_func(f, nev, arg, type);
 }
 
-static void server_register_secondary_base(Xv_server srv, Frame sec,
-											Frame baseframe)
+static void server_register_secondary_base(Xv_server srv, Frame sec)
 {
-	Display *dpy = (Display *)xv_get(srv, XV_DISPLAY);
-	Window basexid, secwin = xv_get(sec, XV_XID);
 	Server_info *srvpriv = SERVER_PRIVATE(srv);
 	xvwp_t *inst = srvpriv->xvwp;
-	Atom at;
 	xvwp_popup_t p;
-
-	basexid = (Window)xv_get(baseframe, XV_XID);
-	at = xv_get(srv, SERVER_ATOM, "_OL_COLORS_FOLLOW");
-
-	XChangeProperty(dpy, secwin, at, XA_WINDOW, 32, PropModeReplace,
-					(unsigned char *)&basexid, 1);
-
-	XChangeProperty(dpy, secwin, xv_get(srv, SERVER_ATOM, "WM_CLIENT_LEADER"),
-					XA_WINDOW, 32,PropModeReplace, (unsigned char *)&basexid, 1);
-
-	at = xv_get(srv, SERVER_ATOM, _OL_OWN_HELP);
-	XChangeProperty(dpy, secwin, xv_get(srv, SERVER_ATOM, "WM_PROTOCOLS"),
-					XA_ATOM, 32, PropModeAppend, (unsigned char *)&at, 1);
 
 	notify_interpose_event_func(sec, secondary_base_interposer, NOTIFY_SAFE);
 
@@ -6639,8 +6599,7 @@ static Xv_opaque server_set_avlist(Xv_Server self, Attr_attribute *avlist)
 				break;
 
 			case SERVER_REGISTER_SECONDARY_BASE:
-				server_register_secondary_base(self,
-											(Frame)attrs[1], (Frame)attrs[2]);
+				server_register_secondary_base(self, (Frame)attrs[1]);
 				ATTR_CONSUME(*attrs);
 				break;
 
