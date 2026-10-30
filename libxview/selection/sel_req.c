@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.61 2026/10/15 17:03:56 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.62 2026/10/29 18:22:21 dra Exp $";
 #endif
 #endif
 
@@ -990,8 +990,32 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	unsigned long bytesafter;
 	unsigned char *propValue;
 
+#ifdef BEFORE_DRA_CHANGED_IT
+	/* originally, we performed a XGetWindowProperty without 'delete'
+	 * on (ev->requestor, property)
+	 * and later we performed a XDeleteProperty
+	 * on (replyInfo->sri_requestor, property)
+	 *
+	 * The question is: Is ev->requestor == replyInfo->sri_requestor ?
+	 */
+#else /* BEFORE_DRA_CHANGED_IT */
+	/* this was modified 2026-10-27 - the whole #ifdef can be removed
+	 * after sufficient time, provided we don't see this.
+	 */
+	if (ev->requestor != replyInfo->sri_requestor) {
+		fprintf(stderr, "\n\n%s-%d: different requestors: %lx != %lx\n\n\n", 
+						__FILE__, __LINE__,
+						ev->requestor, replyInfo->sri_requestor);
+	}
+#endif /* BEFORE_DRA_CHANGED_IT */
+
 	if (XGetWindowProperty(ev->display, ev->requestor,
-					property, 0L, 10000000L, False,
+					property, 0L, 10000000L, 
+#ifdef BEFORE_DRA_CHANGED_IT
+					False,
+#else /* BEFORE_DRA_CHANGED_IT */
+					TRUE,
+#endif /* BEFORE_DRA_CHANGED_IT */
 					AnyPropertyType, &type, &format, &length,
 					&bytesafter, &propValue) != Success) {
 		xv_error(selReq->public_self,
@@ -1016,9 +1040,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	 * registered with package and the selection owner is
 	 * transferring the data in increments, reject the data transfer.
 	 */
-	if ((selReq->reply_proc == NULL)
-			&& (type == replyInfo->sri_incr))
-	{
+	if (selReq->reply_proc == NULL && type == replyInfo->sri_incr) {
 		XFree(propValue);
 		return FALSE;
 	}
@@ -1058,7 +1080,9 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		/* but doesn't HAVE to free it in case of a blocking request... */
 	}
 
+#ifdef BEFORE_DRA_CHANGED_IT
 	XDeleteProperty(ev->display, replyInfo->sri_requestor, property);
+#endif /* BEFORE_DRA_CHANGED_IT */
 	xv_sel_free_property(replyInfo->sri_srv, ev->display, property);
 	return (TRUE);
 }
@@ -1087,7 +1111,7 @@ static int ProcessMultiple(Sel_req_info *selReq, Sel_reply_info *reply,
 	 */
 
 	if (XGetWindowProperty(ev->display, ev->requestor,
-					reply->sri_property, 0L, 1000000L, False,
+					reply->sri_property, 0L, 1000000L, TRUE,
 					(Atom) AnyPropertyType, &type, &format,
 					&length, &bytesafter, (unsigned char **)&pair) != Success) {
 		xv_error(selReq->public_self,
