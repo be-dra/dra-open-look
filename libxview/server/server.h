@@ -1,4 +1,4 @@
-/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.13 2026/07/29 21:27:28 dra Exp $      */
+/*      @(#)server.h 20.61 93/06/28 SMI   DRA: $Id: server.h,v 4.14 2026/10/29 17:54:55 dra Exp $      */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -88,7 +88,7 @@ typedef enum {
 	SERVER_IS_OWN_HELP              = SERVER_ATTR(ATTR_OPAQUE, 129),/* --G */
 	SERVER_SHOW_PROPWIN             = SERVER_ATTR(ATTR_NO_VALUE, 131),/* -S- */
 	SERVER_APPL_BUSY                = SERVER_ATTR(ATTR_OPAQUE_PAIR, 132),
-	SERVER_REGISTER_SECONDARY_BASE  = SERVER_ATTR(ATTR_OPAQUE_PAIR, 134),/*-S-*/
+	SERVER_REGISTER_SECONDARY_BASE  = SERVER_ATTR(ATTR_OPAQUE, 134),/*-S-*/
 	SERVER_TRACE_PROC			= SERVER_ATTR(ATTR_FUNCTION_PTR,67),     /*CSG*/
 	SERVER_REPAINT_APPLICATION  = SERVER_ATTR(ATTR_NO_VALUE, 231),    /* -S- */
 	SERVER_INTERN_ATOMS	= SERVER_ATTR_LIST(ATTR_NULL,ATTR_STRING, 46), /* -S- */
