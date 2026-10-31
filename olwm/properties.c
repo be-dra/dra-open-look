@@ -1,5 +1,5 @@
 /* #ident	"@(#)properties.c	26.15	93/06/28 SMI" */
-char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.14 2026/10/06 14:51:03 dra Exp $";
+char properties_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: properties.c,v 2.15 2026/10/30 09:50:27 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -389,31 +389,31 @@ Bool PropGetWMProtocols(Display *dpy, Window win, int *protocols)
 
 	for (i = 0; i < count; i++) {
 		if (atomList[i] == AtomTakeFocus)
-			*protocols |= TAKE_FOCUS;
+			*protocols |= PROT_TAKE_FOCUS;
 		else if (atomList[i] == AtomSaveYourself)
-			*protocols |= SAVE_YOURSELF;
+			*protocols |= PROT_SAVE_YOURSELF;
 		else if (atomList[i] == AtomDeleteWindow)
-			*protocols |= DELETE_WINDOW;
+			*protocols |= PROT_DELETE_WINDOW;
 		else if (atomList[i] == AtomShowProperties)
-			*protocols |= HAS_PROPWIN;
+			*protocols |= PROT_HAS_PROPWIN;
 		else if (atomList[i] == AtomGroupManaged)
-			*protocols |= GROUP_MANAGED;
+			*protocols |= PROT_GROUP_MANAGED;
 		else if (atomList[i] == AtomWarpBack)
-			*protocols |= WARP_BACK;
+			*protocols |= PROT_WARP_BACK;
 		else if (atomList[i] == AtomNoWarping)
-			*protocols |= NO_WARPING;
+			*protocols |= PROT_NO_WARPING;
 		else if (atomList[i] == AtomWarpToPin)
-			*protocols |= WARP_TO_PIN;
+			*protocols |= PROT_WARP_TO_PIN;
 		else if (atomList[i] == AtomOwnHelp)
-			*protocols |= OWN_HELP;
+			*protocols |= PROT_OWN_HELP;
 		else if (atomList[i] == AtomWTBase)
-			*protocols |= SECONDARY_BASE;
+			*protocols |= PROT_SECONDARY_BASE;
 		else if (atomList[i] == AtomIsWSProps)
-			*protocols |= IS_WS_PROPS;
+			*protocols |= PROT_IS_WS_PROPS;
 		else if (atomList[i] == AtomAllowIconSize)
-			*protocols |= ALLOW_ICON_SIZE;
+			*protocols |= PROT_ALLOW_ICON_SIZE;
 		else if (atomList[i] == AtomPinState)
-			*protocols |= PUSHPIN_STATE;
+			*protocols |= PROT_PUSHPIN_STATE;
 	}
 
 	XFree((char *)atomList);
