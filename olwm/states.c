@@ -1,5 +1,5 @@
 /* #ident	"@(#)states.c	26.66	93/06/28 SMI" */
-char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.13 2026/10/06 14:52:25 dra Exp $";
+char states_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: states.c,v 2.14 2026/10/30 09:50:27 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -140,12 +140,12 @@ static FocusMode focusModeFromHintsProtocols(XWMHints	*wmHints, int protocols)
 	FocusMode	focusMode;
 
 	if (wmHints && wmHints->input) {
-		if (protocols & TAKE_FOCUS)
+		if (protocols & PROT_TAKE_FOCUS)
 			focusMode = LocallyActive;	
 		else
 			focusMode = Passive;	
 	} else { /* wmHints->input == False */
-		if (protocols & TAKE_FOCUS)
+		if (protocols & PROT_TAKE_FOCUS)
 			focusMode = GloballyActive;	
 		else
 			focusMode = NoInput;	
@@ -1320,7 +1320,7 @@ Client *StateNew(Display *dpy, Window rootWin, Window window, Bool fexisting,
 			XMapRaised(dpy, winPane->core.self);
 			if (!fexisting) {
 				FrameWarpPointer(cli);
-				if (GRV.AutoInputFocus || (cli->protocols & SECONDARY_BASE))
+				if (GRV.AutoInputFocus || (cli->protocols & PROT_SECONDARY_BASE))
 					ClientSetFocus(cli, True, LastEventTime);
 				if (GRV.AutoColorFocus)
 					LockColormap(dpy, cli, winPane);
