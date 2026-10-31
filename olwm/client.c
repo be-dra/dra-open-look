@@ -1,5 +1,5 @@
 /* #ident	"@(#)client.c	26.56	93/06/28 SMI" */
-char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.12 2026/10/06 14:51:55 dra Exp $";
+char client_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: client.c,v 2.13 2026/10/30 09:50:27 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -333,7 +333,7 @@ Bool ClientShowHelp(Client *cli, int rootx, int rooty, char *hlp)
 	XEvent xcl;
 
 	if (! cliLead) return False;
-	if (! (cliLead->protocols & OWN_HELP)) return False;
+	if (! (cliLead->protocols & PROT_OWN_HELP)) return False;
 
 	xcl.xclient.type = ClientMessage;
 	xcl.xclient.window = PANEWINOFCLIENT(cliLead);
@@ -397,7 +397,7 @@ void *ClientKill(Client *cli, Bool pforce)
 	if (cli->framewin == NULL)
 		return NULL;
 
-	if (cli->protocols & DELETE_WINDOW) {
+	if (cli->protocols & PROT_DELETE_WINDOW) {
 		ClientSendProtocol(cli,AtomDeleteWindow,LastEventTime, 0, 0, 0);
 	} else {
 		if (pforce && ! cli->flags & CLOlwmOwned)
@@ -420,7 +420,7 @@ void	*junk;
 	/* Only kill non-olwm owned clients */
 	if (! (cli->flags & CLOlwmOwned)) {
 		/* to avoid BadWindow errors, just kill the primary base window */
-		if (cli->protocols & SECONDARY_BASE) return NULL;
+		if (cli->protocols & PROT_SECONDARY_BASE) return NULL;
 		XKillClient(cli->dpy,ClientPane(cli));
 	}
 	return NULL;
@@ -1125,7 +1125,7 @@ void ClientFront(Client *cli)
 		}
 		XRaiseWindow(cli->dpy,cli->framewin->core.self);
 		if (cli->groupmask == GROUP_LEADER &&
-			(cli->protocols & GROUP_MANAGED) != 0)
+			(cli->protocols & PROT_GROUP_MANAGED) != 0)
 		{
 			/* then the group members */
     		GroupApply(cli->groupid, dra_to_front, 0,
@@ -1189,7 +1189,7 @@ void ClientBack(Client *cli)
 			}
 			else {
 				if (cli->groupmask == GROUP_LEADER &&
-						(cli->protocols & GROUP_MANAGED) != 0) {
+						(cli->protocols & PROT_GROUP_MANAGED) != 0) {
 					GroupApply(cli->groupid, dra_to_back, 0,
 							GROUP_INDEPENDENT | GROUP_DEPENDENT);
 				}
