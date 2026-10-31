@@ -1,5 +1,5 @@
 /* #ident	"@(#)moveresize.c	26.54	93/06/28 SMI" */
-char moveresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: moveresize.c,v 2.2 2026/07/27 20:37:45 dra Exp $";
+char moveresize_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: moveresize.c,v 2.3 2026/10/30 09:50:27 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -321,7 +321,7 @@ void UserMoveWindows(Client *cli, XEvent *first)
 
 		if (sel_cnt == 1 &&
 				cli->groupmask == GROUP_LEADER &&
-				(cli->protocols & GROUP_MANAGED) != 0) {
+				(cli->protocols & PROT_GROUP_MANAGED) != 0) {
 			winlist = ListCons(mstuff.frame, NULL_LIST);
 			GroupApply(cli->groupid, dra_collect_move_windows, &winlist,
 					GROUP_DEPENDENT);
@@ -354,7 +354,7 @@ void UserMoveWindows(Client *cli, XEvent *first)
 		}
 
 		if (cli->groupmask == GROUP_LEADER &&
-				(cli->protocols & GROUP_MANAGED) != 0) {
+				(cli->protocols & PROT_GROUP_MANAGED) != 0) {
 			GroupApply(cli->groupid, dra_collect_move_windows, &winlist,
 					GROUP_DEPENDENT);
 		}
