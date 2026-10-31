@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.5 2026/10/03 06:16:14 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: olwm.h,v 2.6 2026/10/30 09:50:11 dra Exp $ */
 /* #ident	"@(#)olwm.h	26.27	93/06/28 SMI" */
 
 /*
@@ -44,20 +44,20 @@
 #define	FOOTLEN	50L
 
 /* protocols bits */
-#define		TAKE_FOCUS		(1<<0)
-#define		SAVE_YOURSELF		(1<<1)
-#define		DELETE_WINDOW		(1<<2)
+#define	PROT_TAKE_FOCUS			(1<<0)
+#define	PROT_SAVE_YOURSELF		(1<<1)
+#define	PROT_DELETE_WINDOW		(1<<2)
 
-#define		HAS_PROPWIN		(1<<3)
-#define		GROUP_MANAGED	(1<<4)
-#define		WARP_BACK		(1<<5)
-#define		SECONDARY_BASE	(1<<6)
-#define     NO_WARPING      (1<<7)
-#define     IS_WS_PROPS     (1<<8)
-#define     WARP_TO_PIN     (1<<9)
-#define     OWN_HELP        (1<<10)
-#define     ALLOW_ICON_SIZE (1<<11)
-#define     PUSHPIN_STATE   (1<<12)
+#define	PROT_HAS_PROPWIN		(1<<3)
+#define	PROT_GROUP_MANAGED		(1<<4)
+#define	PROT_WARP_BACK			(1<<5)
+#define	PROT_SECONDARY_BASE		(1<<6)
+#define	PROT_NO_WARPING			(1<<7)
+#define	PROT_IS_WS_PROPS		(1<<8)
+#define	PROT_WARP_TO_PIN		(1<<9)
+#define	PROT_OWN_HELP			(1<<10)
+#define	PROT_ALLOW_ICON_SIZE	(1<<11)
+#define	PROT_PUSHPIN_STATE		(1<<12)
 
 /* Workspace Background Styles */
 typedef enum { WkspDefault, WkspColor, WkspPixmap } WorkspaceStyle;
