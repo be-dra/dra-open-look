@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.26 2026/10/18 09:09:59 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.27 2026/10/31 19:26:37 dra Exp $";
 #endif
 
 /*
@@ -81,13 +81,21 @@ Pkg_private void textsw_init_again(Textsw_private priv, int count)
 	priv->again_insert_length = 0;
 	priv->again = (string_t *) ((count)
 			? calloc((size_t)count, sizeof(priv->again[0]))
-			: 0);
+			: NULL);
 	for (i = 0; i < count; i++) {
 		priv->again[i] = (i < old_count) ? old_again[i] : null_string;
 	}
+#ifdef BEFORE_DRA_FIXED_MEMORY_LEAK
+/* 	isn't here old_count == priv->again_count ???? */
+/* 	so we never come into this loop... */
 	for (i = priv->again_count; i < old_count; i++) {
 		textsw_free_again(priv, &old_again[i]);
 	}
+#else /* BEFORE_DRA_FIXED_MEMORY_LEAK */
+	for (i = count; i < old_count; i++) {
+		textsw_free_again(priv, &old_again[i]);
+	}
+#endif /* BEFORE_DRA_FIXED_MEMORY_LEAK */
 	if (old_again)
 		free((char *)old_again);
 	priv->again_count = count;
