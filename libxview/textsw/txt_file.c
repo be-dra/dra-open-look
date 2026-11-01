@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_file_c_sccsid[] = "@(#)txt_file.c 20.81 93/06/28 DRA: $Id: txt_file.c,v 4.15 2026/07/30 07:13:04 dra Exp $";
+char     txt_file_c_sccsid[] = "@(#)txt_file.c 20.81 93/06/28 DRA: $Id: txt_file.c,v 4.16 2026/10/31 19:26:53 dra Exp $";
 #endif
 
 /*
@@ -931,6 +931,7 @@ Pkg_private void textsw_reset_2(Textsw abstract, int locx, int locy, int preserv
     is_readonly = TXTSW_IS_READ_ONLY(priv);	/* jcb */
 
     free(priv->again->base);
+    priv->again->base = NULL;
     if (preserve_memory) {
 	/* Get info about original esh before possibly invalidating it. */
 	old_original_esh = (Es_handle) es_get(
