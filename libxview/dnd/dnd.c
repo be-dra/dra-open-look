@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.55 2026/10/20 18:32:02 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.56 2026/11/01 08:42:30 dra Exp $ ";
 #endif
 #endif
 
@@ -1006,6 +1006,7 @@ static int SendOldDndEvent(Dnd_info *dnd, XButtonEvent *buttonEvent)
 }
 /* DND_HACK end */
 
+#ifdef WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE
 static Bool match_prop(Display *dpy, XEvent *event, XPointer cldt)
 {
 	DnDWaitEvent *wE = (DnDWaitEvent *)cldt;
@@ -1016,6 +1017,7 @@ static Bool match_prop(Display *dpy, XEvent *event, XPointer cldt)
     else
         return(False);
 }
+#endif /* WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE */
 
 typedef Bool (*DndEventWaiterFunc)(Display *, XEvent *, XPointer);
 
@@ -1047,7 +1049,6 @@ static int wait_for_dnd_event(Display *dpy, Window window, int eventType,
 
 	FD_ZERO(&xFd);
 
-	XFlush(dpy);
 	do {
 		FD_SET(XConnectionNumber(dpy), &xFd);
 		if (!(nFd = select(XConnectionNumber(dpy) + 1, &xFd, NULL, NULL, sto)))
@@ -1092,8 +1093,7 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 	Atom property;
 	int status = DND_SUCCEEDED;
 
-	/* Wait for the dest to respond with an
-	 * _SUN_DRAGDROP_ACK.
+	/* Wait for the dest to respond with an _SUN_DRAGDROP_ACK.
 	 * XXX: Should check timestamp.  Sec 2.2 ICCCM
 	 */
 	if ((status = wait_for_dnd_event(dpy, xv_xid(info), SelectionRequest,
@@ -1101,11 +1101,10 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 			!= DND_SUCCEEDED)
 		goto BailOut;
 
-	if (debug_DND > 0)
-		fprintf(stderr, "%ld in WairForAck, after wait_for_dnd_event(ACK)\n",
-				time(0));
+#ifdef WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE
 	/* Select for PropertyNotify events on requestor's window */
 	XSelectInput(dpy, event.xselectionrequest.requestor, PropertyChangeMask);
+#endif /* WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE */
 
 	/* If the property field is None, the requestor is an obsolete
 	 * client.   Sec. 2.2 ICCCM
@@ -1116,8 +1115,9 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 		property = event.xselectionrequest.property;
 
 	/* If the destination ACK'ed us, send it back a NULL reply. */
-	/* XXX: Should be prepared to handle bad alloc errors from the
-	 * server.  Sec 2.2 ICCCM
+	/* Should be prepared to handle bad alloc errors from the
+	 * server.  On the other hand, if the server has a memory problem
+	 * with such a timy request, we might as well go home...
 	 */
 	XChangeProperty(dpy, event.xselectionrequest.requestor,
 			property, event.xselectionrequest.target, 32,
@@ -1137,23 +1137,27 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 		goto BailOut;
 	}
 
-	if (debug_DND > 0)
-		fprintf(stderr, "%ld in WairForAck, before wait_for_dnd_event(prop)\n",
-				time(0));
+#ifdef WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE
+	/* how does a dnd transaction run:
+	 * 1. send trigger client message
+	 * 2. wait for the drop receiver to request _SUN_DRAGDROP_ACK
+	 * 3. answer the ACK selection request
+	 * This is basically the end of the whole dnd_send_drop function - now
+	 * the drop destination should begin with selection requests. Is there
+	 * any reason for a "4. wait for the requestor to delete the ACK answer" ?
+	 */
 	/* the second param is declared as Window, but match_prop
 	 * compares it with the atom of a PropertyNotify event....
 	 */
-	status = wait_for_dnd_event(dpy, property, PropertyNotify, None, &dnd->timeout,
-			&event, match_prop);
+	status = wait_for_dnd_event(dpy, property, PropertyNotify, None,
+						&dnd->timeout, &event, match_prop);
 
-	if (debug_DND > 0)
-		fprintf(stderr, "%ld in WairForAck, after wait_for_dnd_event(prop)\n",
-				time(0));
-	/* XXX: This will kill any events someone else has selected for. */
+	/* This will kill any events someone else has selected for. */
 	XSelectInput(dpy, event.xproperty.window, NoEventMask);
+#endif /* WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE */
 
   BailOut:
-	return (status);
+	return status;
 }
 
 static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
@@ -1181,14 +1185,10 @@ static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
 			int value;
 
 			/* DND_HACK begin */
-			/*
-			   return(WaitForAck(dnd, info));
-			 */
-			if (debug_DND > 0) fprintf(stderr, "%ld before WairForAck\n", time(0));
-			if ((value = WaitForAck(dnd, info)) == DND_TIMEOUT)
-				if (dnd->is_old)
-					return (SendOldDndEvent(dnd, buttonEvent));
-			return (value);
+			if ((value = WaitForAck(dnd, info)) == DND_TIMEOUT) {
+				if (dnd->is_old) return SendOldDndEvent(dnd, buttonEvent);
+			}
+			return value;
 			/* DND_HACK end */
 		}
 		else
@@ -1357,7 +1357,7 @@ static Window FindLeafWindow(XButtonEvent *ev)
 		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", srcXid, dstXid));
 		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
 						&dstY, &child))
-			return (DND_ERROR);	/* XXX: Different Screens !! */
+			return (DND_ERROR);	/* Different Screens !! */
 
 		if (!child)
 			break;
@@ -1536,7 +1536,7 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 		SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", srcXid, dstXid));
 		if (!XTranslateCoordinates(dpy, srcXid, dstXid, srcX, srcY, &dstX,
 						&dstY, &child))
-			return (DND_ERROR);	/* XXX: Different Screens !! */
+			return (DND_ERROR);	/* Different Screens !! */
 
 		srcXid = dstXid;
 		dstXid = child;
@@ -1619,7 +1619,6 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 		}
 	} while (child);
 
-	/* XXX: Revisit once we work out root window drops */
 	/* The idea here is that if we only do one xtranslate before we hit the
 	 * root window, then the user dropped on the root.
 	 */
@@ -1686,10 +1685,13 @@ static int get_selection(Dnd_info *dnd, Display *dpy, struct timeval *lasttim)
 
  	xid = (XID) xv_get(dnd->parent, XV_XID);
 
-	/* XXX: This will become very slow if the app
+	/* This will become very slow if the app
 	 * has > 100 selections in use.  We will go
 	 * through > 100 XGetSelectionOwner() requests
 	 * looking for a free selection.
+	 *
+	 * Dear people: I never even saw _SUN_DRAGDROP_TRANSIENT_2, let alone
+	 * more than 100....
 	 */
 	for (i = 0;; i++) {
 		seln = InternSelection(server, i, xid);
