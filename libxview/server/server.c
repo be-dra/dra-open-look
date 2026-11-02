@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.72 2026/10/29 17:56:29 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.73 2026/11/01 09:53:23 dra Exp $";
 #endif
 #endif
 
@@ -2105,7 +2105,8 @@ static void configure_popup(xvwp_popup_t p, int base_x, int base_y)
 		 * wiederspiegelt - vielleicht hilft das hier:
 		 */
 		xv_set(XV_SERVER_FROM_WINDOW(p->frame),
-				SERVER_SYNC_AND_PROCESS_EVENTS,
+				SERVER_SYNC, FALSE,
+/* 				SERVER_SYNC_AND_PROCESS_EVENTS, */
 				NULL);
 		/* das hat schon MANCHMAL geholfen, aber nicht verlaesslich */
 
