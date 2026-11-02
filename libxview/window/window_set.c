@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.12 2026/10/14 21:51:31 dra Exp $";
+static char     sccsid[] = "@(#)window_set.c 20.148 93/06/28 DRA: $Id: window_set.c,v 4.13 2026/11/01 09:48:41 dra Exp $";
 #endif
 #endif
 
@@ -279,14 +279,15 @@ Pkg_private Xv_opaque window_set_avlist(Xv_Window win_public, Attr_attribute avl
 
 							/* AQT (= Avoid Query Tree) : */
 							if (! IS_FRAME(win_public)) {
+								/* I'm new - the aqt_descendants of all my
+								 * ancestors are wrong.
+								 */
 								for (w = owner; w; w = w->owner) {
 									Xv_window ow;
 
 									if (w->aqt_descendants) {
 										xv_free(w->aqt_descendants);
 										w->aqt_descendants = NULL;
-										/* leave win->aqt_allocated as it is! */
-										break;
 									}
 									if (w->top_level) break;
 									ow = WIN_PUBLIC(w);
