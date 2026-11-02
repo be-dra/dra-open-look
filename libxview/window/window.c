@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.12 2026/10/14 21:51:31 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.13 2026/11/01 09:49:01 dra Exp $";
 #endif
 #endif
 
@@ -648,13 +648,20 @@ static int window_destroy_win_struct(Xv_Window win_public, Destroy_status status
 				{
     				struct window_info	*w;
 
-					for (w = win->owner; w; w = w->owner) {
+					/* I'm dying - the aqt_descendants of all my
+					 * ancestors are wrong. And of course, I want to
+					 * free my own....
+					 */
+					for (w = win; w; w = w->owner) {
+						Xv_window ow;
+
 						if (w->aqt_descendants) {
 							xv_free(w->aqt_descendants);
 							w->aqt_descendants = NULL;
-							/* leave win->aqt_allocated as it is! */
-							break;
 						}
+						if (w->top_level) break;
+						ow = WIN_PUBLIC(w);
+						if (xv_get(ow, XV_IS_SUBTYPE_OF, FRAME_CLASS)) break;
 					}
 				}
 
