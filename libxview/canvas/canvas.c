@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.14 2026/10/06 21:17:38 dra Exp $ ";
+static char     sccsid[] = "@(#)canvas.c 20.44 93/06/28  DRA: $Id: canvas.c,v 4.15 2026/11/02 17:55:01 dra Exp $ ";
 #endif
 #endif
 
@@ -1356,6 +1356,11 @@ static int canvas_destroy(Canvas canvas_public, Destroy_status stat)
 	if (stat == DESTROY_CLEANUP) {
 		if (canvas->pan_cursor)
 			xv_destroy(canvas->pan_cursor);
+
+		if (canvas->paint_avlist) {
+			xv_free(canvas->paint_avlist);
+			canvas->paint_avlist = NULL;
+		}
 		xv_free((char *)canvas);
 	}
 	return XV_OK;
@@ -1502,8 +1507,6 @@ static int canvas_paint_init(Canvas_view view, Canvas_paint_window self,
 				WIN_RETAINED, status(priv, retained),
 				WIN_X_PAINT_WINDOW, status(priv, x_canvas),
 				NULL);
-		xv_free(priv->paint_avlist);
-		priv->paint_avlist = priv->paint_end_avlist = NULL;
 	}
 
 	if (status(priv, created)) {
