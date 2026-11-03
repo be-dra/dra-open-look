@@ -2,7 +2,7 @@
 #define scrollw_h_included
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.5 2026/07/10 21:55:39 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: scrollw.h,v 4.6 2026/11/02 21:34:30 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -76,11 +76,11 @@ typedef enum {
 	SCROLLWIN_H_UNIT          = SCROLL_ATTR(ATTR_INT, 7),           /* CSG */
 	SCROLLWIN_ENABLE_AUTO_SCROLL= SCROLL_ATTR(ATTR_BOOLEAN, 10),    /* CSG */
 	SCROLLWIN_UPDATE_PROC     = SCROLL_ATTR(ATTR_FUNCTION_PTR, 9),  /* CSG */
+    SCROLLWIN_DROP_SITE_ATTRS = SW_ATTR_LIST(ATTR_RECURSIVE, ATTR_AV, 11),
 
 	/* private attributes */
     SCROLLWIN_SCALE_CHANGED   = SCROLL_ATTR(ATTR_NO_VALUE, 32),     /* -S- */
 	SCROLLWIN_HANDLE_DROP     = SCROLL_ATTR(ATTR_OPAQUE, 34),       /* -S- */
-	SCROLLWIN_DROPPABLE       = SCROLL_ATTR(ATTR_ENUM, 35),         /* C-G */
 	SCROLLWIN_AUTO_SCROLL     = SCROLL_ATTR(ATTR_OPAQUE, 36),       /* -S- */
 	SCROLLWIN_CREATE_SEL_REQ  = SCROLL_ATTR(ATTR_NO_VALUE, 37),     /* --G */
 	SCROLLWIN_DROP_EVENT      = SCROLL_ATTR(ATTR_OPAQUE, 38),       /* -S- */
@@ -99,15 +99,6 @@ typedef enum {
 typedef enum {
 	SCROLLPW_INFO      = SCROLL_ATTR(ATTR_OPAQUE, 61)       /* --G */
 } Scrollpw_attr;
-
-/* for SCROLLWIN_DROPPABLE */
-typedef enum {
-	SCROLLWIN_NONE,
-	SCROLLWIN_DROP,
-	SCROLLWIN_DEFAULT,
-	SCROLLWIN_DROP_WITH_PREVIEW,
-	SCROLLWIN_DEFAULT_WITH_PREVIEW
-} Scrollwin_drop_setting;
 
 typedef struct {
 	Display *dpy;
