@@ -34,8 +34,9 @@
 #include <xview/defaults.h>
 #include <olgx/olgx.h>
 #include <xview/win_notify.h>
+#include <xview_private/attr_impl.h>
 
-char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.11 2026/10/18 09:09:27 dra Exp $";
+char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.12 2026/11/02 21:34:45 dra Exp $";
 
 extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 
@@ -57,6 +58,8 @@ typedef struct {
 								vlastx, vlasty,
 								auto_scroll_xdir, auto_scroll_ydir;
 	int                         win_v_unit, win_h_unit;
+	Attr_avlist                 ds_attrs;
+	Attr_avlist                 ds_end_attrs;
 
 	Xv_opaque                   auto_scroll_pw, sel_req,
 								pan_cursor;
@@ -66,7 +69,6 @@ typedef struct {
 	int                         scale_percent;
 	int                         v_objlen, h_objlen, v_unit, h_unit;
 	scrollwin_update_proc_t               update_proc;
-	Scrollwin_drop_setting      drop_kind;
 	char                        created, panning, restrict_panning,
 								auto_scroll_enabled, destroying;
 } Scrollwin_private;
@@ -1158,40 +1160,12 @@ static Xv_opaque scrollpw_set(Scrollpw self, Attr_avlist avlist)
 							NULL,
 						NULL);
 
-			if (priv->drop_kind == (Scrollwin_drop_setting)(-1)) {
-				priv->drop_kind = xv_get(SCRPUB(pwp->priv),SCROLLWIN_DROPPABLE);
-			}
-
-			switch (priv->drop_kind) {
-				case SCROLLWIN_DROP:
-					xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_TYPE, DND_WINDOW_SITE,
-								DROP_SITE_REGION, self,
-								NULL);
-					break;
-				case SCROLLWIN_DEFAULT:
-					xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_TYPE, DND_WINDOW_SITE,
-								DROP_SITE_REGION, self,
-								DROP_SITE_DEFAULT, TRUE,
-								NULL);
-					break;
-				case SCROLLWIN_DROP_WITH_PREVIEW:
-					xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_TYPE, DND_WINDOW_SITE,
-								DROP_SITE_REGION, self,
-								DROP_SITE_EVENT_MASK, DND_ENTERLEAVE|DND_MOTION,
-								NULL);
-					break;
-				case SCROLLWIN_DEFAULT_WITH_PREVIEW:
-					xv_create(self, DROP_SITE_ITEM,
-								DROP_SITE_TYPE, DND_WINDOW_SITE,
-								DROP_SITE_REGION, self,
-								DROP_SITE_DEFAULT, TRUE,
-								DROP_SITE_EVENT_MASK, DND_ENTERLEAVE|DND_MOTION,
-								NULL);
-					break;
-				default: break;
+			if (priv->ds_attrs) {
+				xv_create(self, DROP_SITE_ITEM,
+							ATTR_LIST, priv->ds_attrs,
+							DROP_SITE_TYPE, DND_WINDOW_SITE,
+							DROP_SITE_REGION, self,
+							NULL);
 			}
 			break;
 
@@ -1457,10 +1431,6 @@ static Xv_opaque scrollwin_set(Scrollwin self, Attr_avlist avlist)
 #endif /* OLD_STUFF */
 				ADONE;
 
-			case SCROLLWIN_DROPPABLE:
-				priv->drop_kind = (Scrollwin_drop_setting)A1;
-				ADONE;
-
 			case SCROLLWIN_TRIGGER_REPAINT:
 				OPENWIN_EACH_VIEW(self, view)
 					Scrollview_private *vp= VIEWPRIV(view);
@@ -1533,6 +1503,18 @@ static Xv_opaque scrollwin_set(Scrollwin self, Attr_avlist avlist)
 			case SCROLLWIN_PW_CMS_CHANGED:
 				ADONE;
 
+    		case SCROLLWIN_DROP_SITE_ATTRS:
+				if (priv->ds_attrs == NULL) {
+					/* No current list, so allocate a new one */
+					priv->ds_attrs = xv_alloc_n(Attr_attribute,
+													(size_t)ATTR_STANDARD_SIZE);
+
+					priv->ds_end_attrs = priv->ds_attrs;
+				}
+				priv->ds_end_attrs = attr_copy_avlist(priv->ds_end_attrs,
+													attrs + 1);
+				ADONE;
+
 			case XV_END_CREATE:
 				scrollwin_end_of_creation(priv);
 				break;
@@ -1592,7 +1574,6 @@ static Xv_opaque scrollwin_get(Scrollwin self, int *status, Attr_attribute attr,
 
 		case OPENWIN_VIEW_CLASS: return (Xv_opaque)SCROLLVIEW;
 		case OPENWIN_PW_CLASS: return (Xv_opaque)SCROLLPW;
-		case SCROLLWIN_DROPPABLE: return (Xv_opaque)SCROLLWIN_NONE;
 		case SCROLLWIN_CREATE_SEL_REQ:
 			/* for subclasses... */
 			return XV_NULL;
@@ -1616,7 +1597,6 @@ static int scrollwin_init(Xv_opaque uuowner, Xv_opaque xself,
 	priv->public_self = (Xv_opaque)self;
 	self->private_data = (Xv_opaque)priv;
 
-	priv->drop_kind = (Scrollwin_drop_setting)(-1);
 	priv->restrict_panning = TRUE;
 
 	priv->v_objlen = priv->h_objlen = priv->v_unit = priv->h_unit = 1;
@@ -1672,6 +1652,10 @@ static int scrollwin_destroy(Scrollwin self, Destroy_status status)
 			vp->priv = 0;
 		OPENWIN_END_EACH
 
+		if (priv->ds_attrs) {
+			xv_free(priv->ds_attrs);
+			priv->ds_attrs = NULL;
+		}
 		if (priv->copy_gc) XFreeGC(dpy, priv->copy_gc);
 		memset((char *)priv, 0, sizeof(*priv));
 		xv_free((char *)priv);
