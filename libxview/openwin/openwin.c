@@ -1,5 +1,5 @@
 #ifndef lint
-char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.11 2026/10/17 16:40:04 dra Exp $ ";
+char     openwin_c_sccsid[] = "@(#)openwin.c 1.37 93/06/28 DRA: $Id: openwin.c,v 4.12 2026/11/02 17:54:28 dra Exp $ ";
 #endif
 
 /*
@@ -1154,8 +1154,7 @@ static void ow_append_view_attrs(Xv_openwin_info *owin, Attr_avlist argv)
 
 		owin->view_end_attrs = owin->view_attrs;
 	}
-	owin->view_end_attrs = attr_copy_avlist(owin->view_end_attrs,
-														argv);
+	owin->view_end_attrs = attr_copy_avlist(owin->view_end_attrs, argv);
 }
 
 static void set_rh_positions(Xv_openwin_info *priv, Openwin_view_info *vp)
@@ -1789,8 +1788,6 @@ static void openwin_create_viewwindow(Xv_openwin_info *owin,
 				xv_set(newview, WIN_BORDER, xborders, NULL);
 			}
 		}
-		xv_free(owin->view_attrs);
-		owin->view_attrs = NULL;
 	}
 	if (pwcl) {
 		if (owin->pw_attrs == NULL) {
@@ -1824,8 +1821,6 @@ static void openwin_create_viewwindow(Xv_openwin_info *owin,
 								WIN_COLLAPSE_EXPOSURES, FALSE,
 								NULL);
 			}
-			xv_free(owin->pw_attrs);
-			owin->pw_attrs = NULL;
 		}
 		/* wenn von hier 'Unknown client' kommt, sollte man mit
 		 * OPENWIN_PW_ATTRS bereits etwas Event-Handlings-maessiges
@@ -2634,6 +2629,15 @@ static int openwin_destroy(Openwin owin_public, Destroy_status destroy_status)
 			 */
 			xv_set(c, XV_RESET_REF_COUNT, NULL);
 			xv_destroy(c);
+		}
+
+		if (owin->view_attrs) {
+			xv_free(owin->view_attrs);
+			owin->view_attrs = NULL;
+		}
+		if (owin->pw_attrs) {
+			xv_free(owin->pw_attrs);
+			owin->pw_attrs = NULL;
 		}
 
 		if (owin->resize_gc) XFreeGC((Display *)xv_get(owin_public, XV_DISPLAY),
