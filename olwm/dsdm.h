@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: dsdm.h,v 1.3 2026/09/18 07:24:49 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: dsdm.h,v 1.4 2026/11/02 10:15:28 dra Exp $ */
 /* #ident "@(#)dsdm.h	1.3	93/06/28" */
 
 /*
@@ -24,7 +24,7 @@
 #define DND_SITE_FORWARD	(1<<3)
 
 /* see also dndimpl.h */
-#define DND_XDND_AWARE        (1<<4)
+#define DND_XDND_AWARE        (1<<25)
 
 /* public functions */
 
