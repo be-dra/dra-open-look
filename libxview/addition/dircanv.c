@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.64 2026/10/20 15:52:46 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.65 2026/11/02 21:34:45 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -3179,10 +3179,6 @@ static Xv_opaque dir_get(Xv_opaque self, int *status, Attr_attribute attr, va_li
 		case DIR_OWN_MENU_ITEM: return dir_create_own_menu_item(priv, 
 													va_arg(vali, int));
 		case DIR_AUTO_RENAME: return (Xv_opaque)FALSE;
-		case SCROLLWIN_DROPPABLE:
-			if (priv->inhibit & DIR_INHIBIT_DROP)
-				return (Xv_opaque)SCROLLWIN_NONE;
-			else return (Xv_opaque)SCROLLWIN_DROP;
 		case SCROLLWIN_CREATE_SEL_REQ:
 			return xv_create(self, FILE_REQUESTOR, NULL);
 		default:
