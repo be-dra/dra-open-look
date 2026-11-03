@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.11 2026/10/20 19:27:28 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.12 2026/11/02 10:29:13 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -86,10 +86,10 @@ int _rt_count;
 	 XTranslateCoordinates args)
 
 
-#define xv_DND_NO_USE (1<<9)    /* this comes from 'no-drop-site-windows' */
-#define xv_DND_XDND_AWARE (1<<4)
-#define xv_DND_ENTERLEAVE (1<<0)
-#define xv_DND_MOTION (1<<1)
+#define xv_DND_NO_USE (1<<30)    /* this comes from 'no-drop-site-windows' */
+#define xv_DND_XDND_AWARE (1<<25)
+#define xv_DND_ENTERLEAVE (1<<0) /* see DND_ENTERLEAVE in dragdrop.h */
+#define xv_DND_MOTION (1<<1)     /* see DND_MOTION in dragdrop.h */
 #define xv_DND_RECT_SITE 0
 
 /* ===== externs ========================================================== */
