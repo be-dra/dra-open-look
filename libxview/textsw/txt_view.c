@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_view_c_sccsid[] = "@(#)txt_view.c 1.32 93/06/28 DRA: $Id: txt_view.c,v 4.10 2026/10/18 09:10:11 dra Exp $";
+char     txt_view_c_sccsid[] = "@(#)txt_view.c 1.32 93/06/28 DRA: $Id: txt_view.c,v 4.11 2026/11/02 21:21:48 dra Exp $";
 #endif
 
 /*
@@ -86,7 +86,7 @@ static int textsw_view_init(Textsw parent, Textsw_view textsw_view_public,
 
 		xv_create(textsw_view_public, DROP_SITE_ITEM,
 				DROP_SITE_TYPE, DND_WINDOW_SITE,
-				DROP_SITE_EVENT_MASK, DND_ENTERLEAVE,
+				DROP_SITE_EVENT_MASK, DND_ENTERLEAVE | DND_ACCEPT_STRING,
 				DROP_SITE_REGION, textsw_view_public,
 				NULL);
 	}
