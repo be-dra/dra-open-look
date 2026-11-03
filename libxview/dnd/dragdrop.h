@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.7 2026/10/18 08:33:30 dra Exp $ ";
+static char     sccsid[] = "@(#)dragdrop.h 1.19 93/06/28 DRA: $Id: dragdrop.h,v 4.8 2026/11/02 10:15:57 dra Exp $ ";
 #endif
 #endif
 
@@ -52,6 +52,10 @@ typedef enum {
 #define DND_ENTERLEAVE		(1<<0)
 #define DND_MOTION		(1<<1)
 #define DND_DEFAULT_SITE        (1<<2)
+#define DND_ACCEPT_STRING		(1<<8)
+#define DND_ACCEPT_FILE			(1<<9)
+#define DND_ACCEPT_PIXMAP		(1<<10)
+#define DND_ACCEPT_CALENDAR		(1<<11)
 
 #define DND_RECT_SITE		0
 #define DND_WINDOW_SITE		1
