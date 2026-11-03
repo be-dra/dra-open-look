@@ -5,7 +5,7 @@
 #include <xview/help.h>
 #include <xview/font.h>
 
-char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.42 2026/10/11 06:40:10 dra Exp $";
+char graphwin_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: graphwin.c,v 1.43 2026/11/02 18:00:25 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -1472,7 +1472,6 @@ static Xv_opaque graphwin_get(Xv_opaque self, int *status, Attr_attribute attr,
 
 	*status = XV_OK;
 	switch ((int)attr) {
-/* 		case SCROLLWIN_DROPPABLE: return (Xv_opaque)SCROLLWIN_NONE; */
 		case GRAPH_NOTIFY_PROC: return (Xv_opaque)priv->notify_proc;
 		case GRAPH_CLIENT_DATA: return priv->client_data;
 		case GRAPH_MARGIN: return (Xv_opaque)priv->margin;
