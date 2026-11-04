@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.56 2026/11/01 08:42:30 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.57 2026/11/03 10:28:54 dra Exp $ ";
 #endif
 #endif
 
@@ -42,40 +42,38 @@ static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.56 2026/
 #define DND_NO_SITE	-1
 
 		/* Index into atom array */
-#define TRIGGER			0
-#define PREVIEW			1
-#define ACK			2
-#define WMSTATE			3
-#define INTEREST		4
-#define DSDM			5
+typedef enum {
+	TRIGGER,
+	PREVIEW,
+	ACK,
+	WMSTATE,
+	INTEREST,
+	DSDM,
+	STRING,
+	FILE_NAME,
+	CALENDAR,
+	PIXMAP,
+	XdndAware,
+	XdndSelection,
+	XdndEnter,
+	XdndLeave,
+	XdndPosition,
+	XdndDrop,
+	XdndFinished,
+	XdndStatus,
+	XdndActionCopy,
+	XdndActionMove,
+	XdndActionLink,
+	XdndActionAsk,
+	XdndActionPrivate,
+	XdndTypeList,
+	XdndActionList,
+	XdndActionDescription,
+	__NUM_ATOMS
+} xa_index_t;
 
-#ifdef NO_XDND
-
-#  define NUM_ATOMS		DSDM +1
-
-#else /* NO_XDND */
-
-#  define XdndAware 6
-#  define XdndSelection 7
-#  define XdndEnter 8
-#  define XdndLeave 9
-#  define XdndPosition 10
-#  define XdndDrop 11
-#  define XdndFinished 12
-#  define XdndStatus 13
-#  define XdndActionCopy 14
-#  define XdndActionMove 15
-#  define XdndActionLink 16
-#  define XdndActionAsk 17
-#  define XdndActionPrivate 18
-#  define XdndTypeList 19
-#  define XdndActionList 20
-#  define XdndActionDescription 21
-
-#  define NUM_ATOMS		XdndActionDescription+1
 #  define MAXTARGETS 20
-
-#endif /* NO_XDND */
+#define ALL_DATAFLAGS (DND_ACCEPT_STRING | DND_ACCEPT_FILE | DND_ACCEPT_CALENDAR | DND_ACCEPT_PIXMAP)
 
 typedef enum {
     Dnd_Trigger_Remote,
@@ -115,7 +113,7 @@ typedef struct dnd_info {
     Dnd			 public_self;
     Xv_window		 parent;
     DndDragType		 type;
-    Atom		 atom[NUM_ATOMS];
+    Atom		 atom[__NUM_ATOMS];
     Xv_opaque		 cursor;
     Cursor		 xCursor;
     Xv_opaque		 affCursor;
@@ -134,6 +132,7 @@ typedef struct dnd_info {
     int			 eventSiteIndex;
 	Atom         *basic_data_atoms;
 	int           num_bda;
+	int current_senderflags;
     /* DND_HACK begin */
     short		 is_old;
     /* DND_HACK end */
@@ -547,11 +546,11 @@ static int SendPreviewEvent(Dnd_info *dnd, DndSiteRects *sit, int subtype,
 		/* this is a DndSiteRect that has been constructed for a window
 		 * that has a XdndAware property but no _SUN_DRAGDROP_INTEREST
 		 */
-		SERVERTRACE((TLXDND, "XDND preview to %lx\n", sit->window));
+		SERVERTRACE((TLXDND+15, "XDND preview to %lx\n", sit->window));
 		switch (subtype) {
 			case EnterNotify:
 				{
-					int targets_version = (sit->flags >> 24);
+					int targets_version = ((sit->flags >> 16) & 0xff);
 
 					if (targets_version == 0) targets_version = XDND_MY_VERSION;
 
@@ -829,9 +828,11 @@ static int SendDndEvent(Dnd_info *dnd, DndMsgType type, int subtype,
 
 static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 {
-	int i = dnd->eventSiteIndex;
+	int oldsiteindex = dnd->eventSiteIndex;
+	int reject = FALSE;
 
-	SERVERTRACE((TLXDND+20, "%s: evsi=%d siteindex=%d\n", __FUNCTION__, i, siteindex));
+	SERVERTRACE((TLXDND+20, "%s: evsi=%d siteindex=%d\n", __FUNCTION__,
+								oldsiteindex, siteindex));
 	if (e->type != ButtonPress 
 		&& e->type != ButtonRelease
 		&& e->type != MotionNotify
@@ -843,25 +844,31 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 		return DND_ERROR;
 	}
 
-	SERVERTRACE((TLXDND, "%s ------------------------\n", __FUNCTION__));
+	SERVERTRACE((TLXDND+15, "%s ------------------------\n", __FUNCTION__));
 	/* No Site yet */
-	if (i == DND_NO_SITE) {
+	if (oldsiteindex == DND_NO_SITE) {
 		dnd->eventSiteIndex = siteindex;
 		/* Moved into a new site */
 		if (siteindex != DND_NO_SITE) {
-			if (dnd->siteRects[siteindex].flags & DND_ENTERLEAVE) {
+			int curflags = dnd->siteRects[siteindex].flags;
+
+			if (curflags & DND_ENTERLEAVE) {
 				if (SendPreviewEvent(dnd, dnd->siteRects + siteindex,
 								EnterNotify, &e->xmotion) != DND_SUCCEEDED)
 					return DND_ERROR;
 			}
-			UpdateGrabCursor(dnd, EnterNotify, FALSE, e->xmotion.time);
+			if ((curflags & ALL_DATAFLAGS) != 0)
+				reject = ((curflags & dnd->current_senderflags) == 0);
+			SERVERTRACE((200, "senderflags %x    dsflags %x, reject=%d\n",
+				dnd->current_senderflags, curflags & ALL_DATAFLAGS, reject));
+			UpdateGrabCursor(dnd, EnterNotify, reject, e->xmotion.time);
 		}
 		return DND_SUCCEEDED;
 	}
-	else if (i != siteindex) {
+	else if (oldsiteindex != siteindex) {
 		/* Tell the old site goodbye */
-		if (dnd->siteRects[i].flags & DND_ENTERLEAVE) {
-			if (SendPreviewEvent(dnd, dnd->siteRects + i,
+		if (dnd->siteRects[oldsiteindex].flags & DND_ENTERLEAVE) {
+			if (SendPreviewEvent(dnd, dnd->siteRects + oldsiteindex,
 								LeaveNotify, &e->xmotion) != DND_SUCCEEDED)
 				return DND_ERROR;
 		}
@@ -869,22 +876,29 @@ static int send_preview_event(Dnd_info *dnd, int siteindex, XEvent *e)
 		dnd->eventSiteIndex = siteindex;
 		/* Say hi to the new site */
 		if (siteindex != DND_NO_SITE) {
-			if (dnd->siteRects[siteindex].flags & DND_ENTERLEAVE) {
+			int curflags = dnd->siteRects[siteindex].flags;
+
+			if (curflags & DND_ENTERLEAVE) {
 				if (SendPreviewEvent(dnd, dnd->siteRects + siteindex,
 								EnterNotify, &e->xmotion) != DND_SUCCEEDED)
 					return DND_ERROR;
 			}
-			UpdateGrabCursor(dnd, EnterNotify, FALSE, e->xmotion.time);
+			if ((curflags & ALL_DATAFLAGS) != 0)
+				reject = ((curflags & dnd->current_senderflags) == 0);
+			SERVERTRACE((200, "senderflags %x    dsflags %x, reject=%d\n",
+				dnd->current_senderflags, curflags & ALL_DATAFLAGS, reject));
+			UpdateGrabCursor(dnd, EnterNotify, reject, e->xmotion.time);
 		}
 		/* Moving through the current event site */
 		return DND_SUCCEEDED;
 	}
-	else if (i == siteindex) {
-		SERVERTRACE((TLXDND, "%s: flags=%x, fl&mot %x\n", __FUNCTION__,
-				dnd->siteRects[i].flags, dnd->siteRects[i].flags & DND_MOTION));
-		if (dnd->siteRects[i].flags & DND_MOTION) {
-			SERVERTRACE((TLXDND, "%s\n", __FUNCTION__));
-			if (SendPreviewEvent(dnd, dnd->siteRects + i,
+	else if (oldsiteindex == siteindex) {
+		SERVERTRACE((TLXDND+15, "%s: flags=%x, fl&mot %x\n", __FUNCTION__,
+				dnd->siteRects[oldsiteindex].flags,
+				dnd->siteRects[oldsiteindex].flags & DND_MOTION));
+		if (dnd->siteRects[oldsiteindex].flags & DND_MOTION) {
+			SERVERTRACE((TLXDND+15, "%s\n", __FUNCTION__));
+			if (SendPreviewEvent(dnd, dnd->siteRects + oldsiteindex,
 								MotionNotify, &e->xmotion) != DND_SUCCEEDED)
 				return DND_ERROR;
 		}
@@ -1780,12 +1794,21 @@ static int internal_send_drop(Drag_drop dnd_public)
 	memset(dnd->targetlist, '\0', sizeof(dnd->targetlist));
 
 	tl = dnd->basic_data_atoms;
+	dnd->current_senderflags = 0;
 
 	if (tl) {
 		dnd->numtargets = MAXTARGETS;
 		for (i = 0; i < MAXTARGETS; i++) {
 			if (i < dnd->num_bda) {
 				dnd->targetlist[i] = tl[i];
+				if (tl[i] == dnd->atom[STRING])
+					dnd->current_senderflags |= DND_ACCEPT_STRING;
+				if (tl[i] == dnd->atom[FILE_NAME])
+					dnd->current_senderflags |= DND_ACCEPT_FILE;
+				if (tl[i] == dnd->atom[CALENDAR])
+					dnd->current_senderflags |= DND_ACCEPT_CALENDAR;
+				if (tl[i] == dnd->atom[PIXMAP])
+					dnd->current_senderflags |= DND_ACCEPT_PIXMAP;
 			}
 			else {
 				dnd->targetlist[i] = (Atom)0;
@@ -1797,6 +1820,13 @@ static int internal_send_drop(Drag_drop dnd_public)
 	}
 	else {
 		dnd->numtargets = 0;
+	}
+
+	if (dnd->current_senderflags == 0) {
+		/* we offer "nothing specific" - let's act as if we offered
+		 * EVERYTHING
+		 */
+		dnd->current_senderflags = ALL_DATAFLAGS;
 	}
 
 	if (dnd->numtargets > 0) {    /* Reference (khvertgkhbwerfv)  */
@@ -2254,6 +2284,10 @@ static int dnd_init(Xv_Window parent, Xv_drag_drop dnd_public,
     dnd->atom[INTEREST] =(Atom)xv_get(server,
 									SERVER_ATOM, "_SUN_DRAGDROP_INTEREST");
     dnd->atom[DSDM] = (Atom)xv_get(server, SERVER_ATOM, "_SUN_DRAGDROP_DSDM");
+	dnd->atom[STRING] = XA_STRING;
+	dnd->atom[FILE_NAME] = xv_get(server, SERVER_ATOM, "FILE_NAME");
+	dnd->atom[CALENDAR] = xv_get(server, SERVER_ATOM, "CALENDAR");
+	dnd->atom[PIXMAP] = XA_PIXMAP;
 #ifdef NO_XDND
 #else /* NO_XDND */
 	dnd->atom[XdndAware] = (Atom)xv_get(server, SERVER_ATOM, "XdndAware");
