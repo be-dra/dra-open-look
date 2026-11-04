@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.66 2026/10/23 20:11:02 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.67 2026/11/03 17:29:17 dra Exp $";
 #endif
 #endif
 
@@ -2715,6 +2715,20 @@ static int process_clientmessage_events(Xv_object window,
 															"XdndStatus");
 				cM.window = clientmessage->data.l[0];
 				cM.data.l[0] = clientmessage->window;
+				/* do not bother to tell the source 
+				 * "do not send position messages while you are in this
+				 * rectangle". I tried this with several drag sources:
+				 * mousepad, thunar, firefox (probably all gtk programs) do
+				 * not care about this.
+				 * Qt programs (dolphin, kate, gwenview) do obey - but their
+				 * drag feedback is strange: it is as if the dragged object
+				 * stops at the border of my rectangle.
+				 * AND THEN you run into one of the BIG MISDESIGNS of Xdnd:
+				 * The XdndDrop message has no coordinates, so, you don't know
+				 * **where** in this rectangle did the drop fall...
+				 *
+				 * So, we'd better keep our hands off that rectangle thingy...
+				 */
 				cM.data.l[1] = (site_hit ? 1 : 0);
 				cM.data.l[2] = 0;     /* unused rect */
 				cM.data.l[3] = 0;     /* unused rect */
