@@ -1,5 +1,5 @@
 /* #ident "@(#)dsdm.c	1.5	93/06/28" */
-char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.12 2026/11/02 10:29:13 dra Exp $";
+char dsdm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dsdm.c,v 2.14 2026/11/03 14:46:23 dra Exp $";
 
 /*
  *	(c) Copyright 1992 Sun Microsystems, Inc.
@@ -87,7 +87,6 @@ int _rt_count;
 
 
 #define xv_DND_NO_USE (1<<30)    /* this comes from 'no-drop-site-windows' */
-#define xv_DND_XDND_AWARE (1<<25)
 #define xv_DND_ENTERLEAVE (1<<0) /* see DND_ENTERLEAVE in dragdrop.h */
 #define xv_DND_MOTION (1<<1)     /* see DND_MOTION in dragdrop.h */
 #define xv_DND_RECT_SITE 0
@@ -112,6 +111,51 @@ static dsite_t **NextSite = &MasterSiteList;
 static int SitesFound = 0;
 static Time selectionTime;
 static Bool selectionOwned = False;
+
+/*******************************************************************
+                  CURRENT LAYOUT OF THE FLAGS FIELD
+
+This must be observed by
+		(olwm) dsdm.c as well as in
+		(XView) dnd.c and dragdrop.h and dndimpl.h
+
+Bit       meaning
+1<<0      client wants Enter/Leave preview        (DND_ENTERLEAVE)
+1<<1      client wants Motion preview             (DND_MOTION)
+1<<2      is a default drop site                  (DND_SITE_DEFAULT)
+1<<3      is forwarded                            (DND_SITE_FORWARD)
+1<<4                          
+1<<5                          
+1<<6                          
+1<<7                          
+1<<8      data acceptance                         (DND_ACCEPT_STRING)
+1<<9      data acceptance                         (DND_ACCEPT_FILE)
+1<<10     data acceptance                         (DND_ACCEPT_PIXMAP)
+1<<11     data acceptance                         (DND_ACCEPT_CALENDAR)
+1<<12                          
+1<<13                          
+1<<14                          
+1<<15                          
+1<<16     Xdnd version
+1<<17     Xdnd version
+1<<18     Xdnd version
+1<<19     Xdnd version
+1<<20                          
+1<<21                          
+1<<22                          
+1<<23                          
+1<<24     client knows new preview events (DND_EXPECT_NEW_PREVIEW_EVENT)
+1<<25     client has XdndAware and no _SUN_DRAGDROP_INTEREST (DND_XDND_AWARE)
+1<<26                          
+1<<27                          
+1<<28                          
+1<<29                          
+1<<30                          
+1<<31                          
+
+*******************************************************************/
+
+#define XDND_MY_VERSION 5
 
 /* ===== regions ========================================================== */
 
@@ -145,53 +189,79 @@ typedef struct {
  */
 static void *GetInterestProperty(Display *dpy,Window win, unsigned long *nitems)
 {
-    Status s;
-    Atom acttype;
-    unsigned long remain;
-    int actfmt;
-    void *data;
+	Status s;
+	Atom acttype;
+	unsigned long remain;
+	int actfmt;
+	void *data;
 
-    s = _XGetWindowProperty((dpy, win, AtomSunDragDropInterest, 0L,
-			     ENTIRE_CONTENTS, False, AtomSunDragDropInterest,
-			     &acttype, &actfmt, nitems, &remain,
-			     (unsigned char **) &data));
+	s = _XGetWindowProperty((dpy, win, AtomSunDragDropInterest, 0L,
+					ENTIRE_CONTENTS, False, AtomSunDragDropInterest,
+					&acttype, &actfmt, nitems, &remain,
+					(unsigned char **)&data));
 
-    if (s != Success)
-	return NULL;
+	if (s != Success)
+		return NULL;
 
-    if (acttype == None)
-	/* property does not exist */
-	return NULL;
+	if (acttype == None)
+		/* property does not exist */
+		return NULL;
 
-    if (acttype != AtomSunDragDropInterest) {
+	if (acttype != AtomSunDragDropInterest) {
+
 #ifdef DEBUG
-	ErrorWarning("dnd interest property has wrong type");
+		ErrorWarning("dnd interest property has wrong type");
 #endif /* DEBUG */
-	return NULL;
-    }
 
-    if (actfmt != 32) {
-#ifdef DEBUG
-	ErrorWarning("dnd interest property has wrong format");
-#endif /* DEBUG */
-	XFree(data);
-	return NULL;
-    }
+		return NULL;
+	}
 
-    if (remain > 0) {
+	if (actfmt != 32) {
+
 #ifdef DEBUG
-	/*
-	 * We didn't read it all, just punt.  REMIND: we should loop around
-	 * GetWindowProperty until we have all the data.
-	 */
-	fputs("dsdm: interest property too long\n", stderr);
+		ErrorWarning("dnd interest property has wrong format");
 #endif /* DEBUG */
-	XFree(data);
-	return NULL;
-    }
-    return data;
+
+		XFree(data);
+		return NULL;
+	}
+
+	if (remain > 0) {
+
+#ifdef DEBUG
+		/*
+		 * We didn't read it all, just punt.  REMIND: we should loop around
+		 * GetWindowProperty until we have all the data.
+		 */
+		fputs("dsdm: interest property too long\n", stderr);
+#endif /* DEBUG */
+
+		XFree(data);
+		return NULL;
+	}
+	return data;
 }
 
+static int GetXdndProperty(Display *dpy,Window win)
+{
+	Status s;
+	Atom acttype;
+	unsigned long remain;
+	unsigned long nitems;
+	int actfmt;
+	unsigned char *data;
+	Atom *adata;
+
+	s = _XGetWindowProperty((dpy, win, Atom_XdndAware, 0L,
+					1L, False, XA_ATOM,
+					&acttype, &actfmt, &nitems, &remain, &data));
+
+	if (s != Success) return XDND_MY_VERSION;
+	if (actfmt == 0) return XDND_MY_VERSION;
+
+	adata = (Atom *)data;
+	return (int)adata[0];
+}
 
 /*
  * Create and return a region that contains a given rectangle.
@@ -498,7 +568,7 @@ static void FindDropSites(Display *dpy, int client_understands_xdnd)
 								1,
 								paneInfo->core.self,  /* window */
 								123456,   /* site_id */
-								xv_DND_XDND_AWARE |xv_DND_ENTERLEAVE |xv_DND_MOTION,
+								DND_XDND_AWARE|xv_DND_ENTERLEAVE|xv_DND_MOTION,
 								xv_DND_RECT_SITE,
 								1,   /* num rects */
 								0,  /* x */
@@ -507,14 +577,17 @@ static void FindDropSites(Display *dpy, int client_understands_xdnd)
 								paneInfo->core.height
 							};
 							int dl= sizeof(pseudositedata)/sizeof(long);
+							int vers;
 
+							vers = GetXdndProperty(dpy, paneInfo->core.self);
+							pseudositedata[4] |= (vers << 16);
 							framergn = GetWindowRegion(dpy, winInfo, True);
 							XIntersectRegion(framergn, visrgn, framergn);
 							toprgn = GetWindowRegion(dpy, (WinGeneric *)paneInfo,False);
 							XOffsetRegion(toprgn, xoff, yoff);
 							XSubtractRegion(framergn, toprgn, framergn);
-							ProcessInterestProperty(dpy, winInfo,s, pseudositedata,
-									dl, framergn,
+							ProcessInterestProperty(dpy, winInfo, s,
+									pseudositedata, dl, framergn,
 									paneInfo->core.x + winInfo->core.x,
 									paneInfo->core.y + winInfo->core.y);
 							XDestroyRegion(framergn);
