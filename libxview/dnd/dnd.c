@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.57 2026/11/03 10:28:54 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.60 2026/11/04 20:23:00 dra Exp $ ";
 #endif
 #endif
 
@@ -432,13 +432,10 @@ static void send_xdnd_enter(Dnd_info *dnd, Window tgt, XMotionEvent *ev,
 	}
 	if (i >= dnd->numtargets) {
 		/* no file drag and no string drag */
-		cM.xclient.data.l[2] = dnd->targetlist[0];
-		cM.xclient.data.l[3] = dnd->targetlist[1];
-		cM.xclient.data.l[4] = dnd->targetlist[2];
-	}
+		cM.xclient.data.l[2] = 0L;
+		cM.xclient.data.l[3] = 0L;
+		cM.xclient.data.l[4] = 0L;
 
-	/* usually we have more than 3 TARGETS */
-	if (dnd->numtargets >= 3) {
 		/* we should provide a XdndTypeList */
 		cM.xclient.data.l[1] |= 1;
 		XChangeProperty(ev->display,
@@ -1740,7 +1737,7 @@ static int internal_send_drop(Drag_drop dnd_public)
 	Window_info *win_info;
 	unsigned long lasttime;
 	struct timeval lasttimval;
-	int i, indx;
+	int indx;
 	Atom *tl;
 	Xv_server srv;
 
@@ -1797,6 +1794,7 @@ static int internal_send_drop(Drag_drop dnd_public)
 	dnd->current_senderflags = 0;
 
 	if (tl) {
+		int i;
 		dnd->numtargets = MAXTARGETS;
 		for (i = 0; i < MAXTARGETS; i++) {
 			if (i < dnd->num_bda) {
@@ -1813,7 +1811,6 @@ static int internal_send_drop(Drag_drop dnd_public)
 			else {
 				dnd->targetlist[i] = (Atom)0;
 				dnd->numtargets = i;
-				i = MAXTARGETS;
 				break;
 			}
 		}
@@ -1994,6 +1991,16 @@ static int internal_send_drop(Drag_drop dnd_public)
 				}
 				break;
 #endif /* NO_XDND */
+			case SEL_REQUEST:
+				{
+					XSelectionRequestEvent *req_event;
+
+					SERVERTRACE((TLXDND, "SEL_REQUEST\n"));
+					req_event = (XSelectionRequestEvent *)ev;
+
+					xv_sel_handle_selection_request(req_event);
+				}
+				break;
 
 			default:
 				break;
@@ -2226,7 +2233,7 @@ static void process_data_atoms(Dnd_info *priv, Atom *atoms)
 	if (! *atoms) return;
 
 	cnt = 0;
-	while (atoms[cnt++]);
+	while (atoms[cnt]) cnt++;
 
 	priv->basic_data_atoms = xv_alloc_n(Atom, cnt+1);
 	priv->num_bda = cnt;
@@ -2475,9 +2482,6 @@ static int dnd_destroy(Dnd dnd_public, Destroy_status status)
 
 	return (XV_OK);
 }
-
-/* trace level: */
-#define TLXDND 411
 
 typedef struct dnd_drop_site {
     Xv_sl_link           next;
