@@ -47,7 +47,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.23 2026/08/06 15:05:00 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.25 2026/11/05 20:51:42 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -290,9 +290,11 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 	Filereq_private *priv = FRPRIV(self);
 	int is_inssel = FALSE;
 
+	SERVERTRACE((311, "%s: reply '%s'\n", __FUNCTION__,
+						(char *)xv_get(priv->srv, SERVER_ATOM_NAME, target)));
 	if (fetch_reply(self, target, type, value, length, format, priv)) return;
 
-	if (target == (Atom)xv_get(priv->srv, SERVER_ATOM, "INSERT_SELECTION")) {
+	if (target == xv_get(priv->srv, SERVER_ATOM, "INSERT_SELECTION")) {
 		is_inssel = TRUE;
 	}
 
@@ -318,12 +320,16 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 		return;
 	}
 
-	if (type == (Atom)xv_get(priv->srv, SERVER_ATOM, "_SUN_SELECTION_END")) {
+	if (target == xv_get(priv->srv, SERVER_ATOM, "_SUN_SELECTION_END")) {
+		if (value) xv_free((char *)value);
+		return;
+	}
+	if (target == xv_get(priv->srv, SERVER_ATOM, "_DRA_STRING_IS_CONTENTS")) {
 		if (value) xv_free((char *)value);
 		return;
 	}
 
-	if (type == (Atom)xv_get(priv->srv, SERVER_ATOM, "INCR")) {
+	if (type == xv_get(priv->srv, SERVER_ATOM, "INCR")) {
 		priv->during_incr = TRUE;
 		if (priv->is_string_request) {
 			(*(priv->string_proc))(self, FILE_REQ_INCR_START,
@@ -371,7 +377,6 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 					}
 				}
 				else {
-
 					bytelen = (size_t)length * (format / 8);
 					writelen = write(priv->fildesc, (char *)value, bytelen);
 					if (writelen < bytelen) {
@@ -538,7 +543,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 	loadlist_t newl;
 	int format;
 	long length;
-	char *base, buf[550], dirbuf[500], *txt;
+	char *base, buf[550], dirbuf[500];
 
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
@@ -589,13 +594,10 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
-			SEL_TYPE_NAME, "_DRA_STRING_IS_CONTENTS",
-			NULL);
-	txt = (char *)xv_get(self, SEL_DATA, &length, &format);
-	if (txt) xv_free(txt);
-
-	xv_set(self,
-			SEL_TYPE, XA_STRING,   /* or SEL_TYPE_NAME, "TEXT" ??? */
+			SEL_TYPE_NAMES,
+				"_DRA_STRING_IS_CONTENTS",
+				"STRING",     /* or TEXT ??? */
+				NULL,
 			NULL);
 	priv->write_to_file = TRUE;
 	xv_get(self, SEL_DATA, &length, &format);
