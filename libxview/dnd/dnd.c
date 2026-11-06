@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.60 2026/11/04 20:23:00 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.61 2026/11/05 19:21:48 dra Exp $ ";
 #endif
 #endif
 
@@ -48,7 +48,6 @@ typedef enum {
 	ACK,
 	WMSTATE,
 	INTEREST,
-	DSDM,
 	STRING,
 	FILE_NAME,
 	CALENDAR,
@@ -1881,9 +1880,7 @@ static int internal_send_drop(Drag_drop dnd_public)
 	}
 
 	/* Contact DSDM. */
-	if (XGetSelectionOwner(dpy, dnd->atom[DSDM]) != None) {
-		contact_dsdm(dnd);
-	}
+	contact_dsdm(dnd);
 
 	ev = &xevent;
 
@@ -2290,7 +2287,6 @@ static int dnd_init(Xv_Window parent, Xv_drag_drop dnd_public,
     dnd->atom[WMSTATE] = (Atom)xv_get(server, SERVER_ATOM, "WM_STATE");
     dnd->atom[INTEREST] =(Atom)xv_get(server,
 									SERVER_ATOM, "_SUN_DRAGDROP_INTEREST");
-    dnd->atom[DSDM] = (Atom)xv_get(server, SERVER_ATOM, "_SUN_DRAGDROP_DSDM");
 	dnd->atom[STRING] = XA_STRING;
 	dnd->atom[FILE_NAME] = xv_get(server, SERVER_ATOM, "FILE_NAME");
 	dnd->atom[CALENDAR] = xv_get(server, SERVER_ATOM, "CALENDAR");
