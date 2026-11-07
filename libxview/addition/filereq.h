@@ -2,7 +2,7 @@
 #define filereq_h_INCLUDED 1
 
 /*
- * "@(#) %M% V%I% %E% %U% $Id: filereq.h,v 4.4 2026/02/06 17:13:18 dra Exp $"
+ * "@(#) %M% V%I% %E% %U% $Id: filereq.h,v 4.5 2026/11/06 12:37:06 dra Exp $"
  *
  * This file is a product of Bernhard Drahota and is provided for
  * unrestricted use provided that this legend is included on all tape
@@ -45,7 +45,7 @@ typedef struct {
 #define	FR_ATTR(type, ordinal)	ATTR(ATTR_PKG_FILE_REQ, type, ordinal)
 
 typedef enum {
-	FILE_REQ_FETCH            = FR_ATTR(ATTR_OPAQUE, 1),   /* -S- */
+	FILE_REQ_FETCH            = FR_ATTR(ATTR_OPAQUE_PAIR, 1),   /* -S- */
 	FILE_REQ_STATUS           = FR_ATTR(ATTR_ENUM, 2),          /* --G */
 	FILE_REQ_SINGLE           = FR_ATTR(ATTR_BOOLEAN, 3),       /* CSG */
 	FILE_REQ_OFFSET           = FR_ATTR(ATTR_INT, 4),           /* CSG */
@@ -55,7 +55,7 @@ typedef enum {
 	FILE_REQ_CHECK_ACCESS     = FR_ATTR(ATTR_BOOLEAN, 8),       /* CSG */
 	FILE_REQ_REQUEST_STRING   = FR_ATTR(ATTR_OPAQUE_PAIR, 9),   /* -S- */
 	FILE_REQ_STRING_TO_FILE   = FR_ATTR(ATTR_OPAQUE_PAIR, 10),  /* -S- */
-	FILE_REQ_FETCH_VIA        = FR_ATTR(ATTR_OPAQUE, 11),       /* -S- */
+	FILE_REQ_FETCH_VIA        = FR_ATTR(ATTR_OPAQUE_PAIR, 11),       /* -S- */
 	FILE_REQ_REQUEST_DELETE   = FR_ATTR(ATTR_INT, 12),          /* -S- */
 	FILE_REQ_DATA             = FR_ATTR(ATTR_OPAQUE, 17),       /* --G */
 	FILE_REQ_USE_LOAD         = FR_ATTR(ATTR_BOOLEAN, 27),      /* CSG */
