@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.65 2026/11/02 21:34:45 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.66 2026/11/06 12:55:51 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -2885,7 +2885,7 @@ static Xv_opaque dir_set(Xv_opaque self, Attr_avlist avlist)
 					xv_set(drop->sel_req,
 								FILE_REQ_ALLOCATE, FALSE,
 								FILE_REQ_ALREADY_DECODED, TRUE,
-								FILE_REQ_FETCH, drop->event,
+								FILE_REQ_FETCH, drop->event, priv->dirname,
 								NULL);
 					drop->files = (char **)xv_get(drop->sel_req, FILE_REQ_FILES,
 												&drop->cnt);
