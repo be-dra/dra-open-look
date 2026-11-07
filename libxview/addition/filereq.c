@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #ifdef linux
@@ -47,7 +48,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.25 2026/11/05 20:51:42 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.26 2026/11/06 12:37:06 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -488,6 +489,46 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 	sel_post_req(self);
 }
 
+static Filereq_status fetch_file_via_selection(Filereq_private *priv,
+						char *tgtfile, int j)
+{
+	File_requestor self = FRPUB(priv);
+	int format;
+	long indx = (long)j, length;
+
+	priv->status = FR_OK;
+	priv->fildesc = open(tgtfile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	if (priv->fildesc < 0) {
+		priv->status = FR_OPEN_FAILED;
+		return priv->status;
+	}
+
+	xv_set(self,
+			SEL_TIME, &priv->last_time,
+			SEL_TYPE_NAMES,
+				"_SUN_ENUMERATION_ITEM",
+				"_DRA_STRING_IS_CONTENTS",
+				"STRING",     /* or TEXT ??? */
+				NULL,
+			SEL_TYPE_INDEX, 0,
+			SEL_PROP_FORMAT, 32,
+			SEL_PROP_TYPE, XA_INTEGER,
+			SEL_PROP_LENGTH, 1L,
+			SEL_PROP_DATA, &indx,
+			NULL);
+	priv->write_to_file = TRUE;
+	xv_get(self, SEL_DATA, &length, &format);
+	priv->write_to_file = FALSE;
+	if (priv->fildesc >= 0) {
+		close(priv->fildesc);
+		priv->fildesc = -1;
+	}
+	if (priv->status != FR_OK) {
+		unlink(tgtfile);
+	}
+	return priv->status;
+}
+
 /*
  * This text is copied from the Solaris 2.2 Desktop Integration Guide.
  *
@@ -536,7 +577,8 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 		FILE_REQ_RELEASE:
  */
 
-static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
+static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name,
+								int j)
 {
 	File_requestor self = FRPUB(priv);
 	Atom sl, *adata;
@@ -586,30 +628,8 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 			sprintf(buf, "/tmp/%s@%s", base, rem_name);
 		}
 	}
-	priv->fildesc = open(buf, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	if (priv->fildesc < 0) {
-		priv->status = FR_OPEN_FAILED;
-		return (char *)0;
-	}
 
-	xv_set(self,
-			SEL_TIME, &priv->last_time,
-			SEL_TYPE_NAMES,
-				"_DRA_STRING_IS_CONTENTS",
-				"STRING",     /* or TEXT ??? */
-				NULL,
-			NULL);
-	priv->write_to_file = TRUE;
-	xv_get(self, SEL_DATA, &length, &format);
-	priv->write_to_file = FALSE;
-	if (priv->fildesc >= 0) {
-		close(priv->fildesc);
-		priv->fildesc = -1;
-	}
-	if (priv->status != FR_OK) {
-		unlink(buf);
-		return (char *)0;
-	}
+	if (fetch_file_via_selection(priv, buf, j) != FR_OK) return NULL;
 
 	newl = (loadlist_t)xv_alloc(struct _loadfile);
 	newl->origdropped = xv_strsave(file);
@@ -628,7 +648,8 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name)
 	return xv_strsave(buf);
 }
 
-static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev)
+static void fetch_files(Filereq_private *priv,Selection_requestor sr, Event *ev,
+						char *target_dir)
 {
 	long length;
 	int owner_is_remote, i, j, format;
@@ -871,6 +892,7 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 	}
 
 	for (j = i = 0; i < priv->count; i++) {
+		long index = (long)i;
 		memset(mr, 0, sizeof(mr_t));
 
 		xv_set(sr,
@@ -884,7 +906,7 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 				SEL_PROP_FORMAT, 32,
 				SEL_PROP_TYPE, XA_INTEGER,
 				SEL_PROP_LENGTH, 1L,
-				SEL_PROP_DATA, &i,
+				SEL_PROP_DATA, &index,
 				NULL);
 		cdata = (char *)xv_get(sr, SEL_DATA, &length, &format);
 
@@ -903,8 +925,28 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 				/* stat failed: no such file on local disk */
 
 				if (priv->use_load) {
-					locnam = perform_dra_load(priv, cdata, rem_name);
+					locnam = perform_dra_load(priv, cdata, rem_name, j);
 					if (locnam) priv->files[j++] = locnam;
+				}
+				else if (target_dir) {
+					char *bas, localname[MAXPATHLEN];
+
+					/* we want to load the file through selections and
+					 * write it into the target_dir
+					 */
+					bas = strrchr(cdata, '/');
+					if (bas) ++bas;
+					bas = cdata;
+
+					sprintf(localname, "%s/%s", target_dir, bas);
+					if (fetch_file_via_selection(priv, localname, j) == FR_OK) {
+						priv->files[j++] = xv_strsave(localname);
+					}
+					else {
+						priv->files[j++] = cdata;
+						/* don't free */
+						cdata = NULL;
+					}
 				}
 			}
 			else {
@@ -920,8 +962,31 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 					cdata = NULL;
 				}
 				else {
-					locnam = perform_dra_load(priv, cdata, rem_name);
-					if (locnam) priv->files[j++] = locnam;
+					if (priv->use_load) {
+						locnam = perform_dra_load(priv, cdata, rem_name, j);
+						if (locnam) priv->files[j++] = locnam;
+					}
+					else if (target_dir) {
+						char *bas, localname[MAXPATHLEN];
+
+						/* we want to load the file through selections and
+						 * write it into the target_dir
+						 */
+						bas = strrchr(cdata, '/');
+						if (bas) ++bas;
+						bas = cdata;
+
+						sprintf(localname, "%s/%s", target_dir, bas);
+						if (fetch_file_via_selection(priv, localname, j)==FR_OK)
+						{
+							priv->files[j++] = xv_strsave(localname);
+						}
+						else {
+							priv->files[j++] = cdata;
+							/* don't free */
+							cdata = NULL;
+						}
+					}
 				}
 			}
 		}
@@ -941,7 +1006,7 @@ static void request_delete(Filereq_private *priv, int ind)
 {
 	char *cdata;
 	int format;
-	long length;
+	long length, lind = (long)ind;
 
 	xv_set(FRPUB(priv),
 			SEL_TIME, &priv->last_time,
@@ -950,7 +1015,7 @@ static void request_delete(Filereq_private *priv, int ind)
 			SEL_PROP_FORMAT, 32,
 			SEL_PROP_TYPE, XA_INTEGER,
 			SEL_PROP_LENGTH, 1L,
-			SEL_PROP_DATA, &ind,
+			SEL_PROP_DATA, &lind,
 			NULL);
 	cdata = (char *)xv_get(FRPUB(priv), SEL_DATA, &length, &format);
 	if (length == SEL_ERROR)  return;
@@ -1033,7 +1098,7 @@ static Xv_opaque filereq_set(File_requestor self, Attr_avlist avlist)
 			priv->own_request = TRUE;
 			xv_set(self, XV_KEY_DATA, fr_mult_key, &priv->mr, NULL);
 			SERVERTRACE((311, "%s: FILE_REQ_FETCH\n", __FUNCTION__));
-			fetch_files(priv, self, (Event *)A1);
+			fetch_files(priv, self, (Event *)A1, (char *)A2);
 			priv->own_request = FALSE;
 			SERVERTRACE((311, "%s: files fetched\n", __FUNCTION__));
 			ADONE;
@@ -1052,7 +1117,7 @@ static Xv_opaque filereq_set(File_requestor self, Attr_avlist avlist)
 						XV_KEY_DATA, fr_key, priv,
 						NULL);
 				SERVERTRACE((311, "%s: FILE_REQ_FETCH_VIA\n", __FUNCTION__));
-				fetch_files(priv, sr, (Event *)0);
+				fetch_files(priv, sr, (Event *)0, (char *)A2);
 				xv_set(sr, SEL_REPLY_PROC, save_reply, NULL);
 				SERVERTRACE((311, "%s: files fetched\n", __FUNCTION__));
 			}
