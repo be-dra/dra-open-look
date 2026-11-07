@@ -36,7 +36,7 @@
 #include <xview/win_notify.h>
 #include <xview_private/attr_impl.h>
 
-char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.12 2026/11/02 21:34:45 dra Exp $";
+char scrollw_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: scrollw.c,v 4.13 2026/11/06 12:55:51 dra Exp $";
 
 extern Graphics_info *xv_init_olgx(Xv_window, int *, Xv_font);
 
@@ -1403,7 +1403,7 @@ static Xv_opaque scrollwin_set(Scrollwin self, Attr_avlist avlist)
 					xv_set(drop->sel_req,
 								FILE_REQ_ALLOCATE, FALSE,
 								FILE_REQ_ALREADY_DECODED, TRUE,
-								FILE_REQ_FETCH, drop->event,
+								FILE_REQ_FETCH, drop->event, NULL,
 								NULL);
 					drop->files = (char **)xv_get(drop->sel_req, FILE_REQ_FILES,
 												&drop->cnt);
