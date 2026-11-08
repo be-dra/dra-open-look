@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.44 2026/10/15 17:02:00 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.45 2026/11/07 17:39:21 dra Exp $";
 #endif
 #endif
 
@@ -503,6 +503,7 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 		|| xevent->type == MappingNotify
 		|| xevent->type == ConfigureNotify
 		|| xevent->type == FocusIn
+		|| xevent->type == VisibilityNotify
 		)
 	{
 		ic->checkedEventType = 0;
