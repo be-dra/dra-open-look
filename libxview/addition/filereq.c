@@ -48,7 +48,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.26 2026/11/06 12:37:06 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.28 2026/11/08 10:22:35 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -177,7 +177,7 @@ static void insert_selection_done(Filereq_private *priv)
 	}
 
 	xv_set(priv->selowner,
-				XV_KEY_DATA, fr_load_key, 0,
+				XV_KEY_DATA, fr_load_key, NULL,
 				SEL_OWN, FALSE,
 				NULL);
 }
@@ -291,8 +291,6 @@ static void filereq_reply(File_requestor self, Atom target, Atom type,
 	Filereq_private *priv = FRPRIV(self);
 	int is_inssel = FALSE;
 
-	SERVERTRACE((311, "%s: reply '%s'\n", __FUNCTION__,
-						(char *)xv_get(priv->srv, SERVER_ATOM_NAME, target)));
 	if (fetch_reply(self, target, type, value, length, format, priv)) return;
 
 	if (target == xv_get(priv->srv, SERVER_ATOM, "INSERT_SELECTION")) {
@@ -446,23 +444,25 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 		sprintf(buf, "_DRA_FILEREQ_%lx_%lx", (unsigned long)xv_get(win, XV_XID),
 											(unsigned long)priv);
 
-		SERVERTRACE((311, "%s: create sel owner %s\n", __FUNCTION__, buf));
 		priv->selowner = xv_create(win, FILEDRAG,
 							SEL_RANK_NAME, buf,
 							FILEDRAG_ENABLE_STRING, FILEDRAG_CONTENTS_STRING,
-							SEL_CONVERT_PROC, note_dra_load_save_conversion,
 							XV_KEY_DATA, fr_key, priv,
 							NULL);
 	}
 
 	if (! tim) {
-		server_set_timestamp(srv, &srvtim, server_get_timestamp(srv));
+		server_set_timestamp(srv, &srvtim, 0L);
 		tim = &srvtim;
 	}
 
 	xv_set(priv->selowner,
 			XV_KEY_DATA, fr_load_key, ll,
+			SEL_CONVERT_PROC, note_dra_load_save_conversion,
 			FILEDRAG_FILES, ll->localfile, 0,
+			NULL);
+
+	xv_set(priv->selowner,
 			SEL_TIME, tim,
 			SEL_OWN, TRUE,
 			NULL);
@@ -620,7 +620,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name,
 	else base = file;
 
 	/* Reference [jgsvergfnkbwrf] */
-	sprintf(dirbuf, "/tmp/load_%s", rem_name);
+	sprintf(dirbuf, "/tmp/load_%s_%d", rem_name, getuid());
 	sprintf(buf, "%s/%s", dirbuf, base);
 	if (mkdir(dirbuf, 0700) < 0) {
 		int e = errno;
