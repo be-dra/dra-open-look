@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.62 2026/10/29 18:22:21 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.63 2026/11/08 09:44:43 dra Exp $";
 #endif
 #endif
 
@@ -442,8 +442,9 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 		replyInfo->sri_time = xv_sel_get_last_event_time(srv,
 									replyInfo->sri_dpy, win, FALSE);
 	}
-	else
+	else {
 		replyInfo->sri_time = time;
+	}
 
 	replyInfo->sri_timeout = xv_get(req, SEL_TIMEOUT_VALUE);
 	replyInfo->sri_multiple_count = 0;
@@ -990,33 +991,18 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	unsigned long bytesafter;
 	unsigned char *propValue;
 
-#ifdef BEFORE_DRA_CHANGED_IT
-	/* originally, we performed a XGetWindowProperty without 'delete'
-	 * on (ev->requestor, property)
-	 * and later we performed a XDeleteProperty
-	 * on (replyInfo->sri_requestor, property)
+	/* I was thinking about the question whether I could use the
+	 * 'delete' flag in the XGetWindowProperty - then I wouldn't need
+	 * the XDeleteProperty at the end...
 	 *
-	 * The question is: Is ev->requestor == replyInfo->sri_requestor ?
+	 * But this leads to problems in the following situation:
+	 * If this is the type INCR property, we continue through
+	 * internalProcessIncr -> ProcessIncr and come to the SAME
+	 * XGetWindowProperty again - and get format==0 and length==0
+	 * with very bad consequences.....
 	 */
-#else /* BEFORE_DRA_CHANGED_IT */
-	/* this was modified 2026-10-27 - the whole #ifdef can be removed
-	 * after sufficient time, provided we don't see this.
-	 */
-	if (ev->requestor != replyInfo->sri_requestor) {
-		fprintf(stderr, "\n\n%s-%d: different requestors: %lx != %lx\n\n\n", 
-						__FILE__, __LINE__,
-						ev->requestor, replyInfo->sri_requestor);
-	}
-#endif /* BEFORE_DRA_CHANGED_IT */
-
-	if (XGetWindowProperty(ev->display, ev->requestor,
-					property, 0L, 10000000L, 
-#ifdef BEFORE_DRA_CHANGED_IT
-					False,
-#else /* BEFORE_DRA_CHANGED_IT */
-					TRUE,
-#endif /* BEFORE_DRA_CHANGED_IT */
-					AnyPropertyType, &type, &format, &length,
+	if (XGetWindowProperty(ev->display, ev->requestor, property, 0L, 10000000L,
+					False, AnyPropertyType, &type, &format, &length,
 					&bytesafter, &propValue) != Success) {
 		xv_error(selReq->public_self,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
@@ -1047,7 +1033,6 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 
 	if (type == replyInfo->sri_incr) {
 		replyInfo->sri_property = property;
-
 
 		/*
 		 * The following lines of code were used to process the INCR target
@@ -1080,9 +1065,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		/* but doesn't HAVE to free it in case of a blocking request... */
 	}
 
-#ifdef BEFORE_DRA_CHANGED_IT
 	XDeleteProperty(ev->display, replyInfo->sri_requestor, property);
-#endif /* BEFORE_DRA_CHANGED_IT */
 	xv_sel_free_property(replyInfo->sri_srv, ev->display, property);
 	return (TRUE);
 }
