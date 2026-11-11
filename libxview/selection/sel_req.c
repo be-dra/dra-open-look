@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.63 2026/11/08 09:44:43 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.65 2026/11/11 07:42:57 dra Exp $";
 #endif
 #endif
 
@@ -835,9 +835,15 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 	return (TRUE);
 }
 
+typedef struct {  /* the output parameters of XGetWindowProperty */
+	int format;
+	Atom type;
+	unsigned long length;
+	unsigned char *propValue;
+} get_prop_data_t;
 
 static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
-								XSelectionEvent *ev)
+								XSelectionEvent *ev, get_prop_data_t *propdata)
 {
 	int format;
 	Atom type;
@@ -853,25 +859,15 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	status = xv_sel_add_prop_notify_mask(ev->display, reply->sri_requestor,
 											&winAttr);
 
-	/*
-	 * We should start the transfer process by deleting the (type==INCR)
-	 * property and by calling the requestor reply_proc with "type" set to
-	 * INCR and replyBuf set to a lower bound on the number of bytes of
-	 * data in the selection.
+	/* if we have a non-NULL propdata, we don't need to repeat this
+	 * XGetWindowProperty: we have the result (and, by the way, it has
+	 * already been deleted... and so, the transfer process has already started
 	 */
-	if (XGetWindowProperty(ev->display, reply->sri_requestor,
-					reply->sri_property, 0L, 1000000L, True, AnyPropertyType,
-					&type, &format, &length, &bytesafter,
-					(unsigned char **)&propValue) != Success)
-	{
-		xv_error(selReq->public_self,
-				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
-				ERROR_PKG, SELECTION,
-				NULL);
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,
-									ev->send_event);
-		return FALSE;
-	}
+	/* we copy the fields in propdata to our local variables */
+	type = propdata->type;
+	format = propdata->format;
+	propValue = propdata->propValue;
+	length = propdata->length;
 
 	/*
 	 * Note: The user reply_proc should free "propValue".
@@ -970,12 +966,12 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 }
 
 static int internalProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply,
-							Atom target, XSelectionEvent *ev)
+				Atom target, XSelectionEvent *ev, get_prop_data_t *propdata)
 {
 	int retval;
 
 	xv_set(reply->sri_srv, SERVER_APPL_BUSY, TRUE, XV_NULL, NULL);
-	retval = ProcessIncr(selReq, reply, target, ev);
+	retval = ProcessIncr(selReq, reply, target, ev, propdata);
 	xv_set(reply->sri_srv, SERVER_APPL_BUSY, FALSE, XV_NULL, NULL);
 
 	return retval;
@@ -985,11 +981,8 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 			Sel_reply_info *replyInfo, Atom property, Atom target,
 			int unused_blocking)
 {
-	int format;
-	Atom type;
-	unsigned long length;
+	get_prop_data_t pd;
 	unsigned long bytesafter;
-	unsigned char *propValue;
 
 	/* I was thinking about the question whether I could use the
 	 * 'delete' flag in the XGetWindowProperty - then I wouldn't need
@@ -1000,10 +993,15 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	 * internalProcessIncr -> ProcessIncr and come to the SAME
 	 * XGetWindowProperty again - and get format==0 and length==0
 	 * with very bad consequences.....
+	 *
+	 * But NOW: we pack the output paramaters of this XGetWindowProperty
+	 * into a get_prop_data_t structure and hand it over to ProcessIncr.
+	 * Then we have the information there and don't need a second
+	 * XGetWindowProperty - and therefore can use the delete flag here!
 	 */
 	if (XGetWindowProperty(ev->display, ev->requestor, property, 0L, 10000000L,
-					False, AnyPropertyType, &type, &format, &length,
-					&bytesafter, &propValue) != Success) {
+					True, AnyPropertyType, &pd.type, &pd.format, &pd.length,
+					&bytesafter, &pd.propValue) != Success) {
 		xv_error(selReq->public_self,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION,
@@ -1014,8 +1012,8 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		return FALSE;
 	}
 
-	if (type == 0 && format == 0) {
-		XFree(propValue);
+	if (pd.type == 0 && pd.format == 0) {
+		XFree(pd.propValue);
         xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
 										ev->send_event);
 		return FALSE;
@@ -1026,12 +1024,12 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	 * registered with package and the selection owner is
 	 * transferring the data in increments, reject the data transfer.
 	 */
-	if (selReq->reply_proc == NULL && type == replyInfo->sri_incr) {
-		XFree(propValue);
+	if (selReq->reply_proc == NULL && pd.type == replyInfo->sri_incr) {
+		XFree(pd.propValue);
 		return FALSE;
 	}
 
-	if (type == replyInfo->sri_incr) {
+	if (pd.type == replyInfo->sri_incr) {
 		replyInfo->sri_property = property;
 
 		/*
@@ -1048,24 +1046,28 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		 */
 
 
-		internalProcessIncr(selReq, replyInfo, target, ev);
-		XFree(propValue);
+		internalProcessIncr(selReq, replyInfo, target, ev, &pd);
+
+		/* Chances are that pd.propValue has been freed in ProcessIncr
+		 * from the reply_proc...
+
+			XFree(pd.propValue);
+		*/
 		return (SEL_INCREMENT);
 	}
-	replyInfo->sri_propdata = (Xv_opaque) propValue;
-	replyInfo->sri_length = length;
-	replyInfo->sri_format = format;
+	replyInfo->sri_propdata = (Xv_opaque) pd.propValue;
+	replyInfo->sri_length = pd.length;
+	replyInfo->sri_format = pd.format;
 
 	/*
 	 * Note: The user reply_proc should free "propValue".
 	 */
 	if (selReq->reply_proc) {
-		(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, type,
-				(Xv_opaque) propValue, length, format);
+		(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, pd.type,
+				(Xv_opaque) pd.propValue, pd.length, pd.format);
 		/* but doesn't HAVE to free it in case of a blocking request... */
 	}
 
-	XDeleteProperty(ev->display, replyInfo->sri_requestor, property);
 	xv_sel_free_property(replyInfo->sri_srv, ev->display, property);
 	return (TRUE);
 }
@@ -1258,32 +1260,6 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 
 	}
 
-	/* Is this condition EVER true???
-	 * The event's target is probably never INCR
-	 */
-	if (ev->target == replyInfo->sri_incr) {
-		char buf[500];
-
-		sprintf(buf, "UNEXPECTED: %s-%d: target %ld == INCR ????", __FUNCTION__,
-							__LINE__, ev->target);
-		xv_error(XV_NULL,
-				ERROR_STRING, buf,
-				ERROR_PKG, SELECTION,
-				NULL);
-		/*
-		 * If we are processing a blocking request and the selection
-		 * owner is transferring the data in increments with no reply_proc
-		 * registered, reject the data transfer.
-		 */
-		if (selReq->reply_proc == NULL) {
-			xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
-			return FALSE;
-		}
-
-		if (internalProcessIncr(selReq,replyInfo,*replyInfo->sri_target, ev)) {
-			return TRUE;
-		}
-	}
 	return XvGetRequestedValue(selReq, ev, replyInfo, ev->property,
 			*replyInfo->sri_target, 1);
 }
