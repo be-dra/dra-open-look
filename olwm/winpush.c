@@ -1,5 +1,5 @@
 /* #ident	"@(#)winpush.c	26.23	93/06/28 SMI" */
-char winpush_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpush.c,v 1.7 2026/08/07 18:27:24 dra Exp $";
+char winpush_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpush.c,v 1.10 2026/10/30 09:50:27 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -41,7 +41,6 @@ static Bool     pushpinStateAfterPress;  /* State of the pushpin
 					  * after the user pressed
 				   	  * the mouse button. */
 static SemanticAction currentAction = ACTION_NONE;
-void PushPinChangePinState();
 
 /***************************************************************************
 * private functions
@@ -86,14 +85,37 @@ WinPushPin	*winInfo;
 	}
 }
 
+/*
+ * Permanently change the push pin state.
+ */
+static void PushPinChangePinState(Display *dpy, WinPushPin *winInfo,
+								Bool sendDelete)
+{
+	Client *cli = winInfo->core.client;
+
+	(WinFunc(winInfo, core.drawfunc))(dpy, winInfo);
+
+	/* Tell the client that the state of its push-pin has changed. */
+	if (cli->protocols & PROT_PUSHPIN_STATE) {
+		/* new (2026-10-03) : The client has put _OL_PIN_STATE into the
+		 * WM_PROTOCOLS. So we send a ClientMessage, giving the client
+		 * the chance to avoid a XGetWindowProperty roundtrip.
+		 */
+		ClientSendPinState(cli, winInfo->pushpinin);
+	}
+	else {
+		XChangeProperty(dpy, PANEWINOFCLIENT(cli), AtomPinState, XA_INTEGER, 32,
+				PropModeReplace, (unsigned char *)&(winInfo->pushpinin), 1);
+	}
+
+	if (!winInfo->pushpinin && sendDelete)
+		ClientKill(winInfo->core.client, False);
+}
+
 /* 
  * eventButtonRelease - handle button release events on the pushpin window 
  */
-static int
-eventButtonRelease(dpy, event, winInfo)
-Display	*dpy;
-XEvent	*event;
-WinPushPin	*winInfo;
+static int eventButtonRelease(Display *dpy, XEvent *event, WinPushPin *winInfo)
 {
 	FrameAllowEvents(winInfo->core.client, event->xbutton.time);
 	if (!AllButtonsUp(event))
@@ -261,37 +283,32 @@ XConfigureRequestEvent *pxcre;
 /*
  * MakePushPin  -- create the pushpin window. Return a WinGeneric structure.
  */
-WinPushPin *
-MakePushPin(dpy, par, pane, x, y)
-Display	*dpy;
-WinGeneric *par;
-Window pane;
-int x,y;
+WinPushPin *MakePushPin(Display *dpy, WinGeneric *par,Window pane, int x, int y)
 {
 	WinPushPin *w;
 	Window win;
-        unsigned long valuemask;
-        XSetWindowAttributes attributes;
-	Graphics_info	*gisNormal = WinGI(par,NORMAL_GINFO);
+	unsigned long valuemask;
+	XSetWindowAttributes attributes;
+	Graphics_info *gisNormal = WinGI(par, NORMAL_GINFO);
 
-        attributes.event_mask = ButtonMotionMask | ButtonReleaseMask | 
-		ButtonPressMask | ExposureMask;
-        attributes.win_gravity = NorthWestGravity;
-        valuemask = CWEventMask | CWWinGravity;
+	attributes.event_mask = ButtonMotionMask | ButtonReleaseMask |
+			ButtonPressMask | ExposureMask;
+	attributes.win_gravity = NorthWestGravity;
+	valuemask = CWEventMask | CWWinGravity;
 
 	win = ScreenCreateWindow(par->core.client->scrInfo, par->core.self,
-	    x, y, PushPinOut_Width(gisNormal), PushPinOut_Height(gisNormal),
-	    valuemask, &attributes);
+			x, y, PushPinOut_Width(gisNormal), PushPinOut_Height(gisNormal),
+			valuemask, &attributes);
 
 	/* create the associated structure */
 	w = MemNew(WinPushPin);
 	w->core.self = win;
 	w->class = &classPushPin;
 	w->core.kind = WIN_PUSHPIN;
-	WinAddChild(par,w);
+	WinAddChild(par, w);
 	w->core.children = NULL;
 	w->core.client = par->core.client;
-	w->core.x = x;	
+	w->core.x = x;
 	w->core.y = y;
 	w->core.width = PushPinOut_Width(gisNormal);
 	w->core.height = PushPinOut_Height(gisNormal);
@@ -299,21 +316,18 @@ int x,y;
 	w->core.exposures = NULL;
 	w->core.helpstring = "PushPin";
 
-        /* Determine initial state of push pin. */
-        w->pushpinin =  
-		(par->core.client->wmDecors->pushpin_initial_state == PIN_IN);
+	/* Determine initial state of push pin. */
+	w->pushpinin =
+			(par->core.client->wmDecors->pushpin_initial_state == PIN_IN);
 
-        /* Register the push-pin state. */
-        XChangeProperty(dpy, pane,
-                        AtomPushpinState,
-                        XA_INTEGER, 32,
-                        PropModeReplace,
-                        (unsigned char *)&(w->pushpinin), 1);
+	/* Register the push-pin state. */
+	XChangeProperty(dpy, pane, AtomPinState, XA_INTEGER, 32,
+			PropModeReplace, (unsigned char *)&(w->pushpinin), 1);
 
 	/* register the window */
 	WIInstallInfo(w);
 
-        XMapRaised(dpy, win);
+	XMapRaised(dpy, win);
 
 	return w;
 }
@@ -341,38 +355,10 @@ Display *dpy;
 
 
 /*
- * Permanently change the push pin state.
- */
-void
-PushPinChangePinState(dpy, winInfo, sendDelete)
-    Display *dpy;
-    WinPushPin *winInfo;
-    Bool sendDelete;
-{
-	Client		*cli = winInfo->core.client;
-
-        (WinFunc(winInfo,core.drawfunc))(dpy, winInfo);
-
-        /* Tell the client that the state of its push-pin has changed. */
-        XChangeProperty(dpy, PANEWINOFCLIENT(cli),
-                        AtomPushpinState,
-                        XA_INTEGER, 32,
-                        PropModeReplace,
-                        (unsigned char *)&(winInfo->pushpinin), 1);
-
-        if (!winInfo->pushpinin && sendDelete)
-	    ClientKill(winInfo->core.client,False);
-}  
-
-/*
  * Sets the pin state to a new state (if different that current state)
  */
-void
-PushPinSetPinState(dpy,winInfo,newState,sendDelete)
-	Display		*dpy;
-	WinPushPin	*winInfo;
-	int		newState;
-	Bool		sendDelete;
+void PushPinSetPinState(Display *dpy, WinPushPin *winInfo, int newState,
+								Bool sendDelete)
 {
 	if (newState == winInfo->pushpinin)
 		return;
@@ -384,11 +370,7 @@ PushPinSetPinState(dpy,winInfo,newState,sendDelete)
 /*
  * Toggles the pin state
  */
-void
-PushPinTogglePinState(dpy,winInfo,sendDelete)
-	Display		*dpy;
-	WinPushPin	*winInfo;
-	Bool		sendDelete;
+void PushPinTogglePinState(Display *dpy, WinPushPin	*winInfo, Bool sendDelete)
 {
 	winInfo->pushpinin = !winInfo->pushpinin;
 	PushPinChangePinState(dpy,winInfo,sendDelete);
