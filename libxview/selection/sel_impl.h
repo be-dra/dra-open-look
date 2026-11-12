@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.36 2026/10/15 17:00:20 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.37 2026/11/11 21:57:16 dra Exp $";
 #endif
 #endif
 
@@ -204,6 +204,8 @@ typedef struct {
 	Atom           sri_atom_pair;
 	Sel_owner_info *sri_local_owner;
 	Sel_req_info   *sri_req_info;
+	Atom           sri_no_answer_atom;
+	int            sri_no_answer_required;
 } Sel_reply_info;
 
 
