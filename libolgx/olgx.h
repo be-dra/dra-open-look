@@ -11,11 +11,6 @@
 #define OL_PUBLIC_DEFINED
 
 #include <X11/Xlib.h>
-#ifdef OW_I18N
-#if ! defined(XlibSpecificationRelease) || XlibSpecificationRelease < 5
-#include <X11/XlibR5.h>          
-#endif /* XlibSpecificationRelease != 5 */
-#endif /* OW_I18N */
 
 /*
  * Package constant definitions
@@ -74,9 +69,7 @@
 #define OLGX_LABEL_IS_XIMAGE	0x2000	/* button label is an ximage */
 #define OLGX_LABEL_HAS_UNDERLINE 0x0800	/* button label has underline */
 #define OLGX_LABEL_HAS_HIGHLIGHT 0x1000	/* button label has highlight */
-#ifdef OW_I18N
-#define OLGX_LABEL_IS_WCS      0x10000 /* button label is a wide char str */
-#endif
+#define OLGX_LABEL_IS_WCS 0x10000 /* label is a wide char str - never used */
 #define OLGX_VERTICAL 		0x0800	/* orientation is vertical */
 #define OLGX_HORIZONTAL 	0x1000	/* orientation is horizontal */
 #define OLGX_PUSHPIN_OUT	0x2000	/* pushpin is in */
@@ -349,6 +342,10 @@
 #define NUMERIC_SCROLL_BUTTON_NORMAL            232
 #define NUMERIC_SCROLL_BUTTON_LEFT_INV          233
 #define NUMERIC_SCROLL_BUTTON_RIGHT_INV         234
+#define OLG_ABBREV_MENU_BUTTON_HOR              235
+#define OLG_ABBREV_MENU_BUTTON_HOR_INVERTED     236
+#define OLG_ABBREV_WIN_BUTTON                   237
+#define OLG_ABBREV_WIN_BUTTON_INVERTED          238
 
 
 /*
@@ -361,15 +358,12 @@
 #define OLGX_VAR_HEIGHT_BTN_ENDCAP_WIDTH        5
 
 
-#ifdef OW_I18N
-
 /*
- * Definision for the Graphics Info flag (Olgx_Flags)
+ * Definition for the Graphics Info flag (Olgx_Flags)
  */
 
 #define	OLGX_FONTSET	(1<<0)
-
-#endif /* OW_I18N */
+#define OLGX_MULTIBYTE_MODE  (1<<1)
 
  /*
  * Type and Structure Definitions
@@ -403,12 +397,10 @@ typedef struct underlinelabel {
   int position;
 } Underlinelabel;
 
-#ifdef OW_I18N
-typedef union olgx_font_or_fs{
+typedef struct olgx_font_ond_fs{
     XFontSet     fontset;		/* ptr to text font set info */
     XFontStruct *fontstruct;		/* ptr to text font info */
-} Olgx_font_or_fs;
-#endif
+} Olgx_font_and_fs;
 
 /*
  * Graphics information structure
@@ -418,11 +410,7 @@ typedef struct graphics_info {
   int scrn;
   unsigned int depth;	        	/* depth in which we are drawing */
   XFontStruct *glyphfont;		/* ptr to glyph font info*/
-#ifdef OW_I18N
-  Olgx_font_or_fs utextfont;
-#else
-  XFontStruct *textfont;		/* ptr to text font info */
-#endif
+  Olgx_font_and_fs stextfont;
   short  	three_d;		/* Either one of OLGX_2D,
 					 * OLGX_3D_COLOR,OLGX_3D_MONO
 					 */
@@ -437,14 +425,13 @@ typedef struct graphics_info {
        * avoid binary compatiblity problem between 2.0 and 3.0 
        * info->drawable[1-2] are still blank.
        */
-#ifdef OW_I18N
       /*
-       * with OW_I18N, info->drawable[1] is redefined to be Olgx_Flags
+       * info->drawable[1] is redefined to be Olgx_Flags
        * (macro).  This Olgx_Flags being used to distinguish between
        * i18n/fontset and main/fontstruct instance.
        */
 #define	_Olgx_Flags	drawable[1]
-#endif /* OW_I18N */
+#define Olgx_Flags(info)     ((info)->_Olgx_Flags)
   Pixmap        drawable[3];
   unsigned long pixvals[OLGX_NUM_COLORS];
   
@@ -519,26 +506,17 @@ typedef struct graphics_info {
 #define NumScrollButton_Height(info)    ((info)->textscbu_width)
 #define ResizeArm_Width(info)           ((info)->resize_arm_width)
 #define ResizeArm_Height(info)          ((info)->resize_arm_width)
-#ifdef OW_I18N
-#define Ascent_of_TextFont(info)        ((info)->utextfont.fontstruct->ascent)
-#define Descent_of_TextFont(info)       ((info)->utextfont.fontstruct->descent)
-#else
-#define Ascent_of_TextFont(info)        ((info)->textfont->ascent)
-#define Descent_of_TextFont(info)       ((info)->textfont->descent)
-#endif
+#define Ascent_of_TextFont(info)        ((info)->stextfont.fontstruct->ascent)
+#define Descent_of_TextFont(info)       ((info)->stextfont.fontstruct->descent)
 #define Ascent_of_GlyphFont(info)       ((info)->glyphfont->ascent)
 #define Descent_of_GlyphFont(info)      ((info)->glyphfont->descent)
 #define Pointsize_Glyph(info)           ((info)->point_size)
 #define Vertsb_Endbox_Height(info)      (SliderEndCap_Height(info) + 1)
 #define Vertsb_Endbox_Width(info)       (ScrollbarElevator_Width(info))
 #define Dimension(info)                 ((info)->three_d)
-#ifdef OW_I18N
-#define TextFont_Struct(info)           ((info)->utextfont.fontstruct)
-#define TextFont_Set(info)              ((info)->utextfont.fontset)
+#define TextFont_Struct(info)           ((info)->stextfont.fontstruct)
+#define TextFont_Set(info)              ((info)->stextfont.fontset)
 #define	Olgx_Flags(info)		((info)->_Olgx_Flags)
-#else
-#define TextFont_Struct(info)           ((info)->textfont)
-#endif
 #define GlyphFont_Struct(info)          ((info)->glyphfont)
 #define AbbScrollbar_Height(info)      ((info)->abbsb_height)
 #define DropTarget_Width(info)          ((info)->dtarget_width)
@@ -562,18 +540,20 @@ typedef struct graphics_info {
  * Public function declarations
  */
 
+extern Graphics_info *olgx_all_initialize(Display *dpy, int screen,
+					unsigned int depth, int d_flag, XFontStruct *glyphfont,
+					XFontSet textfont_set, XFontStruct *textfont_struct,
+					unsigned long pixvals[], Pixmap stipple_pixmaps[]);
 
 extern Graphics_info *olgx_main_initialize(Display *dpy, int screen,
 						unsigned int depth, int d_flag,
 						XFontStruct *glyphfont_struct,
     					XFontStruct *textfont_struct,
     					unsigned long *pixvals, Pixmap *stipple_pixmaps);
-#ifdef OW_I18N
-extern Graphics_info *olgx_i18n_initialize(Display *dpy, int screen,
+extern Graphics_info *olgx_utf8_initialize(Display *dpy, int screen,
 					unsigned int depth, int d_flag,
 					XFontStruct *glyphfont_struct, XFontSet textfont_set,
 					unsigned long pixvals[], Pixmap stipple_pixmaps[]);
-#endif
 extern Graphics_info *olgx_initialize(Display *dpy, int screen, int d_flag,
     XFontStruct *glyphfont_struct, XFontStruct *textfont_struct,
     unsigned long *pixvals, Pixmap *stipple_pixmaps);
@@ -586,9 +566,7 @@ extern void olgx_destroy(Graphics_info *info);
 #define olgx_draw_accel_text   olgx_draw_accel_label
 
 extern void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag);
-#ifdef OW_I18N
 extern void olgx_set_text_fontset(Graphics_info *info, XFontSet font_set, int flag);
-#endif
 extern void olgx_set_glyph_font(Graphics_info *info, XFontStruct *font_info, int flag);
 extern void olgx_set_single_color(Graphics_info *info, int index,
     unsigned long pixval, int flag);
@@ -640,12 +618,7 @@ extern void olgx_draw_vertical_gauge(Graphics_info *info, Window win, int x,
 extern void olgx_draw_pushpin(Graphics_info  *info, Window win, int x, int y, int type);
 extern void olgx_draw_box(Graphics_info *info, Window win, int x, int y,
 				int width, int height, int state, Bool fill_in);
-void olgx_draw_text(Graphics_info *info, Window win,
-#ifdef OW_I18N
-    void *string,
-#else
-    const char *string,
-#endif /* OW_I18N */
+void olgx_draw_text(Graphics_info *info, Window win, const char *string,
     int x, int y, int max_width, int state);
 extern void olgx_draw_text_ledge(Graphics_info *info, Window win,
     							int x, int y, int width);
