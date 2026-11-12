@@ -1,4 +1,4 @@
-char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.21 2026/04/09 12:59:25 dra Exp $";
+char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.29 2026/10/09 11:55:23 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -15,8 +15,9 @@ char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.21 20
 #include <xview_private/svr_impl.h>
 #undef STRING
 #include <xview_private/draw_impl.h>
+#include <xview_private/font_impl.h>
 #include <xview_private/win_info.h>
-#include <xview_private/xv_quick.h>
+#include <xview/xv_quick.h>
 #include <xview/font.h>
 #include <xview/scrollbar.h>
 #include <xview/server.h>
@@ -48,20 +49,13 @@ typedef struct panel_list_row_struct {
 	Pixrect		*glyph;
 	Pixrect		*mask_glyph;
 	int		row;            /* Row number */
-#ifdef OW_I18N
-	_xv_string_attr_dup_t
-			string;
-#else
 	char		*string;
-#endif
 	int		string_y;
 	Xv_opaque	exten_data;	/* client data for extensions */
 
 	struct {
 	  unsigned edit_selected : 1;	/* selected in edit mode */
-#ifndef OW_I18N
 	  unsigned free_string : 1;	/* free malloc'ed string */
-#endif
 	  unsigned selected : 1;        /* selected in read mode (= current) */
 	  unsigned show : 1;		/* row is to be painted */
 	  unsigned row_inactive : 1;	/* row is inactive */
@@ -83,11 +77,8 @@ struct panel_list_struct {
 	int		focus_win_x;	/* x position of focus window */
 	int		focus_win_y;	/* y position of focus window */
 	Xv_Font		font;		/* font of parent panel */
-#ifdef OW_I18N
         XFontSet        font_set;       /* font set of parent panel */
-#else
 	XFontStruct     *font_struct;	/* font structure of parent panel */
-#endif
 	Menu		read_menu;	/* Row panel read mode menu */
 	int		sb_active;	/* all events go to Scrollbar */
 	Rect		sb_rect;	/* Scrollbar window rectangle */
@@ -95,12 +86,7 @@ struct panel_list_struct {
 	Row_info	*text_item_row;	/* Text item is editing this row */
 	int		text_item_view_start; /* first row in view when text
 					       * item was made visible. */
-#ifdef OW_I18N
-	_xv_string_attr_dup_t
-			title;
-#else
-	CHAR		*title;
-#endif
+	char		*title;
 	int		title_display_str_len;
 	Rect		title_rect;
 
@@ -118,11 +104,6 @@ struct panel_list_struct {
 	unsigned destroy_edit_menu:1; /* flags to check if we need to */
 	unsigned destroy_read_menu:1; /* destroy the edit/read menu */
 	unsigned show_props:1; /* "Properties..." instead of "Change" */
-#ifdef OW_I18N         
-        unsigned stored_length_wc:1;  /* TRUE: use PANEL_VALUE_STORED_LENGTH_WCS,
-        				 FALSE: use PANEL_VALUE_STORED_LENGTH */
-#endif
-
 	unsigned do_dbl_click : 1;	/* deliver dbl click ops */
 	
 	/* sizes and positions */
@@ -144,21 +125,10 @@ struct panel_list_struct {
 	struct timeval	last_click_time; 	/* double-click detection */
 };
 
-#ifdef OW_I18N
-#define	STRING	string.pswcs.value
-#define	TITLE	title.pswcs.value
-#define	PANEL_VALUE_I18N	PANEL_VALUE_WCS
-#define	PANEL_STRSAVE		panel_strsave_wc
-#define	XV_PF_TEXTWIDTH		xv_pf_textwidth_wc
-#define	NULL_STRING		_xv_null_string_wc
-#else
 #define	STRING	string
-#define	TITLE	title
 #define	PANEL_VALUE_I18N	PANEL_VALUE
 #define	PANEL_STRSAVE		panel_strsave
-#define	XV_PF_TEXTWIDTH		xv_pf_textwidth
 #define	NULL_STRING		""
-#endif
 
 #define PANEL_LIST_PRIVATE(item)        \
         XV_PRIVATE(Panel_list_info, Xv_panel_list, item)
@@ -178,13 +148,6 @@ struct panel_list_struct {
 #define TAB '\t'
 
 #define PANEL_LEVEL_DOT_HEIGHT PANEL_CHOICE_OFFSET
-
-#ifdef OW_I18N
-Xv_public struct pr_size  xv_pf_textwidth_wc();
-extern	  wchar_t	 _xv_null_string_wc[];
-#else
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-#endif /* OW_I18N */
 
 Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index);
 
@@ -312,14 +275,8 @@ static Row_info * create_next_row(Panel_list_info	*dp, Row_info *prev)
 	 * row is created at the end of the list
 	 */
 
-#ifdef OW_I18N
-	/*
-	 * xv_alloc calls calloc, therefor all fields are zeroed already.
-	 */
-#else
 	node->string = NULL;
 	node->f.free_string = FALSE;
-#endif /* OW_I18N */
 
 	node->glyph = 0;
 	node->f.show = TRUE;
@@ -364,7 +321,7 @@ static void paint_list_box_border(Panel_list_info *dp)
 
     /* Paint list box border */
     rect = dp->list_box;
-    if (dp->TITLE) {
+    if (dp->title) {
 	rect.r_top = dp->title_rect.r_top;
 	rect.r_height += dp->title_rect.r_height;
     }
@@ -424,10 +381,7 @@ static void paint_row(Panel_list_info *dp, Row_info *row)
 	Drawable xid;
 	Xv_Screen screen;
 	GC *gc_list;
-
-#ifdef OW_I18N
 	XFontSet font_set;
-#endif /* OW_I18N */
 
 	if (!get_row_rect(dp, row, &row_rect))
 		return;
@@ -490,34 +444,35 @@ static void paint_row(Panel_list_info *dp, Row_info *row)
 
 			if (row->font) {
 				font = row->font;
-#ifndef OW_I18N
-				XSetFont(display, gc_list[SCREEN_TEXT_GC], xv_get(font,
+				if (! _xv_is_multibyte) {
+					XSetFont(display, gc_list[SCREEN_TEXT_GC], xv_get(font,
 								XV_XID));
-#endif /* OW_I18N */
+				}
 			}
 			else {
 				font = dp->font;
 			}
 
-#ifdef OW_I18N
-			font_set = (XFontSet) xv_get(font, FONT_SET_ID);
-			XwcDrawString(display, xid, font_set, gc_list[SCREEN_TEXT_GC],
-					string_rect.r_left,
-					string_rect.r_top
-					+ ((string_rect.r_height + panel_fonthome(font)) / 2)
-					- 1, row->STRING, row->display_str_len);
-#else
-			XDrawString(display, xid, gc_list[SCREEN_TEXT_GC],
-					string_rect.r_left,
-					string_rect.r_top
-					+ ((string_rect.r_height + panel_fonthome(font)) / 2)
-					- 1, row->string, row->display_str_len);
-			if (row->font) {
-				/* Set the text gc back to the standard font */
-				XSetFont(display, gc_list[SCREEN_TEXT_GC],
-						ip->panel->std_font_xid);
+			if (_xv_is_multibyte) {
+				font_set = (XFontSet) xv_get(font, FONT_SET_ID);
+				XmbDrawString(display, xid, font_set, gc_list[SCREEN_TEXT_GC],
+						string_rect.r_left,
+						string_rect.r_top
+						+ ((string_rect.r_height + panel_fonthome(font)) / 2)
+						- 1, row->string, row->display_str_len);
 			}
-#endif /* OW_I18N */
+			else {
+				XDrawString(display, xid, gc_list[SCREEN_TEXT_GC],
+						string_rect.r_left,
+						string_rect.r_top
+						+ ((string_rect.r_height + panel_fonthome(font)) / 2)
+						- 1, row->string, row->display_str_len);
+				if (row->font) {
+					/* Set the text gc back to the standard font */
+					XSetFont(display, gc_list[SCREEN_TEXT_GC],
+							ip->panel->std_font_xid);
+				}
+			}
 
 			if (ip->color_index >= 0) {
 				XSetForeground(display, gc_list[SCREEN_TEXT_GC], xv_fg(info));
@@ -686,7 +641,7 @@ static void start_quick_dup(Panel_list_info *dp, Event *ev, Row_info *row)
 	}
 
 	if (xv_get(qo, QUICK_NEED_START)) {
-		XFontStruct *fs;
+		Xv_font font;
 		char *s;
 		int ex, sx;
 		Rect row_rect;
@@ -712,15 +667,12 @@ static void start_quick_dup(Panel_list_info *dp, Event *ev, Row_info *row)
 		sx = qd->string_rect.r_left;
 		ex = rect_right(&qd->string_rect);
 
-		if (row->font) fs = (XFontStruct *)xv_get(row->font, FONT_INFO);
-		else {
-			Xv_font font = xv_get(dp->parent_panel, XV_FONT);
-			fs = (XFontStruct *)xv_get(font, FONT_INFO);
-		}
+		if (row->font) font = row->font;
+		else font = xv_get(dp->parent_panel, XV_FONT);
 
 		xv_set(qo,
 			QUICK_BASELINE, rect_bottom(&qd->string_rect) - 2,
-			QUICK_FONTINFO, fs,
+			XV_FONT, font,
 			QUICK_START, s, sx, ex, 
 			NULL);
 	}
@@ -827,11 +779,6 @@ static void show_feedback(Panel_list_info *dp, Row_info *row, Event *event)
 
 	if (!panel_list_ip->panel->status.painted) return;
 
-#ifdef OW_I18N
-	if (wchar_notify(panel_list_ip))
-		notify_proc = panel_list_ip->notify_wc;
-#endif
-
 	/*
 	 * if double-click, we must convert a de-select into a select/dbl-click op.
 	 */
@@ -861,20 +808,8 @@ static void show_feedback(Panel_list_info *dp, Row_info *row, Event *event)
 				op = row->f.selected ? PANEL_LIST_OP_SELECT :
 										PANEL_LIST_OP_DESELECT;
 
-#ifdef OW_I18N
-			if (wchar_notify(panel_list_ip)) {
-				(*notify_proc) (dp->public_self, row->STRING, row->client_data,
-						op, event, row->row);
-			}
-			else {
-				(*notify_proc) (dp->public_self,
-						_xv_get_mbs_attr_dup(&row->string),
-						row->client_data, op, event, row->row);
-			}
-#else
 			(*notify_proc) (dp->public_self, row->string, row->client_data,
 					op, event, row->row);
-#endif /* OW_I18N */
 		}
 	}
 }
@@ -963,37 +898,36 @@ static int check_for_duplicate(Panel_list_info *dp, CHAR *string)
 
 static void set_row_display_str_length(Panel_list_info *dp, Row_info *row)
 {
-#ifdef OW_I18N
-    XFontSet	    font_set;
-#else
-    XFontStruct	   *font_struct;
-#endif /* OW_I18N */
-    int		    max_string_width;
+	XFontSet font_set;
+	XFontStruct *font_struct;
+	int max_string_width;
 
-#ifdef OW_I18N
-    if (row->font)
-	font_set = (XFontSet) xv_get(row->font, FONT_SET_ID);
-    else
-	font_set = dp->font_set;
-    row->display_str_len = row->STRING ? wslen(row->STRING) : 0;
-    max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
-	ROW_MARGIN - dp->string_x;
-    while (XwcTextEscapement(font_set, row->STRING, row->display_str_len) >
-	   max_string_width)
-#else
-    if (row->font)
-	font_struct = (XFontStruct *) xv_get(row->font, FONT_INFO);
-    else
-	font_struct = dp->font_struct;
-    row->display_str_len = row->string ? strlen(row->string) : 0;
-    max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
-	ROW_MARGIN - dp->string_x;
-    while (XTextWidth(font_struct, row->string, row->display_str_len) >
-	   max_string_width)
-#endif /* OW_I18N */
-	{
-		row->display_str_len--;
-    }
+	if (_xv_is_multibyte) {
+		if (row->font)
+			font_set = (XFontSet) xv_get(row->font, FONT_SET_ID);
+		else
+			font_set = dp->font_set;
+		row->display_str_len = row->string ? strlen(row->string) : 0;
+		max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
+				ROW_MARGIN - dp->string_x;
+		while (XmbTextEscapement(font_set, row->STRING, row->display_str_len) >
+				max_string_width) {
+			row->display_str_len--;
+		}
+	}
+	else {
+		if (row->font)
+			font_struct = (XFontStruct *) xv_get(row->font, FONT_INFO);
+		else
+			font_struct = dp->font_struct;
+		row->display_str_len = row->string ? strlen(row->string) : 0;
+		max_string_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
+				ROW_MARGIN - dp->string_x;
+		while (XTextWidth(font_struct, row->string, row->display_str_len) >
+				max_string_width) {
+			row->display_str_len--;
+		}
+	}
 }
 
 
@@ -1009,15 +943,10 @@ static void accept_change(Panel_item text_item, Row_info *edit_row)
 	xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
 	dp->text_item_row = NULL;	/* no row being edited */
 
-#ifdef OW_I18N
-	_xv_set_wcs_attr_dup(&edit_row->string,
-			(wchar_t *)xv_get(text_item, PANEL_VALUE_WCS));
-#else
 	if (edit_row->f.free_string)
 		free(edit_row->string);
 	edit_row->string = panel_strsave((char *)xv_get(text_item, PANEL_VALUE));
 	edit_row->f.free_string = TRUE;
-#endif /* OW_I18N */
 
 	edit_row->f.show = TRUE;
 	set_row_display_str_length(dp, edit_row);
@@ -1030,13 +959,7 @@ static Panel_setting change_done(Panel_item	text_item, Event	*event)
 	list_notify_proc_t notify_proc;
 	Panel_list_info *dp;
 	int result;
-
-#ifdef OW_I18N
-	void *string;
-	Item_info *panel_list_ip;
-#else
 	char *string;
-#endif /* OW_I18N */
 
 	/* Validate entry */
 	dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA,
@@ -1056,23 +979,9 @@ static Panel_setting change_done(Panel_item	text_item, Event	*event)
 		return (PANEL_NONE);	/* change not accepted */
 	}
 
-#ifdef OW_I18N
-	panel_list_ip = ITEM_PRIVATE(dp->public_self);
-	if (wchar_notify(panel_list_ip))
-		notify_proc =
-				(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-				PANEL_NOTIFY_PROC_WCS);
-	else {
-		string = (char *)xv_get(text_item, PANEL_VALUE);
-		notify_proc =
-				(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-				PANEL_NOTIFY_PROC);
-	}
-#else
 	notify_proc =
 			(list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
 			PANEL_NOTIFY_PROC);
-#endif
 
 	if (notify_proc) {
 		dp->insert_delete_enabled = FALSE;
@@ -1279,11 +1188,6 @@ static void panel_list_handle_event(Panel_item item_public, Event *event)
 	struct timeval wait;
 	int y_offset;
 
-#ifdef OW_I18N
-	wchar_t wc;
-	char mb;
-#endif /* OW_I18N */
-
 	if (event_action(event) != SCROLLBAR_REQUEST &&
 			(dp->sb_active ||
 					(event_is_button(event) && event_is_down(event) &&
@@ -1330,46 +1234,36 @@ static void panel_list_handle_event(Panel_item item_public, Event *event)
 		return;
 	}
 
-	if (event_is_iso(event)) {
-		if (event_is_up(event))
-			return;
+	if (event_is_iso(event) || event_is_string(event)) {
+		char typed_char[8] = {0};
+		size_t typed_len = 0;
+
+		if (event_is_up(event)) return;
+
+		/* Extract the typed character sequence from the event */
+		if (event_is_string(event) && event_string(event)) {
+			/* Handle multi-byte/UTF-8 string events safely */
+			strncpy(typed_char, event_string(event), 7);
+			typed_len = strlen(typed_char);
+		}
+		else {
+			/* Fallback for classic 1-byte ISO/ASCII events */
+			typed_char[0] = (char)event_action(event);
+			typed_len = 1;
+		}
+
 		/* Move the Location Cursor to the row starting with the character
 		 * typed that is after the current focus row, if any.
 		 * Match is case-insensitive.
 		 */
-		if (dp->focus_row && dp->focus_row->next) {
-
-#ifdef OW_I18N
-			if (event_is_string(event)) {
-				if (mbtowc(&wc, event_string(event), MB_CUR_MAX) <= 0)
-					goto beep;
-			}
-			else {
-				mb = event_action(event);
-				if (mbtowc(&wc, &mb, 1) <= 0)
-					goto beep;
-			}
-#endif
-
-			for (row = dp->focus_row->next;
-					row != dp->focus_row && row->STRING;) {
-
-#ifdef OW_I18N
-				if (row->STRING[0] == wc ||
-						(iswlower(wc) && row->STRING[0] == towupper(wc)) ||
-						(iswupper(wc) && row->STRING[0] == towlower(wc)))
-#else
-				if (row->string[0] == event_action(event) ||
-						(event_action(event) >= 'a'
-								&& event_action(event) <= 'z'
-								&& row->string[0] == event_action(event) - 0x20)
-						|| (event_action(event) >= 'A'
-								&& event_action(event) <= 'Z'
-								&& row->string[0] == event_action(event) + 0x20)
-						)
-#endif
-
-				{
+		if (dp->focus_row && dp->focus_row->next && typed_len > 0) {
+			for (row=dp->focus_row->next; row!=dp->focus_row && row->string;)
+			{
+				/* Perform a locale-aware, case-insensitive prefix match.
+				 * Check if the row string starts with the typed
+				 * multi-byte sequence.
+				 */
+				if (strncasecmp(row->string, typed_char, typed_len) == 0) {
 					/* Character match: move Location Cursor to row */
 					dp->focus_row = row;
 					show_focus_win(item_public);
@@ -1381,10 +1275,6 @@ static void panel_list_handle_event(Panel_item item_public, Event *event)
 					row = dp->rows;
 			}
 		}
-
-#ifdef OW_I18N
-	  beep:
-#endif
 
 		/* No character match: beep user */
 		wait.tv_sec = 0;
@@ -1579,7 +1469,7 @@ static void paint_title_box(Panel_list_info *dp)
 	Panel_info *panel;
 	Xv_Window pw;
 	Xv_Screen screen;
-	CHAR *title_str;
+	char *title_str;
 	int x;
 	int y;
 
@@ -1589,44 +1479,37 @@ static void paint_title_box(Panel_list_info *dp)
 	y = dp->title_rect.r_top + LIST_BOX_BORDER_WIDTH +
 			(int)xv_get(dp->public_self, PANEL_LEVEL_DOT_HEIGHT);
 
-#ifdef OW_I18N
-	title_str = (wchar_t *)panel_strsave_wc((wchar_t *)dp->TITLE);
-#else
 	title_str = (char *)malloc((size_t)dp->title_display_str_len + 1);
 	strncpy(title_str, (char *)dp->title, (size_t)dp->title_display_str_len);
-#endif /* OW_I18N */
 
 	title_str[dp->title_display_str_len] = 0;
 	PANEL_EACH_PAINT_WINDOW(panel, pw)
-			DRAWABLE_INFO_MACRO(pw, info);
+		DRAWABLE_INFO_MACRO(pw, info);
 
-#ifdef OW_I18N
-	panel_paint_text(pw, panel->bold_fontset_id,
-			ip->color_index, x, y +
-			panel_fonthome(panel->bold_font), title_str);
-#else
-	panel_paint_text(pw, panel->bold_font_xid, ip->color_index,
-			x, y + panel_fonthome(panel->bold_font), title_str);
-#endif /* OW_I18N */
+		SERVERTRACE((577, "b f xid=%lx\n", panel->bold_font_xid));
+		panel_paint_text(pw, panel->bold_fontset_id, panel->bold_font_xid,
+				ip->color_index, x, y + panel_fonthome(panel->bold_font),
+				title_str);
 
-	screen = xv_screen(info);
-	gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
-	screen_adjust_gc_color(pw, SCREEN_SET_GC);
-	XDrawLine(xv_display(info), xv_xid(info),
-			gc_list[SCREEN_SET_GC],
-			x,
-			rect_bottom(&dp->title_rect),
-			rect_right(&dp->title_rect) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
-			rect_bottom(&dp->title_rect));
-	if (inactive(ip)) {
-		screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
-		XFillRectangle(xv_display(info), xv_xid(info),
-				gc_list[SCREEN_INACTIVE_GC],
-				dp->title_rect.r_left, dp->title_rect.r_top,
-				(unsigned)dp->title_rect.r_width,
-				(unsigned)dp->title_rect.r_height);
-	}
-	PANEL_END_EACH_PAINT_WINDOW xv_free(title_str);
+		screen = xv_screen(info);
+		gc_list = (GC *) xv_get(screen, SCREEN_OLGC_LIST, pw);
+		screen_adjust_gc_color(pw, SCREEN_SET_GC);
+		XDrawLine(xv_display(info), xv_xid(info),
+				gc_list[SCREEN_SET_GC],
+				x,
+				rect_bottom(&dp->title_rect),
+				rect_right(&dp->title_rect) - LIST_BOX_BORDER_WIDTH - ROW_MARGIN,
+				rect_bottom(&dp->title_rect));
+		if (inactive(ip)) {
+			screen_adjust_gc_color(pw, SCREEN_INACTIVE_GC);
+			XFillRectangle(xv_display(info), xv_xid(info),
+					gc_list[SCREEN_INACTIVE_GC],
+					dp->title_rect.r_left, dp->title_rect.r_top,
+					(unsigned)dp->title_rect.r_width,
+					(unsigned)dp->title_rect.r_height);
+		}
+	PANEL_END_EACH_PAINT_WINDOW
+	xv_free(title_str);
 }
 
 
@@ -1652,7 +1535,7 @@ static void panel_list_paint(Panel_item item_public, Panel_setting u)
 	 * after the original design.
 	 */
 	paint_list_box(dp);  /* including border for title */
-	if (dp->TITLE)
+	if (dp->title)
 	    paint_title_box(dp);
     }
 }
@@ -1673,7 +1556,7 @@ static int fit_list_box_to_rows(Panel_list_info *dp)
 		max_str_size = 0;
 		for (row = dp->rows; row; row = row->next) {
 			if (row->STRING) {
-				str_size = XV_PF_TEXTWIDTH((int)strlen(row->STRING), dp->font,
+				str_size = xv_pf_textwidth((int)strlen(row->STRING), dp->font,
 						row->STRING);
 				max_str_size = MAX(max_str_size, str_size.x);
 			}
@@ -1691,12 +1574,8 @@ static int fit_list_box_to_rows(Panel_list_info *dp)
 static void compute_dimensions(Item_info *ip, Panel_list_info *dp)
 {
 	int ext_width;	/* extended width */
-
-#ifdef OW_I18N
 	XFontSet font_set;
-#else
 	XFontStruct *font_struct;
-#endif /* OW_I18N */
 
 	int list_box_width_changed;
 	int max_string_width;
@@ -1735,28 +1614,28 @@ static void compute_dimensions(Item_info *ip, Panel_list_info *dp)
 			set_row_display_str_length(dp, node);
 	}
 	/* Calculate the displayed string length of the title */
-	if (dp->TITLE) {
+	if (dp->title) {
 
-#ifdef OW_I18N
 		font_set = ip->panel->bold_fontset_id;
-#else
 		font_struct = (XFontStruct *) xv_get(ip->panel->bold_font, FONT_INFO);
-#endif /* OW_I18N */
 
-		dp->title_display_str_len = STRLEN(dp->TITLE);
+		dp->title_display_str_len = STRLEN(dp->title);
 		max_string_width = dp->title_rect.r_width -
 				2 * LIST_BOX_BORDER_WIDTH - 2 * ROW_MARGIN;
 
-#ifdef OW_I18N
-		while (XwcTextEscapement(font_set, dp->TITLE, dp->title_display_str_len)
-				> max_string_width)
-#else
-		while (XTextWidth(font_struct, dp->title, dp->title_display_str_len)
-				> max_string_width)
-#endif /* OW_I18N */
-
-		{
-			dp->title_display_str_len--;
+		if (_xv_is_multibyte) {
+			while (XmbTextEscapement(font_set, dp->title,
+						dp->title_display_str_len) > max_string_width)
+			{
+				dp->title_display_str_len--;
+			}
+		}
+		else {
+			while (XTextWidth(font_struct, dp->title, dp->title_display_str_len)
+					> max_string_width)
+			{
+				dp->title_display_str_len--;
+			}
 		}
 	}
 
@@ -1903,12 +1782,8 @@ static int panel_list_init(Xv_Window parent, Panel_item panel_list_public,
 	XSetFont(xv_display(info), gc_list[SCREEN_TEXT_GC],
 						xv_get(dp->font, XV_XID));
 
-#ifdef OW_I18N
     dp->font_set = ip->panel->std_fontset_id;
-    dp->stored_length_wc = FALSE;
-#else
     dp->font_struct = (XFontStruct *) xv_get(dp->font, FONT_INFO);
-#endif /* OW_I18N */
     dp->insert_delete_enabled = TRUE;
     dp->insert_duplicate = TRUE;
     dp->left_hand_sb = defaults_get_enum("OpenWindows.ScrollbarPlacement",
@@ -1957,6 +1832,7 @@ static int panel_list_init(Xv_Window parent, Panel_item panel_list_public,
 								* (see shrink_to_fit) */
 					XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA, dp,
 					XV_HELP_DATA, "xview:plist_textfield",
+					PANEL_ALLOW_FILE_DROP, FALSE,
 					XV_SHOW, FALSE,
 					NULL);
 
@@ -2070,12 +1946,8 @@ static void panel_list_delete_row(Panel_list_info *dp, Row_info *node, int repai
 	prev = node;
 	node = node->next;
 
-#ifdef OW_I18N
-	_xv_free_ps_string_attr_dup(&prev->string);
-#else
 	if (prev->f.free_string)
 		xv_free(prev->string);
-#endif /* OW_I18N */
 
 	xv_free(prev);
 	while (node) {
@@ -2102,15 +1974,9 @@ static void accept_insert(Panel_list_info *dp, Row_info *row)
     xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
     xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
     dp->text_item_row = NULL;   /* no row being edited */
-#ifdef OW_I18N
-    _xv_set_wcs_attr_dup(&row->string,
-			 (wchar_t *) xv_get(dp->text_item, PANEL_VALUE_WCS));
-#else
-    if (row->f.free_string)
-	free(row->string);
+    if (row->f.free_string) free(row->string);
     row->string = panel_strsave((char *) xv_get(dp->text_item, PANEL_VALUE));
     row->f.free_string = TRUE;
-#endif /* OW_I18N */
     row->f.show = TRUE;
     set_row_display_str_length(dp, row);
     paint_row(dp, row);
@@ -2125,11 +1991,7 @@ static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item)
     Event	 null_event;
     int		 repaint_visible_rows = FALSE;
     Row_info	*row;
-#ifdef OW_I18N
-    void	*string;
-#else
-    CHAR	*string;
-#endif
+    char	*string;
     int		 validated;
 
     dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA);
@@ -2145,14 +2007,8 @@ static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item)
 	    xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
 	    panel_list_delete_row(dp, row, REPAINT_LIST);
 	} else {
-#ifdef OW_I18N
-	    if (wchar_notify(panel_list_ip))
-		notify_proc = panel_list_ip->notify_wc;
-	    else
-#else
 	    notify_proc = (list_notify_proc_t)panel_list_ip->notify;
-#endif
-	    string = (CHAR *) xv_get(dp->text_item, PANEL_VALUE_I18N);
+	    string = (char *) xv_get(dp->text_item, PANEL_VALUE_I18N);
 	    if (!dp->insert_duplicate && check_for_duplicate(dp, string))
 		validated = FALSE;
 	    else {
@@ -2161,10 +2017,6 @@ static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item)
 		    event = &null_event;
 		}
 		dp->insert_delete_enabled = FALSE;
-#ifdef OW_I18N
-		if (! wchar_notify(panel_list_ip))
-		    string = (char *) xv_get(dp->text_item, PANEL_VALUE);
-#endif
 	    	validated = (!notify_proc ||
 			     (*notify_proc) (dp->public_self, string,
 				 		(Xv_opaque)row->row,    /* weiss das einer ? */
@@ -2252,51 +2104,11 @@ static Xv_opaque enter_edit_mode(Menu menu, Menu_item menu_item)	/* not used */
 	text_width = dp->list_box.r_width - LIST_BOX_BORDER_WIDTH -
 			ROW_MARGIN - dp->string_x;
 
-#ifdef OW_I18N
-	/*  Characters have different widths.  
-	 *  Display_length is actually described
-	 *  in how many columns, and not how many characters.
-	 *  Text_width is in pixels. So in order to compare
-	 *  display_length and stored_length they both have
-	 *  to be converted to pixels.  I am assuming one
-	 *  byte still occupies one column, so if the user
-	 *  specified PANEL_VALUE_STORED_LENGTH, the maximum
-	 *  storage in pixels would be (n bytes * default column width).
-	 *  This is a reasonable assumption in EUC world,
-	 *  but would be completely broken for Unicode.
-	 */
-	{
-		int col_width;	/* column width */
-		int stored_width;	/* maximum pixels for stored_length */
-
-		col_width = xv_get(dp->font, FONT_COLUMN_WIDTH);
-		chrwth = xv_get(dp->font, FONT_DEFAULT_CHAR_WIDTH);
-		display_length = text_width / col_width;
-		if (dp->stored_length_wc == FALSE) {
-			stored_length =
-					(int)xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH);
-			stored_width = stored_length * col_width;
-		}
-		else {
-			stored_length =
-					(int)xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH_WCS);
-			stored_width = stored_length * chrwth;
-		}
-		/*  Need to limit the display length to be
-		 *  less than or equal to the stored length.
-		 *  So calculate everything in pixels.
-		 */
-		if (text_width > stored_width)
-			display_length = stored_width / col_width;
-	}
-
-#else
 	chrwth = xv_get(dp->font, FONT_DEFAULT_CHAR_WIDTH);
 	display_length = text_width / chrwth;
 	stored_length = (int)xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH);
 	if (display_length > stored_length)
 		display_length = stored_length;
-#endif /* OW_I18N */
 
 	/* Modify the text field */
 	panel_list_ip = ITEM_PRIVATE(dp->public_self);
@@ -2346,15 +2158,8 @@ static Row_info * next_row(Panel_list_info *dp, Row_info *row, int n)
 	row->f.show = TRUE;
 	row->row = n;
 
-#ifdef OW_I18N
-	/*
-	 * xv_alloc uses calloc therefor all fields are zeroed alreday.
-	 */
-#else
 	row->string = NULL;
 	row->f.free_string = FALSE;
-#endif /* OW_I18N */
-
 	row->glyph = NULL;
 	return (row);
 }
@@ -2374,15 +2179,8 @@ static Row_info *panel_list_insert_row(Panel_list_info *dp, int which_row, int s
 	row->next = node;
 	row->prev = prev;
 	row->glyph = NULL;
-
-#ifdef OW_I18N
-	/*
-	 * xv_alloc uses callc, therefor you do not need to zeroing again.
-	 */
-#else
 	row->string = NULL;
 	row->f.free_string = FALSE;
-#endif /* OW_I18N */
 
 	/*
 	 * It's possible that prev->row + 1 is not equal to which_row ie. the row
@@ -2518,13 +2316,7 @@ static Panel_setting insert_done(Panel_item text_item, Event *event)
 	list_notify_proc_t notify_proc;
 	int result;
 	Xv_font font;
-
-#ifdef OW_I18N
-	void *string;
-	Item_info *panel_list_ip;
-#else
-	CHAR *string;
-#endif /* OW_I18N */
+	char *string;
 
 	dp = (Panel_list_info *) xv_get(text_item, XV_KEY_DATA,
 			PANEL_LIST_EXTENSION_DATA);
@@ -2556,23 +2348,10 @@ static Panel_setting insert_done(Panel_item text_item, Event *event)
 		return PANEL_NONE;
 	}
 
-#ifdef OW_I18N
-	panel_list_ip = ITEM_PRIVATE(dp->public_self);
-	if (wchar_notify(panel_list_ip))
-		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
-				PANEL_NOTIFY_PROC_WCS);
-	else
-#endif
-
-		notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
+	notify_proc = (list_notify_proc_t) xv_get(text_item, XV_KEY_DATA,
 				PANEL_NOTIFY_PROC);
 	if (notify_proc) {
 		dp->insert_delete_enabled = FALSE;
-
-#ifdef OW_I18N
-		if (!wchar_notify(panel_list_ip))
-			string = (char *)xv_get(text_item, PANEL_VALUE);
-#endif
 
 		result = (*notify_proc) (dp->public_self, string, (Xv_opaque) insert_row->row,	/* pass row # as client data */
 				PANEL_LIST_OP_VALIDATE, event, insert_row->row);
@@ -2712,21 +2491,11 @@ static Xv_opaque delete_proc(Menu menu, Menu_item menu_item)
 	Row_info *row;
 	Event *event;
 
-#ifdef OW_I18N
-	void *string;
-#endif
-
 	dp = (Panel_list_info *) xv_get(menu, XV_KEY_DATA,
 			PANEL_LIST_EXTENSION_DATA);
 	panel_list_ip = ITEM_PRIVATE(dp->public_self);
 
-#ifdef OW_I18N
-	if (wchar_notify(panel_list_ip))
-		notify_proc = panel_list_ip->notify_wc;
-	else
-#endif
-
-		notify_proc = (list_notify_proc_t) panel_list_ip->notify;
+	notify_proc = (list_notify_proc_t) panel_list_ip->notify;
 	if (notify_proc)
 		event = (Event *) xv_get(menu, MENU_LAST_EVENT);
 	edit_row = dp->text_item_row;
@@ -2737,17 +2506,8 @@ static Xv_opaque delete_proc(Menu menu, Menu_item menu_item)
 				if (notify_proc) {
 					dp->insert_delete_enabled = FALSE;
 
-#ifdef OW_I18N
-					if (wchar_notify(panel_list_ip))
-						string = row->STRING;
-					else
-						string = _xv_get_mbs_attr_dup(&row->string);
-					(*notify_proc) (dp->public_self, string, row->client_data,
-#else
 					(*notify_proc) (dp->public_self,
 							row->string, row->client_data,
-#endif
-
 							PANEL_LIST_OP_DELETE, event, row->row);
 					dp->insert_delete_enabled = TRUE;
 				}
@@ -2780,10 +2540,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 	int sort_count;
 	int which_row;
 	int xv_end_create = FALSE;
-
-#ifdef OW_I18N
-	_xv_pswcs_t pswcs = { 0, NULL, NULL };
-#endif /* OW_I18N */
 
 	/* Call generic item set code to handle layout attributes */
 	if (*avlist != XV_END_CREATE) {
@@ -2832,14 +2588,7 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 				 *  definition of the struct.
 				 */
 
-#ifdef OW_I18N
-			case PANEL_LIST_ROW_VALUES:
-			case PANEL_LIST_ROW_VALUES_WCS:
-				{
-					Attr_attribute which_attr = avlist[0];
-#else
 			case PANEL_LIST_ROW_VALUES:{
-#endif /* OW_I18N */
 					Panel_list_row_values *entry;
 					int count;
 					int ii;
@@ -2851,15 +2600,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 					 */
 					ATTR_CONSUME(avlist[0]);
 					which_row = (int)avlist[1];
-
-#ifdef OW_I18N
-					/*
-					 * DEPEND_ON_OFFSET_ALIGMENT: Most of the CPU will not
-					 * make different offset for Panel_list_row_values and
-					 * Panel_list_row_values_wcs, so here in code assume
-					 * that is the case.
-					 */
-#endif
 
 					entry = (Panel_list_row_values *) avlist[2];
 					count = (int)avlist[3];
@@ -2878,20 +2618,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 						 * do PANEL_LIST_STRING stuff
 						 */
 
-#ifdef OW_I18N
-						if (which_attr == PANEL_LIST_ROW_VALUES)
-							_xv_pswcs_mbsdup(&pswcs, entry->string);
-						else
-							pswcs.value = (wchar_t *) entry->string;
-
-						if (!dp->insert_duplicate &&
-								check_for_duplicate(dp, pswcs.value))
-							break;	/* don't insert a duplicate string */
-
-						_xv_set_wcs_attr_dup(&node->string, pswcs.value);
-						if (pswcs.value)
-							node->display_str_len = 0;
-#else /* OW_I18N */
 						if (!dp->insert_duplicate &&
 								check_for_duplicate(dp, entry->string))
 							break;	/* don't insert a duplicate string */
@@ -2909,7 +2635,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 							node->string = (char *)NULL;
 							node->f.free_string = FALSE;
 						}
-#endif /* OW_I18N */
 
 						/*
 						 * Do PANEL_LIST_GLYPH stuff
@@ -3062,43 +2787,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 				}
 				break;
 
-#ifdef OW_I18N
-			case PANEL_LIST_STRINGS:
-			case PANEL_LIST_STRINGS_WCS:
-				node = dp->rows;
-				for (i = 0; avlist[i + 1]; i++) {
-					if ((int)avlist[0] == PANEL_LIST_STRINGS)
-						_xv_pswcs_mbsdup(&pswcs, (char *)avlist[i + 1]);
-					else
-						pswcs.value = (wchar_t *) avlist[i + 1];
-					if (!dp->insert_duplicate &&
-							check_for_duplicate(dp, pswcs.value))
-						continue;	/* don't insert a duplicate string */
-					node = next_row(dp, node, i);
-					_xv_set_wcs_attr_dup(&node->string, pswcs.value);
-					node->display_str_len = 0;	/* force recomputation */
-				}
-				break;
-
-			case PANEL_LIST_STRING:
-				_xv_pswcs_mbsdup(&pswcs, (char *)avlist[2]);
-				goto pls;
-
-			case PANEL_LIST_STRING_WCS:
-				pswcs.value = (wchar_t *) avlist[2];
-			  pls:
-				if (!dp->insert_duplicate &&
-						check_for_duplicate(dp, pswcs.value))
-					break;	/* don't insert a duplicate string */
-				which_row = (int)avlist[1];
-				node = find_or_create_nth_row(dp, which_row, TRUE);
-				if (avlist[2])
-					node->display_str_len = 0;	/* force recomputation */
-				_xv_set_wcs_attr_dup(&node->string, pswcs.value);
-				break;
-
-#else /* OW_I18N */
-
 			case PANEL_LIST_STRINGS:
 				node = dp->rows;
 				for (i = 0; avlist[i + 1]; i++) {
@@ -3139,7 +2827,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 					node->f.free_string = FALSE;
 				}
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_LIST_GLYPHS:
 				i = 0;
@@ -3177,16 +2864,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 					node->mask_glyph = NULL;
 				break;
 
-#ifdef OW_I18N
-			case PANEL_LIST_TITLE:
-				_xv_set_mbs_attr_dup(&dp->title, (char *)avlist[1]);
-				break;
-
-			case PANEL_LIST_TITLE_WCS:
-				_xv_set_wcs_attr_dup(&dp->title, (wchar_t *) avlist[1]);
-				break;
-
-#else /* OW_I18N */
 			case PANEL_LIST_TITLE:
 				if (dp->title)
 					xv_free(dp->title);
@@ -3195,7 +2872,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 				else
 					dp->title = NULL;
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_LIST_CLIENT_DATAS:
 				i = 1;
@@ -3233,10 +2909,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 			case PANEL_LIST_INSERT_GLYPHS:
 			case PANEL_LIST_INSERT_STRINGS:
 
-#ifdef OW_I18N
-			case PANEL_LIST_INSERT_STRINGS_WCS:
-#endif
-
 				if (!dp->insert_delete_enabled) {
 					xv_error(panel_list_public,
 							ERROR_STRING,
@@ -3260,21 +2932,9 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 				node = NULL;
 				for (obj_ptr = (Xv_opaque *) avlist[2]; *obj_ptr; obj_ptr++) {
 
-#ifdef OW_I18N
-					if (!insert_glyphs) {
-						if ((int)avlist[0] == PANEL_LIST_INSERT_STRINGS)
-							_xv_pswcs_mbsdup(&pswcs, (char *)*obj_ptr);
-						else
-							pswcs.value = (wchar_t *) * obj_ptr;
-						if (!dp->insert_duplicate
-								&& check_for_duplicate(dp, pswcs.value))
-							continue;
-					}
-#else
 					if (!insert_glyphs && !dp->insert_duplicate &&
 							check_for_duplicate(dp, (char *)*obj_ptr))
 						continue;	/* don't insert duplicate string */
-#endif /* OW_I18N */
 
 					node = xv_alloc(Row_info);
 					if (prev)
@@ -3292,15 +2952,10 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 					if (insert_glyphs)
 						set_row_glyph(dp, node, (Pixrect *) * obj_ptr);
 					else {
-
-#ifdef OW_I18N
-						_xv_set_wcs_attr_dup(&node->string, pswcs.value);
-#else
 						if (node->f.free_string)
 							free(node->string);
 						node->string = panel_strsave((char *)*obj_ptr);
 						node->f.free_string = TRUE;
-#endif /* OW_I18N */
 					}
 					prev = node;
 				}
@@ -3363,13 +3018,8 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 				/* Delete the requested number of rows */
 				for (i = 1; node && i <= (int)avlist[2]; i++) {
 					next = node->next;
-
-#ifdef OW_I18N
-					_xv_free_ps_string_attr_dup(&node->string);
-#else
 					if (node->f.free_string)
 						xv_free(node->string);
-#endif
 
 					if (dp->focus_row == node)
 						dp->focus_row = NULL;
@@ -3491,23 +3141,11 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 						if (!node->STRING)
 							continue;
 						next = node->next;
-
-#ifdef OW_I18N
-						if (!next->STRING ||
-								(forward ? (wscoll(node->string.pswcs.value,
-														next->string.pswcs.
-														value) > 0)
-										: (wscoll(node->string.pswcs.value,
-														next->string.pswcs.
-														value) < 0)))
-#else
 						if (!next->string ||
 								(forward ? (strcmp(node->string,
 														next->string) > 0)
 										: (strcmp(node->string,
 														next->string) < 0)))
-#endif /* OW_I18N */
-
 						{
 							sort_count++;
 							/* Swap contents of nodes */
@@ -3535,22 +3173,9 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 				break;
 
 			case PANEL_VALUE_STORED_LENGTH:
-
-#ifdef OW_I18N
-				dp->stored_length_wc = FALSE;
-#endif
-
 				xv_set(dp->text_item,
 						PANEL_VALUE_STORED_LENGTH, (int)avlist[1], NULL);
 				break;
-
-#ifdef OW_I18N
-			case PANEL_VALUE_STORED_LENGTH_WCS:
-				dp->stored_length_wc = TRUE;
-				xv_set(dp->text_item,
-						PANEL_VALUE_STORED_LENGTH_WCS, avlist[1], NULL);
-				break;
-#endif
 
 			case XV_SHOW:
 				if (dp->text_item_row)
@@ -3630,14 +3255,14 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 			default:
 				break;
 		}
-		if (dp->TITLE) {
+		if (dp->title) {
 			dp->title_rect.r_height =
 					(int)xv_get(panel_list_public, PANEL_LEVEL_DOT_HEIGHT) +
 					(int)xv_get(ip->panel->bold_font,
 					FONT_DEFAULT_CHAR_HEIGHT) + PANEL_LIST_ROW_GAP;
-			size = XV_PF_TEXTWIDTH((int)strlen(dp->TITLE),
+			size = xv_pf_textwidth((int)strlen(dp->title),
 					ip->panel->bold_font,
-					dp->TITLE);
+					dp->title);
 			dp->title_rect.r_width =
 					LIST_BOX_BORDER_WIDTH * 2 + ROW_MARGIN * 2 + size.x;
 		}
@@ -3775,7 +3400,7 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 				}	/* if (!dp->read_only) */
 			}	/* if (!dp->read_menu) */
 			if (ip->panel->status.painted) {
-				if (dp->TITLE)
+				if (dp->title)
 					paint_title_box(dp);
 				paint_list_box(dp);
 			}
@@ -3784,11 +3409,6 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 			xv_set(dp->list_sb, SCROLLBAR_OBJECT_LENGTH, dp->nrows, NULL);
 		}
 	}  /* if (dp->initialized) */
-
-#ifdef OW_I18N
-	if (pswcs.storage != NULL)
-		xv_free(pswcs.storage);
-#endif
 
 	return XV_OK;
 }
@@ -3863,24 +3483,10 @@ static Xv_opaque panel_list_get_attr(Panel_item panel_list_public,
 					client_data : (Xv_opaque) XV_ERROR);
 
 		case PANEL_LIST_STRING:
-
-#ifdef OW_I18N
-		case PANEL_LIST_STRING_WCS:
-#endif
 			row = va_arg(valist, int);
 			node = find_or_create_nth_row(dp, row, FALSE);
 
-#ifdef OW_I18N
-			if (node != NULL)
-				if (which_attr == PANEL_LIST_STRING_WCS)
-					return (Xv_opaque) _xv_get_wcs_attr_dup(&node->string);
-				else
-					return (Xv_opaque) _xv_get_mbs_attr_dup(&node->string);
-			else
-				return (Xv_opaque) XV_ERROR;
-#else
 			return (node ? (Xv_opaque) node->string : (Xv_opaque) XV_ERROR);
-#endif /* OW_I18N */
 
 		case PANEL_LIST_MASK_GLYPH:
 			row = va_arg(valist, int);
@@ -3893,16 +3499,8 @@ static Xv_opaque panel_list_get_attr(Panel_item panel_list_public,
 			node = find_or_create_nth_row(dp, row, FALSE);
 			return (node ? (Xv_opaque) node->glyph : (Xv_opaque) XV_ERROR);
 
-#ifdef OW_I18N
-		case PANEL_LIST_TITLE:
-			return (Xv_opaque) _xv_get_mbs_attr_dup(&dp->title);
-
-		case PANEL_LIST_TITLE_WCS:
-			return (Xv_opaque) _xv_get_wcs_attr_dup(&dp->title);
-#else
 		case PANEL_LIST_TITLE:
 			return ((Xv_opaque) dp->title);
-#endif /* OW_I18N */
 
 		case PANEL_LEVEL_DOT_HEIGHT:
 			return (Xv_opaque) LEVEL_DOT_HEIGHT;
@@ -3924,12 +3522,6 @@ static Xv_opaque panel_list_get_attr(Panel_item panel_list_public,
 		case PANEL_VALUE_STORED_LENGTH:
 			return (xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH));
 
-#ifdef OW_I18N
-		case PANEL_VALUE_STORED_LENGTH_WCS:
-			return (xv_get(dp->text_item, PANEL_VALUE_STORED_LENGTH_WCS));
-#endif /* OW_I18N */
-
-
 		case PANEL_LIST_INACTIVE:
 			row = va_arg(valist, int);
 			node = find_or_create_nth_row(dp, row, FALSE);
@@ -3939,26 +3531,12 @@ static Xv_opaque panel_list_get_attr(Panel_item panel_list_public,
 		case PANEL_LIST_DO_DBL_CLICK:
 			return (Xv_opaque) dp->do_dbl_click;
 
-#ifdef OW_I18N
 		case PANEL_LIST_ROW_VALUES:
-		case PANEL_LIST_ROW_VALUES_WCS:
-#else
-		case PANEL_LIST_ROW_VALUES:
-#endif
-
 			{
 				Panel_list_row_values *entry;
 				int count;
 				int ii;
 				row = va_arg(valist, int);
-#ifdef OW_I18N
-				/*
-				 * DEPEND_ON_OFFSET_ALIGMENT: Most of the CPU will not make
-				 * different offset for Panel_list_row_values and
-				 * Panel_list_row_values_wcs, so here in code assume that is
-				 * the case.
-				 */
-#endif
 				entry = va_arg(valist, Panel_list_row_values *);
 				count = va_arg(valist, int);
 
@@ -3968,15 +3546,7 @@ static Xv_opaque panel_list_get_attr(Panel_item panel_list_public,
 					if (!node)
 						return ii;
 
-#ifdef OW_I18N
-					if (which_attr == PANEL_LIST_ROW_VALUES_WCS)
-						entry->string =
-								(char *)_xv_get_wcs_attr_dup(&node->string);
-					else
-						entry->string = _xv_get_mbs_attr_dup(&node->string);
-#else
 					entry->string = node->string;
-#endif /* OW_I18N */
 
 					entry->glyph = (Server_image) node->glyph;
 					entry->mask_glyph = (Server_image) node->mask_glyph;
@@ -3996,6 +3566,16 @@ static Xv_opaque panel_list_get_attr(Panel_item panel_list_public,
 			node = find_or_create_nth_row(dp, row, FALSE);
 			return (node ? (Xv_opaque) node->exten_data : (Xv_opaque) XV_ERROR);
 
+		case XV_CHILDREN:
+			{
+				Window *w = va_arg(valist, Window *);
+				int retval;
+
+				*w++ = xv_get(dp->list_sb, XV_XID);
+				retval = 1;
+				return (Xv_opaque)retval;
+			}
+			break;
 		default:
 			*status = XV_ERROR;
 			return ((Xv_opaque) 0);
@@ -4015,21 +3595,12 @@ static int panel_list_destroy(Panel_item item_public, Destroy_status  status)
     panel_list_remove(item_public);
     while (row) {
 	next = row->next;
-#ifdef OW_I18N
-	_xv_free_ps_string_attr_dup(&row->string);
-#else
 	if (row->f.free_string)
 	    xv_free(row->string);
-#endif /* OW_I18N */
 	xv_free(row);
 	row = next;
     }
-#ifdef OW_I18N
-    _xv_free_ps_string_attr_dup(&dp->title);
-#else
-    if (dp->title)
-	xv_free(dp->title);
-#endif
+    if (dp->title) xv_free(dp->title);
     xv_destroy(dp->text_item);
     /*
      * Check destroy flag before destroying read/edit menu
