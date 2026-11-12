@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)item_get.c 20.52 93/06/28 Copyr 1984 Sun Micro DRA: $Id: item_get.c,v 4.2 2025/11/01 14:55:10 dra Exp $";
+static char     sccsid[] = "@(#)item_get.c 20.52 93/06/28 Copyr 1984 Sun Micro DRA: $Id: item_get.c,v 4.3 2026/07/19 21:58:30 dra Exp $";
 #endif
 #endif
 
@@ -37,25 +37,11 @@ Pkg_private Xv_opaque item_get_attr(Panel_item item_public, int *status, Attr_at
 		case XV_RECT:
 			return (Xv_opaque) & ip->rect;
 
-#ifdef OW_I18N
-		case PANEL_LABEL_STRING_WCS:
-			if (is_string(&ip->label))
-				return (Xv_opaque) image_string_wc(&ip->label);
-			else
-				return (Xv_opaque) NULL;
-
-		case PANEL_LABEL_STRING:
-			if (is_string(&ip->label))
-				return (Xv_opaque) _xv_wcstombsdup(image_string_wc(&ip->label));
-			else
-				return (Xv_opaque) NULL;
-#else
 		case PANEL_LABEL_STRING:
 			if (is_string(&ip->label))
 				return (Xv_opaque) image_string(&ip->label);
 			else
 				return (Xv_opaque) NULL;
-#endif /* OW_I18N */
 
 		case PANEL_LABEL_WIDTH:
 			if (ip->label_width)
@@ -143,11 +129,6 @@ Pkg_private Xv_opaque item_get_attr(Panel_item item_public, int *status, Attr_at
 
 		case PANEL_NOTIFY_PROC:
 			return (Xv_opaque) ip->notify;
-
-#ifdef OW_I18N
-		case PANEL_NOTIFY_PROC_WCS:
-			return (Xv_opaque) ip->notify_wc;
-#endif /* OW_I18N */
 
 		case PANEL_NOTIFY_STATUS:
 			return (Xv_opaque) ip->notify_status;
