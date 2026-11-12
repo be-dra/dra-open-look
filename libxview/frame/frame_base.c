@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.c,v 4.7 2026/04/17 08:43:08 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.c,v 4.9 2026/10/29 18:20:50 dra Exp $ ";
 #endif
 #endif
 
@@ -17,6 +17,7 @@ static char     sccsid[] = "@(#)frame_base.c 1.31 93/06/28 DRA: $Id: frame_base.
 #include <xview/server.h>
 #include <xview_private/svr_atom.h>
 #include <xview_private/wmgr_decor.h>
+#include <xview_private/win_info.h>
 #include <xview_private/svr_impl.h>
 
 #include <X11/Xatom.h>
@@ -45,72 +46,104 @@ typedef	struct	{
 static int frame_base_init(Xv_Window owner, Frame frame_public,
 						Attr_attribute avlist[], int *u)
 {
-    Xv_frame_base  *frame_object = (Xv_frame_base *) frame_public;
-    Xv_Drawable_info *info;
-    Xv_opaque       server_public;
-    Frame_base_info *frame;
-    Attr_avlist      attrs;
+	Xv_frame_base *frame_object = (Xv_frame_base *) frame_public;
+	Xv_Drawable_info *info;
+	Xv_opaque srv;
+	Frame_base_info *frame;
+	Attr_avlist attrs;
+	Atom property_array[8];
+	int nprots = 0;
+	Frame main_base = XV_NULL;
 
-    DRAWABLE_INFO_MACRO(frame_public, info);
-    server_public = xv_server(info);
-    frame = xv_alloc(Frame_base_info);
+	DRAWABLE_INFO_MACRO(frame_public, info);
+	srv = xv_server(info);
+	frame = xv_alloc(Frame_base_info);
 
-    /* link to object */
-    frame_object->private_data = (Xv_opaque) frame;
-    frame->public_self = frame_public;
+	/* link to object */
+	frame_object->private_data = (Xv_opaque) frame;
+	frame->public_self = frame_public;
 
-    /* set saved command line strings to NULL */
-    frame->cmd_line_strings = (char **)NULL;
-    frame->cmd_line_strings_count = 0;
+	/* set saved command line strings to NULL */
+	frame->cmd_line_strings = (char **)NULL;
+	frame->cmd_line_strings_count = 0;
 
-    /* set initial window decoration flags */
+	/* set initial window decoration flags */
 
-    frame->win_attr.flags = WMWinType | WMMenuType;
-    frame->win_attr.win_type = (Atom)xv_get(server_public,SERVER_WM_WT_BASE);
-    frame->win_attr.menu_type = (Atom)xv_get(server_public,SERVER_WM_MENU_FULL);
+	frame->win_attr.flags = WMWinType | WMMenuType;
+	frame->win_attr.win_type = (Atom) xv_get(srv, SERVER_WM_WT_BASE);
+	frame->win_attr.menu_type = (Atom) xv_get(srv, SERVER_WM_MENU_FULL);
 
-    status_set(frame, props_active, FALSE);
+	status_set(frame, props_active, FALSE);
 
-    for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
-	switch (*attrs) {
+	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
+		switch (*attrs) {
+			case FRAME_SCALE_STATE:
+				/*
+				 * change scale and find the apprioprate size of the font Don't
+				 * call frame_rescale_subwindows because they have not been
+				 * created yet.
+				 */
+				wmgr_set_rescale_state(frame_public, (int)attrs[1]);
+				break;
+			case FRAME_SECONDARY_BASE_FOR:
+				main_base = (Frame)attrs[1];
+				/* why does the set emthod still see this? */
+				ATTR_CONSUME(*attrs);
+				break;
 
-	  case FRAME_SCALE_STATE:
-	    /*
-	     * change scale and find the apprioprate size of the font Don't
-	     * call frame_rescale_subwindows because they have not been
-	     * created yet.
-	     */
-	    wmgr_set_rescale_state(frame_public, (int)attrs[1]);
-	    break;
-	  default:
-	    break;
+			default:
+				break;
+		}
 	}
-    }
 
-    /*
-     * _SUN_OL_WIN_ATTR_5 is an atom hung off the _SUN_WM_PROTOCOLS 
-     * property on the root window. It's presence indicates that the wmgr
+	/*
+	 * _SUN_OL_WIN_ATTR_5 is an atom hung off the _SUN_WM_PROTOCOLS 
+	 * property on the root window. It's presence indicates that the wmgr
 	 * is using the 5-length _OL_WIN_ATTR property. XView now uses the
 	 * 5-length property by default. The wmgr will detect this, and will draw
 	 * the labels in XView icons.
-     * The following code is to prevent this from happening.
-     */
+	 * The following code is to prevent this from happening.
+	 */
 	if (xv_get(xv_screen(info), SCREEN_CHECK_SUN_WM_PROTOCOL,
-						"_SUN_OL_WIN_ATTR_5"))
-	{
-        int             delete_decor = 0;
-        Atom            delete_decor_list[WM_MAX_DECOR];
+					"_SUN_OL_WIN_ATTR_5")) {
+		int delete_decor = 0;
+		Atom delete_decor_list[WM_MAX_DECOR];
 
-        /*
-         * Tell wmgr not to draw icon labels - for now this will be done
-         * by XView
-         */
-        delete_decor_list[delete_decor++] =
-		(Atom) xv_get(server_public, SERVER_ATOM, "_OL_DECOR_ICON_NAME");
-        wmgr_delete_decor(frame_public, delete_decor_list, delete_decor);
-    }
+		/*
+		 * Tell wmgr not to draw icon labels - for now this will be done
+		 * by XView
+		 */
+		delete_decor_list[delete_decor++] =
+				(Atom) xv_get(srv, SERVER_ATOM, "_OL_DECOR_ICON_NAME");
+		wmgr_delete_decor(frame_public, delete_decor_list, delete_decor);
+	}
 
-    return XV_OK;
+	if (main_base) {
+		Display *dpy = xv_display(info);
+		Window sexid = xv_xid(info);
+		Window basexid = (Window)xv_get(main_base, XV_XID);
+		Atom at = xv_get(srv, SERVER_ATOM, "_OL_COLORS_FOLLOW");
+
+		XChangeProperty(dpy, sexid, at, XA_WINDOW, 32, PropModeReplace,
+				(unsigned char *)&basexid, 1);
+
+		XChangeProperty(dpy, sexid, xv_get(srv,SERVER_ATOM,"WM_CLIENT_LEADER"),
+				XA_WINDOW, 32,PropModeReplace, (unsigned char *)&basexid, 1);
+
+		property_array[nprots++] = xv_get(srv, SERVER_WM_WT_BASE);
+
+		xv_set(srv, SERVER_REGISTER_SECONDARY_BASE, frame_public, NULL);
+	}
+	else {
+		property_array[nprots++] = xv_get(srv, SERVER_WM_SAVE_YOURSELF);
+		property_array[nprots++] = xv_get(srv, SERVER_ATOM, "_OL_SHOW_PROPS");
+	}
+	property_array[nprots++] = xv_get(srv, SERVER_ATOM, "_OL_OWN_HELP");
+
+	win_change_property(frame_public, (long)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
+			(unsigned char *)property_array, nprots, TRUE);
+
+	return XV_OK;
 }
 
 static Xv_opaque frame_base_set_avlist(Frame frame_public,
@@ -181,9 +214,6 @@ static Xv_opaque frame_base_set_avlist(Frame frame_public,
 
 					*attrs = (Frame_attribute) ATTR_NOP(*attrs);
 
-#ifdef OW_I18N
-					_xv_set_mbs_attr_dup(&frame_class->label, (char *)attrs[1]);
-#else
 					if (frame_class->label)
 						free(frame_class->label);
 					if ((char *)attrs[1]) {
@@ -195,25 +225,9 @@ static Xv_opaque frame_base_set_avlist(Frame frame_public,
 					else {
 						frame_class->label = NULL;
 					}
-#endif /* OW_I18N */
-
-					(void)frame_display_label(frame_class);
+					frame_display_label(frame_class);
 				}
 				break;
-
-#ifdef OW_I18N
-			case XV_LABEL_WCS:
-				{
-					Frame_class_info *frame_class =
-							FRAME_CLASS_FROM_BASE(frame);
-
-					*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-					_xv_set_wcs_attr_dup(&frame_class->label,
-							(wchar_t *)attrs[1]);
-					(void)frame_display_label(frame_class);
-				}
-				break;
-#endif /* OW_I18N */
 
 			case XV_SET_POPUP:
 				server_set_popup(frame_public, (Attr_attribute *)&attrs[1]);
@@ -222,6 +236,11 @@ static Xv_opaque frame_base_set_avlist(Frame frame_public,
 
 			case XV_END_CREATE:
 				(void)wmgr_set_win_attr(frame_public, &(frame->win_attr));
+				break;
+
+			case FRAME_SECONDARY_BASE_FOR:
+				/* really a create-only attribute */
+				ATTR_CONSUME(*attrs);
 				break;
 
 			default:
@@ -246,13 +265,6 @@ static Xv_opaque frame_base_set_avlist(Frame frame_public,
 					free(old_strings[i]);
 				}
 			}
-
-#ifndef OW_I18N
-			/*
-			 * Free array holding strings
-			 */
-			free(old_strings);
-#endif
 		}
 
 		/*
