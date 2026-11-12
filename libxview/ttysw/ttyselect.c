@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.45 2026/08/04 18:21:38 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.46 2026/11/11 21:54:32 dra Exp $";
 #endif
 
 /*
@@ -955,7 +955,7 @@ static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
 			 * Try the old _SUN_SELN_YIELD...
 			 */
 			xv_set(sr, SEL_TYPE, priv->seln_yield, NULL);
-			sel_post_req(sr);
+			sel_post_req_no_answer(sr);
 			return;
 		}
 		if (target == priv->seln_yield) {
@@ -1001,7 +1001,7 @@ Pkg_private void ttysw_event_paste_up(Ttysw_private priv, struct timeval *t)
 		/* yes, it WAS a quick duplicate */
 
 		xv_set(sel_req, SEL_TYPE, priv->selection_end, NULL);
-		sel_post_req(sel_req);
+		sel_post_req_no_answer(sel_req);
 	}
 	else {
 		/* no, it was NOT a quick duplicate */
@@ -1081,7 +1081,7 @@ Pkg_private void ttysw_event_cut_up(Ttysw_private priv, Event *ev)
 		SERVERTRACE((333, "requested SECONDARY DELETE, len=%ld\n", length));
 
 		xv_set(sel_req, SEL_TYPE, priv->selection_end, NULL);
-		sel_post_req(sel_req);
+		sel_post_req_no_answer(sel_req);
 
 		if (string) {
 			/* now, we have the 'quick moved' text in 'string' */
