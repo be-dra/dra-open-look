@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)item.c 20.56 93/06/28 DRA: $Id: item.c,v 4.5 2025/11/01 14:55:10 dra Exp $";
+static char     sccsid[] = "@(#)item.c 20.56 93/06/28 DRA: $Id: item.c,v 4.6 2026/07/19 21:58:32 dra Exp $";
 #endif
 #endif
 
@@ -15,12 +15,7 @@ static char     sccsid[] = "@(#)item.c 20.56 93/06/28 DRA: $Id: item.c,v 4.5 202
 
 static void item_free(register Item_info *ip);
 
-#ifdef OW_I18N
-extern wchar_t		_xv_null_string_wc[];
-#endif /* OW_I18N */
-
 #define         FOREGROUND      -1
-
 
 static int item_init(Xv_Window parent, Panel_item item_public, Attr_avlist avlist, int *u)
 {
@@ -41,31 +36,18 @@ static int item_init(Xv_Window parent, Panel_item item_public, Attr_avlist avlis
     ip->layout = PANEL_HORIZONTAL;
     ip->next = NULL;
     ip->notify = panel_nullproc;
-#ifdef OW_I18N
-    /* Default is to allow input method */
-    ip->flags |= IC_ACTIVE;
-    ip->notify_wc = panel_nullproc;
-    ip->flags &= ~WCHAR_NOTIFY;
-#endif /* OW_I18N */
     ip->ops.panel_op_handle_event = (void (*) (Xv_opaque, Event *)) panel->event_proc;
     ip->panel = panel;
     ip->repaint = panel->repaint;	/* default painting behavior */
     ip->value_font = panel->std_font;
-#ifdef OW_I18N
     ip->value_fontset_id = panel->std_fontset_id;
-#else
     ip->value_font_xid = panel->std_font_xid;
-#endif /* OW_I18N */
     ip->value_ginfo = panel->ginfo;
     ip->x_gap = -1;		/* use panel->item_x_offset */
     ip->y_gap = -1;		/* use panel->item_y_offset */
 
     image_set_type(&ip->label, PIT_STRING);
     image_set_string(&ip->label, (char *) panel_strsave(""));
-#ifdef  OW_I18N
-    image_set_string_wc(&ip->label, (wchar_t *)
-		panel_strsave_wc(_xv_null_string_wc));
-#endif  /* OW_I18N */
     panel_image_set_font(&ip->label, ip->panel->std_font);
     image_set_bold(&ip->label, FALSE);
     image_set_inverted(&ip->label, label_inverted_flag(ip));
