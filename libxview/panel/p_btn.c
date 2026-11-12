@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_btn.c 20.110 93/06/28 DRA: $Id: p_btn.c,v 4.7 2025/11/01 14:55:10 dra Exp $";
+static char     sccsid[] = "@(#)p_btn.c 20.110 93/06/28 DRA: $Id: p_btn.c,v 4.11 2026/10/07 21:01:00 dra Exp $";
 #endif
 #endif
 
@@ -80,9 +80,6 @@ static void button_menu_busy_proc(Menu menu);
 static void button_menu_done_proc(Menu menu, Xv_opaque result);
 static void panel_paint_button_image(Item_info *ip, Panel_image *image, int inactive_button, Xv_opaque menu, int height);
 int 		panel_item_destroy_flag;
-#ifdef OW_I18N
-extern wchar_t _xv_null_string_wc[];
-#endif /* OW_I18N */
 
 static Graphics_info *create_revpin_ginfo(Xv_window win)
 {
@@ -234,33 +231,6 @@ static void btn_begin_preview( Panel_item item_public, Event *event)
 				xv_get(default_menu_item, MENU_TITLE);
 		height = 0;
 
-#ifdef OW_I18N
-		if (pin_is_default) {
-			image.im_type = PIT_STRING;
-			image_string_wc(&image) = _xv_null_string_wc;
-			label = (void *)_xv_null_string_wc;
-			olgx_state |= OLGX_LABEL_IS_WCS;
-		}
-		else if (!(image_string_wc(&image) = (CHAR *)
-						xv_get(default_menu_item, MENU_STRING_WCS))) {
-			olgx_state |= OLGX_LABEL_IS_PIXMAP;
-			image.im_type = PIT_SVRIM;
-			image_svrim(&image) = xv_get(default_menu_item, MENU_IMAGE);
-			pixlabel.pixmap = (XID) xv_get(image_svrim(&image), XV_XID);
-			pixlabel.width = ((Pixrect *) image_svrim(&image))->pr_width;
-			pixlabel.height = ((Pixrect *) image_svrim(&image))->pr_height;
-			label = (void *)&pixlabel;
-			height = Button_Height(ip->panel->ginfo);
-			dp->clear_button_rect = TRUE;
-		}
-		else {
-			image.im_type = PIT_STRING;
-			image_font(&image) = image_font(&ip->label);
-			image_bold(&image) = image_bold(&ip->label);
-			label = (void *)image_string_wc(&image);
-			olgx_state |= OLGX_LABEL_IS_WCS;
-		}
-#else
 		if (pin_is_default) {
 			image.im_type = PIT_STRING;
 			image_string(&image) = NULL;
@@ -284,7 +254,6 @@ static void btn_begin_preview( Panel_item item_public, Event *event)
 			image_bold(&image) = image_bold(&ip->label);
 			label = (void *)image_string(&image);
 		}
-#endif /* OW_I18N */
 
 		image_ginfo(&image) = image_ginfo(&ip->label);
 		/*
@@ -428,6 +397,7 @@ static void btn_accept_preview(Panel_item item_public, Event *event)
 	 */
 	panel_paint_button_image(ip, &ip->label, inactive(ip), ip->menu, 0);
 	DRAWABLE_INFO_MACRO(PANEL_PUBLIC(ip->panel), info);
+	/* without this XFlush, we (sometimes) don't see the busy feedback */
     XFlush(xv_display(info));
 
 	panel_item_destroy_flag = 0;
@@ -712,14 +682,7 @@ static void panel_paint_button_image(Item_info *ip, Panel_image *image, int inac
 			panel->status.three_d ? OLGX_NORMAL : OLGX_NORMAL | OLGX_ERASE;
 	if (image_type(image) == PIT_STRING) {
 		height = 0;	/* not used by olgx_draw_button */
-
-#ifdef OW_I18N
-		label = (void *)image_string_wc(image);
-		state |= OLGX_LABEL_IS_WCS;
-#else
 		label = (void *)image_string(image);
-#endif /* OW_I18N */
-
 		state |= OLGX_MORE_ARROW;
 	}
 	else {
