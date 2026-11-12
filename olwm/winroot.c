@@ -1,5 +1,5 @@
 /* #ident	"@(#)winroot.c	26.60	93/06/28 SMI" */
-char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.5 2026/02/28 13:42:37 dra Exp $";
+char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.6 2026/09/18 07:27:41 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -620,7 +620,7 @@ MakeRoot(dpy, cli)
 	}
 
 	/* mark the client as olwm owned */
-	cli->flags = CLOlwmOwned;
+	cli->flags |= CLOlwmOwned;
 
 	/* create the associated structure */
 	w = MemNew(WinRoot);
