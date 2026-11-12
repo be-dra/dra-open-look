@@ -11,13 +11,34 @@
 #include <X11/Xatom.h>
 #include <X11/Xresource.h>
 
-char owplaces_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: owplaces.c,v 1.12 2025/06/20 21:16:58 dra Exp $";
+char owplaces_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: owplaces.c,v 1.15 2026/10/29 18:17:48 dra Exp $";
 
 #ifdef linux
 #define GETTIMEOFDAY(p) gettimeofday(p, 0)
 #else /* linux */
 #define GETTIMEOFDAY(p) gettimeofday(p)
 #endif /* linux */
+
+static char *atnames[] = {
+	"WM_STATE",
+	"WM_COMMAND",
+	"WM_PROTOCOLS",
+	"WM_SAVE_YOURSELF",
+	"_SUN_DRAGDROP_DSDM",
+	"_DRA_TOP_LEVEL_WINDOWS"
+};
+
+#define NUM_ATOMS (sizeof(atnames)/sizeof(atnames[0]))
+
+static Atom atoms[NUM_ATOMS];
+static XrmDatabase db;
+
+#define wm_state atoms[0]
+#define wm_command atoms[1]
+#define wm_protocols atoms[2]
+#define wm_save_yourself atoms[3]
+#define dsdm atoms[4]
+#define tlw atoms[5]
 
 #define C_ALL 0
 #define C_LOCAL 1
@@ -32,7 +53,7 @@ typedef struct _cllist {
 	char *clientmach;
 } *client_t;
 
-static Atom wm_state, wm_command, wm_protocols, wm_save_yourself;
+static int roundtrips = 0;
 
 static int outstanding(client_t cl)
 {
@@ -54,6 +75,7 @@ static void handle_event(Display *dpy, XEvent *ev, client_t cl)
 
 		for (p = cl; p; p = p->next) {
 			if (p->xid == ev->xproperty.window) {
+				++roundtrips;
 				XGetCommand(dpy, p->xid, &p->argv, &p->argc);
 				p->responded = True;
 				return;
@@ -67,6 +89,7 @@ static int check_for_save_yourself(Display *dpy, Window win)
 	Atom *prots;
 	int i, cnt;
 
+	++roundtrips;
 	if (! XGetWMProtocols(dpy, win, &prots, &cnt)) return False;
 
 	for (i = 0; i < cnt; i++) {
@@ -76,6 +99,26 @@ static int check_for_save_yourself(Display *dpy, Window win)
 	return False;
 }
 
+static client_t new_client(Display *dpy, Window win)
+{
+	XTextProperty clientmach;
+	client_t n = (client_t)calloc(1, sizeof(struct _cllist));
+
+	n->xid = win;
+
+	++roundtrips;
+	if (XGetWMClientMachine(dpy, win, &clientmach)) {
+		n->clientmach = (char *)clientmach.value;
+	}
+
+	if (! check_for_save_yourself(dpy, win)) {
+		++roundtrips;
+		XGetCommand(dpy, win, &n->argv, &n->argc);
+		n->responded = True;
+	}
+	return n;
+}
+
 static client_t get_clients(Display *dpy, Window win, client_t list)
 {
 	Atom act_typeatom;
@@ -83,30 +126,21 @@ static client_t get_clients(Display *dpy, Window win, client_t list)
 	unsigned long items, rest;
 	unsigned char *wmstat;
 
+	++roundtrips;
 	status = XGetWindowProperty(dpy, win, wm_state, 0, 1000, False,
 		AnyPropertyType, &act_typeatom, &act_format, &items, &rest, &wmstat);
 
 	if (status == Success && items != 0) {
-		XTextProperty clientmach;
-		client_t n = (client_t)calloc(1, sizeof(struct _cllist));
+		client_t n = new_client(dpy, win);
 
 		n->next = list;
-		n->xid = win;
 		list = n;
-
-		if (XGetWMClientMachine(dpy, win, &clientmach)) {
-			n->clientmach = (char *)clientmach.value;
-		}
-
-		if (! check_for_save_yourself(dpy, win)) {
-			XGetCommand(dpy, win, &n->argv, &n->argc);
-			n->responded = True;
-		}
 	}
 	else {
 		Window root, parent, *ch;
 		unsigned int num, i;
 
+		++roundtrips;
 		if (! XQueryTree(dpy, win, &root, &parent, &ch, &num)) return list;
 		for (i = 0; i < num; i++) {
 			list = get_clients(dpy, ch[i], list);
@@ -114,6 +148,81 @@ static client_t get_clients(Display *dpy, Window win, client_t list)
 	}
 
 	return list;
+}
+
+static Bool check_ev(Display *dpy, XEvent *ev, XPointer arg)
+{
+	Window mywin = *((Window *)arg);
+
+	if (ev->type != SelectionNotify) return False;
+	if (ev->xselection.requestor != mywin) return False;
+
+	return True;
+}
+
+static client_t get_all_clients(Display *dpy, Window root, Window mywin)
+{
+	client_t clients = NULL;
+	Atom sel = dsdm;
+	char *t;
+	XrmValue val;
+
+	if (XrmGetResource(db,"owplaces.topLevelSelection",
+							"owplaces.topLevelSelection", &t,&val))
+	{
+		sel = XInternAtom(dpy, (char *)val.addr, False);
+	}
+	XConvertSelection(dpy, sel, tlw, tlw, mywin, CurrentTime);
+	for (;;) {
+		XEvent ev;
+
+		XIfEvent(dpy, &ev, check_ev, (XPointer)&mywin);
+		if (ev.type == SelectionNotify) {
+			XSelectionEvent *xsel = &ev.xselection;
+			if (xsel->selection == sel && xsel->target == tlw) {
+				if (xsel->property == None) {
+					/* no olwm or olwm not ready */
+					fprintf(stderr, "owplaces: use XQueryTree (1)\n");
+					return get_clients(dpy, root, (client_t)0);
+				}
+				else {
+					Atom act_type;
+					int act_format;
+					unsigned long nitems, bytes_after;
+					Window *prop;
+
+					++roundtrips;
+					XGetWindowProperty(dpy, mywin, tlw, 0L, 1000L,
+		    				True, XA_WINDOW, &act_type, &act_format,
+							&nitems, &bytes_after, (unsigned char **)&prop);
+					if (act_format == 32 && nitems > 0 && prop != NULL) {
+						int i;
+
+						for (i = 0; i < (int)nitems; i++) {
+							if (prop[i]) {
+								client_t nc = new_client(dpy, prop[i]);
+								nc->next = clients;
+								clients = nc;
+							}
+						}
+						return clients;
+					}
+					else {
+						fprintf(stderr, "owplaces: use XQueryTree (2)\n");
+						return get_clients(dpy, root, (client_t)0);
+					}
+				}
+			}
+			else {
+				fprintf(stderr, "unexpected sel reply: %ld, %ld\n",
+						xsel->selection, xsel->target);
+			}
+		}
+		else {
+			fprintf(stderr, "event type %d\n", ev.type);
+		}
+	}
+	clients = get_clients(dpy, root, (client_t)0);
 }
 
 int main(int argc, char **argv)
@@ -127,11 +236,14 @@ int main(int argc, char **argv)
 		{ "-remote", ".remote", XrmoptionNoArg, "true" },
 		{ "-local", ".local", XrmoptionNoArg, "true" },
 		{ "-ampersand", ".ampersand", XrmoptionNoArg, "true" },
+		{ "-roundTrips", ".roundTrips", XrmoptionNoArg, "true" },
 		{ "-ampSleepTime", ".ampSleepTime", XrmoptionSepArg, "2" },
+		{ "-topLevelSelection", ".topLevelSelection", XrmoptionSepArg,
+									"_SUN_DRAGDROP_DSDM" },
 		{ "-tw", ".toolWait", XrmoptionNoArg, "true" },
 		{ "-silent", ".silent", XrmoptionNoArg, "true" }
 	};
-	XrmDatabase db, scrdb;
+	XrmDatabase scrdb;
 	char *t;
 	XrmValue val;
 	Display *dpy;
@@ -167,12 +279,12 @@ int main(int argc, char **argv)
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy,screen);
 
-	wm_state = XInternAtom(dpy, "WM_STATE", False);
-	wm_command = XInternAtom(dpy, "WM_COMMAND", False);
-	wm_protocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
-	wm_save_yourself = XInternAtom(dpy, "WM_SAVE_YOURSELF", False);
+	XInternAtoms(dpy, atnames, NUM_ATOMS, False, atoms);
 
-	clients = get_clients(dpy, root, (client_t)0);
+	mywin = XCreateSimpleWindow(dpy, root, 0, 0, 2, 2, 0,
+				BlackPixel(dpy,screen), WhitePixel(dpy,screen));
+
+	clients = get_all_clients(dpy, root, mywin);
 
 	uname(&name);
 	strcpy(host, name.nodename);
@@ -226,9 +338,6 @@ int main(int argc, char **argv)
 	xcl.format = 32;
 	xcl.message_type = wm_protocols;
 	xcl.data.l[0] = wm_save_yourself;
-
-	mywin = XCreateSimpleWindow(dpy, root, 0, 0, 2, 2, 0,
-				BlackPixel(dpy,screen), WhitePixel(dpy,screen));
 
 	XSelectInput(dpy, mywin, PropertyChangeMask);
 	XChangeProperty(dpy, mywin, XA_STRING, XA_STRING, 8, PropModeReplace,
@@ -319,10 +428,12 @@ int main(int argc, char **argv)
 	while (clients) {
 		if (clients->responded && clients->argv) {
 			int i;
+			int want_ampersand = 1;
 
 			if (XrmGetResource(db,"owplaces.toolWait","owplaces.toolWait",
 											&t,&val)) {
 				fprintf(out, "toolwait ");
+				want_ampersand = 0;
 			}
 			for (i = 0; i < clients->argc; i++) {
 				fprintf(out, "%s ", clients->argv[i]);
@@ -343,13 +454,21 @@ int main(int argc, char **argv)
 					fprintf(out, "sleep 2\n");
 				}
 			}
-			else {
-				fprintf(out, "\n");
-			}
+
+			fprintf(out, "%s\n", want_ampersand ? "&" : "");
 		}
 		clients = clients->next;
 	}
 
 	fclose(out);
+	/* mit Verwendung von _DRA_TOP_LEVEL_WINDOWS : ca 60 roundtrips
+	 *                                     sonst : ca 740 roundtrips
+	 */
+
+	if (XrmGetResource(db,"owplaces.roundTrips","owplaces.roundTrips",
+									&t,&val))
+	{
+		fprintf(stderr, "roundtrips = %d\n", roundtrips);
+	}
 	exit(0);
 }
