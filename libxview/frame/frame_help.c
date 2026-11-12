@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.7 2026/04/17 08:42:16 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.9 2026/10/03 18:24:12 dra Exp $ ";
 #endif
 #endif
 
@@ -17,6 +17,7 @@ static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.
 #include <xview/server.h>
 #include <xview_private/svr_atom.h>
 #include <xview_private/svr_impl.h>
+#include <xview_private/win_info.h>
 
 #include <X11/Xatom.h>
 
@@ -83,45 +84,26 @@ static int frame_help_init(Xv_Window owner, Frame frame_public,
 	return XV_OK;
 }
 
-#ifdef OW_I18N
-     /*
-      * Following is NOT hard code limits, but for optimization to
-      * avoid malloc, if possible.
-      */
-#    define	HELP_LABEL_MAX_CHAR		30
-#endif
-
 static Xv_opaque frame_help_set_avlist(Frame frame_public,
 							Attr_attribute avlist[])
 {
 	Attr_avlist attrs;
 	Frame_help_info *frame = FRAME_HELP_PRIVATE(frame_public);
 	int result = XV_OK;
+	Atom pinstate;
+	Xv_opaque srv = XV_SERVER_FROM_WINDOW(frame_public);
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
 
 			case XV_LABEL:
 				{
-
-#ifndef OW_I18N
 					extern char *xv_app_name;
-#endif
-
 					Frame_class_info *frame_class =
 							FRAME_CLASS_FROM_HELP(frame);
 
 					*attrs = (Frame_attribute) ATTR_NOP(*attrs);
 
-#ifdef OW_I18N
-					if ((char *)attrs[1]) {
-						_xv_set_mbs_attr_dup(&frame_class->label,
-								(char *)attrs[1]);
-					}
-					else {
-						goto get_from_app_name;
-					}
-#else
 					if (frame_class->label) {
 						free(frame_class->label);
 					}
@@ -140,52 +122,16 @@ static Xv_opaque frame_help_set_avlist(Frame frame_public,
 							frame_class->label = NULL;
 						}
 					}
-#endif
-
-					(void)frame_display_label(frame_class);
+					frame_display_label(frame_class);
 					break;
 				}
-
-#ifdef OW_I18N
-			case XV_LABEL_WCS:
-				{
-					extern wchar_t *xv_app_name_wcs;
-					register char *help;
-					Frame_class_info *frame_class =
-							FRAME_CLASS_FROM_HELP(frame);
-					int i;
-					wchar_t *wp;
-					wchar_t wbuff[HELP_LABEL_MAX_CHAR + 1];
-
-					*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-					if ((wchar_t *)attrs[1]) {
-						_xv_set_wcs_attr_dup(&frame_class->label,
-								(wchar_t *)attrs[1]);
-					}
-					else {
-					  get_from_app_name:
-						if (xv_app_name_wcs) {
-							help = "%ws Help";	/* FIX_ME: use gettext? */
-							i = (wslen(xv_app_name_wcs) + strlen(help)
-									+ (-3 /* "%ws" */  + 1 /* NULL */ ))
-									* sizeof(wchar_t);
-							wp = sizeof(wbuff) < i ? xv_malloc(i) : wbuff;
-							wsprintf(wp, help, xv_app_name_wcs);
-						}
-						else {
-							wp = NULL;
-						}
-						_xv_set_wcs_attr_dup(&frame_class->label, wp);
-						if (wp != wbuff && wp != NULL)
-							xv_free(wp);
-					}
-					(void)frame_display_label(frame_class);
-					break;
-				}
-#endif /* OW_I18N */
 
 			case XV_END_CREATE:
 				wmgr_set_win_attr(frame_public, &(frame->win_attr));
+				pinstate = xv_get(srv, SERVER_WM_PIN_STATE);
+				win_change_property(frame_public,
+						(Attr_attribute)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
+						(unsigned char *)&pinstate, 1, TRUE);
 				break;
 
 			default:
