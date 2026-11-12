@@ -232,11 +232,7 @@ void olgx_draw_choice_item(Graphics_info *info, Window win, int x, int y,
 
 			}
 			olgx_draw_text(info, win,
-#ifdef OW_I18N
-					label,
-#else
 					(const char *)label,
-#endif
 					/*
 					 * a small hack to make sure , that the between the left side of
 					 * the choice item and the text is okay under 14pt and 19pt
