@@ -1,4 +1,4 @@
-char p_choice_sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 4.6 2025/11/01 14:55:10 dra Exp $";
+char p_choice_sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 4.9 2026/07/31 16:08:37 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -12,6 +12,7 @@ char p_choice_sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 
 #include <xview/font.h>
 #include <X11/Xlib.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/font_impl.h>
 #ifdef SVR4 
 #include <stdlib.h> 
 #endif /* SVR4 */
@@ -70,12 +71,6 @@ char p_choice_sccsid[] = "@(#)p_choice.c 20.140 93/06/28 DRA: $Id: p_choice.c,v 
 /*
  * External functions and data
  */
-#ifdef OW_I18N
-extern struct pr_size   xv_pf_textwidth_wc();
-extern wchar_t         _xv_null_string_wc[];
-#else
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-#endif /* OW_I18N */
 Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index);
 extern int		panel_item_destroy_flag;
 
@@ -233,13 +228,8 @@ static int choice_init(Panel panel_public, Panel_item item_public,
 	 */
 	dp->choices = xv_alloc(struct panel_image);
 
-#ifdef OW_I18N
-	panel_make_image(ip->value_font, &dp->choices[0],
-			PIT_STRING, panel_strsave_wc(_xv_null_string_wc), FALSE, FALSE);
-#else
 	panel_make_image(ip->value_font, &dp->choices[0],
 			PIT_STRING, (Xv_opaque) "", FALSE, FALSE);
-#endif /* OW_I18N */
 
 	dp->choices[0].color = -1;	/* use foreground color */
 	dp->choice_rects = xv_alloc(Rect);
@@ -302,13 +292,6 @@ static Xv_opaque choice_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	int value_set = FALSE;
 	int which_choice;
 
-#ifdef OW_I18N
-	int count;	/* loop counter */
-	int num_choices;	/* number of choices */
-	Xv_opaque *temp_choices = 0;	/* wide char version of choices array */
-	wchar_t *temp_choice = 0;	/* address of wide char choice string */
-#endif /* OW_I18N */
-
 	/* if a client has called panel_item_parent this item may not */
 	/* have a parent -- do nothing in this case */
 	if (ip->panel == NULL) {
@@ -338,66 +321,6 @@ static Xv_opaque choice_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	while ((attr = *avlist++)) {
 		switch (attr) {
 
-#ifdef OW_I18N
-			case PANEL_CHOICE_STRINGS:
-				choices_type = PIT_STRING;
-				/*
-				 *  Panel will only process wchar_t strings.  Make temp space for
-				 *  the choice strings and free it at the end of this routine.
-				 *  re_alloc_choices will do the real malloc for this string.
-				 */
-				choices = avlist;	/* base of the array */
-
-				/*  count the number of choices */
-				for (num_choices = 0; choices[num_choices]; num_choices++);
-
-				/* convert each string into wide char, do it the easy way now,
-				 *  will need to improve the method of malloc string arrays
-				 */
-				temp_choices =
-						(Xv_opaque *) xv_alloc_n(Xv_opaque, (num_choices + 1));
-				for (count = 0; count < num_choices; count++) {
-					temp_choices[count] =
-							(Xv_opaque) _xv_mbstowcsdup((char *)choices[count]);
-				}
-				temp_choices[num_choices] = 0;
-				choices = temp_choices;
-				while (*avlist++);
-				break;
-
-			case PANEL_CHOICE_STRINGS_WCS:
-				choices_type = PIT_STRING;
-				/*
-				 *  Panel will only process wchar_t strings.  Make temp space for
-				 *  the choice strings and free it at the end of this routine.
-				 *  re_alloc_choices will do the real malloc for this string.
-				 */
-				choices = avlist;	/* base of the array */
-
-				/*  count the number of choices */
-				for (num_choices = 0; choices[num_choices]; num_choices++);
-
-				/* convert each string into wide char, do it the easy way now,
-				 *  will need to improve the method of malloc string arrays
-				 */
-				temp_choices =
-						(Xv_opaque *) xv_alloc_n(Xv_opaque, (num_choices + 1));
-				for (count = 0; count < num_choices; count++) {
-					temp_choices[count] =
-							(Xv_opaque) panel_strsave_wc((char *)
-							choices[count]);
-				}
-				temp_choices[num_choices] = 0;
-				choices = temp_choices;
-				while (*avlist++);
-				break;
-
-			case PANEL_CHOICE_IMAGES:
-				choices_type = PIT_SVRIM;
-				choices = avlist;	/* base of the array */
-				while (*avlist++);	/* skip past the list */
-				break;
-#else
 			case PANEL_CHOICE_STRINGS:
 			case PANEL_CHOICE_IMAGES:
 				choices_type = attr ==
@@ -405,34 +328,7 @@ static Xv_opaque choice_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				choices = avlist;	/* base of the array */
 				while (*avlist++);	/* skip past the list */
 				break;
-#endif /* OW_I18N */
 
-#ifdef OW_I18N
-			case PANEL_CHOICE_STRING:
-				which_choice = (int)*avlist++;
-				temp_choice = (wchar_t *)_xv_mbstowcsdup((char *)*avlist++);
-				if (!modify_choice(ip, PIT_STRING, which_choice,
-								(Xv_opaque) temp_choice))
-					return (Xv_opaque) attr;
-				choices_changed = TRUE;
-				break;
-
-			case PANEL_CHOICE_STRING_WCS:
-				which_choice = (int)*avlist++;
-				temp_choice = (wchar_t *)panel_strsave_wc(*avlist++);
-				if (!modify_choice(ip, PIT_STRING, which_choice,
-								(Xv_opaque) temp_choice))
-					return (Xv_opaque) attr;
-				choices_changed = TRUE;
-				break;
-
-			case PANEL_CHOICE_IMAGE:
-				which_choice = (int)*avlist++;
-				if (!modify_choice(ip, PIT_SVRIM, which_choice, *avlist++))
-					return (Xv_opaque) attr;
-				choices_changed = TRUE;
-				break;
-#else
 			case PANEL_CHOICE_STRING:
 			case PANEL_CHOICE_IMAGE:
 				which_choice = (int)*avlist++;
@@ -442,7 +338,6 @@ static Xv_opaque choice_set_avlist(Panel_item item_public, Attr_avlist avlist)
 					return (Xv_opaque) attr;
 				choices_changed = TRUE;
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_CHOICE_FONTS:
 				/* Sunview1 compatibility attribute: not used */
@@ -719,10 +614,6 @@ static Xv_opaque choice_get_attr( Panel_item      item_public, int            *s
 		case PANEL_FEEDBACK:
 			return (Xv_opaque) dp->feedback;
 
-#ifdef OW_I18N
-		case PANEL_CHOICE_STRINGS_WCS:
-#endif /* OW_I18N */
-
 		case PANEL_CHOICE_STRINGS:
 		case PANEL_CHOICE_IMAGES:
 			return (Xv_opaque) NULL;
@@ -760,25 +651,6 @@ static Xv_opaque choice_get_attr( Panel_item      item_public, int            *s
 				return (Xv_opaque) 0;
 			return (Xv_opaque) & dp->choice_rects[arg];
 
-#ifdef OW_I18N
-		case PANEL_CHOICE_STRING_WCS:
-			arg = va_arg(valist, int);
-
-			bad_arg = (arg < 0 || arg > dp->last);
-			if (bad_arg || !is_string(&dp->choices[arg]))
-				return (Xv_opaque) NULL;
-			return (Xv_opaque) image_string_wc(&dp->choices[arg]);
-
-		case PANEL_CHOICE_STRING:
-			arg = va_arg(valist, int);
-
-			bad_arg = (arg < 0 || arg > dp->last);
-			if (bad_arg || !is_string(&dp->choices[arg]))
-				return (Xv_opaque) NULL;
-			image_string(&dp->choices[arg]) =
-					(char *)_xv_wcstombsdup(image_string_wc(&dp->choices[arg]));
-			return (Xv_opaque) image_string(&dp->choices[arg]);
-#else
 		case PANEL_CHOICE_STRING:
 			arg = va_arg(valist, int);
 
@@ -786,7 +658,6 @@ static Xv_opaque choice_get_attr( Panel_item      item_public, int            *s
 			if (bad_arg || !is_string(&dp->choices[arg]))
 				return (Xv_opaque) 0;
 			return (Xv_opaque) image_string(&dp->choices[arg]);
-#endif /* OW_I18N */
 
 		case PANEL_CHOICE_IMAGE:
 			arg = va_arg(valist, int);
@@ -1501,13 +1372,6 @@ static void choice_images_to_menu_items(Item_info *ip, Panel_image images[],
 		switch (image_type(image)) {
 			case PIT_STRING:
 
-#ifdef OW_I18N
-				mitems[i] = xv_create(NULL, MENUITEM,
-						MENU_STRING_ITEM_WCS, image_string_wc(image), i,
-						MENU_COLOR, color_index,
-						MENU_RELEASE,
-						NULL);
-#else
 				if (cyc) {
 					mitems[i] = xv_create(XV_NULL, MENUITEM,
 							MENU_CLASS, MENU_CHOICE,
@@ -1524,7 +1388,6 @@ static void choice_images_to_menu_items(Item_info *ip, Panel_image images[],
 							MENU_RELEASE,
 							NULL);
 				}
-#endif /* OW_I18N */
 
 				xv_set(ip->menu, MENU_APPEND_ITEM, mitems[i], NULL);
 				break;
@@ -1777,80 +1640,65 @@ static int find_choice(Item_info *ip, Event *event)
  * image_size returns the size of image.  The amount of image above the
  * baseline is also returned.
  */
-static struct pr_size image_size(register Panel_image *image, register int *above_baseline, int max_width)
+static struct pr_size image_size(Panel_image *image, int *above_baseline,
+								int max_width)
 {
-#ifdef OW_I18N
-    XFontSet            font_set;
-    XFontSetExtents     *font_set_extents;
-#else
-    XFontStruct		*x_font_info;
-#endif /* OW_I18N */
-    struct pr_size  size;	/* full size */
-    register CHAR  *sp;		/* string version */
-    Xv_Font	    font;	/* font for string */
-    int			chrwth, chrht;
+	XFontSet font_set;
+	XFontSetExtents *font_set_extents;
+	XFontStruct *x_font_info;
+	struct pr_size size;	/* full size */
+	register CHAR *sp;	/* string version */
+	Xv_Font font;	/* font for string */
+	int chrwth, chrht;
 
-    switch (image->im_type) {
-      case PIT_STRING:
-	font = image_font(image);
-#ifdef OW_I18N
-	sp = image_string_wc(image);
-        size = xv_pf_textwidth_wc(wslen(sp), font, sp);
-	chrwth = xv_get(font, FONT_COLUMN_WIDTH);
-#else
-	sp = image_string(image);
-	size = xv_pf_textwidth((int)strlen(sp), font, sp);
-	chrwth = xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
-#endif /* OW_I18N */
-	chrht = xv_get(font, FONT_DEFAULT_CHAR_HEIGHT);
-	if (max_width)
-	    size.x = max_width + 2 * chrwth;
-	else
-	{
-#ifdef OW_I18N
-	    if (wslen(sp))
-#else
-	    if (strlen(sp))
-#endif /* OW_I18N */
-	        size.x += 2 * chrwth;
+	switch (image->im_type) {
+		case PIT_STRING:
+			font = image_font(image);
+			sp = image_string(image);
+			size = xv_pf_textwidth((int)strlen(sp), font, sp);
+			chrwth = xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
+			chrht = xv_get(font, FONT_DEFAULT_CHAR_HEIGHT);
+			if (max_width)
+				size.x = max_width + 2 * chrwth;
+			else {
+				if (strlen(sp))
+					size.x += 2 * chrwth;
+			}
+			/*
+			 * Use max height of font (ascent + descent).  Leave some vertical
+			 * space between bounding box and string.
+			 */
+			size.y = chrht + OLGX_CHOICE_MARGIN;
+
+			if (*sp) {
+				if (_xv_is_multibyte) {
+					font_set = (XFontSet) xv_get(font, FONT_SET_ID);
+					font_set_extents = XExtentsOfFontSet(font_set);
+					*above_baseline =
+							1 - font_set_extents->max_logical_extent.y;
+				}
+				else {
+					x_font_info = (XFontStruct *) xv_get(font, FONT_INFO);
+					*above_baseline = x_font_info->ascent + 1;
+				}
+			}
+			else
+				*above_baseline = 0;
+			break;
+
+		case PIT_SVRIM:
+			size = ((Pixrect *) image_svrim(image))->pr_size;
+			if (max_width)
+				size.x = max_width + 4;	/* should have OLGX constant when 
+										   Nataraj provides one ???
+										   sri - 2/12/91 */
+			*above_baseline = size.y;
+			/* Leave space between bounding box and image */
+			size.x += OLGX_CHOICE_MARGIN;
+			size.y += OLGX_CHOICE_MARGIN;
+			break;
 	}
-	/*
-	 * Use max height of font (ascent + descent).  Leave some vertical
-	 * space between bounding box and string.
-	 */
-	size.y = chrht + OLGX_CHOICE_MARGIN;
-
-	if (*sp)  {
-#ifdef OW_I18N
-            font_set = (XFontSet)xv_get(font, FONT_SET_ID);
-            font_set_extents = XExtentsOfFontSet(font_set);
-            *above_baseline = 1 - font_set_extents->max_logical_extent.y;
-        }   
-        else
-            *above_baseline = 0;
-        break;
-#else
-	    x_font_info = (XFontStruct *)xv_get(font, FONT_INFO);
-	    *above_baseline = x_font_info->ascent + 1;
-	}
-	else
-	    *above_baseline = 0;
-	break;
-#endif /* OW_I18N */
-
-      case PIT_SVRIM:
-	size = ((Pixrect *)image_svrim(image))->pr_size;
-	if (max_width)
-	    size.x = max_width + 4;  /* should have OLGX constant when 
-					Nataraj provides one ???
-					sri - 2/12/91 */	
-	*above_baseline = size.y;
-	/* Leave space between bounding box and image */
-	size.x += OLGX_CHOICE_MARGIN;
-	size.y += OLGX_CHOICE_MARGIN;
-	break;
-    }
-    return (size);
+	return (size);
 }
 
 
@@ -1859,140 +1707,136 @@ static struct pr_size image_size(register Panel_image *image, register int *abov
  */
 static void layout_choices(register Item_info *ip)	/* the item */
 {
-    register Choice_info *dp;	/* choice data */
-    register int    i, j, k;    /* counters */
-    Panel_image    *image;	/* each choice image */
-    struct pr_size  size;	/* each choice size */
-    Rect           *rect = NULL;	/* each choice rect */
-    int             left, top;	/* corner of each choice */
-    int             above_baseline;	/* amount above baseline */
-    int		    max_height;
-    int             max_stringwidth;	/* max width of choice items */
-    int             nrows, ncols;
-    int             x_gap;
-    int             y_gap;
+	register Choice_info *dp;	/* choice data */
+	register int i, j, k;	/* counters */
+	Panel_image *image;	/* each choice image */
+	struct pr_size size;	/* each choice size */
+	Rect *rect = NULL;	/* each choice rect */
+	int left, top;	/* corner of each choice */
+	int above_baseline;	/* amount above baseline */
+	int max_height;
+	int max_stringwidth;	/* max width of choice items */
+	int nrows, ncols;
+	int x_gap;
+	int y_gap;
 
-    dp = CHOICE_FROM_ITEM(ip);
-    x_gap = choice_x_gap(ip->panel->status.three_d ? TRUE : FALSE,
-			 ip->item_type == PANEL_CHOICE_ITEM);
-    y_gap = choice_y_gap(ip->panel->status.three_d ? TRUE : FALSE,
-			 ip->item_type == PANEL_CHOICE_ITEM);
+	dp = CHOICE_FROM_ITEM(ip);
+	x_gap = choice_x_gap(ip->panel->status.three_d ? TRUE : FALSE,
+			ip->item_type == PANEL_CHOICE_ITEM);
+	y_gap = choice_y_gap(ip->panel->status.three_d ? TRUE : FALSE,
+			ip->item_type == PANEL_CHOICE_ITEM);
 
-    compute_nrows_ncols(ip, &nrows, &ncols);
+	compute_nrows_ncols(ip, &nrows, &ncols);
 
-    /* If more than one row, figure out longest choice item */
-    max_stringwidth = 0;
+	/* If more than one row, figure out longest choice item */
+	max_stringwidth = 0;
 
-    if (nrows > 1 || dp->display_level == PANEL_CURRENT)
-	for (i = 0; i <= dp->last; i++) {
-	    image = &(dp->choices[i]);
-	    switch (image->im_type) {
-	      case PIT_STRING:
-#ifdef OW_I18N
-		size = xv_pf_textwidth_wc(wslen(image->im_value.t.text_wc),
-			    image->im_value.t.font, image->im_value.t.text_wc);
-#else
-		size = xv_pf_textwidth((int)strlen(image->im_value.t.text),
-			    image->im_value.t.font, image->im_value.t.text);
-#endif /* OW_I18N */
-		if (size.x > max_stringwidth)
-		    max_stringwidth = size.x;
-		break;
+	if (nrows > 1 || dp->display_level == PANEL_CURRENT)
+		for (i = 0; i <= dp->last; i++) {
+			image = &(dp->choices[i]);
+			switch (image->im_type) {
+				case PIT_STRING:
+					size = xv_pf_textwidth((int)strlen(image->im_value.t.text),
+							image->im_value.t.font, image->im_value.t.text);
+					if (size.x > max_stringwidth)
+						max_stringwidth = size.x;
+					break;
 
-	      case PIT_SVRIM:
-		size = ((Pixrect *)image_svrim(image))->pr_size;
-		if (size.x > max_stringwidth)
-		    max_stringwidth = size.x;
-		break;
+				case PIT_SVRIM:
+					size = ((Pixrect *) image_svrim(image))->pr_size;
+					if (size.x > max_stringwidth)
+						max_stringwidth = size.x;
+					break;
 
-	    }
-	}
-
-    /*
-     * Make sure the label is in the right place.  Account for the baseline
-     * label adjustment made below.
-     */
-    panel_fix_label_position(ip);
-
-    /* Initalize the value width & height */
-    ip->value_rect.r_width = 0;
-    ip->value_rect.r_height = 0;
-
-    if (dp->display_level == PANEL_NONE)
-	return;
-
-    top = ip->value_rect.r_top;
-    left = ip->value_rect.r_left;
-
-    /* Layout each choice a row or column at a time */
-    i = 0;
-    while (i <= dp->last) {
-	max_height = 0;
-
-	for (j = 0;
-	     i <= dp->last &&
-	     j < (ip->layout == PANEL_HORIZONTAL ? ncols: nrows);
-	     i++, j++) {
-	    image = &(dp->choices[i]);
-	    rect = &(dp->choice_rects[i]);
-	    size = image_size(image, &above_baseline, max_stringwidth);
-
-	    if (dp->display_level == PANEL_CURRENT) {
-		size.x += Abbrev_MenuButton_Width(ip->value_ginfo) +
-		    ABSTK_X_GAP;
-		size.y = MAX(size.y,
-			     Abbrev_MenuButton_Height(ip->value_ginfo));
-	    }
-	    max_height = MAX(max_height, size.y);
-
-	    rect_construct(rect, left, top, size.x, size.y);
-
-	    /* Adjust for the check box, if any */
-	    if (dp->feedback == PANEL_MARKED) {
-		rect->r_width += CheckBox_Width(ip->value_ginfo) +
-		    CHECKBOX_XOFFSET;
-
-		rect->r_height = MAX(rect->r_height,
-		    CheckBox_Height(ip->value_ginfo));
-
-		max_height = MAX(max_height, CheckBox_Height(ip->value_ginfo));
-	    }
-
-	    if (dp->display_level == PANEL_ALL) {
-		if (ip->layout == PANEL_HORIZONTAL) {
-		    /* Move over one column */
-		    left = rect_right(rect) + 1 + x_gap;
-		} else {
-		    /* Move down one row */
-		    top = rect_bottom(rect) + 1 + y_gap;
+			}
 		}
-	    }
+
+	/*
+	 * Make sure the label is in the right place.  Account for the baseline
+	 * label adjustment made below.
+	 */
+	panel_fix_label_position(ip);
+
+	/* Initalize the value width & height */
+	ip->value_rect.r_width = 0;
+	ip->value_rect.r_height = 0;
+
+	if (dp->display_level == PANEL_NONE)
+		return;
+
+	top = ip->value_rect.r_top;
+	left = ip->value_rect.r_left;
+
+	/* Layout each choice a row or column at a time */
+	i = 0;
+	while (i <= dp->last) {
+		max_height = 0;
+
+		for (j = 0;
+				i <= dp->last &&
+				j < (ip->layout == PANEL_HORIZONTAL ? ncols : nrows);
+				i++, j++) {
+			image = &(dp->choices[i]);
+			rect = &(dp->choice_rects[i]);
+			size = image_size(image, &above_baseline, max_stringwidth);
+
+			if (dp->display_level == PANEL_CURRENT) {
+				size.x += Abbrev_MenuButton_Width(ip->value_ginfo) +
+						ABSTK_X_GAP;
+				size.y = MAX(size.y, Abbrev_MenuButton_Height(ip->value_ginfo));
+			}
+			max_height = MAX(max_height, size.y);
+
+			rect_construct(rect, left, top, size.x, size.y);
+
+			/* Adjust for the check box, if any */
+			if (dp->feedback == PANEL_MARKED) {
+				rect->r_width += CheckBox_Width(ip->value_ginfo) +
+						CHECKBOX_XOFFSET;
+
+				rect->r_height = MAX(rect->r_height,
+						CheckBox_Height(ip->value_ginfo));
+
+				max_height = MAX(max_height, CheckBox_Height(ip->value_ginfo));
+			}
+
+			if (dp->display_level == PANEL_ALL) {
+				if (ip->layout == PANEL_HORIZONTAL) {
+					/* Move over one column */
+					left = rect_right(rect) + 1 + x_gap;
+				}
+				else {
+					/* Move down one row */
+					top = rect_bottom(rect) + 1 + y_gap;
+				}
+			}
+
+		}
+
+		if (ip->layout == PANEL_HORIZONTAL) {
+			/*
+			 * Compute the top of each choice rect before we move
+			 * on to the next row
+			 */
+			for (k = i - j; k < i; k++) {
+				rect = &dp->choice_rects[k];
+				rect->r_top = top + max_height - rect->r_height;
+			}
+
+			/* Move down one row */
+			if (dp->display_level == PANEL_ALL)
+				top = rect_bottom(rect) + 1 + y_gap;
+			left = ip->value_rect.r_left;
+		}
+		else {
+			/* Move over one column */
+			if (dp->display_level == PANEL_ALL)
+				left = rect_right(rect) + 1 + x_gap;
+			top = ip->value_rect.r_top;
+		}
 
 	}
-
-	if (ip->layout == PANEL_HORIZONTAL) {
-	    /*
-	     * Compute the top of each choice rect before we move
-	     * on to the next row
-	     */
-	    for (k = i - j; k < i; k++) {
-		rect = &dp->choice_rects[k];
-		rect->r_top = top + max_height - rect->r_height;
-	    }
-
-	    /* Move down one row */
-	    if (dp->display_level == PANEL_ALL)
-		top = rect_bottom(rect) + 1 + y_gap;
-	    left = ip->value_rect.r_left;
-	} else {
-	    /* Move over one column */
-	    if (dp->display_level == PANEL_ALL)
-		left = rect_right(rect) + 1 + x_gap;
-	    top = ip->value_rect.r_top;
-	}
-	    
-    }
-}				/* layout_choices */
+}	   /* layout_choices */
 
 
 /*
@@ -2057,16 +1901,8 @@ static int modify_choice(Item_info *ip, int type, int which_choice, Xv_opaque ch
 					choice_is_bold = dp->choices_bold;
 				dp->choices[i].color = old_choices[old_slot].color;
 
-#ifdef OW_I18N
-				size = panel_make_image(is_string(&old_choices[old_slot]) ?
-						image_font(&old_choices[old_slot]) : ip->panel->
-						std_font, &dp->choices[i], PIT_STRING,
-						panel_strsave_wc(_xv_null_string_wc), choice_is_bold,
-						FALSE);
-#else
 				size = panel_make_image(ip->value_font, &dp->choices[i],
 						PIT_STRING, (Xv_opaque) "", choice_is_bold, FALSE);
-#endif /* OW_I18N */
 
 				if (dp->display_level == PANEL_NONE) {
 					dp->choice_rects[i].r_width =
@@ -2265,12 +2101,7 @@ static void paint_choice(Panel_info *panel, Item_info *ip, Choice_info *dp,
 	switch (image->im_type) {
 		case PIT_STRING:
 
-#ifdef OW_I18N
-			state |= OLGX_LABEL_IS_WCS;
-			label = (Xv_opaque) image_string_wc(image);
-#else
 			label = (Xv_opaque) image_string(image);
-#endif /* OW_I18N */
 
 			if (dp->feedback == PANEL_MARKED ||
 					dp->display_level == PANEL_CURRENT)
@@ -2280,11 +2111,8 @@ static void paint_choice(Panel_info *panel, Item_info *ip, Choice_info *dp,
 				top = rect->r_top + panel_fonthome(image_font(image));
 				chrht = xv_get(image_font(image), FONT_DEFAULT_CHAR_HEIGHT);
 
-#ifdef OW_I18N
-				chrwth = xv_get(image_font(image), FONT_COLUMN_WIDTH);
-#else
+/* 				chrwth = xv_get(image_font(image), FONT_COLUMN_WIDTH); ???  */
 				chrwth = xv_get(image_font(image), FONT_DEFAULT_CHAR_WIDTH);
-#endif /* OW_I18N */
 
 				top += (rect->r_height - chrht) / 2;
 				left += chrwth;
@@ -2298,13 +2126,8 @@ static void paint_choice(Panel_info *panel, Item_info *ip, Choice_info *dp,
 				PANEL_EACH_PAINT_WINDOW(panel, pw)
 					DRAWABLE_INFO_MACRO(pw, info);
 
-#ifdef OW_I18N
-					panel_paint_text(pw, ip->value_fontset_id, color_index,
-							left, top, image_string_wc(image));
-#else
-					panel_paint_text(pw, ip->value_font_xid, color_index,
+					panel_paint_text(pw, ip->value_fontset_id, ip->value_font_xid, color_index,
 							left, top, image_string(image));
-#endif /* OW_I18N */
 				PANEL_END_EACH_PAINT_WINDOW
 			}
 			break;
