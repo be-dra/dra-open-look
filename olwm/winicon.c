@@ -1,5 +1,5 @@
 /* #ident	"@(#)winicon.c	26.42	93/06/28 SMI" */
-char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.11 2026/07/27 20:38:16 dra Exp $";
+char winicon_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winicon.c,v 1.12 2026/10/06 14:51:44 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -286,7 +286,7 @@ WinIconFrame *winInfo;
 		0, 0, winInfo->core.width, winInfo->core.height);
 
 	/* draw icon name */
-	if (cli->wmDecors->flags & WMDecorationIconName)
+	if (cli->wmDecors->decor_flags & WMDecorationIconName)
 		olgx_draw_text(WinGI(winInfo, NORMAL_GINFO), frameWin,
 				winInfo->fcore.name, winInfo->nameX, winInfo->nameY, 
 				winInfo->core.width, OLGX_NORMAL | OLGX_MORE_ARROW);
@@ -324,7 +324,7 @@ static int
 heightIconName(win)
 WinIconFrame	*win;
 {
-	if (win->core.client->wmDecors->flags & WMDecorationIconName)
+	if (win->core.client->wmDecors->decor_flags & WMDecorationIconName)
 	{
 		return (FontHeight(IconFont) + ICON_VERTBORDER);
 	} else {
