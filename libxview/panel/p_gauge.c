@@ -1,4 +1,4 @@
-char p_gauge_sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.6 2025/11/01 14:55:10 dra Exp $";
+char p_gauge_sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_gauge.c,v 4.8 2026/07/19 21:58:12 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -12,6 +12,7 @@ char p_gauge_sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $
 #include <xview/pixwin.h>
 #include <xview/font.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/font_impl.h>
 
 #define GAUGE_PRIVATE(item)	\
 	XV_PRIVATE(Gauge_info, Xv_panel_gauge, item)
@@ -22,12 +23,6 @@ char p_gauge_sccsid[] = "@(#)p_gauge.c 1.30 93/06/28 Copyr 1984 Sun Micro DRA: $
 #define TICK_THICKNESS	2
 #define MIN_TICK_GAP	4	/* minimum gap between ticks */
 #define MIN_TICK_STRING_GAP 6
-
-#ifdef OW_I18N
-extern struct pr_size xv_pf_textwidth_wc();
-#else
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-#endif /* OW_I18N */
 
 /* XView functions */
 Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index);
@@ -156,31 +151,6 @@ static Xv_opaque gauge_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	    adjust_values = TRUE;
 	    break;
 
-#ifdef OW_I18N
-          case PANEL_MIN_TICK_STRING:
-	    if (dp->min_tick_string)
-		xv_free(dp->min_tick_string);
-	    if (*avlist) {
-		dp->min_tick_string = 
-		    (wchar_t *) _xv_mbstowcsdup((char *) *avlist);
-	    } else
-		dp->min_tick_string = NULL;
-            size_changed = TRUE;
-	    avlist++;
-            break;
-
-          case PANEL_MIN_TICK_STRING_WCS:
-	    if (dp->min_tick_string)
-		xv_free(dp->min_tick_string);
-	    if (*avlist) {
-		dp->min_tick_string = 
-		    (wchar_t *) panel_strsave_wc((wchar_t *) *avlist);
-	    } else
-		dp->min_tick_string = NULL;
-            size_changed = TRUE;
-	    avlist++;
-            break;
-#else
           case PANEL_MIN_TICK_STRING:
 	    if (dp->min_tick_string)
 		xv_free(dp->min_tick_string);
@@ -191,7 +161,6 @@ static Xv_opaque gauge_set_avlist(Panel_item item_public, Attr_avlist avlist)
             size_changed = TRUE;
 	    avlist++;
             break;
-#endif /* OW_I18N */
 
 	  case PANEL_MIN_VALUE:
 	    dp->min_value = (int) *avlist++;
@@ -199,31 +168,6 @@ static Xv_opaque gauge_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	    size_changed = TRUE;
 	    break;
 
-#ifdef OW_I18N
-          case PANEL_MAX_TICK_STRING:
-            if (dp->max_tick_string)
-		xv_free(dp->max_tick_string);
-	    if (*avlist) {
-		dp->max_tick_string = 
-		    (wchar_t *) _xv_mbstowcsdup((char *) *avlist);
-	    } else
-		dp->max_tick_string = NULL;
-            size_changed = TRUE;
-	    avlist++;
-            break;
-
-          case PANEL_MAX_TICK_STRING_WCS:
-            if (dp->max_tick_string)
-		xv_free(dp->max_tick_string);
-	    if (*avlist) {
-		dp->max_tick_string =
-		    (wchar_t *) panel_strsave_wc((wchar_t *) *avlist);
-	    } else
-		dp->max_tick_string = NULL;
-            size_changed = TRUE;
-	    avlist++;
-            break;
-#else
           case PANEL_MAX_TICK_STRING:
 	    if (dp->max_tick_string)
 		xv_free(dp->max_tick_string);
@@ -234,7 +178,6 @@ static Xv_opaque gauge_set_avlist(Panel_item item_public, Attr_avlist avlist)
             size_changed = TRUE;
 	    avlist++;
             break;
-#endif /* OW_I18N */
  
 	  case PANEL_MAX_VALUE:
 	    dp->max_value = (int) *avlist++;
@@ -288,23 +231,13 @@ static Xv_opaque gauge_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	    dp->nticks = dp->width / (TICK_THICKNESS+MIN_TICK_GAP);
     }
     if (dp->min_tick_string) {
-#ifdef OW_I18N
-        size = xv_pf_textwidth_wc(wslen(dp->min_tick_string),
-            ip->panel->std_font, dp->min_tick_string);
-#else
         size = xv_pf_textwidth((int)strlen(dp->min_tick_string),
             ip->panel->std_font, dp->min_tick_string);
-#endif /* OW_I18N */
         dp->min_tick_string_width = size.x;
     }
     if (dp->max_tick_string) {
-#ifdef OW_I18N
-        size = xv_pf_textwidth_wc(wslen(dp->max_tick_string),
-            ip->panel->std_font, dp->max_tick_string);
-#else
         size = xv_pf_textwidth((int)strlen(dp->max_tick_string),
             ip->panel->std_font, dp->max_tick_string);
-#endif /* OW_I18N */
         dp->max_tick_string_width = size.x;
     }
     dp->width = MAX(dp->width,
@@ -331,42 +264,19 @@ static Xv_opaque gauge_get_attr(Panel_item item_public, int *status,
 							Attr_attribute  which_attr, va_list valist)
 {
     register Gauge_info *dp = GAUGE_PRIVATE(item_public);
-#ifdef OW_I18N
-    char		*string_mbs = NULL;
-#endif /* OW_I18N */
 
     switch (which_attr) {
       case PANEL_VALUE:
 	return (Xv_opaque) dp->value;
 
-#ifdef OW_I18N
-      case PANEL_MIN_TICK_STRING:
-	if (string_mbs) xv_free(string_mbs);
-	string_mbs = (char *)_xv_wcstombsdup((wchar_t *)dp->min_tick_string);
-        return (Xv_opaque) string_mbs;
-
-      case PANEL_MIN_TICK_STRING_WCS:
-        return (Xv_opaque) dp->min_tick_string;
-#else
       case PANEL_MIN_TICK_STRING:
         return (Xv_opaque) dp->min_tick_string;
-#endif /* OW_I18N */
 
       case PANEL_MIN_VALUE:
 	return (Xv_opaque) dp->min_value;
 
-#ifdef OW_I18N
-      case PANEL_MAX_TICK_STRING:
-	if (string_mbs) xv_free(string_mbs);
-	string_mbs = (char *)_xv_wcstombsdup((wchar_t *)dp->max_tick_string);
-        return (Xv_opaque) string_mbs;
-
-      case PANEL_MAX_TICK_STRING_WCS:
-        return (Xv_opaque) dp->max_tick_string;
-#else
       case PANEL_MAX_TICK_STRING:
         return (Xv_opaque) dp->max_tick_string;
-#endif /* OW_I18N */
 
       case PANEL_MAX_VALUE:
 	return (Xv_opaque) dp->max_value;
@@ -434,14 +344,8 @@ static void gauge_paint(Panel_item item_public, Panel_setting u)
 	}
 	r = &dp->min_range_rect;
 	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-#ifdef OW_I18N
-	    panel_paint_text(pw, ip->panel->std_fontset_id, 
-		ip->color_index, r->r_left, r->r_top + 
-		panel_fonthome(ip->panel->std_font), str);
-#else
-	    panel_paint_text(pw, ip->panel->std_font_xid, ip->color_index,
+	    panel_paint_text(pw, ip->panel->std_fontset_id, ip->panel->std_font_xid, ip->color_index,
 		r->r_left, r->r_top + panel_fonthome(ip->panel->std_font), str);
-#endif /* OW_I18N */
 	    if (inactive(ip)) {
 		DRAWABLE_INFO_MACRO(pw, info);
 		gc_list = (GC *)xv_get(xv_screen(info),  SCREEN_OLGC_LIST, pw);
@@ -461,14 +365,8 @@ static void gauge_paint(Panel_item item_public, Panel_setting u)
 	}
 	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
 	    r = &dp->max_range_rect;
-#ifdef OW_I18N
-	    panel_paint_text(pw, ip->panel->std_fontset_id, 
-		ip->color_index, r->r_left, r->r_top + 
-		panel_fonthome(ip->panel->std_font), str);
-#else
-	    panel_paint_text(pw, ip->panel->std_font_xid, ip->color_index,
+	    panel_paint_text(pw, ip->panel->std_fontset_id, ip->panel->std_font_xid, ip->color_index,
 		r->r_left, r->r_top + panel_fonthome(ip->panel->std_font), str);
-#endif /* OW_I18N */
 	    if (inactive(ip)) {
 		DRAWABLE_INFO_MACRO(pw, info);
 		gc_list = (GC *)xv_get(xv_screen(info),  SCREEN_OLGC_LIST, pw);
@@ -626,22 +524,14 @@ static void update_rects(register Item_info *ip)
 	min_range_width = dp->min_tick_string_width;
     else {
 	SPRINTF(min_buf, "%d", dp->min_value);
-#ifdef OW_I18N
-	size = xv_pf_textwidth_wc(wslen(min_buf), ip->panel->std_font, min_buf);
-#else
 	size = xv_pf_textwidth((int)strlen(min_buf), ip->panel->std_font, min_buf);
-#endif /* OW_I18N */
 	min_range_width = size.x;
     }
     if (dp->max_tick_string_width)
 	max_range_width = dp->max_tick_string_width;
     else {
 	SPRINTF(max_buf, "%d", dp->max_value);
-#ifdef OW_I18N
-	size = xv_pf_textwidth_wc(wslen(max_buf), ip->panel->std_font, max_buf);
-#else
 	size = xv_pf_textwidth((int)strlen(max_buf), ip->panel->std_font, max_buf);
-#endif /* OW_I18N */
 	max_range_width = size.x;
     }
 
