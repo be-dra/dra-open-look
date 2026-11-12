@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)item_set.c 20.104 93/06/28 DRA: $Id: item_set.c,v 4.5 2024/11/30 16:20:53 dra Exp $";
+static char     sccsid[] = "@(#)item_set.c 20.104 93/06/28 DRA: $Id: item_set.c,v 4.7 2026/07/19 21:58:37 dra Exp $";
 #endif
 #endif
 
@@ -13,13 +13,9 @@ static char     sccsid[] = "@(#)item_set.c 20.104 93/06/28 DRA: $Id: item_set.c,
 
 #include <xview_private/panel_impl.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/font_impl.h>
 #include <xview_private/win_info.h>
 #include <xview/openmenu.h>
-
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-#ifdef  OW_I18N
-extern struct pr_size xv_pf_textwidth_wc();
-#endif  /* OW_I18N */
 
 Xv_private void panel_item_parent(Panel_item item, Panel parent);
 extern Graphics_info *xv_init_olgx(Xv_Window, int *, Xv_Font);
@@ -176,12 +172,9 @@ Pkg_private Xv_opaque item_set_avlist(Panel_item item_public, Attr_avlist avlist
 
 					ip->value_font = (Xv_Font) attrs[1];
 
-#ifdef OW_I18N
 					ip->value_fontset_id = (XFontSet)
 							xv_get(ip->value_font, FONT_SET_ID);
-#else
 					ip->value_font_xid = (XID) xv_get(ip->value_font, XV_XID);
-#endif /* OW_I18N */
 
 					if (ip->value_font != panel->std_font)
 						xv_set(ip->value_font, XV_INCREMENT_REF_COUNT, NULL);
@@ -192,11 +185,8 @@ Pkg_private Xv_opaque item_set_avlist(Panel_item item_public, Attr_avlist avlist
 				else {
 					ip->value_font = panel->std_font;
 
-#ifdef OW_I18N
 					ip->value_fontset_id = panel->std_fontset_id;
-#else
 					ip->value_font_xid = panel->std_font_xid;
-#endif /* OW_I18N */
 
 					ip->value_ginfo = panel->ginfo;
 				}
@@ -222,30 +212,11 @@ Pkg_private Xv_opaque item_set_avlist(Panel_item item_public, Attr_avlist avlist
 				potential_new_rect = TRUE;
 				break;
 
-#ifdef OW_I18N
-			case PANEL_LABEL_STRING:
-				label_type = PIT_STRING;
-				/* Panel will only process wchar_t strings. Make temp space for
-				 * this string and free it at the end of this routine.
-				 * panel_make_image will do the real malloc for this string.
-				 * Note: Can optimize this code for performance.
-				 */
-				label_data = (Xv_opaque) _xv_mbstowcsdup((char *)attrs[1]);
-				potential_new_rect = TRUE;
-				break;
-
-			case PANEL_LABEL_STRING_WCS:
-				label_type = PIT_STRING;
-				label_data = (Xv_opaque) panel_strsave_wc((wchar_t *) attrs[1]);
-				potential_new_rect = TRUE;
-				break;
-#else
 			case PANEL_LABEL_STRING:
 				label_type = PIT_STRING;
 				label_data = attrs[1];
 				potential_new_rect = TRUE;
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_LABEL_FONT:
 				panel_image_set_font(&ip->label, (Xv_Font) attrs[1]);
@@ -316,27 +287,11 @@ Pkg_private Xv_opaque item_set_avlist(Panel_item item_public, Attr_avlist avlist
 					ip->flags &= ~IS_MENU_ITEM;
 				break;
 
-#ifdef OW_I18N
-			case PANEL_NOTIFY_PROC:
-				ip->notify = (int (*)(Panel_item, Event *))attrs[1];
-				ip->flags &= ~WCHAR_NOTIFY;
-				if (!ip->notify)
-					ip->notify = panel_nullproc;
-				break;
-
-			case PANEL_NOTIFY_PROC_WCS:
-				ip->notify_wc = (int (*)())attrs[1];
-				ip->flags |= WCHAR_NOTIFY;
-				if (!ip->notify_wc)
-					ip->notify_wc = panel_nullproc;
-				break;
-#else
 			case PANEL_NOTIFY_PROC:
 				ip->notify = (int (*)(Panel_item, Event *))attrs[1];
 				if (!ip->notify)
 					ip->notify = panel_nullproc;
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_NOTIFY_STATUS:
 				ip->notify_status = (int)attrs[1];
@@ -367,19 +322,7 @@ Pkg_private Xv_opaque item_set_avlist(Panel_item item_public, Attr_avlist avlist
 					label_type = label->im_type;	/* force label (image) to be
 													 * remade */
 					if (label_type == PIT_STRING)
-
-#ifdef OW_I18N
-					{
-						if (label_data)
-							xv_free(label_data);
-						label_data =
-								(Xv_opaque)
-								panel_strsave_wc(image_string_wc(label));
-					}
-#else
 						label_data = (Xv_opaque) image_string(label);
-#endif /* OW_I18N */
-
 					else
 						label_data = (Xv_opaque) image_svrim(label);
 				}
@@ -475,9 +418,6 @@ Pkg_private Xv_opaque item_set_avlist(Panel_item item_public, Attr_avlist avlist
 				else
 					ip->flags &= ~WANTS_ADJUST;
 				break;
-
-/* OW_I18N:  May need to add a wchar_t parallel attribute??? *
- * PANEL_ITEM_WANTS_WC					     */
 
 			case PANEL_ITEM_WANTS_ISO:
 				if ((int)attrs[1])
@@ -614,13 +554,8 @@ Pkg_private Xv_opaque item_set_avlist(Panel_item item_public, Attr_avlist avlist
 	 */
 	if (is_string(label) && label_font_changed) {
 
-#ifdef OW_I18N
-		label_size = xv_pf_textwidth_wc(STRLEN(image_string_wc(label)),
-				image_font(label), image_string_wc(label));
-#else
 		label_size = xv_pf_textwidth((int)strlen(image_string(label)),
 				image_font(label), image_string(label));
-#endif /* OW_I18N */
 
 		if (ip->label_width)
 			label_size.x = ip->label_width;
