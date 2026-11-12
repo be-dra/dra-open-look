@@ -11,7 +11,7 @@
 #include <X11/X.h>
 #include <X11/Xproto.h>
 
-char toolwait_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: toolwait.c,v 1.22 2025/06/20 21:16:34 dra Exp $";
+char toolwait_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: toolwait.c,v 1.23 2026/10/20 20:22:35 dra Exp $";
 
 typedef struct _win {
 	struct _win *next;
@@ -30,7 +30,24 @@ typedef struct _xcl {
 
 static client_t oldc = (client_t)0, /* clients that existed before fork() */
 				newc = (client_t)0;
-static Atom wmcls, wmcmd, wmstate;
+
+static char *atnames[] = {
+	"WM_COMMAND",
+	"WM_CLASS",
+	"WM_STATE",
+	"_SUN_DRAGDROP_DSDM",
+	"_DRA_TOP_LEVEL_WINDOWS"
+};
+
+#define NUM_ATOMS (sizeof(atnames)/sizeof(atnames[0]))
+
+static Atom atoms[NUM_ATOMS];
+#define wmcmd atoms[0]
+#define wmcls atoms[1]
+#define wmstate atoms[2]
+#define sel atoms[3]
+#define tlw atoms[4]
+
 static char *chprog;
 
 static Window found_searched = None;
@@ -41,6 +58,10 @@ static char *searched_res_name = 0;
 static unsigned alarm_time = 30;
 static int trace = 0;
 static XErrorHandler orig_handler;
+
+static void intern_atoms(Display *dpy)
+{
+}
 
 static void potentially_exit(int v)
 {
@@ -117,13 +138,10 @@ static Bool check_ev(Display *dpy, XEvent *ev, XPointer arg)
 
 static void get_old_clients(Display *dpy, Window root, char *childprog)
 {
-	Atom sel, tlw;
 	XSetWindowAttributes attrs;
 	Window mywin;
 
 	/* let's try to avoid those MANY XQueryTree */
-	sel = XInternAtom(dpy, "_SUN_DRAGDROP_DSDM", False);
-	tlw = XInternAtom(dpy, "_DRA_TOP_LEVEL_WINDOWS", False);
 	attrs.override_redirect = 1;
 	mywin = XCreateWindow(dpy, root, 0, 0, 1, 1, 0, 
 						DefaultDepth(dpy, 0),
@@ -357,6 +375,11 @@ static void handle_prop(XPropertyEvent *ev)
 								chprog, ev->window);
 			potentially_exit(0);
 		}
+		else {
+			/* programs like xterm do not set WM_COMMAND.... */
+			/* still, this is one og the new client's windows */
+			exit(0);
+		}
 	}
 }
 
@@ -405,9 +428,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	orig_handler = XSetErrorHandler(my_x_error);
-	wmcmd = XInternAtom(dpy, "WM_COMMAND", False);
-	wmcls = XInternAtom(dpy, "WM_CLASS", False);
-	wmstate = XInternAtom(dpy, "WM_STATE", False);
+	XInternAtoms(dpy, atnames, NUM_ATOMS, False, atoms);
 
 	root = DefaultRootWindow(dpy);
 	get_old_clients(dpy, root, argv[optind]);
