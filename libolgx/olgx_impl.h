@@ -13,23 +13,8 @@
 #ifndef OL_PRIVATE_DEFINED
 #define OL_PRIVATE_DEFINED
 
-#ifdef OW_I18N
-/*
- * I18N_Portability: May need to change the following #include to
- * pickup the wchar_t and X11R5(-ish) Xlib functions definitions.
- */
-#ifdef sun
-#  include <widec.h>
-#if XlibSpecificationRelease != 5
-#include <X11/XlibR5.h>
-#endif /* XlibSpecificationRelease != 5 */
-#endif
 #ifdef linux
 #  include <wchar.h>
-#endif
-#include <X11/Xlib.h>
-
-
 #endif
 #include <olgx/olgx.h>
 
@@ -54,11 +39,6 @@
 	for (i = 0; i < num_add; i++) {				\
 		string[start_pos+i] = offset + add_ins[i];	\
 	}
-
-#ifdef OW_I18N
-#define	textfontset	utextfont.fontset
-#define	textfont	utextfont.fontstruct
-#endif
 
 typedef struct _per_disp_res_rec {
   Display * dpy;
