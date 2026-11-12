@@ -1,4 +1,4 @@
-char p_slider_sccsid[] = "@(#)p_slider.c 20.84 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_slider.c,v 4.7 2025/11/01 14:55:10 dra Exp $";
+char p_slider_sccsid[] = "@(#)p_slider.c 20.84 93/06/28 Copyr 1984 Sun Micro DRA: $Id: p_slider.c,v 4.13 2026/09/27 09:32:38 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -12,6 +12,7 @@ char p_slider_sccsid[] = "@(#)p_slider.c 20.84 93/06/28 Copyr 1984 Sun Micro DRA
 #include <xview/pixwin.h>
 #include <xview/font.h>
 #include <xview_private/draw_impl.h>
+#include <xview_private/font_impl.h>
 
 #define SLIDER_PRIVATE(item)	\
 	XV_PRIVATE(Slider_info, Xv_panel_slider, item)
@@ -26,11 +27,6 @@ char p_slider_sccsid[] = "@(#)p_slider.c 20.84 93/06/28 Copyr 1984 Sun Micro DRA
 #define POINTER_GAP	3	/* gap between pointer and drag box after
 				 * warping pointer after incrementing or
 				 * decrementing slider */
-
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
-#ifdef OW_I18N
-Xv_public struct pr_size xv_pf_textwidth_wc();
-#endif /* OW_I18N */
 
 /* XView functions */
 Xv_private void screen_adjust_gc_color(Xv_Window window, int gc_index);
@@ -100,17 +96,17 @@ typedef struct {	/* data for a slider */
     Rect	    max_endbox_rect;	/* maximum end box rect */
     Rect            max_range_rect;	/* maximum range rect */
     int		    max_range_size;	/* # of characters in max_value */
-    CHAR	   *max_tick_string;
+    char	   *max_tick_string;
     int		    max_tick_string_width;  /* in pixels */
     int             max_value;	/* in client units */
-    CHAR	   *max_value_string;
+    char	   *max_value_string;
     Rect	    min_endbox_rect;	/* left or top end box rect */
     Rect            min_range_rect;	/* minimum range rect */
     int		    min_range_size;	/* # of characters in min_value */
-    CHAR	   *min_tick_string;
+    char	   *min_tick_string;
     int		    min_tick_string_width;  /* in pixels */
     int             min_value;	/* in client units */
-    CHAR	   *min_value_string;
+    char	   *min_value_string;
     int		    nticks;	/* nbr of tick marks on slider */
     int             print_value;/* value from PANEL_VALUE (in client units) */
     int             restore_print_value:1;
@@ -194,8 +190,8 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	register Item_info *ip = ITEM_PRIVATE(item_public);
 	register Slider_info *dp = SLIDER_PRIVATE(item_public);
 	register Attr_attribute attr;
-	CHAR buf[16];
-	CHAR buf2[16];
+	char buf[16];
+	char buf2[16];
 	int char_width;
 	int end_create = FALSE;
 	int jump_delta_set = FALSE;
@@ -275,33 +271,6 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				jump_delta_set = TRUE;
 				break;
 
-#ifdef OW_I18N
-			case PANEL_MIN_TICK_STRING:
-				if (dp->min_tick_string)
-					xv_free(dp->min_tick_string);
-				if (*avlist) {
-					dp->min_tick_string =
-							(wchar_t *)_xv_mbstowcsdup((char *)*avlist);
-				}
-				else
-					dp->min_tick_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-
-			case PANEL_MIN_TICK_STRING_WCS:
-				if (dp->min_tick_string)
-					xv_free(dp->min_tick_string);
-				if (*avlist) {
-					dp->min_tick_string =
-							(wchar_t *)panel_strsave_wc((wchar_t *)*avlist);
-				}
-				else
-					dp->min_tick_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-#else
 			case PANEL_MIN_TICK_STRING:
 				if (dp->min_tick_string)
 					xv_free(dp->min_tick_string);
@@ -312,7 +281,6 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				size_changed = TRUE;
 				avlist++;
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_MIN_VALUE:
 				min_value = (int)*avlist++;
@@ -320,33 +288,6 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				size_changed = TRUE;
 				break;
 
-#ifdef OW_I18N
-			case PANEL_MIN_VALUE_STRING:
-				if (dp->min_value_string)
-					xv_free(dp->min_value_string);
-				if (*avlist) {
-					dp->min_value_string =
-							(wchar_t *)_xv_mbstowcsdup((char *)*avlist);
-				}
-				else
-					dp->min_value_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-
-			case PANEL_MIN_VALUE_STRING_WCS:
-				if (dp->min_value_string)
-					xv_free(dp->min_value_string);
-				if (*avlist) {
-					dp->min_value_string =
-							(wchar_t *)panel_strsave_wc((wchar_t *)*avlist);
-				}
-				else
-					dp->min_value_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-#else
 			case PANEL_MIN_VALUE_STRING:
 				if (dp->min_value_string)
 					xv_free(dp->min_value_string);
@@ -357,35 +298,7 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				size_changed = TRUE;
 				avlist++;
 				break;
-#endif /* OW_I18N */
 
-#ifdef OW_I18N
-			case PANEL_MAX_TICK_STRING:
-				if (dp->max_tick_string)
-					xv_free(dp->max_tick_string);
-				if (*avlist) {
-					dp->max_tick_string =
-							(wchar_t *)_xv_mbstowcsdup((char *)*avlist);
-				}
-				else
-					dp->max_tick_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-
-			case PANEL_MAX_TICK_STRING_WCS:
-				if (dp->max_tick_string)
-					xv_free(dp->max_tick_string);
-				if (*avlist) {
-					dp->max_tick_string =
-							(wchar_t *)panel_strsave_wc((wchar_t *)*avlist);
-				}
-				else
-					dp->max_tick_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-#else
 			case PANEL_MAX_TICK_STRING:
 				if (dp->max_tick_string)
 					xv_free(dp->max_tick_string);
@@ -396,7 +309,6 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				size_changed = TRUE;
 				avlist++;
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_MAX_VALUE:
 				max_value = (int)*avlist++;
@@ -404,33 +316,6 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				size_changed = TRUE;
 				break;
 
-#ifdef OW_I18N
-			case PANEL_MAX_VALUE_STRING:
-				if (dp->max_value_string)
-					xv_free(dp->max_value_string);
-				if (*avlist) {
-					dp->max_value_string =
-							(wchar_t *)_xv_mbstowcsdup((char *)*avlist);
-				}
-				else
-					dp->max_value_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-
-			case PANEL_MAX_VALUE_STRING_WCS:
-				if (dp->max_value_string)
-					xv_free(dp->max_value_string);
-				if (*avlist) {
-					dp->max_value_string =
-							(wchar_t *)panel_strsave_wc((wchar_t *)*avlist);
-				}
-				else
-					dp->max_value_string = NULL;
-				size_changed = TRUE;
-				avlist++;
-				break;
-#else
 			case PANEL_MAX_VALUE_STRING:
 				if (dp->max_value_string)
 					xv_free(dp->max_value_string);
@@ -441,7 +326,6 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 				size_changed = TRUE;
 				avlist++;
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_DIRECTION:
 				if (*avlist++ == PANEL_VERTICAL)
@@ -517,27 +401,16 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	}
 	if (dp->min_tick_string) {
 
-#ifdef OW_I18N
-		size = xv_pf_textwidth_wc(wslen(dp->min_tick_string),
-				ip->panel->std_font, dp->min_tick_string);
-#else
 		size = xv_pf_textwidth((int)strlen(dp->min_tick_string),
 						ip->panel->std_font, dp->min_tick_string);
-#endif /* OW_I18N */
-
 		dp->min_tick_string_width = size.x;
 	}
 	else
 		dp->min_tick_string_width = 0;
 	if (dp->max_tick_string) {
 
-#ifdef OW_I18N
-		size = xv_pf_textwidth_wc(wslen(dp->max_tick_string),
-				ip->panel->std_font, dp->max_tick_string);
-#else
 		size = xv_pf_textwidth((int)strlen(dp->max_tick_string),
 				ip->panel->std_font, dp->max_tick_string);
-#endif /* OW_I18N */
 
 		dp->max_tick_string_width = size.x;
 	}
@@ -600,13 +473,7 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 						PANEL_ITEM_COLOR, ip->color_index,
 						PANEL_READ_ONLY, dp->flags & READONLY ?
 						TRUE : FALSE, XV_SHOW, show_item,
-
-#ifdef OW_I18N
-						PANEL_VALUE_WCS, buf,
-#else
 						PANEL_VALUE, buf,
-#endif /* OW_I18N */
-
 						PANEL_VALUE_DISPLAY_LENGTH, dp->valuesize, NULL);
 			}
 			else {
@@ -630,20 +497,16 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 						PANEL_CLIENT_DATA, ip,
 						PANEL_INACTIVE, inactive(ip),
 						PANEL_ITEM_COLOR, ip->color_index,
-						PANEL_ITEM_X, rect_right(&ip->label_rect) +
-						TEXT_VALUE_GAP,
+						PANEL_ITEM_X, rect_right(&ip->label_rect)
+													+ TEXT_VALUE_GAP,
 						PANEL_ITEM_Y, ip->label_rect.r_top,
 						PANEL_NOTIFY_PROC, get_value,
-						PANEL_READ_ONLY, dp->flags & READONLY ?
-						TRUE : FALSE, XV_SHOW, show_item,
-
-#ifdef OW_I18N
-						PANEL_VALUE_WCS, buf,
-#else
+						PANEL_READ_ONLY, dp->flags & READONLY ? TRUE : FALSE,
+						XV_SHOW, show_item,
 						PANEL_VALUE, buf,
-#endif /* OW_I18N */
-
-						PANEL_VALUE_DISPLAY_LENGTH, dp->valuesize, NULL);
+						PANEL_VALUE_DISPLAY_LENGTH, dp->valuesize,
+						PANEL_ALLOW_FILE_DROP, FALSE,
+						NULL);
 				size_changed = TRUE;
 			}
 		}
@@ -664,132 +527,89 @@ static Xv_opaque slider_set_avlist(Panel_item item_public, Attr_avlist avlist)
 static Xv_opaque slider_get_attr(Panel_item item_public, int *status,
 									Attr_attribute which_attr, va_list valist)
 {
-    register Slider_info *dp = SLIDER_PRIVATE(item_public);
-#ifdef OW_I18N
-    char		 *string_mbs = NULL;
-#endif /* OW_I18N */
+	register Slider_info *dp = SLIDER_PRIVATE(item_public);
 
-    switch (which_attr) {
-      case PANEL_READ_ONLY:
-	return (Xv_opaque)
-	    (dp->flags & READONLY ? TRUE : FALSE);
+	switch (which_attr) {
+		case PANEL_READ_ONLY:
+			return (Xv_opaque)
+					(dp->flags & READONLY ? TRUE : FALSE);
 
-      case PANEL_NOTIFY_LEVEL:
-	return (Xv_opaque)
-	    (dp->flags & CONTINUOUS ? PANEL_ALL : PANEL_DONE);
+		case PANEL_NOTIFY_LEVEL:
+			return (Xv_opaque)
+					(dp->flags & CONTINUOUS ? PANEL_ALL : PANEL_DONE);
 
-      case PANEL_VALUE:
-	return (Xv_opaque) itoe(dp, dp->actual);
+		case PANEL_VALUE:
+			return (Xv_opaque) itoe(dp, dp->actual);
 
-      case PANEL_JUMP_DELTA:
-	return (Xv_opaque) dp->jump_delta;
+		case PANEL_JUMP_DELTA:
+			return (Xv_opaque) dp->jump_delta;
 
-#ifdef OW_I18N
-      case PANEL_MIN_TICK_STRING:
-	if (string_mbs) xv_free(string_mbs);
-	string_mbs = (char *)_xv_wcstombsdup((wchar_t *)dp->min_tick_string);
-	return (Xv_opaque) string_mbs;
+		case PANEL_MIN_TICK_STRING:
+			return (Xv_opaque) dp->min_tick_string;
 
-      case PANEL_MIN_TICK_STRING_WCS:
-	return (Xv_opaque) dp->min_tick_string;
-#else
-      case PANEL_MIN_TICK_STRING:
-	return (Xv_opaque) dp->min_tick_string;
-#endif /* OW_I18N */
+		case PANEL_MIN_VALUE:
+			return (Xv_opaque) dp->min_value;
 
-      case PANEL_MIN_VALUE:
-	return (Xv_opaque) dp->min_value;
+		case PANEL_MIN_VALUE_STRING:
+			return (Xv_opaque) dp->min_value_string;
 
-#ifdef OW_I18N
-      case PANEL_MIN_VALUE_STRING:
-	if (string_mbs) xv_free(string_mbs);
-	string_mbs = (char *)_xv_wcstombsdup((wchar_t *)dp->min_value_string);
-	return (Xv_opaque) string_mbs;
+		case PANEL_MAX_TICK_STRING:
+			return (Xv_opaque) dp->max_tick_string;
 
-      case PANEL_MIN_VALUE_STRING_WCS:
-	return (Xv_opaque) dp->min_value_string;
-#else
-      case PANEL_MIN_VALUE_STRING:
-	return (Xv_opaque) dp->min_value_string;
-#endif /* OW_I18N */
+		case PANEL_MAX_VALUE:
+			return (Xv_opaque) dp->max_value;
 
-#ifdef OW_I18N
-      case PANEL_MAX_TICK_STRING:
-	if (string_mbs) xv_free(string_mbs);
-	string_mbs = (char *)_xv_wcstombsdup((wchar_t *)dp->max_tick_string);
-	return (Xv_opaque) string_mbs;
+		case PANEL_MAX_VALUE_STRING:
+			return (Xv_opaque) dp->max_value_string;
 
-      case PANEL_MAX_TICK_STRING_WCS:
-	return (Xv_opaque) dp->max_tick_string;
-#else
-      case PANEL_MAX_TICK_STRING:
-	return (Xv_opaque) dp->max_tick_string;
-#endif /* OW_I18N */
+		case PANEL_DIRECTION:
+			return (Xv_opaque) (dp->flags & VERTICAL ? PANEL_VERTICAL :
+					PANEL_HORIZONTAL);
 
-      case PANEL_MAX_VALUE:
-	return (Xv_opaque) dp->max_value;
+		case PANEL_SLIDER_END_BOXES:
+			return (Xv_opaque) (dp->flags & SHOWENDBOXES ? TRUE : FALSE);
 
-#ifdef OW_I18N
-      case PANEL_MAX_VALUE_STRING:
-	if (string_mbs) xv_free(string_mbs);
-	string_mbs = (char *)_xv_wcstombsdup((wchar_t *)dp->max_value_string);
-	return (Xv_opaque) string_mbs;
+		case PANEL_TICKS:
+			return (Xv_opaque) dp->nticks;
 
-      case PANEL_MAX_VALUE_STRING_WCS:
-	return (Xv_opaque) dp->max_value_string;
-#else
-      case PANEL_MAX_VALUE_STRING:
-	return (Xv_opaque) dp->max_value_string;
-#endif /* OW_I18N */
+		case PANEL_SLIDER_WIDTH:
+			return (Xv_opaque) dp->width;
 
-      case PANEL_DIRECTION:
-	return (Xv_opaque) (dp->flags & VERTICAL ? PANEL_VERTICAL :
-	    PANEL_HORIZONTAL);
+		case PANEL_SHOW_VALUE:
+			return (Xv_opaque) (dp->flags & SHOWVALUE ? TRUE : FALSE);
 
-      case PANEL_SLIDER_END_BOXES:
-	return (Xv_opaque) (dp->flags & SHOWENDBOXES ? TRUE : FALSE);
+		case PANEL_SHOW_RANGE:
+			return (Xv_opaque) (dp->flags & SHOWRANGE ? TRUE : FALSE);
 
-      case PANEL_TICKS:
-	return (Xv_opaque) dp->nticks;
-
-      case PANEL_SLIDER_WIDTH:
-	return (Xv_opaque) dp->width;
-
-      case PANEL_SHOW_VALUE:
-	return (Xv_opaque) (dp->flags & SHOWVALUE ? TRUE : FALSE);
-
-      case PANEL_SHOW_RANGE:
-	return (Xv_opaque) (dp->flags & SHOWRANGE ? TRUE : FALSE);
-
-      default:
-	*status = XV_ERROR;
-	return (Xv_opaque) 0;
-    }
+		default:
+			*status = XV_ERROR;
+			return (Xv_opaque) 0;
+	}
 }
 
 
 static int slider_destroy(Panel_item item_public, Destroy_status  status)
 {
-    Slider_info    *dp = SLIDER_PRIVATE(item_public);
+	Slider_info *dp = SLIDER_PRIVATE(item_public);
 
-    if ((status == DESTROY_CHECKING) || (status == DESTROY_SAVE_YOURSELF))
+	if ((status == DESTROY_CHECKING) || (status == DESTROY_SAVE_YOURSELF))
+		return XV_OK;
+
+	slider_remove(item_public);
+	if (dp->value_textitem)
+		xv_destroy(dp->value_textitem);
+	if (dp->min_tick_string)
+		xv_free(dp->min_tick_string);
+	if (dp->max_tick_string)
+		xv_free(dp->max_tick_string);
+	if (dp->min_value_string)
+		xv_free(dp->min_value_string);
+	if (dp->max_value_string)
+		xv_free(dp->max_value_string);
+
+	free((char *)dp);
+
 	return XV_OK;
-
-    slider_remove(item_public);
-    if (dp->value_textitem)
-	xv_destroy(dp->value_textitem);
-    if (dp->min_tick_string)
-	xv_free(dp->min_tick_string);
-    if (dp->max_tick_string)
-	xv_free(dp->max_tick_string);
-    if (dp->min_value_string)
-	xv_free(dp->min_value_string);
-    if (dp->max_value_string)
-	xv_free(dp->max_value_string);
-
-    free((char *) dp);
-
-    return XV_OK;
 }
 
 
@@ -852,134 +672,127 @@ static void slider_handle_event(Panel_item item_public, Event *event)
 
 static void slider_begin_preview(Panel_item item_public, Event *event)
 {
-    Slider_info	   *dp = SLIDER_PRIVATE(item_public);
-    Item_info      *ip = ITEM_PRIVATE(item_public);
+	Slider_info *dp = SLIDER_PRIVATE(item_public);
+	Item_info *ip = ITEM_PRIVATE(item_public);
 
-    /*
-     * We only begin preview if the user clicks on the slider, not
-     * when he/she drags in the slider w/ a button down.
-     */
-    if (dp->last_delta &&
-        panel_is_multiclick(ip->panel, &dp->last_click_time,
-			    &event_time(event)))
-	return;	/* Multiclick after increment or decrement */
-    if (rect_includespoint(&dp->sliderbox, event_x(event), event_y(event))) {
-	ip->panel->status.current_item_active = TRUE;
-	if (vertical(dp))
-	    dp->value_offset = rect_bottom(&dp->sliderbox) - event_y(event) + 1;
+	/*
+	 * We only begin preview if the user clicks on the slider, not
+	 * when he/she drags in the slider w/ a button down.
+	 */
+	if (dp->last_delta &&
+			panel_is_multiclick(ip->panel, &dp->last_click_time,
+					&event_time(event)))
+		return;	/* Multiclick after increment or decrement */
+	if (rect_includespoint(&dp->sliderbox, event_x(event), event_y(event))) {
+		ip->panel->status.current_item_active = TRUE;
+		if (vertical(dp))
+			dp->value_offset = rect_bottom(&dp->sliderbox) - event_y(event) + 1;
+		else
+			dp->value_offset = event_x(event) - dp->sliderbox.r_left + 1;
+		/* save status of print value */
+		dp->restore_print_value = dp->use_print_value;
+
+		/* update the preview */
+		slider_update_preview(item_public, event);
+	}
 	else
-	    dp->value_offset = event_x(event) - dp->sliderbox.r_left + 1;
-	/* save status of print value */
-	dp->restore_print_value = dp->use_print_value;
-
-	/* update the preview */
-	slider_update_preview(item_public, event);
-    } else
-	check_endbox_entered(ip, event);
+		check_endbox_entered(ip, event);
 }
 
 typedef void (*mynotify_t)(Panel_item, int, Event *);
 
 static void slider_update_preview(Panel_item item_public, Event *event)
 {
-    CHAR            buf[20];
-    Slider_info	   *dp = SLIDER_PRIVATE(item_public);
-    Xv_Drawable_info *info;
-    Item_info      *ip = ITEM_PRIVATE(item_public);
-    register int    new;
-    Xv_Window       pw;
-    Rect            r;
+	char buf[20];
+	Slider_info *dp = SLIDER_PRIVATE(item_public);
+	Xv_Drawable_info *info;
+	Item_info *ip = ITEM_PRIVATE(item_public);
+	register int new;
+	Xv_Window pw;
+	Rect r;
 	mynotify_t mynotify;
 
-    if ((dp->flags & MIN_ENDBOX_SELECTED) && 
-	!(rect_includespoint(&dp->min_endbox_rect, event_x(event),
-	event_y(event)))) {
-	dp->flags &= ~MIN_ENDBOX_SELECTED;
-	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-	    DRAWABLE_INFO_MACRO(pw, info);
-	    olgx_draw_box(ip->panel->ginfo, xv_xid(info),
-			  dp->min_endbox_rect.r_left,
-			  dp->min_endbox_rect.r_top,
-			  dp->min_endbox_rect.r_width,
-			  dp->min_endbox_rect.r_height,
-			  OLGX_ERASE, TRUE);
-	PANEL_END_EACH_PAINT_WINDOW
-	return;
-    } else if ((dp->flags & MAX_ENDBOX_SELECTED) &&
-	!(rect_includespoint(&dp->max_endbox_rect, event_x(event),
-	event_y(event)))) {
-	dp->flags &= ~MAX_ENDBOX_SELECTED;
-	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-	    DRAWABLE_INFO_MACRO(pw, info);
-	    olgx_draw_box(ip->panel->ginfo, xv_xid(info),
-			  dp->max_endbox_rect.r_left,
-			  dp->max_endbox_rect.r_top,
-			  dp->max_endbox_rect.r_width,
-			  dp->max_endbox_rect.r_height,
-			  OLGX_ERASE, TRUE);
-	PANEL_END_EACH_PAINT_WINDOW
-	return;
-    } else
-	check_endbox_entered(ip, event);
+	if ((dp->flags & MIN_ENDBOX_SELECTED) &&
+			!(rect_includespoint(&dp->min_endbox_rect, event_x(event),
+							event_y(event)))) {
+		dp->flags &= ~MIN_ENDBOX_SELECTED;
+		PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+			DRAWABLE_INFO_MACRO(pw, info);
+			olgx_draw_box(ip->panel->ginfo, xv_xid(info),
+					dp->min_endbox_rect.r_left,
+					dp->min_endbox_rect.r_top,
+					dp->min_endbox_rect.r_width,
+					dp->min_endbox_rect.r_height, OLGX_ERASE, TRUE);
+		PANEL_END_EACH_PAINT_WINDOW
+		return;
+	}
+	else if ((dp->flags & MAX_ENDBOX_SELECTED) &&
+			!(rect_includespoint(&dp->max_endbox_rect, event_x(event),
+							event_y(event)))) {
+		dp->flags &= ~MAX_ENDBOX_SELECTED;
+		PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+			DRAWABLE_INFO_MACRO(pw, info);
+			olgx_draw_box(ip->panel->ginfo, xv_xid(info),
+					dp->max_endbox_rect.r_left,
+					dp->max_endbox_rect.r_top,
+					dp->max_endbox_rect.r_width,
+					dp->max_endbox_rect.r_height, OLGX_ERASE, TRUE);
+		PANEL_END_EACH_PAINT_WINDOW
+		return;
+	}
+	else
+		check_endbox_entered(ip, event);
 
-    if (!ip->panel->status.current_item_active)
-	return;
+	if (!ip->panel->status.current_item_active)
+		return;
 
-    r = dp->sliderrect;
-    rect_marginadjust(&r, -1);
-    if (vertical(dp))
-	new = rect_bottom(&r) - event_y(event) - dp->value_offset;
-    else
-	new = event_x(event) - r.r_left - dp->value_offset;
-    if (new == dp->apparent) {
-	if (event_action(event) == ACTION_SELECT)
-	    paint_slider(ip, OLGX_UPDATE);
-	return;			/* state and display both correct */
-    }
+	r = dp->sliderrect;
+	rect_marginadjust(&r, -1);
+	if (vertical(dp))
+		new = rect_bottom(&r) - event_y(event) - dp->value_offset;
+	else
+		new = event_x(event) - r.r_left - dp->value_offset;
+	if (new == dp->apparent) {
+		if (event_action(event) == ACTION_SELECT)
+			paint_slider(ip, OLGX_UPDATE);
+		return;	/* state and display both correct */
+	}
 
-    dp->apparent = new;
-    dp->use_print_value = FALSE;
-    paint_slider(ip, OLGX_UPDATE);
-    if (dp->flags & SHOWVALUE) {
-	(void) SPRINTF(buf, "%d", itoe(dp, dp->apparent));
-#ifdef OW_I18N
-	xv_set(dp->value_textitem, PANEL_VALUE_WCS, buf, NULL);
-#else
-	xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
-#endif /* OW_I18N */
-    }
-	mynotify = (mynotify_t)ip->notify;
-    if (dp->flags & CONTINUOUS)
+	dp->apparent = new;
+	dp->use_print_value = FALSE;
+	paint_slider(ip, OLGX_UPDATE);
+	if (dp->flags & SHOWVALUE) {
+		(void)SPRINTF(buf, "%d", itoe(dp, dp->apparent));
+		xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
+	}
+	mynotify = (mynotify_t) ip->notify;
+	if (dp->flags & CONTINUOUS)
 		(*mynotify) (ITEM_PUBLIC(ip), itoe(dp, dp->apparent), event);
 }
 
 
 static void slider_cancel_preview(Panel_item item_public, Event *event)
 {
-    Slider_info	   *dp = SLIDER_PRIVATE(item_public);
-    CHAR            buf[20];
-    Item_info      *ip = ITEM_PRIVATE(item_public);
+	Slider_info *dp = SLIDER_PRIVATE(item_public);
+	char buf[20];
+	Item_info *ip = ITEM_PRIVATE(item_public);
 	mynotify_t mynotify;
 
-    ip->panel->status.current_item_active = FALSE;
-    dp->flags &= ~(MIN_ENDBOX_SELECTED | MAX_ENDBOX_SELECTED);
+	ip->panel->status.current_item_active = FALSE;
+	dp->flags &= ~(MIN_ENDBOX_SELECTED | MAX_ENDBOX_SELECTED);
 
-    if (dp->apparent != dp->actual) {
-	dp->apparent = dp->actual;
-	dp->use_print_value = dp->restore_print_value;
-	mynotify = (mynotify_t)ip->notify;
-	if (dp->flags & CONTINUOUS)
-	    (*mynotify) (ITEM_PUBLIC(ip), itoe(dp, dp->actual), event);
-	paint_slider(ip, OLGX_UPDATE);
-	if (dp->flags & SHOWVALUE) {
-	    SPRINTF(buf, "%d", itoe(dp, dp->apparent));
-#ifdef OW_I18N
-	    xv_set(dp->value_textitem, PANEL_VALUE_WCS, buf, NULL);
-#else
-	    xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
-#endif /* OW_I18N */
+	if (dp->apparent != dp->actual) {
+		dp->apparent = dp->actual;
+		dp->use_print_value = dp->restore_print_value;
+		mynotify = (mynotify_t) ip->notify;
+		if (dp->flags & CONTINUOUS)
+			(*mynotify) (ITEM_PUBLIC(ip), itoe(dp, dp->actual), event);
+		paint_slider(ip, OLGX_UPDATE);
+		if (dp->flags & SHOWVALUE) {
+			SPRINTF(buf, "%d", itoe(dp, dp->apparent));
+			xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
+		}
 	}
-    }
 }
 
 
@@ -1058,66 +871,66 @@ static void slider_accept_preview(Panel_item item_public, Event *event)
 
 static void slider_accept_key(Panel_item item_public, Event *event)
 {
-    Slider_info	   *dp = SLIDER_PRIVATE(item_public);
-    Item_info      *ip = ITEM_PRIVATE(item_public);
+	Slider_info *dp = SLIDER_PRIVATE(item_public);
+	Item_info *ip = ITEM_PRIVATE(item_public);
 
-    if (event_is_up(event))
-	return;
-    switch(event_action(event)) {
-      case ACTION_UP:
-	if (vertical(dp))
-	    adjust_slider(ip, event, SLIDER_INCREMENT);
-	return;
-      case ACTION_DOWN:
-	if (vertical(dp))
-	    adjust_slider(ip, event, SLIDER_DECREMENT);
-	return;
-      case ACTION_LEFT:
-	if (!vertical(dp))
-	    adjust_slider(ip, event, SLIDER_DECREMENT);
-	return;
-      case ACTION_RIGHT:
-	if (!vertical(dp))
-	    adjust_slider(ip, event, SLIDER_INCREMENT);
-	return;
-      case ACTION_JUMP_UP:
-	if (vertical(dp))
-	    adjust_slider(ip, event, SLIDER_JUMP_INCREMENT);
-	return;
-      case ACTION_JUMP_DOWN:
-	if (vertical(dp))
-	    adjust_slider(ip, event, SLIDER_JUMP_DECREMENT);
-	return;
-      case ACTION_JUMP_LEFT:
-	if (!vertical(dp))
-	    adjust_slider(ip, event, SLIDER_JUMP_DECREMENT);
-	return;
-      case ACTION_JUMP_RIGHT:
-	if (!vertical(dp))
-	    adjust_slider(ip, event, SLIDER_JUMP_INCREMENT);
-	return;
-      case ACTION_LINE_START:
-      case ACTION_DATA_START:
-	adjust_slider(ip, event, SLIDER_MIN);
-	return;
-      case ACTION_LINE_END:
-      case ACTION_DATA_END:
-	adjust_slider(ip, event, SLIDER_MAX);
-	return;
-    }
+	if (event_is_up(event))
+		return;
+	switch (event_action(event)) {
+		case ACTION_UP:
+			if (vertical(dp))
+				adjust_slider(ip, event, SLIDER_INCREMENT);
+			return;
+		case ACTION_DOWN:
+			if (vertical(dp))
+				adjust_slider(ip, event, SLIDER_DECREMENT);
+			return;
+		case ACTION_LEFT:
+			if (!vertical(dp))
+				adjust_slider(ip, event, SLIDER_DECREMENT);
+			return;
+		case ACTION_RIGHT:
+			if (!vertical(dp))
+				adjust_slider(ip, event, SLIDER_INCREMENT);
+			return;
+		case ACTION_JUMP_UP:
+			if (vertical(dp))
+				adjust_slider(ip, event, SLIDER_JUMP_INCREMENT);
+			return;
+		case ACTION_JUMP_DOWN:
+			if (vertical(dp))
+				adjust_slider(ip, event, SLIDER_JUMP_DECREMENT);
+			return;
+		case ACTION_JUMP_LEFT:
+			if (!vertical(dp))
+				adjust_slider(ip, event, SLIDER_JUMP_DECREMENT);
+			return;
+		case ACTION_JUMP_RIGHT:
+			if (!vertical(dp))
+				adjust_slider(ip, event, SLIDER_JUMP_INCREMENT);
+			return;
+		case ACTION_LINE_START:
+		case ACTION_DATA_START:
+			adjust_slider(ip, event, SLIDER_MIN);
+			return;
+		case ACTION_LINE_END:
+		case ACTION_DATA_END:
+			adjust_slider(ip, event, SLIDER_MAX);
+			return;
+	}
 }
 
 
 static void slider_paint(Panel_item item_public, Panel_setting u)
 {
-    CHAR            buf[10];
+    char            buf[10];
     Slider_info	   *dp = SLIDER_PRIVATE(item_public);
     GC             *gc_list;	/* Graphics Context list */
     Xv_Drawable_info *info;
     Item_info      *ip = ITEM_PRIVATE(item_public);
     Xv_Window       pw;		/* Paint Window */
     Rect           *r;
-    CHAR	   *str;
+    char	   *str;
     Item_info      *tp;
 
     /* paint the label */
@@ -1140,14 +953,8 @@ static void slider_paint(Panel_item item_public, Panel_setting u)
 	}
 	r = &dp->min_range_rect;
 	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-#ifdef OW_I18N
-	    panel_paint_text(pw, ip->panel->std_fontset_id, 
-	    	ip->color_index, r->r_left, r->r_top + 
-		panel_fonthome(ip->panel->std_font), str);
-#else
-	    panel_paint_text(pw, ip->panel->std_font_xid, ip->color_index,
+	    panel_paint_text(pw, ip->panel->std_fontset_id, ip->panel->std_font_xid, ip->color_index,
 		r->r_left, r->r_top + panel_fonthome(ip->panel->std_font), str);
-#endif /* OW_I18N */
 	    if (inactive(ip)) {
 		DRAWABLE_INFO_MACRO(pw, info);
 		gc_list = (GC *)xv_get(xv_screen(info), SCREEN_OLGC_LIST, pw);
@@ -1167,14 +974,8 @@ static void slider_paint(Panel_item item_public, Panel_setting u)
 	}
 	r = &dp->max_range_rect;
 	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-#ifdef OW_I18N
-	    panel_paint_text(pw, ip->panel->std_fontset_id, 
-		ip->color_index, r->r_left, r->r_top + 
-		panel_fonthome(ip->panel->std_font), str);
-#else
-	    panel_paint_text(pw, ip->panel->std_font_xid, ip->color_index,
+	    panel_paint_text(pw, ip->panel->std_fontset_id, ip->panel->std_font_xid, ip->color_index,
 		r->r_left, r->r_top + panel_fonthome(ip->panel->std_font), str);
-#endif /* OW_I18N */
 	    if (inactive(ip)) {
 		DRAWABLE_INFO_MACRO(pw, info);
 		gc_list = (GC *)xv_get(xv_screen(info), SCREEN_OLGC_LIST, pw);
@@ -1193,76 +994,76 @@ static void slider_paint(Panel_item item_public, Panel_setting u)
 
 static void slider_remove(Panel_item item_public)
 {
-    Item_info      *ip = ITEM_PRIVATE(item_public);
-    Panel_info	   *panel = ip->panel;
+	Item_info *ip = ITEM_PRIVATE(item_public);
+	Panel_info *panel = ip->panel;
 
-    /*
-     * Only reassign the keyboard focus to another item if the panel isn't
-     * being destroyed.
-     */
-    if (!panel->status.destroying && panel->kbd_focus_item == ip) {
-	panel->kbd_focus_item = panel_next_kbd_focus(panel, TRUE);
-	panel_accept_kbd_focus(panel);
-    }
+	/*
+	 * Only reassign the keyboard focus to another item if the panel isn't
+	 * being destroyed.
+	 */
+	if (!panel->status.destroying && panel->kbd_focus_item == ip) {
+		panel->kbd_focus_item = panel_next_kbd_focus(panel, TRUE);
+		panel_accept_kbd_focus(panel);
+	}
 
-    return;
+	return;
 }
 
 
 static void slider_layout(Panel_item item_public, Rect *deltas)
 {
-    Slider_info	   *dp = SLIDER_PRIVATE(item_public);
-    Item_info      *ip = ITEM_PRIVATE(item_public);
+	Slider_info *dp = SLIDER_PRIVATE(item_public);
+	Item_info *ip = ITEM_PRIVATE(item_public);
 
-    if (!created(ip))
-	return;
-    dp->valuerect.r_left += deltas->r_left;
-    dp->valuerect.r_top += deltas->r_top;
-    dp->min_endbox_rect.r_left += deltas->r_left;
-    dp->min_endbox_rect.r_top += deltas->r_top;
-    dp->min_range_rect.r_left += deltas->r_left;
-    dp->min_range_rect.r_top += deltas->r_top;
-    dp->sliderrect.r_left += deltas->r_left;
-    dp->sliderrect.r_top += deltas->r_top;
-    dp->tickrect.r_left += deltas->r_left;
-    dp->tickrect.r_top += deltas->r_top;
-    dp->tickstringrect.r_left += deltas->r_left;
-    dp->tickstringrect.r_top += deltas->r_top;
-    dp->max_range_rect.r_left += deltas->r_left;
-    dp->max_range_rect.r_top += deltas->r_top;
-    dp->max_endbox_rect.r_left += deltas->r_left;
-    dp->max_endbox_rect.r_top += deltas->r_top;
-    if (dp->value_textitem)
-	xv_set(dp->value_textitem,
-	       PANEL_ITEM_X, dp->valuerect.r_left,
-	       PANEL_ITEM_Y, dp->valuerect.r_top,
-	       NULL);
+	if (!created(ip))
+		return;
+	dp->valuerect.r_left += deltas->r_left;
+	dp->valuerect.r_top += deltas->r_top;
+	dp->min_endbox_rect.r_left += deltas->r_left;
+	dp->min_endbox_rect.r_top += deltas->r_top;
+	dp->min_range_rect.r_left += deltas->r_left;
+	dp->min_range_rect.r_top += deltas->r_top;
+	dp->sliderrect.r_left += deltas->r_left;
+	dp->sliderrect.r_top += deltas->r_top;
+	dp->tickrect.r_left += deltas->r_left;
+	dp->tickrect.r_top += deltas->r_top;
+	dp->tickstringrect.r_left += deltas->r_left;
+	dp->tickstringrect.r_top += deltas->r_top;
+	dp->max_range_rect.r_left += deltas->r_left;
+	dp->max_range_rect.r_top += deltas->r_top;
+	dp->max_endbox_rect.r_left += deltas->r_left;
+	dp->max_endbox_rect.r_top += deltas->r_top;
+	if (dp->value_textitem)
+		xv_set(dp->value_textitem,
+				PANEL_ITEM_X, dp->valuerect.r_left,
+				PANEL_ITEM_Y, dp->valuerect.r_top, NULL);
 }
 
 
 static void slider_accept_kbd_focus(Panel_item item_public)
 {
-    Slider_info	   *dp = SLIDER_PRIVATE(item_public);
-    Frame	    frame;
-    Item_info      *ip = ITEM_PRIVATE(item_public);
-    int		    x;
-    int		    y;
+	Slider_info *dp = SLIDER_PRIVATE(item_public);
+	Frame frame;
+	Item_info *ip = ITEM_PRIVATE(item_public);
+	int x;
+	int y;
 
-    frame = xv_get(PANEL_PUBLIC(ip->panel), WIN_FRAME);
-    if (vertical(dp)) {
-	xv_set(frame, FRAME_FOCUS_DIRECTION, FRAME_FOCUS_RIGHT, NULL);
-	x = dp->max_range_rect.r_left - FRAME_FOCUS_RIGHT_WIDTH;
-	y = dp->max_range_rect.r_top;
-    } else {
-	xv_set(frame, FRAME_FOCUS_DIRECTION, FRAME_FOCUS_UP, NULL);
-	x = dp->min_range_rect.r_left;
-	y = dp->min_range_rect.r_top + dp->min_range_rect.r_height;
-    }
-    if (x < 0)
-	x = 0;
-    if (y < 0)
-	y = 0;
-    panel_show_focus_win(item_public, frame, x, y);
+	frame = xv_get(PANEL_PUBLIC(ip->panel), WIN_FRAME);
+	if (vertical(dp)) {
+		xv_set(frame, FRAME_FOCUS_DIRECTION, FRAME_FOCUS_RIGHT, NULL);
+		x = dp->max_range_rect.r_left - FRAME_FOCUS_RIGHT_WIDTH;
+		y = dp->max_range_rect.r_top;
+	}
+	else {
+		xv_set(frame, FRAME_FOCUS_DIRECTION, FRAME_FOCUS_UP, NULL);
+		x = dp->min_range_rect.r_left;
+		y = dp->min_range_rect.r_top + dp->min_range_rect.r_height;
+	}
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+	panel_show_focus_win(item_public, frame, x, y);
 }
 
 
@@ -1282,112 +1083,99 @@ static void slider_yield_kbd_focus(Panel_item item_public)
 /* --------------------  Local Routines  -------------------- */
 static void adjust_slider(Item_info	*ip, Event *event, Slider_adjust adjustment)
 {
-    CHAR            buf[20];
-    int		    delta = 0;
-    Slider_info    *dp = SLIDER_FROM_ITEM(ip);
+	char buf[20];
+	int delta = 0;
+	Slider_info *dp = SLIDER_FROM_ITEM(ip);
 	mynotify_t mynotify;
 
-    switch (adjustment) {
-      case SLIDER_MIN:
-	dp->actual = dp->apparent = 0;   /* in pixels */
-	dp->print_value = dp->min_value;
-	dp->use_print_value = TRUE;
-	panel_clear_rect(ip->panel, dp->sliderrect);
-	paint_slider(ip, 0);
-	if (dp->flags & SHOWVALUE) {
-	    SPRINTF(buf, "%d", dp->min_value);
-#ifdef OW_I18N
-	    xv_set(dp->value_textitem, PANEL_VALUE_WCS, buf, NULL);
-#else
-	    xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
-#endif /* OW_I18N */
+	switch (adjustment) {
+		case SLIDER_MIN:
+			dp->actual = dp->apparent = 0;	/* in pixels */
+			dp->print_value = dp->min_value;
+			dp->use_print_value = TRUE;
+			panel_clear_rect(ip->panel, dp->sliderrect);
+			paint_slider(ip, 0);
+			if (dp->flags & SHOWVALUE) {
+				SPRINTF(buf, "%d", dp->min_value);
+				xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
+			}
+			break;
+		case SLIDER_MAX:
+			dp->actual = dp->apparent = dp->width;	/* in pixels */
+			dp->print_value = dp->max_value;
+			dp->use_print_value = FALSE;
+			panel_clear_rect(ip->panel, dp->sliderrect);
+			paint_slider(ip, 0);
+			if (dp->flags & SHOWVALUE) {
+				SPRINTF(buf, "%d", dp->max_value);
+				xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
+			}
+			break;
+		case SLIDER_INCREMENT:
+			delta = 1;
+			break;
+		case SLIDER_DECREMENT:
+			delta = -1;
+			break;
+		case SLIDER_JUMP_INCREMENT:
+			delta = dp->jump_delta;
+			break;
+		case SLIDER_JUMP_DECREMENT:
+			delta = -dp->jump_delta;
+			break;
 	}
-	break;
-      case SLIDER_MAX:
-	dp->actual = dp->apparent = dp->width;   /* in pixels */
-	dp->print_value = dp->max_value;
-	dp->use_print_value = FALSE;
-	panel_clear_rect(ip->panel, dp->sliderrect);
-	paint_slider(ip, 0);
-	if (dp->flags & SHOWVALUE) {
-	    SPRINTF(buf, "%d", dp->max_value);
-#ifdef OW_I18N
-	    xv_set(dp->value_textitem, PANEL_VALUE_WCS, buf, NULL);
-#else
-	    xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
-#endif /* OW_I18N */
+	if (delta) {
+		/* Note: etoi and itoe enforce min/max values */
+		dp->print_value =
+				(dp->use_print_value ? dp->print_value : itoe(dp, dp->actual)) +
+				delta;
+		if (dp->print_value < dp->min_value)
+			dp->print_value = dp->min_value;
+		else if (dp->print_value > dp->max_value)
+			dp->print_value = dp->max_value;
+		dp->use_print_value = TRUE;
+		dp->apparent = dp->actual = etoi(dp, dp->print_value);	/* in pixels */
+		paint_slider(ip, OLGX_UPDATE);	/* paint slider & update dp->sliderbox */
+		if (dp->flags & SHOWVALUE) {
+			SPRINTF(buf, "%d", dp->print_value);
+			xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
+		}
 	}
-	break;
-      case SLIDER_INCREMENT:
-	delta = 1;
-	break;
-      case SLIDER_DECREMENT:
-	delta = -1;
-	break;
-      case SLIDER_JUMP_INCREMENT:
-	delta = dp->jump_delta;
-	break;
-      case SLIDER_JUMP_DECREMENT:
-	delta = -dp->jump_delta;
-	break;
-    }
-    if (delta) {
-	/* Note: etoi and itoe enforce min/max values */
-	dp->print_value =
-	    (dp->use_print_value ? dp->print_value : itoe(dp, dp->actual)) +
-	    delta;
-	if (dp->print_value < dp->min_value)
-	    dp->print_value = dp->min_value;
-	else if (dp->print_value > dp->max_value)
-	    dp->print_value = dp->max_value;
-	dp->use_print_value = TRUE;
-	dp->apparent = dp->actual = etoi(dp, dp->print_value);  /* in pixels */
-	paint_slider(ip, OLGX_UPDATE); /* paint slider & update dp->sliderbox */
-	if (dp->flags & SHOWVALUE) {
-	    SPRINTF(buf, "%d", dp->print_value);
-#ifdef OW_I18N
-	    xv_set(dp->value_textitem, PANEL_VALUE_WCS, buf, NULL);
-#else
-	    xv_set(dp->value_textitem, PANEL_VALUE, buf, NULL);
-#endif /* OW_I18N */
-	}
-   }
-	mynotify = (mynotify_t)ip->notify;
-   (*mynotify) (ITEM_PUBLIC(ip), dp->print_value, event);
+	mynotify = (mynotify_t) ip->notify;
+	(*mynotify) (ITEM_PUBLIC(ip), dp->print_value, event);
 }
 
 
 static void check_endbox_entered(Item_info *ip, Event *event)
 {
-    Slider_info    *dp = SLIDER_FROM_ITEM(ip);
-    Xv_Drawable_info *info;
-    Xv_Window       pw;
+	Slider_info *dp = SLIDER_FROM_ITEM(ip);
+	Xv_Drawable_info *info;
+	Xv_Window pw;
 
-    if (rect_includespoint(&dp->min_endbox_rect, event_x(event),
-	event_y(event))) {
-	dp->flags |= MIN_ENDBOX_SELECTED;
-	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-	    DRAWABLE_INFO_MACRO(pw, info);
-	    olgx_draw_box(ip->panel->ginfo, xv_xid(info),
-			  dp->min_endbox_rect.r_left,
-			  dp->min_endbox_rect.r_top,
-			  dp->min_endbox_rect.r_width,
-			  dp->min_endbox_rect.r_height,
-			  OLGX_INVOKED, TRUE);
-	PANEL_END_EACH_PAINT_WINDOW
-    } else if (rect_includespoint(&dp->max_endbox_rect, event_x(event),
-	event_y(event))) {
-	dp->flags |= MAX_ENDBOX_SELECTED;
-	PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
-	    DRAWABLE_INFO_MACRO(pw, info);
-	    olgx_draw_box(ip->panel->ginfo, xv_xid(info),
-			  dp->max_endbox_rect.r_left,
-			  dp->max_endbox_rect.r_top,
-			  dp->max_endbox_rect.r_width,
-			  dp->max_endbox_rect.r_height,
-			  OLGX_INVOKED, TRUE);
-	PANEL_END_EACH_PAINT_WINDOW
-    }
+	if (rect_includespoint(&dp->min_endbox_rect, event_x(event),
+					event_y(event))) {
+		dp->flags |= MIN_ENDBOX_SELECTED;
+		PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+			DRAWABLE_INFO_MACRO(pw, info);
+			olgx_draw_box(ip->panel->ginfo, xv_xid(info),
+					dp->min_endbox_rect.r_left,
+					dp->min_endbox_rect.r_top,
+					dp->min_endbox_rect.r_width,
+					dp->min_endbox_rect.r_height, OLGX_INVOKED, TRUE);
+		PANEL_END_EACH_PAINT_WINDOW
+	}
+	else if (rect_includespoint(&dp->max_endbox_rect, event_x(event),
+					event_y(event))) {
+		dp->flags |= MAX_ENDBOX_SELECTED;
+		PANEL_EACH_PAINT_WINDOW(ip->panel, pw)
+			DRAWABLE_INFO_MACRO(pw, info);
+			olgx_draw_box(ip->panel->ginfo, xv_xid(info),
+					dp->max_endbox_rect.r_left,
+					dp->max_endbox_rect.r_top,
+					dp->max_endbox_rect.r_width,
+					dp->max_endbox_rect.r_height, OLGX_INVOKED, TRUE);
+		PANEL_END_EACH_PAINT_WINDOW
+	}
 }
 
 
@@ -1396,51 +1184,48 @@ static void check_endbox_entered(Item_info *ip, Event *event)
  */
 static int etoi(Slider_info *dp, int value)
 {
-    if (value <= dp->min_value)
-	return (0);
+	if (value <= dp->min_value)
+		return (0);
 
-    if (value >= dp->max_value)
-	return (dp->width);
+	if (value >= dp->max_value)
+		return (dp->width);
 
-    return (panel_round(((value - dp->min_value) * dp->width),
-		        (dp->max_value - dp->min_value)));
+	return (panel_round(((value - dp->min_value) * dp->width),
+					(dp->max_value - dp->min_value)));
 }
 
 
 static Panel_setting get_value(Panel_item item_public, Event *event)
 {
-    CHAR            buf[20];
-    int		    value_changed = FALSE;
-    Item_info      *ip = (Item_info *) xv_get(item_public, PANEL_CLIENT_DATA);
-    Slider_info    *dp = SLIDER_FROM_ITEM(ip);
-    int             value;
+	char buf[20];
+	int value_changed = FALSE;
+	Item_info *ip = (Item_info *) xv_get(item_public, PANEL_CLIENT_DATA);
+	Slider_info *dp = SLIDER_FROM_ITEM(ip);
+	int value;
 	mynotify_t mynotify;
 
-    value = atoi((char *) xv_get(item_public, PANEL_VALUE));
-    if (value < dp->min_value) {
-	value = dp->min_value;
-	value_changed = TRUE;
-    } else if (value > dp->max_value) {
-	value = dp->max_value;
-	value_changed = TRUE;
-    }
-    if (value_changed) {
-	SPRINTF(buf, "%d", value);
-#ifdef OW_I18N
-	xv_set(item_public, PANEL_VALUE_WCS, buf, NULL);
-#else
-	xv_set(item_public, PANEL_VALUE, buf, NULL);
-#endif /* OW_I18N */
-    }
-    dp->apparent = dp->actual = etoi(dp, value);
-    dp->use_print_value = TRUE;
-    dp->print_value = value;
-    paint_slider(ip, OLGX_UPDATE);
+	value = atoi((char *)xv_get(item_public, PANEL_VALUE));
+	if (value < dp->min_value) {
+		value = dp->min_value;
+		value_changed = TRUE;
+	}
+	else if (value > dp->max_value) {
+		value = dp->max_value;
+		value_changed = TRUE;
+	}
+	if (value_changed) {
+		sprintf(buf, "%d", value);
+		xv_set(item_public, PANEL_VALUE, buf, NULL);
+	}
+	dp->apparent = dp->actual = etoi(dp, value);
+	dp->use_print_value = TRUE;
+	dp->print_value = value;
+	paint_slider(ip, OLGX_UPDATE);
 
-	mynotify = (mynotify_t)ip->notify;
-    (*mynotify) (ITEM_PUBLIC(ip), value, event);
+	mynotify = (mynotify_t) ip->notify;
+	(*mynotify) (ITEM_PUBLIC(ip), value, event);
 
-    return panel_text_notify(item_public, event);
+	return panel_text_notify(item_public, event);
 }
 
 
@@ -1449,18 +1234,18 @@ static Panel_setting get_value(Panel_item item_public, Event *event)
  */
 static int itoe(Slider_info *dp, int value)
 {
-    /* use the print value if valid */
-    if (dp->use_print_value)
-	return dp->print_value;
+	/* use the print value if valid */
+	if (dp->use_print_value)
+		return dp->print_value;
 
-    if (value <= 0)
-	return (dp->min_value);
+	if (value <= 0)
+		return (dp->min_value);
 
-    if (value >= dp->width - 1)
-	return (dp->max_value);
+	if (value >= dp->width - 1)
+		return (dp->max_value);
 
-    return (dp->min_value +
-	    (value * (dp->max_value - dp->min_value + 1)) / dp->width);
+	return (dp->min_value +
+			(value * (dp->max_value - dp->min_value + 1)) / dp->width);
 }
 
 
@@ -1588,17 +1373,10 @@ static void paint_slider(Item_info *ip, int olgx_state)
 					else
 						y = dp->tickstringrect.r_top;
 
-#ifdef OW_I18N
-					panel_paint_text(pw, ip->panel->std_fontset_id,
+					panel_paint_text(pw, ip->panel->std_fontset_id,ip->panel->std_font_xid,
 							ip->color_index, dp->tickstringrect.r_left,
 							y + panel_fonthome(ip->panel->std_font),
 							dp->min_tick_string);
-#else
-					panel_paint_text(pw, ip->panel->std_font_xid,
-							ip->color_index, dp->tickstringrect.r_left,
-							y + panel_fonthome(ip->panel->std_font),
-							dp->min_tick_string);
-#endif /* OW_I18N */
 				}
 
 				if (dp->max_tick_string) {
@@ -1608,19 +1386,11 @@ static void paint_slider(Item_info *ip, int olgx_state)
 						x = rect_right(&dp->tickstringrect) -
 								dp->max_tick_string_width;
 
-#ifdef OW_I18N
-					panel_paint_text(pw, ip->panel->std_fontset_id,
+					panel_paint_text(pw, ip->panel->std_fontset_id,ip->panel->std_font_xid,
 							ip->color_index, x,
 							dp->tickstringrect.r_top +
 							panel_fonthome(ip->panel->std_font),
 							dp->max_tick_string);
-#else
-					panel_paint_text(pw, ip->panel->std_font_xid,
-							ip->color_index, x,
-							dp->tickstringrect.r_top +
-							panel_fonthome(ip->panel->std_font),
-							dp->max_tick_string);
-#endif /* OW_I18N */
 				}
 				if (inactive(ip)) {
 					gc_list = (GC *) xv_get(xv_screen(info), SCREEN_OLGC_LIST, pw);
@@ -1649,320 +1419,265 @@ static void paint_slider(Item_info *ip, int olgx_state)
 
 static void update_rects(Item_info *ip)
 {
-    register Slider_info *dp = SLIDER_FROM_ITEM(ip);
-    int		chrht, chrwth;
-    int		range_rects_max_width;
-    struct pr_size size;
-#ifdef OW_I18N
-    int		col_width; /* Default width of a column */
-#endif /* OW_I18N */
+	register Slider_info *dp = SLIDER_FROM_ITEM(ip);
+	int chrht, chrwth;
+	int range_rects_max_width;
+	struct pr_size size;
 
-    /* Create the text value rect */
-    if (dp->flags & SHOWVALUE) {
-	dp->valuerect = *(Rect *) xv_get(dp->value_textitem, PANEL_ITEM_RECT);
-	dp->valuerect.r_width += TEXT_VALUE_GAP;
-    } else {
-	rect_construct(&dp->valuerect,
-		       rect_right(&ip->label_rect) + TEXT_VALUE_GAP,
-	    	       ip->label_rect.r_top, 0, 0);
-    }
-
-    chrht = xv_get(ip->panel->std_font, FONT_DEFAULT_CHAR_HEIGHT);
-    chrwth = xv_get(ip->panel->std_font, FONT_DEFAULT_CHAR_WIDTH);
-#ifdef OW_I18N
-    /*  We need column width because column != byte != char */
-    col_width = xv_get(ip->panel->std_font, FONT_COLUMN_WIDTH);
-#endif /* OW_I18N */
-    if (vertical(dp)) {
-	/* Create the maximum range rect */
-	dp->max_range_rect.r_top = dp->valuerect.r_top;
-	dp->max_range_rect.r_left = dp->valuerect.r_left +
-	   dp->valuerect.r_width;
-	if (dp->flags & SHOWRANGE) {
-	    dp->max_range_rect.r_height = chrht + TEXT_VALUE_GAP;
-	    if (dp->max_value_string)
-#ifdef OW_I18N
-	/*  If there's no max_value_string I am assuming dp->max_range_size
-	 *  is the number of numerical letters.  For now, each numerical
-	 *  letter, i.e. 1, 2, only occupies one column
-	 */
-	    {
-		size = xv_pf_textwidth_wc(wslen(dp->max_value_string),
-				       ip->panel->std_font,
-				       dp->max_value_string);
-		dp->max_range_rect.r_width = size.x;
-	    } else
-		dp->max_range_rect.r_width = col_width * dp->max_range_size;
-#else
-	    {
-		size = xv_pf_textwidth((int)strlen(dp->max_value_string),
-				       ip->panel->std_font,
-				       dp->max_value_string);
-		dp->max_range_rect.r_width = size.x;
-	    } else
-		dp->max_range_rect.r_width = chrwth * dp->max_range_size;
-#endif /* OW_I18N */
-	} else {
-	    dp->max_range_rect.r_height = 0;
-	    dp->max_range_rect.r_width = 0;
+	/* Create the text value rect */
+	if (dp->flags & SHOWVALUE) {
+		dp->valuerect = *(Rect *) xv_get(dp->value_textitem, PANEL_ITEM_RECT);
+		dp->valuerect.r_width += TEXT_VALUE_GAP;
+	}
+	else {
+		rect_construct(&dp->valuerect,
+				rect_right(&ip->label_rect) + TEXT_VALUE_GAP,
+				ip->label_rect.r_top, 0, 0);
 	}
 
-	/* Calculate the width and height of the minimum range rect */
-	if (dp->flags & SHOWRANGE) {
-	    if (dp->min_value_string)
-#ifdef OW_I18N
-	/*  If there's no min_value_string I am assuming dp->min_range_size
-	 *  is the number of numerical letters.  For now, each numerical
-	 *  letter, i.e. 1, 2, only occupies one column
-	 */
-	    {
-		size = xv_pf_textwidth_wc(wslen(dp->min_value_string),
-				       ip->panel->std_font,
-				       dp->min_value_string);
-		dp->min_range_rect.r_width = size.x;
-	    } else
-		dp->min_range_rect.r_width = col_width * dp->min_range_size;
-#else
-	    {
-		size = xv_pf_textwidth((int)strlen(dp->min_value_string),
-				       ip->panel->std_font,
-				       dp->min_value_string);
-		dp->min_range_rect.r_width = size.x;
-	    } else
-		dp->min_range_rect.r_width = chrwth * dp->min_range_size;
-#endif /* OW_I18N */
-	} else
-	    dp->min_range_rect.r_width = 0;
-	dp->min_range_rect.r_height = dp->max_range_rect.r_height;
-	range_rects_max_width = MAX(dp->max_range_rect.r_width,
-				    dp->min_range_rect.r_width);
+	chrht = xv_get(ip->panel->std_font, FONT_DEFAULT_CHAR_HEIGHT);
+	chrwth = xv_get(ip->panel->std_font, FONT_DEFAULT_CHAR_WIDTH);
+	if (vertical(dp)) {
+		/* Create the maximum range rect */
+		dp->max_range_rect.r_top = dp->valuerect.r_top;
+		dp->max_range_rect.r_left = dp->valuerect.r_left +
+				dp->valuerect.r_width;
+		if (dp->flags & SHOWRANGE) {
+			dp->max_range_rect.r_height = chrht + TEXT_VALUE_GAP;
+			if (dp->max_value_string) {
+				size = xv_pf_textwidth((int)strlen(dp->max_value_string),
+						ip->panel->std_font, dp->max_value_string);
+				dp->max_range_rect.r_width = size.x;
+			}
+			else
+				dp->max_range_rect.r_width = chrwth * dp->max_range_size;
+		}
+		else {
+			dp->max_range_rect.r_height = 0;
+			dp->max_range_rect.r_width = 0;
+		}
 
-	/* Center the maximum range rect over the slider rect */
-	if (dp->flags & SHOWRANGE)
-	    dp->max_range_rect.r_left += (range_rects_max_width -
-		dp->max_range_rect.r_width) / 2;
+		/* Calculate the width and height of the minimum range rect */
+		if (dp->flags & SHOWRANGE) {
+			if (dp->min_value_string)
+			{
+				size = xv_pf_textwidth((int)strlen(dp->min_value_string),
+						ip->panel->std_font, dp->min_value_string);
+				dp->min_range_rect.r_width = size.x;
+			}
+			else dp->min_range_rect.r_width = chrwth * dp->min_range_size;
+		}
+		else
+			dp->min_range_rect.r_width = 0;
+		dp->min_range_rect.r_height = dp->max_range_rect.r_height;
+		range_rects_max_width = MAX(dp->max_range_rect.r_width,
+				dp->min_range_rect.r_width);
 
-	/* Create the maximum end box rect */
-	dp->max_endbox_rect.r_top = dp->max_range_rect.r_top +
-	    dp->max_range_rect.r_height;
-	if (dp->flags & SHOWENDBOXES) {
-	    dp->max_endbox_rect.r_width =
-		HorizSliderControl_Height(ip->panel->ginfo) - 4;
-	    dp->max_endbox_rect.r_height =
-		HorizSliderControl_Width(ip->panel->ginfo) - 5;
-	} else {
-	    dp->max_endbox_rect.r_width = 0;
-	    dp->max_endbox_rect.r_height = 0;
+		/* Center the maximum range rect over the slider rect */
+		if (dp->flags & SHOWRANGE)
+			dp->max_range_rect.r_left += (range_rects_max_width -
+					dp->max_range_rect.r_width) / 2;
+
+		/* Create the maximum end box rect */
+		dp->max_endbox_rect.r_top = dp->max_range_rect.r_top +
+				dp->max_range_rect.r_height;
+		if (dp->flags & SHOWENDBOXES) {
+			dp->max_endbox_rect.r_width =
+					HorizSliderControl_Height(ip->panel->ginfo) - 4;
+			dp->max_endbox_rect.r_height =
+					HorizSliderControl_Width(ip->panel->ginfo) - 5;
+		}
+		else {
+			dp->max_endbox_rect.r_width = 0;
+			dp->max_endbox_rect.r_height = 0;
+		}
+		dp->max_endbox_rect.r_left = dp->valuerect.r_left +
+				dp->valuerect.r_width + 2 +
+				(range_rects_max_width - dp->max_endbox_rect.r_width) / 2;
+
+		/* Create the slider rect, centered within the range rects */
+		dp->sliderrect.r_top = dp->max_endbox_rect.r_top +
+				dp->max_endbox_rect.r_height +
+				(dp->flags & SHOWENDBOXES ? TEXT_VALUE_GAP : 0);
+		dp->sliderrect.r_width = HorizSliderControl_Height(ip->panel->ginfo);
+		dp->sliderrect.r_left = dp->valuerect.r_left + dp->valuerect.r_width;
+		if (range_rects_max_width > dp->sliderrect.r_width)
+			dp->sliderrect.r_left += (range_rects_max_width -
+					dp->sliderrect.r_width) / 2;
+		dp->sliderrect.r_height = dp->width +
+				HorizSliderControl_Width(ip->panel->ginfo);
+
+		/* Define width and height of slider drag box */
+		dp->sliderbox.r_width = HorizSliderControl_Height(ip->panel->ginfo);
+		dp->sliderbox.r_height = HorizSliderControl_Width(ip->panel->ginfo);
+
+		/* Create the tick rect */
+		dp->tickrect.r_top = dp->sliderrect.r_top +
+				HorizSliderControl_Width(ip->panel->ginfo) / 2;
+		dp->tickrect.r_left = dp->sliderrect.r_left + dp->sliderrect.r_width;
+		if (dp->nticks)
+			dp->tickrect.r_width =
+					HorizSliderControl_Height(ip->panel->ginfo) / 2 - 1;
+		else
+			dp->tickrect.r_width = 0;
+		dp->tickrect.r_height = dp->sliderrect.r_height -
+				HorizSliderControl_Width(ip->panel->ginfo);
+
+		/* Create the tick string rect */
+		dp->tickstringrect.r_left = dp->tickrect.r_left + dp->tickrect.r_width +
+				chrwth / 2;
+		dp->tickstringrect.r_top = MAX(dp->tickrect.r_top - chrht / 2,
+				dp->valuerect.r_top);
+		dp->tickstringrect.r_height = dp->tickrect.r_top +
+				dp->tickrect.r_height - dp->tickstringrect.r_top;
+		if (dp->nticks && (dp->min_tick_string || dp->max_tick_string)) {
+			dp->tickstringrect.r_height += chrht / 2;
+			dp->tickstringrect.r_width = MAX(dp->min_tick_string_width,
+					dp->max_tick_string_width);
+		}
+		else
+			dp->tickstringrect.r_width = 0;
+
+		/* Create the minimum end box rect */
+		dp->min_endbox_rect.r_top = dp->sliderrect.r_top +
+				dp->sliderrect.r_height + TEXT_VALUE_GAP;
+		dp->min_endbox_rect.r_left = dp->max_endbox_rect.r_left;
+		dp->min_endbox_rect.r_width = dp->max_endbox_rect.r_width;
+		dp->min_endbox_rect.r_height = dp->max_endbox_rect.r_height;
+
+		/* Calculate the coordinates of the minimum range rect */
+		dp->min_range_rect.r_left = dp->valuerect.r_left +
+				dp->valuerect.r_width;
+		dp->min_range_rect.r_top = rect_bottom(&dp->min_endbox_rect) +
+				(dp->min_endbox_rect.r_height ? TEXT_VALUE_GAP : 1);
+		if (dp->flags & SHOWRANGE)
+			dp->min_range_rect.r_left += (range_rects_max_width -
+					dp->min_range_rect.r_width) / 2;
+
+		/* Update the item value rect */
+		ip->value_rect.r_width =
+				MAX(MAX(dp->min_range_rect.r_left + dp->min_range_rect.r_width,
+						dp->tickstringrect.r_left + dp->tickstringrect.r_width),
+				dp->max_range_rect.r_left + dp->max_range_rect.r_width) -
+				dp->valuerect.r_left;
+		ip->value_rect.r_height = dp->min_range_rect.r_top +
+				dp->min_range_rect.r_height - dp->max_range_rect.r_top;
+
 	}
-	dp->max_endbox_rect.r_left = dp->valuerect.r_left +
-	    dp->valuerect.r_width + 2 +
-	    (range_rects_max_width - dp->max_endbox_rect.r_width) / 2;
+	else {	 /*** Horizontal ***/
+		dp->min_range_rect.r_top = dp->valuerect.r_top;
+		dp->min_range_rect.r_left = dp->valuerect.r_left +
+				dp->valuerect.r_width;
+		if (dp->flags & SHOWRANGE) {
+			if (dp->min_value_string)
+			{
+				size = xv_pf_textwidth((int)strlen(dp->min_value_string),
+						ip->panel->std_font, dp->min_value_string);
+				dp->min_range_rect.r_width = size.x + TEXT_VALUE_GAP;
+			}
+			else
+				dp->min_range_rect.r_width =
+						chrwth * dp->min_range_size + TEXT_VALUE_GAP;
+		}
+		else
+			dp->min_range_rect.r_width = 0;
+		dp->min_range_rect.r_height =
+				HorizSliderControl_Height(ip->panel->ginfo);
 
-	/* Create the slider rect, centered within the range rects */
-	dp->sliderrect.r_top = dp->max_endbox_rect.r_top +
-	    dp->max_endbox_rect.r_height +
-	    (dp->flags & SHOWENDBOXES ? TEXT_VALUE_GAP : 0);
-	dp->sliderrect.r_width = HorizSliderControl_Height(ip->panel->ginfo);
-	dp->sliderrect.r_left = dp->valuerect.r_left + dp->valuerect.r_width;
-	if (range_rects_max_width > dp->sliderrect.r_width)
-	    dp->sliderrect.r_left += (range_rects_max_width -
-		dp->sliderrect.r_width) / 2;
-	dp->sliderrect.r_height = dp->width +
-	    HorizSliderControl_Width(ip->panel->ginfo);
+		/* Create the minimum end box rect */
+		dp->min_endbox_rect.r_top = dp->min_range_rect.r_top + 2;
+		dp->min_endbox_rect.r_left = dp->min_range_rect.r_left +
+				dp->min_range_rect.r_width;
+		if (dp->flags & SHOWENDBOXES) {
+			dp->min_endbox_rect.r_height =
+					HorizSliderControl_Height(ip->panel->ginfo) - 4;
+			dp->min_endbox_rect.r_width =
+					HorizSliderControl_Width(ip->panel->ginfo) - 5;
+		}
+		else {
+			dp->min_endbox_rect.r_height = 0;
+			dp->min_endbox_rect.r_width = 0;
+		}
 
-	/* Define width and height of slider drag box */
-	dp->sliderbox.r_width = HorizSliderControl_Height(ip->panel->ginfo);
-	dp->sliderbox.r_height = HorizSliderControl_Width(ip->panel->ginfo);
+		/* Create the slider rect */
+		dp->sliderrect.r_top = dp->min_range_rect.r_top;
+		dp->sliderrect.r_left = dp->min_endbox_rect.r_left +
+				dp->min_endbox_rect.r_width +
+				(dp->flags & SHOWENDBOXES ? TEXT_VALUE_GAP : 0);
+		dp->sliderrect.r_width = dp->width +
+				HorizSliderControl_Width(ip->panel->ginfo);
+		dp->sliderrect.r_height = HorizSliderControl_Height(ip->panel->ginfo);
 
-	/* Create the tick rect */
-	dp->tickrect.r_top = dp->sliderrect.r_top +
-		HorizSliderControl_Width(ip->panel->ginfo)/2;
-	dp->tickrect.r_left = dp->sliderrect.r_left + dp->sliderrect.r_width;
-	if (dp->nticks)
-	    dp->tickrect.r_width = 
-		HorizSliderControl_Height(ip->panel->ginfo)/2 - 1;
-	else
-	    dp->tickrect.r_width = 0;
-	dp->tickrect.r_height = dp->sliderrect.r_height - 
-		HorizSliderControl_Width(ip->panel->ginfo);
+		/* Define width and height of slider drag box */
+		dp->sliderbox.r_width = HorizSliderControl_Width(ip->panel->ginfo);
+		dp->sliderbox.r_height = HorizSliderControl_Height(ip->panel->ginfo);
 
-	/* Create the tick string rect */
-	dp->tickstringrect.r_left = dp->tickrect.r_left + dp->tickrect.r_width +
-	chrwth/2;
-	dp->tickstringrect.r_top = MAX(dp->tickrect.r_top - chrht/2,
-				       dp->valuerect.r_top);
-	dp->tickstringrect.r_height = dp->tickrect.r_top +
-	    dp->tickrect.r_height - dp->tickstringrect.r_top;
-	if (dp->nticks && (dp->min_tick_string || dp->max_tick_string)) {
-	    dp->tickstringrect.r_height += chrht/2;
-	    dp->tickstringrect.r_width = MAX(dp->min_tick_string_width,
-					     dp->max_tick_string_width);
-	} else
-	    dp->tickstringrect.r_width = 0;
+		/* Create the maximum end box rect */
+		dp->max_endbox_rect.r_left = dp->sliderrect.r_left +
+				dp->sliderrect.r_width + TEXT_VALUE_GAP;
+		dp->max_endbox_rect.r_top = dp->min_endbox_rect.r_top;
+		dp->max_endbox_rect.r_width = dp->min_endbox_rect.r_width;
+		dp->max_endbox_rect.r_height = dp->min_endbox_rect.r_height;
 
-	/* Create the minimum end box rect */
-	dp->min_endbox_rect.r_top = dp->sliderrect.r_top +
-	    dp->sliderrect.r_height + TEXT_VALUE_GAP;
-	dp->min_endbox_rect.r_left = dp->max_endbox_rect.r_left;
-	dp->min_endbox_rect.r_width = dp->max_endbox_rect.r_width;
-	dp->min_endbox_rect.r_height = dp->max_endbox_rect.r_height;
+		/* Create the tick rect */
+		dp->tickrect.r_top = dp->sliderrect.r_top + dp->sliderrect.r_height;
+		dp->tickrect.r_left = dp->sliderrect.r_left +
+				HorizSliderControl_Width(ip->panel->ginfo) / 2;
+		dp->tickrect.r_width = dp->width;
+		if (dp->nticks) {
+			dp->tickrect.r_height =
+					HorizSliderControl_Height(ip->panel->ginfo) / 2 - 1;
+		}
+		else
+			dp->tickrect.r_height = 0;
 
-	/* Calculate the coordinates of the minimum range rect */
-	dp->min_range_rect.r_left = dp->valuerect.r_left +
-	   dp->valuerect.r_width;
-	dp->min_range_rect.r_top = rect_bottom(&dp->min_endbox_rect) +
-	    (dp->min_endbox_rect.r_height ? TEXT_VALUE_GAP : 1);
-	if (dp->flags & SHOWRANGE)
-	    dp->min_range_rect.r_left += (range_rects_max_width -
-		dp->min_range_rect.r_width) / 2;
+		/* Create the tick string rect */
+		dp->tickstringrect.r_left = MAX(dp->tickrect.r_left -
+				dp->min_tick_string_width / 2, dp->min_endbox_rect.r_left);
+		dp->tickstringrect.r_top = dp->tickrect.r_top + dp->tickrect.r_height +
+				chrht / 2;
+		dp->tickstringrect.r_width = MIN(rect_right(&dp->tickrect) +
+				dp->max_tick_string_width / 2,
+				rect_right(&dp->max_endbox_rect)) - dp->tickstringrect.r_left +
+				1;
+		if (dp->nticks && (dp->min_tick_string || dp->max_tick_string))
+			dp->tickstringrect.r_height = chrht;
+		else
+			dp->tickstringrect.r_height = 0;
 
-	/* Update the item value rect */
-	ip->value_rect.r_width =
-	    MAX(MAX(dp->min_range_rect.r_left + dp->min_range_rect.r_width,
-		    dp->tickstringrect.r_left + dp->tickstringrect.r_width),
-		dp->max_range_rect.r_left + dp->max_range_rect.r_width) -
-	    dp->valuerect.r_left;
-	ip->value_rect.r_height = dp->min_range_rect.r_top +
-	    dp->min_range_rect.r_height - dp->max_range_rect.r_top;
+		/* Create the maximum range rect */
+		dp->max_range_rect.r_left = rect_right(&dp->max_endbox_rect) +
+				(dp->max_endbox_rect.r_width ? TEXT_VALUE_GAP : 1);
+		dp->max_range_rect.r_top = dp->min_range_rect.r_top;
+		if (dp->flags & SHOWRANGE) {
+			if (dp->max_value_string)
+			{
+				size = xv_pf_textwidth((int)strlen(dp->max_value_string),
+						ip->panel->std_font, dp->max_value_string);
+				dp->max_range_rect.r_width = size.x;
+			}
+			else
+				dp->max_range_rect.r_width = chrwth * dp->max_range_size;
+		}
+		else
+			dp->max_range_rect.r_width = 0;
+		dp->max_range_rect.r_height = dp->min_range_rect.r_height;
 
-    } else { /*** Horizontal ***/
-	dp->min_range_rect.r_top = dp->valuerect.r_top;
-	dp->min_range_rect.r_left = dp->valuerect.r_left +
-	   dp->valuerect.r_width;
-	if (dp->flags & SHOWRANGE) {
-	    if (dp->min_value_string)
-#ifdef OW_I18N
-	/*  If there's no min_value_string I am assuming dp->min_range_size
-	 *  is the number of numerical letters.  For now, each numerical
-	 *  letter, i.e. 1, 2, only occupies one column
-	 */
-	    {
-		size = xv_pf_textwidth_wc(wslen(dp->min_value_string),
-				       ip->panel->std_font,
-				       dp->min_value_string);
-		dp->min_range_rect.r_width = size.x + TEXT_VALUE_GAP;
-	    } else
-		dp->min_range_rect.r_width =
-		    col_width * dp->min_range_size + TEXT_VALUE_GAP;
-#else
-	    {
-		size = xv_pf_textwidth((int)strlen(dp->min_value_string),
-				       ip->panel->std_font,
-				       dp->min_value_string);
-		dp->min_range_rect.r_width = size.x + TEXT_VALUE_GAP;
-	    } else
-		dp->min_range_rect.r_width =
-		    chrwth * dp->min_range_size + TEXT_VALUE_GAP;
-#endif /* OW_I18N */
-	} else
-	    dp->min_range_rect.r_width = 0;
-	dp->min_range_rect.r_height =
-	    HorizSliderControl_Height(ip->panel->ginfo);
-
-	/* Create the minimum end box rect */
-	dp->min_endbox_rect.r_top = dp->min_range_rect.r_top + 2;
-	dp->min_endbox_rect.r_left = dp->min_range_rect.r_left +
-	    dp->min_range_rect.r_width;
-	if (dp->flags & SHOWENDBOXES) {
-	    dp->min_endbox_rect.r_height =
-		HorizSliderControl_Height(ip->panel->ginfo) - 4;
-	    dp->min_endbox_rect.r_width =
-		HorizSliderControl_Width(ip->panel->ginfo) - 5;
-	} else {
-	    dp->min_endbox_rect.r_height = 0;
-	    dp->min_endbox_rect.r_width = 0;
+		/* Update the item value rect */
+		ip->value_rect.r_width = MAX(rect_right(&dp->max_range_rect),
+				rect_right(&dp->tickstringrect)) + 1 - dp->valuerect.r_left;
+		ip->value_rect.r_height = MAX(dp->valuerect.r_height,
+				dp->tickstringrect.r_top + dp->tickstringrect.r_height -
+				dp->sliderrect.r_top);
 	}
 
-	/* Create the slider rect */
-	dp->sliderrect.r_top = dp->min_range_rect.r_top;
-	dp->sliderrect.r_left = dp->min_endbox_rect.r_left +
-	    dp->min_endbox_rect.r_width +
-	    (dp->flags & SHOWENDBOXES ? TEXT_VALUE_GAP : 0);
-	dp->sliderrect.r_width = dp->width + 
-	    HorizSliderControl_Width(ip->panel->ginfo);
-	dp->sliderrect.r_height = HorizSliderControl_Height(ip->panel->ginfo);
+	ip->value_rect.r_left = dp->valuerect.r_left;
 
-	/* Define width and height of slider drag box */
-	dp->sliderbox.r_width = HorizSliderControl_Width(ip->panel->ginfo);
-	dp->sliderbox.r_height = HorizSliderControl_Height(ip->panel->ginfo);
-
-	/* Create the maximum end box rect */
-	dp->max_endbox_rect.r_left = dp->sliderrect.r_left +
-	    dp->sliderrect.r_width + TEXT_VALUE_GAP;
-	dp->max_endbox_rect.r_top = dp->min_endbox_rect.r_top;
-	dp->max_endbox_rect.r_width = dp->min_endbox_rect.r_width;
-	dp->max_endbox_rect.r_height = dp->min_endbox_rect.r_height;
-
-	/* Create the tick rect */
-	dp->tickrect.r_top = dp->sliderrect.r_top + dp->sliderrect.r_height;
-	dp->tickrect.r_left = dp->sliderrect.r_left +
-	    HorizSliderControl_Width(ip->panel->ginfo)/2;
-	dp->tickrect.r_width = dp->width;
-	if (dp->nticks) {
-	    dp->tickrect.r_height = 
-		HorizSliderControl_Height(ip->panel->ginfo)/2 - 1;
-	} else
-	    dp->tickrect.r_height = 0;
-
-	/* Create the tick string rect */
-	dp->tickstringrect.r_left = MAX(dp->tickrect.r_left -
-	    dp->min_tick_string_width/2, dp->min_endbox_rect.r_left);
-	dp->tickstringrect.r_top = dp->tickrect.r_top + dp->tickrect.r_height +
-	    chrht/2;
-	dp->tickstringrect.r_width = MIN(rect_right(&dp->tickrect) +
-	    dp->max_tick_string_width/2, rect_right(&dp->max_endbox_rect)) -
-	    dp->tickstringrect.r_left + 1;
-	if (dp->nticks && (dp->min_tick_string || dp->max_tick_string))
-	    dp->tickstringrect.r_height = chrht;
-	else
-	    dp->tickstringrect.r_height = 0;
-
-	/* Create the maximum range rect */
-	dp->max_range_rect.r_left = rect_right(&dp->max_endbox_rect) +
-	    (dp->max_endbox_rect.r_width ? TEXT_VALUE_GAP : 1);
-	dp->max_range_rect.r_top = dp->min_range_rect.r_top;
-	if (dp->flags & SHOWRANGE) {
-	    if (dp->max_value_string)
-#ifdef OW_I18N
-	/*  If there's no max_value_string I am assuming dp->max_range_size
-	 *  is the number of numerical letters.  For now, each numerical
-	 *  letter, i.e. 1, 2, only occupies one column
-	 */
-	    {
-		size = xv_pf_textwidth_wc(wslen(dp->max_value_string),
-				       ip->panel->std_font,
-				       dp->max_value_string);
-		dp->max_range_rect.r_width = size.x;
-	    } else
-		dp->max_range_rect.r_width = col_width * dp->max_range_size;
-#else
-	    {
-		size = xv_pf_textwidth((int)strlen(dp->max_value_string),
-				       ip->panel->std_font,
-				       dp->max_value_string);
-		dp->max_range_rect.r_width = size.x;
-	    } else
-		dp->max_range_rect.r_width = chrwth * dp->max_range_size;
-#endif /* OW_I18N */
-	} else
-	    dp->max_range_rect.r_width = 0;
-	dp->max_range_rect.r_height = dp->min_range_rect.r_height;
-
-	/* Update the item value rect */
-	ip->value_rect.r_width = MAX(rect_right(&dp->max_range_rect),
-	    rect_right(&dp->tickstringrect)) + 1 - dp->valuerect.r_left;
-	ip->value_rect.r_height = MAX(dp->valuerect.r_height,
-	    dp->tickstringrect.r_top + dp->tickstringrect.r_height -
-	    dp->sliderrect.r_top);
-    }
-
-    ip->value_rect.r_left = dp->valuerect.r_left;
-
-    /* Update the item rect */
-    ip->rect = panel_enclosing_rect(&ip->label_rect, &ip->value_rect);
+	/* Update the item rect */
+	ip->rect = panel_enclosing_rect(&ip->label_rect, &ip->value_rect);
 }
 
-const Xv_pkg          xv_panel_slider_pkg = {
+const Xv_pkg xv_panel_slider_pkg = {
     "Slider Item", ATTR_PKG_PANEL,
     sizeof(Xv_panel_slider),
     PANEL_ITEM,
