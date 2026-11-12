@@ -1,4 +1,4 @@
-char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.10 2025/11/01 14:55:10 dra Exp $";
+char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.12 2026/10/09 11:55:31 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -71,15 +71,6 @@ typedef struct {
     int		    value_size;	   /* size of malloc'ed value buffer */
     int		    width;	   /* textsw width in pixels */
     int		    read_only;	   /* is in read-only mode? */
-#ifdef OW_I18N
-    char	   *mbs_value;
-    int		    mbs_value_size;
-    char	   *mbs_terminators;
-    unsigned	    stored_length_wc : 1; /* Indicate whether the storage
-			                   * length is measured in multibyte
-				           * or wide chars
-				           */
-#endif /* OW_I18N */
 	Menu_item cutitem, copyitem, deleteitem;
 	int restricted_menu;
 } Mltxt_info;
@@ -173,13 +164,7 @@ static int panel_mltxt_init(Panel panel_public, Panel_item item_public, Attr_avl
 	}
 
 
-#ifdef OW_I18N
-	dp->stored_length_wc = 0;
-	dp->terminators = (wchar_t *)_xv_mbstowcsdup("\n\r\t");
-#else
 	dp->terminators = (char *)panel_strsave("\n\r\t");
-#endif /* OW_I18N */
-
 	dp->textsw = xv_create(panel_public, TEXTSW,
 			TEXTSW_DISABLE_CD, TRUE,
 			TEXTSW_DISABLE_LOAD, TRUE,
@@ -356,71 +341,17 @@ static Xv_opaque panel_mltxt_set_avlist(Panel_item item,
 				dp->notify_level = (Panel_setting) avlist[1];
 				break;
 
-#ifdef OW_I18N
-			case PANEL_NOTIFY_STRING:
-				if (dp->terminators)
-					xv_free(dp->terminators);
-				dp->terminators =
-						(wchar_t *) _xv_mbstowcsdup((char *)avlist[1]);
-				break;
-
-			case PANEL_NOTIFY_STRING_WCS:
-				if (dp->terminators)
-					xv_free(dp->terminators);
-				dp->terminators =
-						(wchar_t *) panel_strsave_wc((wchar_t *) avlist[1]);
-				break;
-#else
 			case PANEL_NOTIFY_STRING:
 				if (dp->terminators)
 					free(dp->terminators);
 				dp->terminators = (char *)panel_strsave((char *) avlist[1]);
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_READ_ONLY:
 				xv_set(dp->textsw, TEXTSW_READ_ONLY, (int)avlist[1], NULL);
 				dp->read_only = (int)avlist[1];
 				break;
 
-#ifdef OW_I18N
-			case PANEL_ITEM_IC_ACTIVE:
-				if ((int)avlist[1])
-					ip->flags |= IC_ACTIVE;
-				else
-					ip->flags &= ~IC_ACTIVE;
-				if (ic_active(ip) == FALSE)
-					xv_set(dp->textsw, WIN_IC_ACTIVE, FALSE, NULL);
-				else if (xv_get(dp->textsw, WIN_IC_ACTIVE) == FALSE)
-					xv_set(dp->textsw, WIN_IC_ACTIVE, TRUE, NULL);
-				break;
-
-			case PANEL_VALUE:
-				if (dp->value)
-					xv_free(dp->value);
-				dp->value = (wchar_t *) _xv_mbstowcsdup((char *)avlist[1]);
-				dp->value_size = wslen(dp->value) + 1;
-				if (dp->read_only)
-					xv_set(dp->textsw, TEXTSW_READ_ONLY, FALSE, NULL);
-				textsw_reset(dp->textsw, 0, 0);
-				xv_set(dp->textsw, TEXTSW_CONTENTS_WCS, dp->value, NULL);
-				if (dp->read_only)
-					xv_set(dp->textsw, TEXTSW_READ_ONLY, TRUE, NULL);
-				break;
-
-			case PANEL_VALUE_WCS:
-				if (dp->value)
-					xv_free(dp->value);
-				dp->value = (wchar_t *) panel_strsave_wc((u_char *) avlist[1]);
-				dp->value_size = wslen(dp->value) + 1;
-				if (dp->read_only)
-					xv_set(dp->textsw, TEXTSW_READ_ONLY, FALSE, NULL);
-				textsw_reset(dp->textsw, 0, 0);
-				xv_set(dp->textsw, TEXTSW_CONTENTS_WCS, dp->value, NULL);
-				if (dp->read_only)
-					xv_set(dp->textsw, TEXTSW_READ_ONLY, TRUE, NULL);
-				break;
-#else
 			case PANEL_VALUE:
 				if (dp->value)
 					free((char *)dp->value);
@@ -440,7 +371,6 @@ static Xv_opaque panel_mltxt_set_avlist(Panel_item item,
 				if (dp->read_only)
 					xv_set(dp->textsw, TEXTSW_READ_ONLY, TRUE, NULL);
 				break;
-#endif /* OW_I18N */
 
 			case PANEL_VALUE_DISPLAY_LENGTH:
 				dp->columns = (int)avlist[1];
@@ -454,24 +384,10 @@ static Xv_opaque panel_mltxt_set_avlist(Panel_item item,
 				dp->columns = (int)xv_get(dp->textsw, WIN_COLUMNS);
 				break;
 
-#ifdef OW_I18N
-			case PANEL_VALUE_STORED_LENGTH:
-				dp->length = (int)avlist[1];
-				dp->stored_length_wc = 0;
-				xv_set(dp->textsw, TEXTSW_MEMORY_MAXIMUM, (int)avlist[1], NULL);
-				break;
-
-			case PANEL_VALUE_STORED_LENGTH_WCS:
-				dp->length = (int)avlist[1] * sizeof(wchar_t);
-				dp->stored_length_wc = 1;
-				xv_set(dp->textsw, TEXTSW_MEMORY_MAXIMUM, (int)avlist[1], NULL);
-				break;
-#else
 			case PANEL_VALUE_STORED_LENGTH:
 				dp->length = (int)avlist[1];
 				xv_set(dp->textsw, TEXTSW_MEMORY_MAXIMUM, (int)avlist[1], NULL);
 				break;
-#endif /* OW_I18N */
 
 			case XV_END_CREATE:
 				xv_end_create = TRUE;
@@ -557,56 +473,12 @@ static Xv_opaque panel_mltxt_get_attr(Panel_item item_public, int *status, Attr_
 		case PANEL_NOTIFY_LEVEL:
 			return (Xv_opaque) dp->notify_level;
 
-#ifdef OW_I18N
-		case PANEL_NOTIFY_STRING:
-			if (dp->mbs_terminators)
-				xv_free(dp->mbs_terminators);
-			dp->mbs_terminators =
-					(char *)_xv_wcstombsdup((wchar_t *)dp->terminators);
-			return (Xv_opaque) dp->mbs_terminators;
-
-		case PANEL_NOTIFY_STRING_WCS:
-			return (Xv_opaque) dp->terminators;
-#else
 		case PANEL_NOTIFY_STRING:
 			return (Xv_opaque) dp->terminators;
-#endif /* OW_I18N */
 
 		case PANEL_READ_ONLY:
 			return dp->read_only;
 
-#ifdef OW_I18N
-		case PANEL_ITEM_IC_ACTIVE:
-			{
-				register Item_info *ip = ITEM_PRIVATE(item_public);
-
-				return ic_active(ip);
-			}
-
-		case PANEL_VALUE:
-			length = (int)xv_get(dp->textsw, TEXTSW_LENGTH) + 1;
-			if (length > dp->mbs_value_size) {
-				if (dp->mbs_value)
-					xv_free(dp->mbs_value);
-				dp->mbs_value = xv_malloc(length);
-				dp->mbs_value_size = length;
-			}
-			xv_get(dp->textsw, TEXTSW_CONTENTS, 0, dp->mbs_value, length - 1);
-			dp->mbs_value[length - 1] = 0;	/* NULL terminate the string */
-			return (Xv_opaque) dp->mbs_value;
-
-		case PANEL_VALUE_WCS:
-			length = (int)xv_get(dp->textsw, TEXTSW_LENGTH_WC) + 1;
-			if (length > dp->value_size) {
-				if (dp->value)
-					xv_free(dp->value);
-				dp->value = xv_malloc(length * sizeof(wchar_t));
-				dp->value_size = length;
-			}
-			xv_get(dp->textsw, TEXTSW_CONTENTS_WCS, 0, dp->value, length - 1);
-			dp->value[length - 1] = 0;	/* NULL terminate the string */
-			return (Xv_opaque) dp->value;
-#else
 		case PANEL_VALUE:
 			length = (int)xv_get(dp->textsw, TEXTSW_LENGTH) + 1;
 			if (length > dp->value_size) {
@@ -618,7 +490,6 @@ static Xv_opaque panel_mltxt_get_attr(Panel_item item_public, int *status, Attr_
 			xv_get(dp->textsw, TEXTSW_CONTENTS, 0, dp->value, length - 1);
 			dp->value[length - 1] = 0;	/* NULL terminate the string */
 			return (Xv_opaque) dp->value;
-#endif /* OW_I18N */
 
 		case PANEL_VALUE_DISPLAY_LENGTH:
 			return (Xv_opaque) dp->columns;
@@ -626,23 +497,17 @@ static Xv_opaque panel_mltxt_get_attr(Panel_item item_public, int *status, Attr_
 		case PANEL_VALUE_DISPLAY_WIDTH:
 			return (Xv_opaque) dp->width;
 
-#ifdef OW_I18N
-		case PANEL_VALUE_STORED_LENGTH:
-			if (dp->stored_length_wc == 0)
-				return (Xv_opaque) dp->length;
-			else
-				return (-1);
-
-		case PANEL_VALUE_STORED_LENGTH_WCS:
-			if (dp->stored_length_wc == 1)
-				return (Xv_opaque) dp->length / sizeof(wchar_t);
-			else
-				return (-1);
-#else
 		case PANEL_VALUE_STORED_LENGTH:
 			return (Xv_opaque) dp->length;
-#endif /* OW_I18N */
 
+		case XV_CHILDREN:
+			{
+				Window *w = va_arg(valist, Window *);
+				int len = va_arg(valist, int);
+				int retval = xv_get(dp->textsw, XV_CHILDREN, w, len);
+				return (Xv_opaque)retval;
+			}
+			break;
 		default:
 			*status = XV_ERROR;
 			return (Xv_opaque) 0;
@@ -665,13 +530,6 @@ static int panel_mltxt_destroy(Panel_item item_public, Destroy_status status)
 
 	if (dp->terminators)
 		xv_free(dp->terminators);
-
-#ifdef OW_I18N
-	if (dp->mbs_value)
-		xv_free(dp->mbs_value);
-	if (dp->mbs_terminators)
-		xv_free(dp->mbs_terminators);
-#endif /* OW_I18N */
 
 	free((char *)dp);
 
@@ -851,16 +709,10 @@ static Notify_value mltxt_notify_proc(Xv_Window	window, Notify_event ev,
 		}
 	}
 
-#ifdef OW_I18N
-	/*  Also need to check whether input is in event->ie_string */
-
 	if (!event_is_string(event) && !event_is_iso(event)
-			&& event_action(event) != ACTION_NEXT_ELEMENT &&
-#else
-	if (!event_is_iso(event) && event_action(event) != ACTION_NEXT_ELEMENT &&
-#endif /* OW_I18N */
-
-			event_action(event) != ACTION_PREVIOUS_ELEMENT) {
+			&& event_action(event) != ACTION_NEXT_ELEMENT
+			&& event_action(event) != ACTION_PREVIOUS_ELEMENT)
+	{
 		result = notify_next_event_func(window, ev, arg, type);
 		if ((event_action(event) == ACTION_CUT
 						&& dp->notify_level != PANEL_NONE)
@@ -891,37 +743,17 @@ static Notify_value mltxt_notify_proc(Xv_Window	window, Notify_event ev,
 				break;
 			case ACTION_GO_LINE_BACKWARD:
 				/* Go to start of this or previous line */
-
-#ifdef OW_I18N
-				/* should use TEXTSW_INSERTION_POINT_WC for the performance */
-				if (xv_get(textsw, TEXTSW_INSERTION_POINT_WC) == 0)
-#else
-				if (xv_get(textsw, TEXTSW_INSERTION_POINT) == 0)
-#endif
-
-				{
+				if (xv_get(textsw, TEXTSW_INSERTION_POINT) == 0) {
 					notify_rtn_code = PANEL_PREVIOUS;
 					ok_to_insert = FALSE;
 				}
-				else
-					ok_to_insert = TRUE;
+				else ok_to_insert = TRUE;
 				break;
 			case ACTION_GO_LINE_END:
 				/* Go to end of this or the next line */
-
-#ifdef OW_I18N
-				last = (int)xv_get(textsw, TEXTSW_LENGTH_WC);
-#else
 				last = (int)xv_get(textsw, TEXTSW_LENGTH);
-#endif /* OW_I18N */
 
-#ifdef OW_I18N
-				/* should use wide char attribute for the performance */
-				if (xv_get(textsw, TEXTSW_INSERTION_POINT_WC) == last) {	/* } */
-#else
 				if (xv_get(textsw, TEXTSW_INSERTION_POINT) == last) {
-#endif
-
 					notify_rtn_code = PANEL_NEXT;
 					ok_to_insert = FALSE;
 				}
@@ -964,89 +796,21 @@ static Notify_value mltxt_notify_proc(Xv_Window	window, Notify_event ev,
 
 static int notify_user(Mltxt_info *dp, Event *event)
 {
-    switch (dp->notify_level) {
-      case PANEL_ALL:
-      default:
-	return TRUE;
-
-      case PANEL_NONE:
-	return FALSE;
-
-#ifdef OW_I18N
-      case PANEL_NON_PRINTABLE:
-	  if (event_is_string(event)) {
-		wchar_t		 w;
-		register char	*p;
-
-		p = event->ie_string;
-
-		/*  Need to convert multibyte
-		 *  to wide char first
-		 */
-		while (*p) {
-		    /* Even if conversion is successful
-		     * still not sure if it's printable
-		     */
-		    if ((mbtowc(&w, p, MB_CUR_MAX)) >= 0) {
-			if (!iswprint((int) w)) return TRUE;
-		    }
-		    else
+	switch (dp->notify_level) {
+		case PANEL_ALL:
+		default:
 			return TRUE;
-		    p++;
-		}
-		return FALSE;
-	  }
-	  else return !panel_printable_char(event_action(event));
 
-      case PANEL_SPECIFIED:
-	if (event_is_string(event)) {
-	    wchar_t	*pos;
-	    wchar_t 	*ie_string_wc;
-	    wchar_t	*p;
+		case PANEL_NONE:
+			return FALSE;
 
-	    /*  POSSIBLE BUG: What happens when a multibyte character
-	     *  cannot be converted to wide char??
-	     *
-	     *  Convert the entire input string to wide char first
-	     */
-	    ie_string_wc = _xv_mbstowcsdup((char *) event_string(event));
-	    p = ie_string_wc;
+		case PANEL_NON_PRINTABLE:
+			return !panel_printable_char(event_action(event));
 
-	    /*  Return if A char in input string 
-	     *	matches the terminating character?
-	     */
-	    while (*p) {
-		if ((pos = (wschr(dp->terminators, (int) *p))) != 0) 
-		    break;
-		p++;
-	    }
-	    xv_free(ie_string_wc);
-	    return event_is_down(event) && pos != 0;
+		case PANEL_SPECIFIED:
+			return event_is_down(event) &&
+					strchr(dp->terminators, event_action(event)) != 0;
 	}
-	else {
-	    char	 tmp_char;
-	    wchar_t	*tmp_char_wc;
-	    wchar_t	*pos = 0;
-
-	    /* Should I check for ASCII?? */
-
-	    if (iswascii(event_action(event))) {
-		tmp_char = event_action(event);
-		tmp_char_wc = (wchar_t *)xv_malloc(sizeof(wchar_t));
-		mbtowc(tmp_char_wc, &tmp_char, MB_CUR_MAX);
-		pos = wschr(dp->terminators, (int)tmp_char_wc);
-	    }
-	    return event_is_down(event) && pos != 0;
-	}
-#else
-      case PANEL_NON_PRINTABLE:
-	return !panel_printable_char(event_action(event));
-
-      case PANEL_SPECIFIED:
-	return event_is_down(event) &&
-	    strchr(dp->terminators, event_action(event)) != 0;
-#endif /* OW_I18N */
-    }
 }
 
 const Xv_pkg xv_panel_multiline_text_pkg = {
