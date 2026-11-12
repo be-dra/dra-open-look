@@ -1,4 +1,4 @@
-char p_image_sccsid[] = "@(#)p_image.c 20.18 89/07/31 DRA: $Id: p_image.c,v 4.3 2025/04/03 06:24:44 dra Exp $";
+char p_image_sccsid[] = "@(#)p_image.c 20.18 89/07/31 DRA: $Id: p_image.c,v 4.4 2026/07/18 17:08:22 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -7,10 +7,9 @@ char p_image_sccsid[] = "@(#)p_image.c 20.18 89/07/31 DRA: $Id: p_image.c,v 4.3 
  */
 
 #include <xview_private/panel_impl.h>
+#include <xview_private/font_impl.h>
 #include <xview/svrimage.h>
 #include <xview/pixwin.h>
-
-extern struct pr_size xv_pf_textwidth(int len, Xv_font pf, char  *str);
 
 /*****************************************************************************/
 /* panel_button_image                                                        */
