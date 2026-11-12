@@ -1,5 +1,5 @@
 /* #ident	"@(#)usermenu.c	26.62	93/06/28 SMI" */
-char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.7 2026/08/07 18:31:01 dra Exp $";
+char usermenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: usermenu.c,v 2.9 2026/10/30 09:50:27 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -2210,8 +2210,9 @@ GetEnabledMenu(cli, flfull, flnotitle)
 	static Bool lastmouseless = True;
 	Bool flmouseless = !(GRV.Mouseless == KbdSunView || mouselessSuspended);
 	Bool flicon = cli->wmState != NormalState;
-	Bool flresizable = decor->flags & WMDecorationResizeable;
+	Bool flresizable = decor->decor_flags & WMDecorationResizeable;
 	Bool flcancel = decor->cancel;
+	Bool flquit = decor->decor_flags & WMDecorationMenuQuit;
 
 	if (flmouseless != lastmouseless) {
 		moveButton.visible = flmouseless;
@@ -2226,12 +2227,13 @@ GetEnabledMenu(cli, flfull, flnotitle)
 			menu = MenuTable[MENU_FULL];
 
 			ToggleEnabled(menu, basewin_propsitem,
-						  ((cli->protocols & HAS_PROPWIN) != 0));
+						  ((cli->protocols & PROT_HAS_PROPWIN) != 0));
 
 			ToggleEnabled(menu, basewin_resizeitem, flresizable && !flicon);
 			ToggleEnabled(menu, basewin_zoomitem, flresizable);
 			ToggleItem(menu, basewin_openitem, !flicon);
 			ToggleItem(menu, basewin_zoomitem, flfull);
+			ToggleEnabled(menu, basewin_quititem, flquit);
 			break;
 		case MENU_LIMITED:
 			menu = MenuTable[MENU_LIMITED];
