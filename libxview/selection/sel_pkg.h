@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.10 2026/01/18 21:57:41 dra Exp $";
+static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.11 2026/11/11 10:27:16 dra Exp $";
 #endif
 #endif
 
@@ -230,6 +230,7 @@ extern const Xv_pkg 		xv_sel_item_pkg;
 _XVFUNCPROTOBEGIN
 EXTERN_FUNCTION (Bool sel_convert_proc, (Selection_owner sel_owner, Atom * type, Xv_opaque *data, unsigned long *length, int *format));
 EXTERN_FUNCTION (int sel_post_req, (Selection_requestor sel_req));
+EXTERN_FUNCTION (int sel_post_req_no_answer, (Selection_requestor sel_req));
 _XVFUNCPROTOEND
 
 
