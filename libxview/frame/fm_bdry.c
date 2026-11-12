@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_bdry.c 20.22 93/06/28 DRA: $Id: fm_bdry.c,v 4.1 2024/03/28 12:57:19 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_bdry.c 20.22 93/06/28 DRA: $Id: fm_bdry.c,v 4.2 2026/07/18 19:31:40 dra Exp $ ";
 #endif
 #endif
 
@@ -37,11 +37,6 @@ Pkg_private void frame_compute_constraint(Frame_class_info *frame, Xv_Window tar
     *rconstrain = frame->rectcache;
     if (status_get(frame, show_footer))
         rconstrain->r_height -= (int)xv_get(frame->footer, XV_HEIGHT);
-#ifdef OW_I18N
-    /* need to account for the possible imstatus window */
-    if (status_get(frame, show_imstatus))
-        rconstrain->r_height -= (int)xv_get(frame->imstatus, XV_HEIGHT);
-#endif
 
     /* compute constraint for the outer borders */
 
