@@ -1,5 +1,5 @@
 /* #ident	"@(#)winframe.c	26.77	93/06/28 SMI" */
-char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.13 2026/08/08 05:04:45 dra Exp $";
+char winframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winframe.c,v 2.16 2026/10/30 09:50:27 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -167,7 +167,7 @@ int heightTopFrame(WinPaneFrame *win)  /* uses only WinGeneric... */
 	Client *cli = win->core.client;
 	Graphics_info	*gisNormal = WinGI(win,NORMAL_GINFO);
 
-	if (cli->wmDecors->flags & WMDecorationHeader)
+	if (cli->wmDecors->decor_flags & WMDecorationHeader)
 		return 	headerHeight(cli,gisNormal) +
 			2*ResizeArm_Height(gisNormal);
 	else
@@ -185,7 +185,7 @@ WinPaneFrame *win;
 
 	result = ResizeArm_Height(gisNormal);
 
-	if (cli->wmDecors->flags & WMDecorationFooter)
+	if (cli->wmDecors->decor_flags & WMDecorationFooter)
 		result += footerHeight(cli, gisNormal);
 	return result;
 }
@@ -531,7 +531,7 @@ static	Bool chiseledFocusLines = False;
 			   win->titley, rw - win->titleOff,
 			   OLGX_NORMAL | OLGX_MORE_ARROW | TextOLGX);
 
-	if (cli->wmDecors->flags & WMDecorationResizeable) {
+	if (cli->wmDecors->decor_flags & WMDecorationResizeable) {
 	    lineleft = Resize_width + 1;
 	    linelen = w - (2*Resize_width) - 2;
 	} else {
@@ -652,7 +652,7 @@ static void drawHeaderLines2D(Display *dpy, WinPaneFrame *win, Client *cli,
 	/* draw 2 pixel tall black focus indicator line above titlebar area 
 	 * (without overwriting the resize corners)
 	 */
-	if (cli->wmDecors->flags & WMDecorationResizeable)
+	if (cli->wmDecors->decor_flags & WMDecorationResizeable)
 		XFillRectangle(dpy, self, foregroundGC, 
 			Resize_width+1, outlinewidth+1, 
 			w-(2*Resize_width)-2, 2);
@@ -838,10 +838,10 @@ WinPaneFrame *winInfo;
 
 	drawBase2D(dpy, winInfo, cli, cli->isSelected);
 
-	if (cli->wmDecors->flags & WMDecorationHeader)
+	if (cli->wmDecors->decor_flags & WMDecorationHeader)
 		drawHeader(dpy, winInfo, cli, cli->isSelected);
 
-	if (cli->wmDecors->flags & WMDecorationFooter)
+	if (cli->wmDecors->decor_flags & WMDecorationFooter)
 		drawFooter(dpy, winInfo, cli);	/* no difference between 2D and 3D */
 
 	return 0;
@@ -885,12 +885,10 @@ WinPaneFrame *winInfo;
 	 * really destroy the window, we wouldn't need to remove them.
 	 */
 	FrameSetupGrabs(cli, winInfo->core.self, False);
-#ifdef SHAPE
 	if (cli->isShaped) {
 	    cli->isShaped = False;
 	    FrameUpdateShape(cli, winInfo);
 	}
-#endif /* SHAPE */
 
 	ScreenDestroyWindow(winInfo->core.client->scrInfo, winInfo->core.self);
 	WIUninstallInfo(winInfo->core.self);
@@ -943,13 +941,13 @@ XConfigureRequestEvent *pxcre;
 		(WinFunc(winPane,core.newposfunc))(winPane, widthLeftFrame(winInfo), 
 			heightTopFrame(winInfo));
 		winDeco = winInfo->winDeco;
-	        if (cli->wmDecors->flags & WMDecorationPushPin)
+	        if (cli->wmDecors->decor_flags & WMDecorationPushPin)
        		{
 		    (WinFunc(winDeco,core.newposfunc))(winDeco,
 			xposPushPin(gisNormal),
 			yposPushPin(cli,gisNormal));
         	}
-        	if (cli->wmDecors->flags & WMDecorationCloseButton)
+        	if (cli->wmDecors->decor_flags & WMDecorationCloseButton)
         	{
 		    (WinFunc(winDeco,core.newposfunc))(winDeco,
 			xposCloseButton(gisNormal),
@@ -958,7 +956,7 @@ XConfigureRequestEvent *pxcre;
 		if (cli->isBusy && winInfo->winBusy != NULL)
 		    (WinFunc(winInfo->winBusy,core.newposfunc))(winInfo->winBusy, 
 			widthLeftFrame(winInfo), heightTopFrame(winInfo));
-		if (cli->wmDecors->flags & WMDecorationResizeable)
+		if (cli->wmDecors->decor_flags & WMDecorationResizeable)
 		    updateResizePositions(winInfo);
 	}
 
@@ -977,13 +975,9 @@ setconfigFrame(dpy, winInfo)
 {
     Client *cli = winInfo->core.client;
 
-#ifdef SHAPE
-    if (cli->isShaped &&
-	(winInfo->core.dirtyconfig & (CWWidth | CWHeight)))
-    {
-	FrameUpdateShape(cli, winInfo);
+    if (cli->isShaped && (winInfo->core.dirtyconfig & (CWWidth | CWHeight))) {
+		FrameUpdateShape(cli, winInfo);
     }
-#endif /* SHAPE */
 
     GFrameSetConfigFunc(dpy, winInfo);
 	return 0;
@@ -1004,10 +998,7 @@ selectFrame(dpy, winInfo, selected)
 {
     Client *cli = winInfo->core.client;
 
-#ifdef SHAPE
-    if (cli->isShaped)
-	FrameUpdateShape(cli, winInfo);
-#endif /* SHAPE */
+    if (cli->isShaped) FrameUpdateShape(cli, winInfo);
 
     GFrameSelect(dpy, winInfo, selected);
 	return 0;
@@ -1084,7 +1075,7 @@ int wid,high;
 	Graphics_info	*gisNormal = WinGI(wf,NORMAL_GINFO);
 
 	/* Make resize children */
-	if (cli->wmDecors->flags & WMDecorationResizeable) {
+	if (cli->wmDecors->decor_flags & WMDecorationResizeable) {
 		makeResizeCorners(dpy, wf, wid, high);
 	}
 
@@ -1099,7 +1090,7 @@ int wid,high;
 	 * they ask for both, they only get the pushpin.  This mutual
 	 * exclusion was taken care of in GetOLWinDecors in states.c
          */
-        if (cli->wmDecors->flags & WMDecorationPushPin)
+        if (cli->wmDecors->decor_flags & WMDecorationPushPin)
         {
 		wf->winDeco = (WinGeneric *)
 			MakePushPin(dpy,wf,panewin,xposPushPin(gisNormal),
@@ -1108,7 +1099,7 @@ int wid,high;
 			PushPinOut_Width(gisNormal);
         }
 
-        if (cli->wmDecors->flags & WMDecorationCloseButton)
+        if (cli->wmDecors->decor_flags & WMDecorationCloseButton)
         {
 		wf->winDeco = (WinGeneric *)
 			MakeButton(dpy,wf,xposCloseButton(gisNormal),
@@ -1476,11 +1467,11 @@ WinPaneFrame *MakeFrame(Client *cli, Window panewin,
 	makeSpecials(cli, dpy, w, panewin, wid, high);
 
 	/* set up the titlebar */
-	if (cli->wmDecors->flags & WMDecorationHeader)
+	if (cli->wmDecors->decor_flags & WMDecorationHeader)
 		setTitleText(dpy, w, panewin);
 
 	/* set up the footer */
-	if (cli->wmDecors->flags & WMDecorationFooter)
+	if (cli->wmDecors->decor_flags & WMDecorationFooter)
 		setFooterText(dpy, w, panewin);
 
 	/* Determine which menu should come up when menus are requested
@@ -1786,7 +1777,7 @@ void FrameFlashTitleBar(WinPaneFrame *winInfo)
 	void (*draw)(),(*undraw)();
 
 	/* if no header, don't draw anything */
-	if ((cli->wmDecors->flags & WMDecorationHeader) == 0)
+	if ((cli->wmDecors->decor_flags & WMDecorationHeader) == 0)
 		return;
 
 	/* set up draw/undraw procs */
@@ -1856,13 +1847,13 @@ void FrameWarpPointer(Client *cli)
 	Graphics_info *gis = WinGI(frameInfo, NORMAL_GINFO);
 	frameInfo->pointerIsWarped = False;
 
-	if (cli->protocols & IS_WS_PROPS)
+	if (cli->protocols & PROT_IS_WS_PROPS)
 		dra_olws_started(cli->dpy, -1);
 
 	if (!GRV.PopupJumpCursor)
 		return;
 
-	if (cli->protocols & NO_WARPING)
+	if (cli->protocols & PROT_NO_WARPING)
 		return;
 
 	/* see if window pane has any warp info */
@@ -1877,11 +1868,11 @@ void FrameWarpPointer(Client *cli)
 	/*
 	 * Warp to pin if warpParam non-NULL or WarpToPin is set.
 	 */
-	if (cli->protocols & WARP_TO_PIN) {
+	if (cli->protocols & PROT_WARP_TO_PIN) {
 		warpParam = NULL;
 	}
 	else {
-		if (warpParam==NULL && !(cli->wmDecors->flags & WMDecorationWarpToPin))
+		if (warpParam==NULL && !(cli->wmDecors->decor_flags & WMDecorationWarpToPin))
 		{
 			return;
 		}
@@ -1963,7 +1954,7 @@ void FrameUnwarpPointer(Client *cli)
 
 	if (frameInfo->pointerIsWarped) {
 
-		if (cli->protocols & WARP_BACK) {
+		if (cli->protocols & PROT_WARP_BACK) {
 			XWarpPointer(cli->dpy, None, cli->scrInfo->rootid,
 					0, 0, 0, 0,
 					cli->warpInfo.warpBackX, cli->warpInfo.warpBackY);
@@ -2002,13 +1993,11 @@ void FrameUnwarpPointer(Client *cli)
  */
 void FrameUpdateShape(Client *cli, WinPaneFrame *winInfo)
 {
-
-#ifdef SHAPE
 	if (cli->isShaped) {
 		XShapeCombineShape(cli->dpy, winInfo->core.self, ShapeBounding,
 				widthLeftFrame(winInfo), heightTopFrame(winInfo),
 				winInfo->fcore.panewin->core.self, ShapeBounding, ShapeSet);
-		if (cli->isSelected && (cli->wmDecors->flags &WMDecorationResizeable)) {
+		if (cli->isSelected && (cli->wmDecors->decor_flags &WMDecorationResizeable)) {
 			XRectangle rects[8];
 			Graphics_info *gi = WinGI(winInfo, NORMAL_GINFO);
 			int tw = Resize_width;	/* total width & height */
@@ -2075,7 +2064,6 @@ void FrameUpdateShape(Client *cli, WinPaneFrame *winInfo)
 		XShapeCombineMask(cli->dpy, winInfo->core.self, ShapeBounding,
 				0, 0, None, ShapeSet);
 	}
-#endif
 }
 
 
@@ -2084,7 +2072,7 @@ void FrameUpdateShape(Client *cli, WinPaneFrame *winInfo)
  */
 void FrameMinSize(WinPaneFrame *frame, int *width, int *height)
 {
-	int decors = frame->core.client->wmDecors->flags;
+	int decors = frame->core.client->wmDecors->decor_flags;
 	Graphics_info *gi = WinGI(frame, NORMAL_GINFO);
 	int temp;
 
