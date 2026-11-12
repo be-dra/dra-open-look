@@ -1,4 +1,4 @@
-char p_num_txt_sccsid[] = "@(#)p_num_txt.c 20.47 93/06/28 DRA: $Id: p_num_txt.c,v 4.5 2025/11/01 14:55:10 dra Exp $";
+char p_num_txt_sccsid[] = "@(#)p_num_txt.c 20.47 93/06/28 DRA: $Id: p_num_txt.c,v 4.8 2026/08/26 20:33:07 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -73,9 +73,6 @@ typedef struct {
     Panel_setting   notify_level;  /* NONE, SPECIFIED, NON_PRINTABLE, ALL */
     char	   *terminators;
     Panel_item	    text_field;
-#ifdef OW_I18N
-    wchar_t	   *terminators_wc;
-#endif /* OW_I18N */
 } Num_text_info;
 
 /* Numeric Text flags */
@@ -127,13 +124,7 @@ static int panel_num_text_init(Panel panel_public, Panel_item item_public, Attr_
 	dp->max_value = 100;
 
 	dp->notify_level = PANEL_SPECIFIED;
-
-#ifdef OW_I18N
-	dp->terminators_wc = (wchar_t *)_xv_mbstowcsdup("\n\r\t");
-#else
 	dp->terminators = (char *)panel_strsave("\n\r\t");
-#endif /* OW_I18N */
-
 	if (ip->notify == panel_nullproc)
 		ip->notify = (int (*)(Panel_item, Event *))panel_text_notify;
 
@@ -154,11 +145,7 @@ static int panel_num_text_init(Panel panel_public, Panel_item item_public, Attr_
 			PANEL_NOTIFY_LEVEL, PANEL_ALL,
 			PANEL_NOTIFY_PROC, text_notify_proc,
 			PANEL_VALUE_DISPLAY_LENGTH, 12, PANEL_VALUE_STORED_LENGTH, 12,
-
-#ifdef OW_I18N
-			PANEL_ITEM_IC_ACTIVE, FALSE,
-#endif /* OW_I18N */
-
+			PANEL_ALLOW_FILE_DROP, FALSE,
 			XV_KEY_DATA, item_key, item_public,
 			NULL);
 	ip->child_kbd_focus_item = dp->text_field;
@@ -188,10 +175,6 @@ static Xv_opaque panel_num_text_set_avlist(Panel_item	item_public, Attr_avlist a
     int		    value;
     Bool	    value_change = FALSE;
     Bool	    xv_end_create = FALSE;
-#ifdef OW_I18N
-    char            tmp_char;
-    wchar_t         tmp_char_wc;
-#endif /* OW_I18N */
 
     /*
      * If a client has called panel_item_parent this item may not have a
@@ -275,32 +258,6 @@ static Xv_opaque panel_num_text_set_avlist(Panel_item	item_public, Attr_avlist a
 	    jump_delta_set = TRUE;
 	    break;
 
-#ifdef OW_I18N
-          case PANEL_MASK_CHAR:
-            value = (char) avlist[1];
-            tmp_char = (char) value;
-            mbtowc(&tmp_char_wc, &tmp_char, MB_CUR_MAX);
-            xv_set(dp->text_field, PANEL_MASK_CHAR_WC, tmp_char_wc, NULL);
-            value = (value != '\0');
-            if (value)
-                dp->btn_state |= OLGX_INACTIVE;
-            else {
-                dp->btn_state &= ~OLGX_INACTIVE;
-                check_for_dimming = TRUE;
-            }
-            break;
-          case PANEL_MASK_CHAR_WC:
-            value = (wchar_t) avlist[1];
-            xv_set(dp->text_field, PANEL_MASK_CHAR_WC, value, NULL);
-            value = (value != '\0');
-            if (value)
-                dp->btn_state |= OLGX_INACTIVE;
-            else {
-                dp->btn_state &= ~OLGX_INACTIVE;
-                check_for_dimming = TRUE;
-            }
-            break;
-#else
 	  case PANEL_MASK_CHAR:
 	    value = (char) avlist[1];
 	    xv_set(dp->text_field, PANEL_MASK_CHAR, value, NULL);
@@ -312,7 +269,6 @@ static Xv_opaque panel_num_text_set_avlist(Panel_item	item_public, Attr_avlist a
 		check_for_dimming = TRUE;
 	    }
 	    break;
-#endif /* OW_I18N */
 
 	  case PANEL_VALUE:
 	    value_change = TRUE;
@@ -333,30 +289,11 @@ static Xv_opaque panel_num_text_set_avlist(Panel_item	item_public, Attr_avlist a
 	    dp->notify_level = (Panel_setting) avlist[1];
 	    break;
 
-#ifdef OW_I18N
-          case PANEL_NOTIFY_STRING:
-            if (dp->terminators)
-                xv_free(dp->terminators);
-            if (dp->terminators_wc)
-                xv_free(dp->terminators_wc);
-            dp->terminators_wc = (wchar_t *) _xv_mbstowcsdup((char *) avlist[1]);
-            break;
-
-          case PANEL_NOTIFY_STRING_WCS:
-            if (dp->terminators)
-                xv_free(dp->terminators);
-            if (dp->terminators_wc)
-                xv_free(dp->terminators_wc);
-            dp->terminators_wc =
-		(wchar_t *) panel_strsave_wc((wchar_t *) avlist[1]);
-            break;
-#else
 	  case PANEL_NOTIFY_STRING:
 	    if (dp->terminators)
 		free(dp->terminators);
 	    dp->terminators = (char *) panel_strsave((char *) avlist[1]);
 	    break;
-#endif /* OW_I18N */
 
 	  case XV_END_CREATE:
 	    xv_end_create = TRUE;
@@ -417,17 +354,8 @@ static Xv_opaque panel_num_text_get_attr(Panel_item item_public,
 		case PANEL_NOTIFY_LEVEL:
 			return (Xv_opaque) dp->notify_level;
 
-#ifdef OW_I18N
-		case PANEL_NOTIFY_STRING:
-			dp->terminators = _xv_wcstombsdup((wchar_t *)dp->terminators_wc);
-			return (Xv_opaque) dp->terminators;
-
-		case PANEL_NOTIFY_STRING_WCS:
-			return (Xv_opaque) dp->terminators_wc;
-#else
 		case PANEL_NOTIFY_STRING:
 			return (Xv_opaque) dp->terminators;
-#endif /* OW_I18N */
 
 		case PANEL_VALUE_FONT:
 		case PANEL_VALUE_STORED_LENGTH:
@@ -435,11 +363,6 @@ static Xv_opaque panel_num_text_get_attr(Panel_item item_public,
 		case PANEL_VALUE_UNDERLINED:
 		case PANEL_READ_ONLY:
 		case PANEL_MASK_CHAR:
-
-#ifdef OW_I18N
-		case PANEL_MASK_CHAR_WC:
-#endif /* OW_I18N */
-
 			return xv_get(dp->text_field, (Attr32_attribute)which_attr);
 
 		default:
@@ -456,10 +379,6 @@ static int panel_num_text_destroy(Panel_item item_public, Destroy_status status)
     if (status == DESTROY_CHECKING || status == DESTROY_SAVE_YOURSELF)
 	return XV_OK;
 
-#ifdef OW_I18N
-    if (dp->terminators_wc)
-        xv_free( dp->terminators_wc );
-#endif /* OW_I18N */
     if (dp->terminators)
         xv_free( dp->terminators );
     xv_destroy(dp->text_field);
@@ -745,32 +664,10 @@ static int check_dimming(Num_text_info *dp)
 
 static int get_value(Num_text_info *dp)
 {
-#ifdef OW_I18N
-    wchar_t *ptr;
-#else
     char *ptr;
-#endif /* OW_I18N */
     int value;
 
 
-#ifdef OW_I18N
-    /*
-     * if no value in numeric text field, then return 0; this
-     * prevents return of bogus value for NULL string.
-     */  
-    ptr = (wchar_t *)xv_get(dp->text_field, PANEL_VALUE_WCS);
-    if (*ptr == '\0')
-    {
-        if (0 > dp->max_value)
-            value = dp->max_value;
-        else if (0 < dp->min_value)
-            value = dp->min_value;
-        else
-            value = 0;
-    }
-    else
-        wsscanf(ptr, "%d", &value);
-#else
     /*
      * if no value in numeric text field, then return 0; this
      * prevents return of bogus value for NULL string.
@@ -787,37 +684,27 @@ static int get_value(Num_text_info *dp)
     }
     else
         sscanf(ptr, "%d", &value);
-#endif /* OW_I18N */
     return value;
 }
 
 
 static Bool notify_user(Num_text_info *dp, Event *event)
 {
-    switch (dp->notify_level) {
-      case PANEL_ALL:
-      default:
-	return TRUE;
+	switch (dp->notify_level) {
+		case PANEL_ALL:
+		default:
+			return TRUE;
 
-      case PANEL_NONE:
-	return FALSE;
+		case PANEL_NONE:
+			return FALSE;
 
-#ifdef OW_I18N
-      case PANEL_NON_PRINTABLE:
-        return (event_is_string(event) || !panel_printable_char(event_action(event)));
- 
-      case PANEL_SPECIFIED:
-        return event_is_down(event) &&
-            wschr(dp->terminators_wc, (int) event_action(event)) != 0;
-#else
-      case PANEL_NON_PRINTABLE:
-	return !panel_printable_char(event_action(event));
+		case PANEL_NON_PRINTABLE:
+			return !panel_printable_char(event_action(event));
 
-      case PANEL_SPECIFIED:
-	return event_is_down(event) &&
-	    XV_INDEX(dp->terminators, event_action(event)) != 0;
-#endif /* OW_I18N */
-    }
+		case PANEL_SPECIFIED:
+			return event_is_down(event) &&
+					XV_INDEX(dp->terminators, event_action(event)) != 0;
+	}
 }
 
 
@@ -868,13 +755,8 @@ static int set_value(register Num_text_info *dp, int new_value)
     if (new_value < dp->min_value)
 	new_value = dp->min_value;
 
-#ifdef OW_I18N
-    wsprintf(buffer, "%d", new_value);
-    xv_set(dp->text_field, PANEL_VALUE_WCS, buffer, NULL);
-#else
     sprintf(buffer, "%d", new_value);
     xv_set(dp->text_field, PANEL_VALUE, buffer, NULL);
-#endif /* OW_I18N */
 
     return check_dimming(dp);
 }
@@ -882,96 +764,82 @@ static int set_value(register Num_text_info *dp, int new_value)
 
 static Panel_setting text_notify_proc(Panel_item text_field, Event *event)
 {
-    Panel_item num_text = xv_get(text_field, XV_KEY_DATA, item_key);
-    register Item_info *ip = ITEM_PRIVATE(num_text);
-    register Num_text_info *dp = NUM_TEXT_PRIVATE(num_text);
-    int		    changed;
+	Panel_item num_text = xv_get(text_field, XV_KEY_DATA, item_key);
+	register Item_info *ip = ITEM_PRIVATE(num_text);
+	register Num_text_info *dp = NUM_TEXT_PRIVATE(num_text);
+	int changed;
 
-    if (event_action(event) == ACTION_CUT && dp->notify_level != PANEL_NONE)
-	return (Panel_setting) (*ip->notify) (ITEM_PUBLIC(ip), event);
+	if (event_action(event) == ACTION_CUT && dp->notify_level != PANEL_NONE)
+		return (Panel_setting) (*ip->notify) (ITEM_PUBLIC(ip), event);
 
-    if (event_is_down(event)) {
-	changed = FALSE;
-	if ((dp->btn_state & UP_INACTIVE) == 0) {
-	    switch (event_action(event)) {
-	      case ACTION_UP:
-		(void) set_value(dp, get_value(dp) + 1);
-		changed = TRUE;
-		break;
-	      case ACTION_JUMP_UP:
-		(void) set_value(dp, get_value(dp) + dp->jump_delta);
-		changed = TRUE;
-		break;
-	      case ACTION_DATA_START:
-		(void) set_value(dp, dp->max_value);
-		changed = TRUE;
-		break;
-	    }
+	if (event_is_down(event)) {
+		changed = FALSE;
+		if ((dp->btn_state & UP_INACTIVE) == 0) {
+			switch (event_action(event)) {
+				case ACTION_UP:
+					(void)set_value(dp, get_value(dp) + 1);
+					changed = TRUE;
+					break;
+				case ACTION_JUMP_UP:
+					(void)set_value(dp, get_value(dp) + dp->jump_delta);
+					changed = TRUE;
+					break;
+				case ACTION_DATA_START:
+					(void)set_value(dp, dp->max_value);
+					changed = TRUE;
+					break;
+			}
+		}
+		if ((dp->btn_state & DOWN_INACTIVE) == 0) {
+			switch (event_action(event)) {
+				case ACTION_DOWN:
+					(void)set_value(dp, get_value(dp) - 1);
+					changed = TRUE;
+					break;
+				case ACTION_JUMP_DOWN:
+					(void)set_value(dp, get_value(dp) - dp->jump_delta);
+					changed = TRUE;
+					break;
+				case ACTION_DATA_END:
+					(void)set_value(dp, dp->min_value);
+					changed = TRUE;
+					break;
+			}
+		}
+		if (changed) {
+			if (ip->notify)
+				(*ip->notify) (ITEM_PUBLIC(ip), event);
+			num_txt_paint_value(ip);
+			return PANEL_NONE;
+		}
 	}
-	if ((dp->btn_state & DOWN_INACTIVE) == 0) {
-	    switch (event_action(event)) {
-	      case ACTION_DOWN:
-		(void) set_value(dp, get_value(dp) - 1);
-		changed = TRUE;
-		break;
-	      case ACTION_JUMP_DOWN:
-		(void) set_value(dp, get_value(dp) - dp->jump_delta);
-		changed = TRUE;
-		break;
-	      case ACTION_DATA_END:
-		(void) set_value(dp, dp->min_value);
-		changed = TRUE;
-		break;
-	    }
-	} 
-	if (changed) {
-	    if (ip->notify)
-		(*ip->notify) (ITEM_PUBLIC(ip), event);
-	    num_txt_paint_value(ip);
-	    return PANEL_NONE;
+
+	if (event_action(event) > ASCII_LAST)
+		return panel_text_notify(text_field, event);
+
+	if (isprint(event_action(event)) && !isdigit(event_action(event)) &&
+			event_action(event) != '-' && event_action(event) != '+') {
+		window_bell(event_window(event));
+		return PANEL_NONE;
 	}
-    }
 
-#ifdef OW_I18N
-        /*
-         *  Disable all input from ie_string
-         */
-    if (!event_is_string(event) && event_action(event) > ASCII_LAST)
-        return panel_text_notify(text_field, event);
+	/*
+	 * validate text field value before calling user
+	 */
+	switch (event_action(event)) {
+		case '\n':
+		case '\t':
+		case '\r':
+			if (set_value(dp, get_value(dp)))
+				num_txt_paint_btn(ip, dp);
+			break;
+	}
 
-    if (event_is_string(event) || ( isprint(event_action(event))
-        && !isdigit(event_action(event)) &&
-        event_action(event) != '-' && event_action(event) != '+')) {
-        window_bell(event_window(event));
-        return PANEL_NONE;
-#else
-    if (event_action(event) > ASCII_LAST)
-	return panel_text_notify(text_field, event);
+	if (notify_user(dp, event))
+		return (Panel_setting) (*ip->notify) (ITEM_PUBLIC(ip), event);
 
-    if (isprint(event_action(event)) && !isdigit(event_action(event)) &&
-	event_action(event) != '-' && event_action(event) != '+') {
-	window_bell(event_window(event));
-	return PANEL_NONE;
-#endif /* OW_I18N */
-    }
-
-    /*
-     * validate text field value before calling user
-     */
-    switch (event_action(event)) {
-      case '\n':
-      case '\t':
-      case '\r':
-	if (set_value(dp, get_value(dp)))
-	    num_txt_paint_btn(ip, dp);
-	break;
-    }
-
-    if (notify_user(dp, event))
-	return (Panel_setting) (*ip->notify) (ITEM_PUBLIC(ip), event);
-
-    else
-	return panel_text_notify(text_field, event);
+	else
+		return panel_text_notify(text_field, event);
 }
 
 
