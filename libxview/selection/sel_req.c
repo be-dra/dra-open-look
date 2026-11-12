@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.65 2026/11/11 07:42:57 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.66 2026/11/11 21:57:30 dra Exp $";
 #endif
 #endif
 
@@ -397,7 +397,8 @@ static void SetExtendedData(Sel_reply_info *reply, Atom property, int typeIndex)
 * Create a reply struct.
 */
 static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
-					Sel_owner_info *selection, Time time, Sel_req_info *selReq)
+					Sel_owner_info *selection, Time time, Sel_req_info *selReq,
+					int no_answer)
 {
 	int numTarget;
 	Sel_reply_info *replyInfo;
@@ -416,6 +417,8 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 	replyInfo->sri_incr = xv_get(srv, SERVER_ATOM, "INCR");
 	replyInfo->sri_multiple = xv_get(srv, SERVER_ATOM, "MULTIPLE");
 	replyInfo->sri_atom_pair = xv_get(srv, SERVER_ATOM, "ATOM_PAIR");
+	replyInfo->sri_no_answer_atom = xv_get(srv, SERVER_ATOM, "_DRA_NO_ANSWER");
+	replyInfo->sri_no_answer_required = no_answer;
 
 	/* MLK */
 	replyInfo->sri_target = (Atom *) xv_calloc((unsigned)numTarget + 1,
@@ -436,7 +439,13 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 		XV_BCOPY((char *)&target, replyInfo->sri_target, numTarget * sizeof(Atom));
 	}
 
-	replyInfo->sri_property = xv_sel_get_property(replyInfo->sri_srv, replyInfo->sri_dpy);
+	if (no_answer) {
+		replyInfo->sri_property = replyInfo->sri_no_answer_atom;
+	}
+	else {
+		replyInfo->sri_property = xv_sel_get_property(replyInfo->sri_srv,
+													replyInfo->sri_dpy);
+	}
 	replyInfo->sri_requestor = win;
 	if (time == 0) {
 		replyInfo->sri_time = xv_sel_get_last_event_time(srv,
@@ -808,6 +817,29 @@ static int HandleLocalProcess(Sel_req_info   *selReq, Sel_reply_info *reply, int
 static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 								XSelectionEvent *ev, int blocking )
 {
+	if (replyInfo->sri_no_answer_required) {
+		notify_set_itimer_func((Notify_client)replyInfo, NOTIFY_TIMER_FUNC_NULL,
+				ITIMER_REAL, NULL, NULL);
+
+		/* we consider several cases:
+		 * case 1: no sel owner - the reply comes with property None
+		 * case 2: have sel owner, but rejects: property None
+		 * case 3: have sel owner, does no understand the "no answer"
+		 *         convention: will answer with property = no_answer
+		 *                                  but target != no_answer
+		 * case 4: have sel owner that does understand - 
+		 *         will answer with property = no_answer and target = no_answer
+		 */
+		if (ev->property == replyInfo->sri_no_answer_atom 
+			&& ev->target != replyInfo->sri_no_answer_atom)
+		{
+			/* case 3: the strange sel owner has written a property */
+			XDeleteProperty(ev->display, ev->requestor, ev->property);
+		}
+		return FALSE;
+	}
+
+
 	if (ev->time != replyInfo->sri_time) {
 		xv_sel_handle_error(SEL_BAD_TIME, selReq, replyInfo,
 				*replyInfo->sri_target, ev->send_event);
@@ -1204,7 +1236,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	 */
 	sel = xv_sel_find_selection_data(dpy, selection, xid);
 
-	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq);
+	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq, FALSE);
 	xv_set(requestor, XV_KEY_DATA, selreq_reply_key, replyInfo, NULL);
 	*reply = replyInfo;
 
@@ -1463,7 +1495,7 @@ static void XvGetSeln(Display *dpy, XID xid, Sel_req_info *selReq, Time time)
 	 */
 	sel = xv_sel_find_selection_data(dpy, selection, xid);
 
-	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq);
+	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq, FALSE);
 	xv_set(requestor, XV_KEY_DATA, selreq_reply_key, replyInfo, NULL);
 
 	if (selReq->nbr_types > 1)	/* target is MULTIPLE */
@@ -1758,6 +1790,85 @@ int sel_post_req(Selection_requestor sel)
 		xv_set(sel, SEL_TIME, &tv, NULL);
     }
     XvGetSeln( dpy, xid, selReq, XTime);
+    time->tv_sec = 0;
+    time->tv_usec = 0;
+    xv_set( sel, SEL_TIME, time, NULL );
+    return XV_OK;
+}
+
+int sel_post_req_no_answer(Selection_requestor sel)
+{
+    Sel_req_info   *selReq;
+    struct timeval *time;
+    Display        *dpy;
+    Xv_window      win;
+    Time           XTime;
+    XID            xid;
+	Sel_owner_info *selown;
+	Sel_reply_info *replyInfo;
+	Atom selection;
+
+    /* get the requestor's xid, event time, selection and the target */
+    selReq = SEL_REQUESTOR_PRIVATE( sel );
+    win = (Xv_window) xv_get( sel, XV_OWNER );
+    xid = (XID) xv_get( win, XV_XID );
+    dpy = XV_DISPLAY_FROM_WINDOW( win );
+
+	if (selReq->nbr_types > 1) { /* target is MULTIPLE */
+		return XV_ERROR;
+	}
+
+    /* get the time;if it hasn't been set, set it */
+    time = (struct timeval *) xv_get( sel, SEL_TIME );
+
+    XTime = xv_sel_cvt_timeval_to_xtime( time );
+
+    if ( XTime == 0 )  {
+		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
+        struct timeval tv;
+
+		XTime = xv_sel_get_last_event_time(srv, dpy, xid, FALSE);
+		xv_sel_cvt_xtime_to_timeval(XTime, &tv);
+		xv_set(sel, SEL_TIME, &tv, NULL);
+    }
+
+	selection = (Atom)xv_get(sel, SEL_RANK);
+
+	/*
+	 * Have we saved any data on this window?
+	 */
+	selown = xv_sel_find_selection_data(dpy, selection, xid);
+
+	replyInfo = NewReplyInfo(sel, xid, selown, XTime, selReq, TRUE);
+	xv_set(sel, XV_KEY_DATA, selreq_reply_key, replyInfo, NULL);
+
+
+	if (selown && (selown->own == TRUE)) {
+		selown->status |= SEL_LOCAL_PROCESS;
+		HandleLocalProcess(selReq, replyInfo, FALSE);
+		if (replyInfo->sri_target) xv_free(replyInfo->sri_target);
+		xv_free(replyInfo);
+	}
+	else {
+		struct itimerval timeout;
+
+		xv_sel_set_reply(replyInfo);
+
+		timeout.it_interval.tv_usec = 99999;	/* linux-bug */
+		timeout.it_interval.tv_sec = 0;
+
+		timeout.it_value.tv_usec = 0;
+		timeout.it_value.tv_sec = replyInfo->sri_timeout;
+
+		notify_set_itimer_func((Notify_client) replyInfo,
+				xv_sel_handle_sel_timeout, ITIMER_REAL, &timeout, ITIMER_NULL);
+
+		/*
+		 * Send the SelectionRequest message to the selection owner.
+		 */
+		XConvertSelection(dpy, selection, *replyInfo->sri_target,
+				replyInfo->sri_property, xid, replyInfo->sri_time);
+	}
     time->tv_sec = 0;
     time->tv_usec = 0;
     xv_set( sel, SEL_TIME, time, NULL );
