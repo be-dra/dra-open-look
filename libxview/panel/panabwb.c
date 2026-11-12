@@ -28,7 +28,7 @@
 #include <xview_private/panel_impl.h>
 #include <xview_private/draw_impl.h>
 
-char panabwb_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: panabwb.c,v 4.4 2026/01/22 16:18:28 dra Exp $";
+char panabwb_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: panabwb.c,v 4.5 2026/10/28 15:48:44 dra Exp $";
 
 typedef Frame (*creation_proc_t)(Panel_item);
 
@@ -273,10 +273,9 @@ static int panabwb_destroy(Panel_abbrev_window_item self, Destroy_status status)
 	if (status == DESTROY_CLEANUP) {
 		PanelAbbrevWindow_private *priv = PAWBPRIV(self);
 
-		if (priv->window) {
-			xv_destroy(priv->window);
-			priv->window = XV_NULL;
-		}
+		/* priv->window will be destroyed by the frame destruction sequence,
+		 * because it is the subframe of some other frame
+		 */
 		xv_free((char *)priv);
 	}
 	return XV_OK;
