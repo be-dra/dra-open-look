@@ -1,5 +1,5 @@
 #ifndef lint
-char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.63 2026/10/11 07:19:25 dra Exp $";
+char txt_xsel_c_sccsid[] = "@(#) $Id: txt_xsel.c,v 1.64 2026/11/11 21:23:18 dra Exp $";
 #endif
 
 #include <xview/defaults.h>
@@ -398,56 +398,6 @@ static int caret_convert_proc(Selection_owner sel_own, Atom *type,
 										format);
 }
 
-static void note_sel_reply(Selection_requestor sr, Atom target, Atom type,
-					Xv_opaque value, unsigned long length, int format)
-{
-	Textsw w = xv_get(sr, XV_OWNER);
-	Textsw_private priv = TEXTSW_PRIVATE(w);
-	Xv_server server = XV_SERVER_FROM_WINDOW(w);
-
-	if (length == SEL_ERROR) {
-		int errval = *((int *)value);
-		char *p = "???";
-
-		switch (errval) {
-			case SEL_BAD_PROPERTY :
-				p = "Bad Property";
-				break;
-			case SEL_BAD_CONVERSION :
-				p = "Conversion Rejected";
-				break;
-			case SEL_BAD_TIME:
-				p = "Bad Time Match";
-				break;
-			case SEL_BAD_WIN_ID:
-				p = "Bad Window Match";
-				break;
-			case SEL_TIMEDOUT:
-				p = "Timeout";
-				break;
-		}
-		SERVERTRACE((333, "SEL_ERROR on %ld for target %ld: %s\n",
-					xv_get(sr, SEL_RANK), target, p));
-		if (target == priv->atoms.selection_end) {
-			/* old selection owner that rejected _SUN_SELECTION_END ?
-			 * Try the old _SUN_SELN_YIELD...
-			 */
-			xv_set(sr, SEL_TYPE, priv->atoms.seln_yield, NULL);
-			sel_post_req(sr);
-		}
-		return;
-	}
- 
-	SERVERTRACE((345, "note_sel_reply: target = %s\n",
-				(char *)xv_get(server, SERVER_ATOM_NAME, target)));
-	if (target == priv->atoms.selection_end) {
-		if (value) xv_free(value);
-	}
-	if (target == priv->atoms.seln_yield) {
-		if (value) xv_free(value);
-	}
-}
-
 Pkg_private void textsw_new_sel_copy(Textsw_view_private view, Event *ev)
 {
 	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
@@ -486,10 +436,7 @@ static void init_sel_req(Textsw_private priv)
 {
 	if (priv->sel_req) return;
 
-	priv->sel_req = xv_create(TEXTSW_PUBLIC(priv), SELECTION_REQUESTOR,
-					/* needed because of nonblocking _SUN_SELECTION_END: */
-					SEL_REPLY_PROC, note_sel_reply,
-					NULL);
+	priv->sel_req = xv_create(TEXTSW_PUBLIC(priv), SELECTION_REQUESTOR, NULL);
 }
 
 Pkg_private void textsw_new_sel_copy_appending(Textsw_view_private view,
@@ -502,7 +449,7 @@ Pkg_private void textsw_new_sel_copy_appending(Textsw_view_private view,
 	unsigned long applen;
 	char *oldclip, *appended;
 	int format;
-	unsigned long oldcliplen;
+	long oldcliplen;
 	int old_is_word, new_is_word;
 
 	if (ev) tv = event_time(ev);
@@ -567,7 +514,7 @@ Pkg_private void textsw_new_sel_cut(Textsw_view_private view, Event *ev,
 									int canbequickmove)
 {
 	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(view);
-	unsigned long length;
+	long length;
 	int format;
 	char *string;
 	Es_index pos, temp, first, lpo;
@@ -607,7 +554,7 @@ Pkg_private void textsw_new_sel_cut(Textsw_view_private view, Event *ev,
 			SERVERTRACE((333, "requested SECONDARY DELETE, len=%ld\n", length));
 
 			xv_set(priv->sel_req, SEL_TYPE, priv->atoms.selection_end, NULL);
-			sel_post_req(priv->sel_req);
+			sel_post_req_no_answer(priv->sel_req);
 
 			if (string) {
 				long str_len;
@@ -731,7 +678,7 @@ Pkg_private int textsw_new_sel_paste(Textsw_view_private vp, Event *ev,
 									int canbequick)
 {
 	Textsw_private priv = TSWPRIV_FOR_VIEWPRIV(vp);
-	unsigned long length;
+	long length;
 	int format, is_word = FALSE;
 	char *string, wbuf[3];
 	Es_index pos, temp, first, lpo, selpos;
@@ -767,7 +714,7 @@ Pkg_private int textsw_new_sel_paste(Textsw_view_private vp, Event *ev,
 			is_word = xv_get(priv->sel_req, SEL_IS_WORD_SELECTION);
 
 			xv_set(priv->sel_req, SEL_TYPE, priv->atoms.selection_end, NULL);
-			sel_post_req(priv->sel_req);
+			sel_post_req_no_answer(priv->sel_req);
 		}
 		else {
 			/* no, it was NOT a quick duplicate */
