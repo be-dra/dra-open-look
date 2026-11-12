@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.57 2026/10/15 17:00:07 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.58 2026/11/11 21:57:26 dra Exp $";
 #endif
 #endif
 
@@ -488,6 +488,8 @@ static void SendIncrMessage( Sel_owner_info *sel)
 static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 							int multipleIndex, int *sendEventReqPtr, XEvent *ev)
 {
+	Xv_window parent;
+	Xv_server srv;
 	Atom replyType;
 	char *replyBuff;
 	unsigned long length;
@@ -577,13 +579,26 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 
   Done:
 
-	/*
-	 * Place the data resulting from the selection conversion into the
-	 * specified property on the requestor window.
-	 */
-	XChangeProperty(selection->dpy, selection->req->rq_requestor,
-			selection->req->rq_property, selection->req->rq_type,
-			format, PropModeReplace, (unsigned char *)replyBuff, (int)length);
+
+	parent = xv_get(selection->public_self, XV_OWNER);
+	srv = XV_SERVER_FROM_WINDOW(parent);
+
+	if (selection->req->rq_property == xv_get(srv, SERVER_ATOM,
+							"_DRA_NO_ANSWER"))
+	{
+		/* as an indication for the requestor */
+		ev->xselection.target = selection->req->rq_property;
+	}
+	else {
+		/*
+		 * Place the data resulting from the selection conversion into the
+		 * specified property on the requestor window.
+		 */
+		XChangeProperty(selection->dpy, selection->req->rq_requestor,
+				selection->req->rq_property, selection->req->rq_type,
+				format, PropModeReplace, (unsigned char *)replyBuff,
+				(int)length);
+	}
 
 	/* In earlier versions this function didn't have the parameters
 	 * sendEventReqPtr and ev. The purpose was for targets like
