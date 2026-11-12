@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.7 2026/04/17 12:00:04 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.12 2026/10/23 07:03:45 dra Exp $ ";
 #endif
 #endif
 
@@ -25,40 +25,8 @@ static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,
 
 #include <X11/Xatom.h>
 
-#define	FRAME_CMD_PRIVATE(f)	XV_PRIVATE(Frame_cmd_info, Xv_frame_cmd, f)
 #define FRAME_CMD_PUBLIC(f)	XV_PUBLIC(f)
 #define FRAME_CLASS_FROM_CMD(f) FRAME_PRIVATE(FRAME_CMD_PUBLIC(f))
-
-#define	FRAME_PROPS_PRIVATE(f)	FRAME_CMD_PRIVATE(f)
-#define FRAME_PROPS_PUBLIC(f)   FRAME_CMD_PUBLIC(f)
-#define FRAME_CLASS_FROM_PROPS(f) FRAME_CLASS_FROM_CMD(f)
-
-
-#define FRAME_CMD_FLAGS		WMDecorationHeader | WMDecorationCloseButton | \
-				WMDecorationPushPin
-
-#define FRAME_PROPS_FLAGS	FRAME_CMD_FLAGS
-
-typedef	struct	{
-    Frame	public_self;	/* back pointer to object */
-    WM_Win_Type	win_attr;	/* _OL_WIN_ATTR */
-
-    struct {
-	BIT_FIELD(pushpin_in);		/* is pushpin in or out */
-	BIT_FIELD(warp_pointer);	/* whether to warp the pointer when window is mapped */
-	BIT_FIELD(default_pin_state);   /* default (or initial) pin state */
-	BIT_FIELD(default_pin_state_valid);   /* whether default_pin_state has useful value */
-    } status_bits;
-	int panel_bordered;
-    Panel	panel;
-} Frame_cmd_info;
-
-#define	Frame_props_info	Frame_cmd_info
-
-#if defined(WITH_3X_LIBC) || defined(vax)
-/* 3.x - 4.0 libc transition code; old (pre-4.0) code must define the symbol */
-#define jcsetpgrp(p)  setpgrp((p),(p))
-#endif
 
 static xv_popup_frame_initializer_t popup_frame_init = NULL;
 
@@ -288,12 +256,13 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 	Attr_avlist attrs;
 	Frame_cmd_info *frame = FRAME_CMD_PRIVATE(frame_public);
 	Xv_Drawable_info *info;
-	Xv_opaque server_public;
+	Xv_opaque srv;
 	int result = XV_OK;
 	int set_win_attr;
+	Atom pinstate;
 
 	DRAWABLE_INFO_MACRO(frame_public, info);
-	server_public = xv_server(info);
+	srv = xv_server(info);
 	set_win_attr = 0;
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) switch (attrs[0]) {
@@ -326,7 +295,7 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 			status_set(frame, default_pin_state_valid, (int)TRUE);
 			if (!xv_get(frame_public, XV_SHOW))
 				set_win_attr |=
-						update_default_pin_state(frame, server_public);
+						update_default_pin_state(frame, srv);
 			break;
 
 		case FRAME_CMD_PANEL_BORDERED:
@@ -363,26 +332,11 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 
 		case XV_LABEL:
 			{
-
-#ifdef OW_I18N
-				extern wchar_t *xv_app_name_wcs;
-#endif
-
 				extern char *xv_app_name;
 				Frame_class_info *frame_class = FRAME_CLASS_FROM_CMD(frame);
 
 				*attrs = (Frame_attribute) ATTR_NOP(*attrs);
 
-#ifdef OW_I18N
-				if ((char *)attrs[1]) {
-					_xv_set_mbs_attr_dup(&frame_class->label,
-							(char *)attrs[1]);
-				}
-				else {
-					_xv_set_wcs_attr_dup(&frame_class->label,
-							xv_app_name_wcs);
-				}
-#else
 				if (frame_class->label) {
 					free(frame_class->label);
 				}
@@ -401,27 +355,9 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 						frame_class->label = NULL;
 					}
 				}
-#endif
 
 				(void)frame_display_label(frame_class);
 				break;
-
-#ifdef OW_I18N
-		case XV_LABEL_WCS:
-				{
-					extern wchar_t *xv_app_name_wcs;
-					Frame_class_info *frame_class =
-							FRAME_CLASS_FROM_CMD(frame);
-
-					*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-					_xv_set_wcs_attr_dup(&frame_class->label,
-							(wchar_t *)attrs[1]
-							? (wchar_t *)attrs[1]
-							: xv_app_name_wcs);
-					(void)frame_display_label(frame_class);
-				}
-				break;
-#endif
 
 		case XV_SHOW:
 				{
@@ -438,7 +374,7 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 						if (status_get(frame_class, dismiss)) {
 							status_set(frame_class, dismiss, FALSE);
 							set_win_attr |= update_default_pin_state(frame,
-									server_public);
+									srv);
 							break;
 						}
 
@@ -448,12 +384,12 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 							attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
 						else {
 							set_win_attr |= update_default_pin_state(frame,
-									server_public);
+									srv);
 						}
 					}
 					else {
 						unsigned long data[6];
-						Rect *rect;
+						Rect buttonrect, panelrect;
 						Panel_item default_panel_item;
 						int button_x, button_y;
 
@@ -492,46 +428,33 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 							}
 						}
 
-#ifdef OW_I18N
-						if (status_get(frame, warp_pointer) == TRUE) {
-#endif
+						default_panel_item =
+								(Panel_item) xv_get(frame->panel,
+								PANEL_DEFAULT_ITEM);
+						if (!default_panel_item)
+							break;
+						buttonrect = *((Rect *) xv_get(default_panel_item,
+								PANEL_ITEM_RECT));
 
-							default_panel_item =
-									(Panel_item) xv_get(frame->panel,
-									PANEL_DEFAULT_ITEM);
-							if (!default_panel_item)
-								break;
-							rect = (Rect *) xv_get(default_panel_item,
-									PANEL_ITEM_RECT);
+						panelrect = *((Rect *) xv_get(frame->panel, XV_RECT));
 
-							win_translate_xy(frame->panel, frame_public,
-									rect->r_left, rect->r_top, &button_x,
-									&button_y);
-							data[0] = button_x + rect->r_width / 2;
-							data[1] = button_y + rect->r_height / 2;
-							data[2] = button_x;
-							data[3] = button_y;
-							data[4] = rect->r_width;
-							data[5] = rect->r_height;
+						button_x = buttonrect.r_left + panelrect.r_left;
+						button_y = buttonrect.r_top + panelrect.r_top;
 
-							win_change_property(frame_public,
-									(long)SERVER_WM_DEFAULT_BUTTON,
-									XA_INTEGER, 32, (unsigned char *)data,
-									6);
+						data[0] = button_x + buttonrect.r_width / 2;
+						data[1] = button_y + buttonrect.r_height / 2;
+						data[2] = button_x;
+						data[3] = button_y;
+						data[4] = buttonrect.r_width;
+						data[5] = buttonrect.r_height;
 
-#ifdef OW_I18N
-						}
-#endif
+						win_change_property(frame_public,
+								(long)SERVER_WM_DEFAULT_BUTTON,
+								XA_INTEGER, 32, (unsigned char *)data,
+								6, FALSE);
 					}
 					break;
 				}
-
-#ifdef OW_I18N
-		case FRAME_CMD_POINTER_WARP:
-				*attrs = (Frame_attribute) ATTR_NOP(*attrs);
-				status_set(frame, warp_pointer, attrs[1]);
-				break;
-#endif
 
 		case XV_END_CREATE:
 				if (!frame->panel) {
@@ -564,6 +487,10 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 				frame->win_attr.win_type = (Atom)xv_get(frame_public,
 															FRAME_WINTYPE);
 				set_win_attr = TRUE;
+				pinstate = xv_get(srv, SERVER_WM_PIN_STATE);
+				win_change_property(frame_public,
+						(Attr_attribute)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
+						(unsigned char *)&pinstate, 1, TRUE);
 				break;
 
 		default:
