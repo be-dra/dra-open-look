@@ -1,4 +1,4 @@
-char p_drop_sccsid[] = "@(#)p_drop.c 1.22 93/06/28 DRA: $Id: p_drop.c,v 4.7 2025/11/01 14:55:10 dra Exp $";
+char p_drop_sccsid[] = "@(#)p_drop.c 1.22 93/06/28 DRA: $Id: p_drop.c,v 4.9 2026/11/03 10:30:27 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -141,7 +141,8 @@ static int panel_drop_init(Panel panel_public, Panel_item item_public,
 	 * Initialize non-zero private data
 	 */
 	dp->drop_site = xv_create(panel_public, DROP_SITE_ITEM,
-			DROP_SITE_EVENT_MASK, DND_ENTERLEAVE, NULL);
+						DROP_SITE_EVENT_MASK, DND_ENTERLEAVE,
+						NULL);
 	dp->sel_req = xv_create(panel_public, SELECTION_REQUESTOR, NULL);
 	dp->del_move = TRUE;
 
@@ -430,6 +431,7 @@ static void drop_handle_event(Panel_item item_public, Event *event)
 			}
 
 			mynotify = (mynotify_t) ip->notify;
+			xv_set(dp->dnd, SEL_TIME, &event_time(event), NULL);
 			(*mynotify) (item_public, (int)dnd_send_drop(dp->dnd), event);
 			dp->status &= ~SELECT_DOWN;
 			if (!busy_modified(ip))
