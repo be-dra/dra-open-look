@@ -268,11 +268,7 @@ void olgx_draw_button(Graphics_info *info, Window win, int x, int y,
 	   /* need to remove the inactive flag because the button is
 	      later covered with a stipple pattern which will cancel
 	      out the stipple in olgx_draw_text() */
-#ifdef OW_I18N
-	    olgx_draw_text(info, win, label,
-#else
 	    olgx_draw_text(info, win, (const char *) label,
-#endif /* OW_I18N */
 			   x + info->endcap_width,
 			   y + info->button_height - info->base_off,
 			   inside_width -
@@ -548,12 +544,24 @@ static void draw_window_mark(Graphics_info *info, Window win, int x, int y,
 									int state)
 {
 	char *dots = "...";
-	int width = XTextWidth(TextFont_Struct(info), dots, 3);
+	int width;
+
+	if (Olgx_Flags(info) & OLGX_FONTSET) {
+		width = XmbTextEscapement(TextFont_Set(info), dots, 3);
+	}
+	else {
+		width = XTextWidth(TextFont_Struct(info), dots, 3);
+	}
 
 	olgx_draw_text(info, win, dots,
 						x + ((Abbrev_MenuButton_Width(info) - width) / 2),
 						y + ((Abbrev_MenuButton_Height(info) * 3) / 4),
 						0, state & ~OLGX_INACTIVE);
+}
+
+static int glyph_known(Graphics_info *info, int ch)
+{
+  	return (info->glyphfont->max_char_or_byte2 >= ch);
 }
 
 void olgx_draw_abbrev_button( Graphics_info  *info, Window win,
@@ -590,7 +598,13 @@ void olgx_draw_abbrev_button( Graphics_info  *info, Window win,
 					y + 2, (unsigned)(Abbrev_MenuButton_Width(info) - 4),
 					(unsigned)(Abbrev_MenuButton_Width(info) - 4));
 			if (state & OLGX_HORIZONTAL) {
-				string[0] = TEXTSCROLLBUTTON_RIGHT_INV;
+  				if (glyph_known(info, OLG_ABBREV_MENU_BUTTON_HOR_INVERTED)) {
+					/* dra-enhanced glyph font */
+					string[0] = OLG_ABBREV_MENU_BUTTON_HOR_INVERTED;
+				}
+				else {
+					string[0] = TEXTSCROLLBUTTON_RIGHT_INV;
+				}
 				XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x, y,
 								&item, 1);
 			}
@@ -600,20 +614,33 @@ void olgx_draw_abbrev_button( Graphics_info  *info, Window win,
 								&item, 1);
 			}
 			else if (state & OLGX_ABBREV) {   /* abbreviated window button */
-				string[0] = OLG_ABBREV_MENU_BUTTON_INVERTED;
-				XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x, y,
+  				if (glyph_known(info, OLG_ABBREV_WIN_BUTTON_INVERTED)) {
+					/* dra-enhanced glyph font */
+					string[0] = OLG_ABBREV_WIN_BUTTON_INVERTED;
+					XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x,y,
 								&item, 1);
-				XFillRectangle(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc,
+				}
+				else {
+					string[0] = OLG_ABBREV_MENU_BUTTON_INVERTED;
+					XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x,y,
+								&item, 1);
+					XFillRectangle(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc,
 								x + 2, y + 3,
 								(unsigned)(Abbrev_MenuButton_Width(info) - 5),
 								(unsigned)(Abbrev_MenuButton_Width(info) - 7));
-				draw_window_mark(info, win, x, y, state);
+					draw_window_mark(info, win, x, y, state);
+				}
 			}
 		}
 		else {
-
 			if (state & OLGX_HORIZONTAL) {
-				string[0] = TEXTSCROLLBUTTON_RIGHT;
+				if (glyph_known(info, OLG_ABBREV_MENU_BUTTON_HOR)) {
+					/* dra-enhanced glyph font */
+					string[0] = OLG_ABBREV_MENU_BUTTON_HOR;
+				}
+				else {
+					string[0] = TEXTSCROLLBUTTON_RIGHT;
+				}
 				XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x, y,
 								&item, 1);
 			}
@@ -623,14 +650,22 @@ void olgx_draw_abbrev_button( Graphics_info  *info, Window win,
 								&item, 1);
 			}
 			else if (state & OLGX_ABBREV) {   /* abbreviated window button */
-				string[0] = OLG_ABBREV_MENU_BUTTON;
-				XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x, y,
+				if (glyph_known(info, OLG_ABBREV_WIN_BUTTON)) {
+					/* dra-enhanced glyph font */
+					string[0] = OLG_ABBREV_WIN_BUTTON;
+					XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x,y,
 								&item, 1);
-				XFillRectangle(info->dpy, win, info->gc_rec[OLGX_WHITE]->gc,
+				}
+				else {
+					string[0] = OLG_ABBREV_MENU_BUTTON;
+					XDrawText(info->dpy, win, info->gc_rec[OLGX_BLACK]->gc, x,y,
+								&item, 1);
+					XFillRectangle(info->dpy, win, info->gc_rec[OLGX_WHITE]->gc,
 								x + 2, y + 3,
 								(unsigned)(Abbrev_MenuButton_Width(info) - 5),
 								(unsigned)(Abbrev_MenuButton_Width(info) - 6));
-				draw_window_mark(info, win, x, y, state);
+					draw_window_mark(info, win, x, y, state);
+				}
 			}
 		}
 
@@ -708,144 +743,70 @@ void olgx_stipple_rect(Graphics_info  *info, Window win,
 		   x, y, (unsigned)width, (unsigned)height);
 }
 
-void olgx_draw_text(Graphics_info *info, Window win,
-#ifdef OW_I18N
-    void *string,
-#else
-    const char *string,
-#endif /* OW_I18N */
+void olgx_draw_text(Graphics_info *info, Window win, const char *string,
     int x, int y, int max_width, int state)
 {
-
-#ifdef OW_I18N
-	int len;
-	int mb_len;
-	char *mbs = NULL;
-	wchar_t *wcs = NULL;
-#else
 	unsigned int len;
-#endif /* OW_I18N */
 	int current_width = 0;
 	int width = 0;
 	GC  gc;
 	register int i;
 	short more_flag = 0;
+	int use_utf8;
 
-
-#ifdef OW_I18N
-	if ((Olgx_Flags(info) & OLGX_FONTSET) && (state & OLGX_LABEL_IS_WCS)) {
-		wcs = (wchar_t *) string;
-		len = wcslen(wcs);
-	}
-	else {
-		mbs = (char *)string;
-		len = strlen(mbs);
-	}
-#else
 	len = strlen(string);
-#endif /* OW_I18N */
 
 	/*
 	 * if the string is too long, we'll have to truncate it max_width == 0
 	 * implies don't truncate.
 	 */
 
-#ifdef OW_I18N
-	if (Olgx_Flags(info) & OLGX_FONTSET) {
-		if (state & OLGX_LABEL_IS_WCS) {
-			/*
-			 * Case for the wide character string
-			 */
-			width = XwcTextEscapement(info->textfontset, wcs, len);
-			if (max_width && width > max_width) {
-				for (i = 0; (i < len && current_width <= max_width); i++) {
-					current_width +=
-							XwcTextEscapement(info->textfontset, &wcs[i], 1);
-				}
-				len = i - 2;
-				if (state & OLGX_MORE_ARROW)
-					more_flag = 1;
+	use_utf8 = (Olgx_Flags(info) & OLGX_MULTIBYTE_MODE) && TextFont_Set(info);
 
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
-				else
-					++len;
-#endif
-			}
-			width = XwcTextEscapement(info->textfontset, wcs, len);
-		}
-		else {
-			/*
-			 * Case for the multibyte string.  It might be faster to
-			 * convert it to wide char....
-			 */
-			width = XmbTextEscapement(info->textfontset, mbs, len);
-			if (max_width && width > max_width) {
-				for (i = 0; (i < len && current_width <= max_width);) {
-					mb_len = mblen(&mbs[i], (size_t)len);
-					current_width +=
-							XmbTextEscapement(info->textfontset,
-							&mbs[i], mb_len);
-					i += mb_len;
-				}
-				len = i - 2;
-				if (state & OLGX_MORE_ARROW)
-					more_flag = 1;
+	if (use_utf8) {
+		width = XmbTextEscapement(TextFont_Set(info), string, (int)len);
 
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
-				else
-					++len;
-#endif
-
-				width = XmbTextEscapement(info->textfontset, mbs, len);
-			}
-		}
-	}
-	else {
-		width = XTextWidth(TextFont_Struct(info), mbs, len);
 		if (max_width && width > max_width) {
-			for (i = 0; (i < len && current_width <= max_width); i++) {
-				current_width += XTextWidth(TextFont_Struct(info), &mbs[i], 1);
+			int ch_len;
+
+			for (i = 0; (i < len && current_width <= max_width);) {
+				ch_len = mblen(&string[i], (size_t)(len - i));
+				if (ch_len <= 0)
+					ch_len = 1;
+
+				current_width +=
+						XmbTextEscapement(TextFont_Set(info), &string[i],
+						ch_len);
+				i += ch_len;
 			}
+
 			len = i - 2;
 			if (state & OLGX_MORE_ARROW)
 				more_flag = 1;
-
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
 			else
 				++len;
-#endif
 
-			width = XTextWidth(TextFont_Struct(info), mbs, len);
+			width = XmbTextEscapement(TextFont_Set(info), string, (int)len);
 		}
 	}
-#else /* OW_I18N */
-	if (max_width && XTextWidth(TextFont_Struct(info),
-					string, (int)len) > max_width) {
-		for (i = 0; (i < len && current_width <= max_width); i++) {
-			current_width += XTextWidth(TextFont_Struct(info), &string[i], 1);
+	else {
+		/* Klassischer 8-Bit Pfad */
+		if (max_width
+				&& XTextWidth(TextFont_Struct(info), string,
+						(int)len) > max_width) {
+			for (i = 0; (i < len && current_width <= max_width); i++) {
+				current_width += XTextWidth(TextFont_Struct(info), &string[i],1);
+			}
+
+			len = i - 2;
+			if (state & OLGX_MORE_ARROW)
+				more_flag = 1;
+			else
+				++len;
+
+			width = XTextWidth(TextFont_Struct(info), string, (int)len);
 		}
-
-		/*
-		 * at this point, i-1 represents the number of chars of string that
-		 * will fit into max_width.
-		 */
-
-		len = i - 2;
-		if (state & OLGX_MORE_ARROW)
-			more_flag = 1;
-
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
-		else
-			++len;
-#endif
-
-		width = XTextWidth(TextFont_Struct(info), string, (int)len);
 	}
-#endif /* OW_I18N */
 
 	if ((state & OLGX_INVOKED) && !(info->three_d)) {
 		if (!info->gc_rec[OLGX_TEXTGC_REV])
@@ -861,21 +822,13 @@ void olgx_draw_text(Graphics_info *info, Window win,
 		XSetFillStyle(info->dpy, gc, FillStippled);
 	}
 
-#ifdef OW_I18N
-	if (Olgx_Flags(info) & OLGX_FONTSET) {
-		if (state & OLGX_LABEL_IS_WCS)
-			XwcDrawString(info->dpy, win, info->textfontset, gc, x, y,
-					wcs, len);
-		else
-			XmbDrawString(info->dpy, win, info->textfontset, gc, x, y,
-					mbs, len);
+	if (use_utf8) {
+		XmbDrawString(info->dpy, win, TextFont_Set(info), gc, x, y,
+											string, (int)len);
 	}
-	else
-		XDrawString(info->dpy, win, gc, x, y, mbs, len);
-
-#else /* OW_I18N */
-	XDrawString(info->dpy, win, gc, x, y, string, (int)len);
-#endif /* OW_I18N */
+	else {
+		XDrawString(info->dpy, win, gc, x, y, string, (int)len);
+	}
 
 	if (state & OLGX_INACTIVE) {
 		XSetFillStyle(info->dpy, gc, FillSolid);
@@ -883,12 +836,7 @@ void olgx_draw_text(Graphics_info *info, Window win,
 
 	if (more_flag) {	/* render a more arrow at the end of the string */
 		olgx_draw_menu_mark(info, win, x + width + 1, y - MenuMark_Height(info),
-
-#ifdef BEFORE_DRA_CHANGED_IT
-				OLGX_HORIZ_MENU_MARK, 1);
-#else
 				(state & OLGX_INVOKED) | OLGX_HORIZ_MENU_MARK, 0);
-#endif
 	}
 }
 
@@ -1233,407 +1181,365 @@ static void olgx_draw_accel_label_internal(Graphics_info *info, Window win,
 				int	mark_type, int	mark_pos, void *key_label, int	key_pos,
 				int state, int centerflag)
 {
-#ifdef OW_I18N
 	char *highlight_char = NULL;
-#endif
-    int text_width;     /* temporary var. for figuring max_width to pass to
-			   olgx_draw_text() */
-    if (main_label) {
-	/* calc. max width of label w.r.t qualifier, mark, accelerator 
-	   string, or entire width. */
-	if (q_pos) {
-	    text_width = q_pos - m_pos;
-	} else if (mark_pos) {
-	    text_width = mark_pos - m_pos;
-	} else if (key_pos) {
-	    text_width = key_pos - m_pos;
-	} else {
-	    text_width = x + width - m_pos;
-	}
-	/* state can be IS_PIXMAP, IS_XIMAGE, HAS_UNDERLINE, 
-	   HAS_HIGHLIGHT or normal. */
-	if (state & OLGX_LABEL_IS_PIXMAP) {
-	    int              newy;
-	    Pixlabel        *plabel;
-	    plabel=          (Pixlabel *)main_label;
-	    if (centerflag) {
-		newy = y + ((height - plabel->height)/2);
-	    } else {
-		/* put bottom of pixmap at texty */
-		newy = texty - plabel->height;
-	    }
-	    olgx_draw_pixmap_label(info, win,
-				   plabel->pixmap,
-				   m_pos,
-				   newy,
-				   (plabel->width > text_width) ? text_width:
-				   plabel->width ,
-				   (plabel->height > height) ? height : plabel->height,
-				   state);
-	} else if (state & OLGX_LABEL_IS_XIMAGE) {
-	    int              newy;
-	    Ximlabel        *ximlabel;
-	    ximlabel =       (Ximlabel *)main_label;
-	    if (centerflag) {
-		newy = y + ((height - ximlabel->height)/2);
-	    } else {
-		/* put bottom of pixmap at texty */
-		newy = texty - ximlabel->height;
-	    }
-	    olgx_draw_ximage_label(info, win,
-				   ximlabel->ximage,
-				   m_pos,
-				   newy,
-				   (ximlabel->width > text_width)? 
-			       text_width:ximlabel->width ,
-				   (height) ? height : Button_Height(info) - 2, state);
-	} else {
-	    int ascent, descent, direction;
-	    XCharStruct overall;
-	    void *string_label;
-	    Underlinelabel *ulabel, *hlabel = 0;
-	    int has_highlight=0,has_underline=0;
-	    int highlightx_pos, highlight_length, highlighty_pos, 
-	        highlight_height;
-	    if (state & OLGX_LABEL_HAS_UNDERLINE) {
-		has_underline = 1;
-		ulabel = (Underlinelabel *)main_label;
-		string_label = (void *)ulabel->label;
-	    } else if (state & OLGX_LABEL_HAS_HIGHLIGHT) {
-		GC gc;
-		int ascent, descent, direction;
-		XCharStruct overall;
+	int text_width;	/* temporary var. for figuring max_width to pass to
+					   olgx_draw_text() */
+	if (main_label) {
+		/* calc. max width of label w.r.t qualifier, mark, accelerator 
+		   string, or entire width. */
+		if (q_pos) {
+			text_width = q_pos - m_pos;
+		}
+		else if (mark_pos) {
+			text_width = mark_pos - m_pos;
+		}
+		else if (key_pos) {
+			text_width = key_pos - m_pos;
+		}
+		else {
+			text_width = x + width - m_pos;
+		}
+		/* state can be IS_PIXMAP, IS_XIMAGE, HAS_UNDERLINE, 
+		   HAS_HIGHLIGHT or normal. */
+		if (state & OLGX_LABEL_IS_PIXMAP) {
+			int newy;
+			Pixlabel *plabel;
 
-		hlabel = (Underlinelabel *)main_label;
-		string_label = (void *)hlabel->label;
-		if (info->three_d) {
-		    gc = info->gc_rec[OLGX_BLACK]->gc;
-		} else {
-		    if (state & OLGX_INVOKED) {
-			if (!info->gc_rec[OLGX_TEXTGC_REV])
-			    olgx_initialise_gcrec(info, OLGX_TEXTGC_REV);
-			gc = info->gc_rec[OLGX_TEXTGC_REV]->gc;
-		    } else {
-			if (!info->gc_rec[OLGX_TEXTGC])
-			    olgx_initialise_gcrec(info, OLGX_TEXTGC);
-			gc = info->gc_rec[OLGX_TEXTGC]->gc;
-		    }
+			plabel = (Pixlabel *) main_label;
+			if (centerflag) {
+				newy = y + ((height - plabel->height) / 2);
+			}
+			else {
+				/* put bottom of pixmap at texty */
+				newy = texty - plabel->height;
+			}
+			olgx_draw_pixmap_label(info, win,
+					plabel->pixmap,
+					m_pos,
+					newy,
+					(plabel->width > text_width) ? text_width :
+					plabel->width,
+					(plabel->height > height) ? height : plabel->height, state);
 		}
-#ifdef OW_I18N
-		if (Olgx_Flags(info) & OLGX_FONTSET) {
-		    XRectangle overall_ink_return, overall_logical_return;
-		    int string_width;
-		    if (state & OLGX_LABEL_IS_WCS) {
-			string_width = XwcTextExtents(info->textfontset,
-						      (wchar_t *)string_label,
-						      hlabel->position,
-						      &overall_ink_return,
-						      &overall_logical_return);
-			highlight_length = XwcTextEscapement(info->textfontset,
-				     (wchar_t *) ((wchar_t *)string_label +
-						  hlabel->position), 
-							     1);
-			highlightx_pos = m_pos + ((hlabel->position) ?
-						  string_width :
-						  0);
-		    } else { /* multibyte case */
-			string_width = XmbTextExtents(info->textfontset,
-						      (char *)string_label,
-						      hlabel->position,
-						      &overall_ink_return,
-						      &overall_logical_return);
-			highlight_char = (char *)string_label+hlabel->position;
-			highlight_length = XmbTextEscapement(info->textfontset,
-					    highlight_char,
-					    mblen(highlight_char,
-						  strlen(highlight_char)));
-			highlightx_pos = m_pos + ((hlabel->position) ?
-						  string_width :
-						  0);
-		    }
-		    highlight_height = overall_logical_return.height + 1;
-		    /* overall_logical_return.y is < 0 */
-		    highlighty_pos = texty + overall_logical_return.y;
-		} else { /* single byte i18n case */
-		    XTextExtents(TextFont_Struct(info),(char *)string_label,
-				 hlabel->position,&direction,&ascent,&descent,
-				 &overall);
-		    highlight_length = XTextWidth(TextFont_Struct(info),
-						  (char *)string_label + 
-						  hlabel->position,
-						  1);		
-		    highlightx_pos = m_pos + ((hlabel->position) ? 
-					      overall.width :
-					      0);
-		    highlight_height = ascent + descent + 1;
-		    highlighty_pos = texty - ascent;
-		}
-#else
-		XTextExtents(TextFont_Struct(info),(char *)string_label,
-			     hlabel->position,&direction,&ascent,&descent,
-			     &overall);
-		highlight_length = XTextWidth(TextFont_Struct(info),
-					      (char *)string_label + 
-					      hlabel->position,
-					      1);		
-		highlightx_pos = m_pos + ((hlabel->position) ? 
-					  overall.width :
-					  0);
-		highlight_height = ascent + descent + 1;
-		highlighty_pos = texty - ascent;
-		
-#endif /* OW_I18N */
+		else if (state & OLGX_LABEL_IS_XIMAGE) {
+			int newy;
+			Ximlabel *ximlabel;
 
-		if (highlightx_pos < (m_pos + text_width)) {
-		    if (state & OLGX_INACTIVE) {
-			XSetFillStyle(info->dpy,gc,FillStippled);
-		    }
-		    XFillRectangle(info->dpy, win, gc, 
-				   highlightx_pos,
-				   highlighty_pos,
-				   (unsigned)highlight_length,
-				   (unsigned)highlight_height);
-		    if (state & OLGX_INACTIVE) {
-			XSetFillStyle(info->dpy,gc,FillSolid);
-		    }
-		    /* now set flag because highlight actually drawn */
-		    has_highlight = 1;
+			ximlabel = (Ximlabel *) main_label;
+			if (centerflag) {
+				newy = y + ((height - ximlabel->height) / 2);
+			}
+			else {
+				/* put bottom of pixmap at texty */
+				newy = texty - ximlabel->height;
+			}
+			olgx_draw_ximage_label(info, win,
+					ximlabel->ximage,
+					m_pos,
+					newy,
+					(ximlabel->width > text_width) ?
+					text_width : ximlabel->width,
+					(height) ? height : Button_Height(info) - 2, state);
 		}
-	    } else {
-		string_label= main_label;
-	    }
-	    olgx_draw_text(info, win,
-#ifdef OW_I18N
-			   string_label,
-#else
-			   (const char *) string_label,
-#endif /* OW_I18N */
-			   m_pos,
-			   texty,
-			   text_width,
-			   state);
-	    if (has_underline) {
-		int label_pixel_pos,label_y_pos, label_length;
-		GC gc;
-		if (!info->gc_rec[OLGX_TEXTGC])
-		    olgx_initialise_gcrec(info, OLGX_TEXTGC);
-		if (!info->three_d)
-		    if (!info->gc_rec[OLGX_TEXTGC_REV])
-			olgx_initialise_gcrec(info, OLGX_TEXTGC_REV);
-		if ((state & OLGX_INVOKED) && !(info->three_d)) {
-		    gc = info->gc_rec[OLGX_TEXTGC_REV]->gc;
-		} else {
-		    gc = info->gc_rec[OLGX_TEXTGC]->gc;
+		else {
+			int ascent, descent, direction;
+			XCharStruct overall;
+			void *string_label;
+			Underlinelabel *ulabel, *hlabel = 0;
+			int has_highlight = 0, has_underline = 0;
+			int highlightx_pos, highlight_length, highlighty_pos,
+					highlight_height;
+			if (state & OLGX_LABEL_HAS_UNDERLINE) {
+				has_underline = 1;
+				ulabel = (Underlinelabel *) main_label;
+				string_label = (void *)ulabel->label;
+			}
+			else if (state & OLGX_LABEL_HAS_HIGHLIGHT) {
+				GC  gc;
+				int ascent, descent, direction;
+				XCharStruct overall;
+
+				hlabel = (Underlinelabel *) main_label;
+				string_label = (void *)hlabel->label;
+				if (info->three_d) {
+					gc = info->gc_rec[OLGX_BLACK]->gc;
+				}
+				else {
+					if (state & OLGX_INVOKED) {
+						if (!info->gc_rec[OLGX_TEXTGC_REV])
+							olgx_initialise_gcrec(info, OLGX_TEXTGC_REV);
+						gc = info->gc_rec[OLGX_TEXTGC_REV]->gc;
+					}
+					else {
+						if (!info->gc_rec[OLGX_TEXTGC])
+							olgx_initialise_gcrec(info, OLGX_TEXTGC);
+						gc = info->gc_rec[OLGX_TEXTGC]->gc;
+					}
+				}
+				if (Olgx_Flags(info) & OLGX_FONTSET) {
+					XRectangle overall_ink_return, overall_logical_return;
+					int string_width;
+
+					if (state & OLGX_LABEL_IS_WCS) {
+						string_width = XwcTextExtents(TextFont_Set(info),
+								(wchar_t *)string_label,
+								hlabel->position,
+								&overall_ink_return, &overall_logical_return);
+						highlight_length = XwcTextEscapement(TextFont_Set(info),
+								(wchar_t *)((wchar_t *)string_label +
+										hlabel->position), 1);
+						highlightx_pos = m_pos + ((hlabel->position) ?
+								string_width : 0);
+					}
+					else {	/* multibyte case */
+						string_width = XmbTextExtents(TextFont_Set(info),
+								(char *)string_label,
+								hlabel->position,
+								&overall_ink_return, &overall_logical_return);
+						highlight_char =
+								(char *)string_label + hlabel->position;
+						highlight_length =
+								XmbTextEscapement(TextFont_Set(info),
+								highlight_char, mblen(highlight_char,
+										strlen(highlight_char)));
+						highlightx_pos =
+								m_pos + ((hlabel->position) ? string_width : 0);
+					}
+					highlight_height = overall_logical_return.height + 1;
+					/* overall_logical_return.y is < 0 */
+					highlighty_pos = texty + overall_logical_return.y;
+				}
+				else {	/* single byte i18n case */
+					XTextExtents(TextFont_Struct(info), (char *)string_label,
+							hlabel->position, &direction, &ascent, &descent,
+							&overall);
+					highlight_length = XTextWidth(TextFont_Struct(info),
+							(char *)string_label + hlabel->position, 1);
+					highlightx_pos = m_pos + ((hlabel->position) ?
+							overall.width : 0);
+					highlight_height = ascent + descent + 1;
+					highlighty_pos = texty - ascent;
+				}
+
+				if (highlightx_pos < (m_pos + text_width)) {
+					if (state & OLGX_INACTIVE) {
+						XSetFillStyle(info->dpy, gc, FillStippled);
+					}
+					XFillRectangle(info->dpy, win, gc,
+							highlightx_pos,
+							highlighty_pos,
+							(unsigned)highlight_length,
+							(unsigned)highlight_height);
+					if (state & OLGX_INACTIVE) {
+						XSetFillStyle(info->dpy, gc, FillSolid);
+					}
+					/* now set flag because highlight actually drawn */
+					has_highlight = 1;
+				}
+			}
+			else {
+				string_label = main_label;
+			}
+			olgx_draw_text(info, win,
+					(const char *)string_label,
+					m_pos, texty, text_width, state);
+			if (has_underline) {
+				int label_pixel_pos, label_y_pos, label_length;
+				GC  gc;
+
+				if (!info->gc_rec[OLGX_TEXTGC])
+					olgx_initialise_gcrec(info, OLGX_TEXTGC);
+				if (!info->three_d)
+					if (!info->gc_rec[OLGX_TEXTGC_REV])
+						olgx_initialise_gcrec(info, OLGX_TEXTGC_REV);
+				if ((state & OLGX_INVOKED) && !(info->three_d)) {
+					gc = info->gc_rec[OLGX_TEXTGC_REV]->gc;
+				}
+				else {
+					gc = info->gc_rec[OLGX_TEXTGC]->gc;
+				}
+				if (Olgx_Flags(info) & OLGX_FONTSET) {
+					XRectangle overall_ink_return, overall_logical_return;
+
+					if (state & OLGX_LABEL_IS_WCS) {
+						label_pixel_pos = m_pos +
+								((ulabel->position) ?
+								XwcTextEscapement(TextFont_Set(info),
+										(wchar_t *)string_label,
+										ulabel->position)
+								: 0);
+						label_length = XwcTextExtents(TextFont_Set(info),
+								(wchar_t *)((wchar_t *)string_label +
+										ulabel->position),
+								1,
+								&overall_ink_return, &overall_logical_return);
+					}
+					else {
+						label_pixel_pos = m_pos +
+								((ulabel->position) ?
+								XmbTextEscapement(TextFont_Set(info),
+										(char *)string_label, ulabel->position)
+								: 0);
+						label_length = XmbTextExtents(TextFont_Set(info),
+								(char *)string_label +
+								ulabel->position,
+								mblen((char *)string_label +
+										ulabel->position,
+										strlen((char *)string_label +
+												ulabel->position)),
+								&overall_ink_return, &overall_logical_return);
+					}
+					label_y_pos = texty + overall_logical_return.y +
+							overall_logical_return.height;
+				}
+				else {
+					XTextExtents(TextFont_Struct(info), (char *)string_label,
+							hlabel->position, &direction, &ascent, &descent,
+							&overall);
+					label_pixel_pos = m_pos +
+							((ulabel->
+									position) ?
+							XTextWidth(TextFont_Struct(info),
+									(char *)string_label, ulabel->position)
+							: 0);
+					label_length = XTextWidth(TextFont_Struct(info),
+							(char *)string_label + ulabel->position, 1);
+					label_y_pos = texty + descent;
+				}
+				if (label_pixel_pos < (m_pos + text_width)) {
+					if (state & OLGX_INACTIVE) {
+						XSetFillStyle(info->dpy, gc, FillStippled);
+					}
+					XDrawLine(info->dpy, win,
+							gc,
+							label_pixel_pos,
+							label_y_pos,
+							label_pixel_pos + label_length, label_y_pos);
+					if (state & OLGX_INACTIVE) {
+						XSetFillStyle(info->dpy, gc, FillSolid);
+					}
+				}
+			}
+			if (has_highlight) {
+				GC  gc;
+				XGCValues values;
+
+				/* cannot call olgx_draw_text() because gc is different */
+				if (info->three_d) {
+					gc = info->gc_rec[OLGX_BG1]->gc;
+				}
+				else {
+					if (state & OLGX_INVOKED) {
+						if (!info->gc_rec[OLGX_TEXTGC])
+							olgx_initialise_gcrec(info, OLGX_TEXTGC);
+						gc = info->gc_rec[OLGX_TEXTGC]->gc;
+					}
+					else {
+						if (!info->gc_rec[OLGX_TEXTGC_REV])
+							olgx_initialise_gcrec(info, OLGX_TEXTGC_REV);
+						gc = info->gc_rec[OLGX_TEXTGC_REV]->gc;
+					}
+				}
+				/* Since we are drawing the highlight character in the same
+				   color that we are drawing the glyphs in, we need to
+				   save the glyphfont, then restore it. This is only true
+				   for 3d. */
+				if (info->three_d) {
+					XGetGCValues(info->dpy, gc, GCFont, &values);
+				}
+				if (Olgx_Flags(info) & OLGX_FONTSET) {
+					if (state & OLGX_LABEL_IS_WCS) {
+						XwcDrawString(info->dpy, win, TextFont_Set(info), gc,
+								highlightx_pos, texty,
+								(wchar_t *)((wchar_t *)string_label +
+										hlabel->position), 1);
+					}
+					else {
+						XmbDrawString(info->dpy, win, TextFont_Set(info), gc,
+								highlightx_pos, texty,
+								highlight_char,
+								mblen(highlight_char, strlen(highlight_char)));
+					}
+				}
+				else {
+					XSetFont(info->dpy, gc, (TextFont_Struct(info))->fid);
+					XDrawString(info->dpy, win, gc, highlightx_pos, texty,
+							(char *)((char *)string_label + hlabel->position),
+							1);
+				}
+				/* restore the font if 3d */
+				if (info->three_d) {
+					XChangeGC(info->dpy, gc, GCFont, &values);
+				}
+			}
 		}
-#ifdef OW_I18N
-		if (Olgx_Flags(info) & OLGX_FONTSET) {
-		    XRectangle overall_ink_return, overall_logical_return;
-		    if (state & OLGX_LABEL_IS_WCS) {
-			label_pixel_pos=m_pos +
-			    ((ulabel->position) ? 
-			     XwcTextEscapement(info->textfontset,
-					       (wchar_t *)string_label,
-					       ulabel->position) 
-			     : 0);
-			label_length = XwcTextExtents(info->textfontset,
-				     (wchar_t *)((wchar_t *)string_label + 
-							 ulabel->position),
-						      1,
-						      &overall_ink_return,
-						      &overall_logical_return);
-		    } else {
-			label_pixel_pos=m_pos +
-			    ((ulabel->position) ? 
-			     XmbTextEscapement(info->textfontset,
-					       (char *)string_label,
-					       ulabel->position) 
-			     : 0);
-			label_length = XmbTextExtents(info->textfontset,
-						      (char *)string_label + 
-						      ulabel->position,
-					mblen((char *)string_label + 
-					      ulabel->position,
-					      strlen((char *)string_label +
-						     ulabel->position)),
-						      &overall_ink_return,
-						      &overall_logical_return);
-		    }
-		    label_y_pos = texty + overall_logical_return.y +
-			overall_logical_return.height;
-		} else {
-		    XTextExtents(TextFont_Struct(info),(char *)string_label,
-				 hlabel->position,&direction,&ascent,&descent,
-				 &overall);
-		    label_pixel_pos=m_pos +
-			((ulabel->position) ? XTextWidth(TextFont_Struct(info),
-							 (char *)string_label,
-							 ulabel->position) 
-			 : 0);
-		    label_length = XTextWidth(TextFont_Struct(info),
-					      (char *)string_label + 
-					      ulabel->position,
-					      1);
-		    label_y_pos = texty + descent;
-		}
-#else
-		XTextExtents(TextFont_Struct(info),(char *)string_label,
-			     hlabel->position,&direction,&ascent,&descent,
-			     &overall);
-		label_pixel_pos=m_pos +
-		    ((ulabel->position) ? XTextWidth(TextFont_Struct(info),
-						     (char *)string_label,
-						     ulabel->position) 
-		     : 0);
-		label_length = XTextWidth(TextFont_Struct(info),
-					  (char *)string_label + 
-					  ulabel->position,
-					  1);
-		label_y_pos = texty + descent; 
-#endif /* OW_I18N */
-		if (label_pixel_pos < (m_pos + text_width)) {
-		    if (state & OLGX_INACTIVE) {
-			XSetFillStyle(info->dpy,gc,FillStippled);
-		    }
-		    XDrawLine(info->dpy, win, 
-			      gc,
-			      label_pixel_pos, 
-			      label_y_pos,
-			      label_pixel_pos + 
-			      label_length,
-			      label_y_pos);
-		    if (state & OLGX_INACTIVE) {
-			XSetFillStyle(info->dpy,gc,FillSolid);
-		    }
-		}
-	    }
-	    if (has_highlight) {
-		GC gc;
-		XGCValues       values;
-		/* cannot call olgx_draw_text() because gc is different */
-		if (info->three_d) {
-		    gc = info->gc_rec[OLGX_BG1]->gc;
-		} else {
-		    if (state & OLGX_INVOKED) {
-			if (!info->gc_rec[OLGX_TEXTGC])
-			    olgx_initialise_gcrec(info, OLGX_TEXTGC);
-			gc = info->gc_rec[OLGX_TEXTGC]->gc;
-		    } else {
-			if (!info->gc_rec[OLGX_TEXTGC_REV])
-			    olgx_initialise_gcrec(info, OLGX_TEXTGC_REV);
-			gc = info->gc_rec[OLGX_TEXTGC_REV]->gc;
-		    }
-		}
-		/* Since we are drawing the highlight character in the same
-		   color that we are drawing the glyphs in, we need to
-		   save the glyphfont, then restore it. This is only true
-		   for 3d. */
-		if (info->three_d) {
-		    XGetGCValues(info->dpy,gc,GCFont,&values);
-		}
-#ifdef OW_I18N
-		if (Olgx_Flags(info) & OLGX_FONTSET) {
-		    if (state & OLGX_LABEL_IS_WCS) {
-			XwcDrawString(info->dpy, win, info->textfontset, gc, 
-				      highlightx_pos, texty,
-				      (wchar_t *) ((wchar_t *)string_label + 
-						   hlabel->position),
-				      1);
-		    } else {
-			XmbDrawString(info->dpy, win, info->textfontset, gc, 
-				      highlightx_pos, texty,
-				      highlight_char,
-				      mblen(highlight_char,
-					    strlen(highlight_char)));
-		    }
-		} else {
-		    XSetFont(info->dpy,gc,(TextFont_Struct(info))->fid);
-		    XDrawString(info->dpy, win, gc, highlightx_pos, texty, 
-			    (char *)((char *)string_label+hlabel->position),1);
-		}
-#else
-		XSetFont(info->dpy,gc,(TextFont_Struct(info))->fid);
-		XDrawString(info->dpy, win, gc, highlightx_pos, texty, 
-			    (char *)((char *)string_label+hlabel->position),1);
-#endif /* OW_I18N */
-		/* restore the font if 3d */
-		if (info->three_d) {
-		    XChangeGC(info->dpy,gc,GCFont,&values);
-		}
-	    }
 	}
-    }
-    if (qualifier_label) {
-	/* calc. max width of label w.r.t mark, accelerator 
-	   string, or entire width. */
-	if (mark_pos) {
-	    text_width = mark_pos - q_pos;
-	} else if (key_pos) {
-	    text_width = key_pos - q_pos;
-	} else {
-	    text_width = x + width - q_pos;
-	}
-	olgx_draw_text(info,win,
-#ifdef OW_I18N
-		       qualifier_label,
-#else
-		       (const char *)qualifier_label,
-#endif /* OW_I18N */
-		       q_pos,texty,text_width,state);
-    }
-    if (mark_type) {
-	if (mark_type & OLGX_DIAMOND_MARK) {
-	    olgx_draw_diamond_mark(info,win,
-				   mark_pos,
-				   texty,
-				   state);
-	} else if (mark_type & OLGX_MENU_MARK) {
-	    int fill_color;
-	    /* calculate the correct fill_color for menu mark */
-	    if (info->three_d) {
-		if (state & OLGX_INVOKED) {	/* invoked button */
-		    fill_color = OLGX_BG2;
-		} else if ((state & OLGX_DEFAULT)&&(state & OLGX_MENU_ITEM)) {
-		    fill_color = OLGX_BG1;
-		} else if (state & OLGX_MENU_ITEM && state & OLGX_BUSY) {
-		    fill_color = OLGX_BG1;
-		} else if (state & OLGX_MENU_ITEM) {	/* normal menu item */
-		    fill_color = NONE;
-		} else {		/* normal panel button */
-		    fill_color = OLGX_BG1;
+	if (qualifier_label) {
+		/* calc. max width of label w.r.t mark, accelerator 
+		   string, or entire width. */
+		if (mark_pos) {
+			text_width = mark_pos - q_pos;
 		}
-		if (state & OLGX_BUSY) {
-		/*
-		 * This routine changes GC information on-the-fly, but it is
-		 * assumed that OLGX_BUSY won't be called often, so it makes
-		 * sense to use the same GC rather than one for each color.
-		 */
-		    if (!info->gc_rec[OLGX_BUSYGC])
-			olgx_initialise_gcrec(info, OLGX_BUSYGC);
-		    fill_color = OLGX_BUSYGC;
+		else if (key_pos) {
+			text_width = key_pos - q_pos;
 		}
-		olgx_draw_menu_mark(info, win,
-				    mark_pos,
-				    texty-info->mm_height,
-				    mark_type | state,
-				    (fill_color != OLGX_BG2));
-	    } else {
-		olgx_draw_menu_mark(info, win,
-				    mark_pos,
-				    texty-info->mm_height,
-				    mark_type | state,0);
-	    }
+		else {
+			text_width = x + width - q_pos;
+		}
+		olgx_draw_text(info, win,
+				(const char *)qualifier_label, q_pos, texty, text_width, state);
 	}
-    }
-    if (key_label) {
-	olgx_draw_text(info,win,
-#ifdef OW_I18N
-		       key_label,
-#else
-		       (const char *)key_label,
-#endif /* OW_I18N */
-		       key_pos,texty,
-		       x+width-key_pos,state);
-    }
+	if (mark_type) {
+		if (mark_type & OLGX_DIAMOND_MARK) {
+			olgx_draw_diamond_mark(info, win, mark_pos, texty, state);
+		}
+		else if (mark_type & OLGX_MENU_MARK) {
+			int fill_color;
+
+			/* calculate the correct fill_color for menu mark */
+			if (info->three_d) {
+				if (state & OLGX_INVOKED) {	/* invoked button */
+					fill_color = OLGX_BG2;
+				}
+				else if ((state & OLGX_DEFAULT) && (state & OLGX_MENU_ITEM)) {
+					fill_color = OLGX_BG1;
+				}
+				else if (state & OLGX_MENU_ITEM && state & OLGX_BUSY) {
+					fill_color = OLGX_BG1;
+				}
+				else if (state & OLGX_MENU_ITEM) {	/* normal menu item */
+					fill_color = NONE;
+				}
+				else {	/* normal panel button */
+					fill_color = OLGX_BG1;
+				}
+				if (state & OLGX_BUSY) {
+					/*
+					 * This routine changes GC information on-the-fly, but it is
+					 * assumed that OLGX_BUSY won't be called often, so it makes
+					 * sense to use the same GC rather than one for each color.
+					 */
+					if (!info->gc_rec[OLGX_BUSYGC])
+						olgx_initialise_gcrec(info, OLGX_BUSYGC);
+					fill_color = OLGX_BUSYGC;
+				}
+				olgx_draw_menu_mark(info, win,
+						mark_pos,
+						texty - info->mm_height,
+						mark_type | state, (fill_color != OLGX_BG2));
+			}
+			else {
+				olgx_draw_menu_mark(info, win,
+						mark_pos,
+						texty - info->mm_height, mark_type | state, 0);
+			}
+		}
+	}
+	if (key_label) {
+		olgx_draw_text(info, win,
+				(const char *)key_label,
+				key_pos, texty, x + width - key_pos, state);
+	}
 }
 
 void olgx_draw_accel_label(Graphics_info *info, Window win, int x, int y,
