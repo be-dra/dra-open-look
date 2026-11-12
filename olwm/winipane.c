@@ -472,7 +472,7 @@ WinIconPane * MakeIconPane(Client *cli, WinGeneric *par, XWMHints *wmHints,
 				w->core.x = attr.x;
 				w->core.y = attr.y;
 				/* constrain to max icon size */
-				if (cli->protocols & ALLOW_ICON_SIZE) {
+				if (cli->protocols & PROT_ALLOW_ICON_SIZE) {
 					w->core.width = MIN(attr.width, ICON_MAX_WIDTH);
 					w->core.height = MIN(attr.height, ICON_MAX_HEIGHT);
 				}
@@ -558,7 +558,7 @@ WinIconPane * MakeIconPane(Client *cli, WinGeneric *par, XWMHints *wmHints,
 			valuemask = CWBorderPixel | CWColormap | CWEventMask;
 
 			/* constrain to max icon size */
-			if (cli->protocols & ALLOW_ICON_SIZE) {
+			if (cli->protocols & PROT_ALLOW_ICON_SIZE) {
 				w->core.width = MIN(w->core.width, ICON_MAX_WIDTH);
 				w->core.height = MIN(w->core.height, ICON_MAX_HEIGHT);
 			}
