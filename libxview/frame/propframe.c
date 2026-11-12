@@ -31,11 +31,12 @@
 #include <xview/win_notify.h>
 #include <xview_private/i18n_impl.h>
 #include <xview_private/wmgr_decor.h>
+#include <xview_private/fm_impl.h>
 #include <xview_private/svr_impl.h>
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.19 2026/04/16 14:21:51 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.21 2026/10/12 21:47:51 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -323,41 +324,19 @@ static void reset_change_bars_in_panel(Propframe_private *priv, Panel pan)
 	PANEL_END_EACH
 }
 
-static void update_win_attrs(Propframe_private *priv, int is_cancel, int update_pin)
+static void update_win_attrs(Propframe_private *priv, int is_cancel)
 {
 	Frame self = PROPFRAMEPUB(priv);
-	Xv_opaque server = XV_SERVER_FROM_WINDOW(self);
-	Display *dpy = (Display *)xv_get(self, XV_DISPLAY);
-	Window xid = (Window)xv_get(self, XV_XID);
-	Atom atom;
-	WM_Win_Type *win_attr;
-	Atom typeatom;
-	int act_format;
-	unsigned long nelem, left_to_be_read = 0;
+	Frame_cmd_info *cmdpriv = FRAME_CMD_PRIVATE(self);
 
 	if (priv->is_cmd_win) return;
 
-	atom = (Atom)xv_get(server, SERVER_WM_WIN_ATTR);
-	if (XGetWindowProperty(dpy, xid, atom, 0L, 30L, False, atom, &typeatom,
-					&act_format, &nelem, &left_to_be_read,
-					(unsigned char **)&win_attr) != Success) return;
-	if (nelem != WINATTR_LEN || typeatom != atom) return;
- 
 	priv->is_cancel = is_cancel;
 
+	cmdpriv->win_attr.flags = WMWinType | WMMenuType | WMPinState | WMCancel;
+	cmdpriv->win_attr.cancel = is_cancel;
 
-	win_attr->flags = WMWinType | WMMenuType | WMCancel;
-	win_attr->cancel = is_cancel;
-
-	/* we never change the CONTENTS of the pinstate field */
-	if (update_pin) {
-		win_attr->flags |= WMPinState;
-	}
-
-	XChangeProperty(dpy, xid, atom, atom, 32, PropModeReplace,
-					(unsigned char *)win_attr, (unsigned)WINATTR_LEN);
-
-	XFree((char *)win_attr);
+	wmgr_set_win_attr(self, &(cmdpriv->win_attr));
 }
 
 static void set_changed(Propframe_private *priv, Panel_item item, int is_set)
@@ -372,7 +351,7 @@ static void set_changed(Propframe_private *priv, Panel_item item, int is_set)
 		if (!priv) priv = (Propframe_private*)xv_get(cb,XV_KEY_DATA,attach_key);
 
 		if (priv && xv_get(PROPFRAMEPUB(priv), XV_SHOW))
-			update_win_attrs(priv, TRUE, FALSE);
+			update_win_attrs(priv, TRUE);
 	}
 }
 
@@ -423,7 +402,7 @@ static void reset_change_bars(Propframe_private *priv)
 	if (priv->multi_cat) set_cat_changed(priv, FALSE);
 
 	if (xv_get(PROPFRAMEPUB(priv), XV_SHOW))
-		update_win_attrs(priv, FALSE, FALSE);
+		update_win_attrs(priv, FALSE);
 }
 
 static int note_numeric(Panel_item item, int val, Event *ev)
@@ -1094,13 +1073,9 @@ static void finish_panel(Propframe_private *priv, one_panel_t p)
 	if (priv->multi_cat && apply) {
 		Rect *rect;
 		int button_x, button_y;
-		Panel pp = xv_get(self, FRAME_PROPS_PANEL);
+		Panel propspan = xv_get(self, FRAME_PROPS_PANEL);
 
 		rect = (Rect *)xv_get(apply, PANEL_ITEM_RECT);
-
-		win_translate_xy(p->panel, pp,
-							rect->r_left, rect->r_top,
-							&button_x, &button_y);
 
 		/* we are in a multi category property window and already have
 		 * an Apply button in the current panel and we have also set this
@@ -1112,7 +1087,17 @@ static void finish_panel(Propframe_private *priv, one_panel_t p)
 		 * Apply button with the 'correct' position.
 		 * And we mark it with "XV_KEY_DATA, PANEL_DEFAULT_ITEM, TRUE"
 		 */
-		p->pseudo_default = xv_create(pp, PANEL_BUTTON,
+
+		/* We don't have to ask the X server (using XTranslateCoordinates)
+		 * because we know the geometric relation between the FRAME_PROPS_PANEL
+		 * and the category panels: they are created WIN_BELOW, propspan
+		 * (see Ref kjwgevrgf). So, the coordinates of the pseudo_default
+		 * button can be easily calculated:
+		 */
+		button_x = rect->r_left;
+		button_y = rect->r_top + (int)xv_get(propspan, XV_HEIGHT);
+
+		p->pseudo_default = xv_create(propspan, PANEL_BUTTON,
 							PANEL_LABEL_STRING, XV_MSG("Apply"),
 							PANEL_INACTIVE, TRUE,
 							XV_SHOW, TRUE,
@@ -1923,7 +1908,7 @@ static Xv_opaque propframe_set(Frame_props self, Attr_avlist avlist)
 				*appan = p->panel = xv_create(self, PANEL,
 						XV_INSTANCE_NAME, catinstname,
 						XV_X, 0,
-						WIN_BELOW, xv_get(self, FRAME_PROPS_PANEL),
+						WIN_BELOW, xv_get(self,FRAME_PROPS_PANEL),/*kjwgevrgf*/
 						PANEL_BACKGROUND_PROC, note_prop_panel_background,
 						PANEL_BORDER, TRUE,
 						PANEL_TO_ONE_PANEL, p,
@@ -2054,7 +2039,7 @@ static Xv_opaque propframe_set(Frame_props self, Attr_avlist avlist)
 			if ((int)A1 && ! xv_get(self, XV_SHOW)) {
 				/* a real transition from unmapped tp mapped */
 
-				update_win_attrs(priv, FALSE, TRUE);
+				update_win_attrs(priv, FALSE);
 			}
 
 			if ((int)A1 && priv->multi_cat) {
