@@ -1,5 +1,5 @@
 /* #ident	"@(#)wincolor.c	26.24	93/06/28 SMI" */
-char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.10 2026/08/07 18:28:11 dra Exp $";
+char wincolor_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: wincolor.c,v 1.11 2026/08/24 19:12:24 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -609,6 +609,9 @@ void TrackSubwindows(Client *cli)
 	else {
 		/* here we end up after longjmp */
 		if (uid == 53) fprintf(stderr, "%s`%s-%d from longjmp\n", __FILE__,__FUNCTION__,__LINE__);
+		XUngrabPointer(dpy, LastEventTime);
+		XUngrabKeyboard(dpy, LastEventTime);
+		XUngrabServer(dpy);
 		XFlush(dpy);
 	}
 
