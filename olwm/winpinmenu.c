@@ -1,5 +1,5 @@
 /* #ident	"@(#)winpinmenu.c	26.31	93/06/28 SMI" */
-char winpinmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpinmenu.c,v 1.6 2026/08/07 18:28:01 dra Exp $";
+char winpinmenu_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpinmenu.c,v 1.7 2026/09/18 07:27:46 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -193,7 +193,7 @@ menuSetParent(winInfo,cli,par)
 {
     MenuInfo *mInfo;
     /* mark this client as owned by olwm itself */
-    cli->flags = CLOlwmOwned;
+    cli->flags |= CLOlwmOwned;
     winInfo->core.client = cli;
     WinAddChild((WinGeneric *)par, winInfo);
     XReparentWindow(cli->dpy, winInfo->core.self, par->core.self, 
