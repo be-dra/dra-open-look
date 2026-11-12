@@ -16,24 +16,15 @@
 #include "grey.h"
 
 /*
- * olgx_real_main_initialize() Mallocs a ginfos struct,initilaises it
+ * olgx_real_main_initialize() Mallocs a ginfos struct,initialises it
  * with the respective values passed and returns a pointer to the
  * ginfo struct
  */
 
-/* ARGSUSED */
-#ifdef OW_I18N
 static Graphics_info *olgx_real_main_initialize(Bool fs_or_not, Display *dpy,
     int screen, unsigned int depth, int d_flag, XFontStruct *glyphfont_struct,
-    Olgx_font_or_fs utextfont, unsigned long pixvals[],
+    Olgx_font_and_fs utextfont, unsigned long pixvals[],
     Pixmap stipple_pixmaps[])
-#else
-Graphics_info *olgx_main_initialize(Display *dpy, int screen,
-						unsigned int depth, int d_flag,
-						XFontStruct *glyphfont_struct,
-    					XFontStruct *textfont_struct,
-    					unsigned long *pixvals, Pixmap *stipple_pixmaps)
-#endif
 {
     Graphics_info  *info;
     int             direct, ascent, descent;
@@ -53,23 +44,29 @@ Graphics_info *olgx_main_initialize(Display *dpy, int screen,
      * pixvals
      */
 
+	Olgx_Flags(info) = 0;
     info->dpy = dpy;
     info->scrn = screen;
     info->three_d = d_flag;
     info->glyphfont = glyphfont_struct;
-#ifdef OW_I18N
-    /*
-     * Since, compiler does not allow me to use Olgx_flags(info) as lvalue.
-     *	"ol_init.c", line 72: left operand must be modifiable lvalue: op "="
-     */
-    info->_Olgx_Flags = fs_or_not ? OLGX_FONTSET : 0;
-    if (Olgx_Flags(info) & OLGX_FONTSET)
-	info->textfontset = utextfont.fontset;
-    else
-	info->textfont = utextfont.fontstruct;
-#else
-    info->textfont = textfont_struct;
-#endif
+	if (fs_or_not) {
+		XFontStruct **fss;
+		char **n;
+
+		/* If True was handed over, we activate the Multibyte- and
+		 * Fontset-Flags
+		 */
+		Olgx_Flags(info) |= OLGX_MULTIBYTE_MODE;
+		Olgx_Flags(info) |= OLGX_FONTSET;
+
+		TextFont_Set(info) = utextfont.fontset;
+		if (XFontsOfFontSet(utextfont.fontset, &fss, &n) > 0) {
+			TextFont_Struct(info) = fss[0];
+		}
+	} 
+	else {
+		TextFont_Struct(info) = utextfont.fontstruct;
+	}
 
     /*
      * OLGX_3D_MONO has been nuked.. this space inthe data strcuture is used
@@ -316,13 +313,12 @@ Graphics_info *olgx_initialize(Display *dpy, int screen, int d_flag,
 }
 
 
-#ifdef OW_I18N
-Graphics_info *olgx_i18n_initialize(Display *dpy, int screen,
+Graphics_info *olgx_utf8_initialize(Display *dpy, int screen,
 					unsigned int depth, int d_flag,
 					XFontStruct *glyphfont_struct, XFontSet textfont_set,
 					unsigned long pixvals[], Pixmap stipple_pixmaps[])
 {
-    Olgx_font_or_fs utextfont;
+    Olgx_font_and_fs utextfont;
 
     utextfont.fontset = textfont_set;
     return olgx_real_main_initialize(True, dpy, screen, depth, d_flag,
@@ -335,15 +331,34 @@ Graphics_info *olgx_main_initialize(Display *dpy, int screen,
 				XFontStruct *textfont_struct, unsigned long pixvals[],
 				Pixmap stipple_pixmaps[])
 {
-    Olgx_font_or_fs utextfont;
+    Olgx_font_and_fs utextfont;
 
     utextfont.fontstruct = textfont_struct;
     return olgx_real_main_initialize(False, dpy, screen, depth, d_flag,
 				     glyphfont_struct, utextfont,
 				     pixvals, stipple_pixmaps);
 }
-#endif /* OW_I18N */
-    
+
+Graphics_info *olgx_all_initialize(Display *dpy, int screen,
+					unsigned int depth, int d_flag, XFontStruct *glyphfont,
+					XFontSet textfont_set, XFontStruct *textfont_struct,
+					unsigned long pixvals[], Pixmap stipple_pixmaps[])
+{
+    Olgx_font_and_fs utextfont;
+	int is_fs;
+
+	/* if the textfont_set is not NULL, it wins */
+	if (textfont_set) {
+		is_fs = True;
+    	utextfont.fontset = textfont_set;
+	}
+	else {
+		is_fs = False;
+    	utextfont.fontstruct = textfont_struct;
+	}
+    return olgx_real_main_initialize(is_fs, dpy, screen, depth, d_flag,
+				     glyphfont, utextfont, pixvals, stipple_pixmaps);
+}
 
 /*
  * olgx_set_glyph_font(info, font_info,flag)
@@ -591,14 +606,6 @@ void olgx_set_glyph_font(Graphics_info *info, XFontStruct *font_info, int flag)
 }
 
 
-/*
- * olgx_set_text_font(info, font_info,flag)
- * 
- * Sets the text font associated with the given Graphics_info structure. Will
- * create the text GC if necessary.
- */
-
-#ifdef OW_I18N
 static int olgx_cmp_fontsets(XFontSet *fontset_info1, XFontSet *fontset_info2)
 {
     if (fontset_info1 == fontset_info2)
@@ -607,322 +614,209 @@ static int olgx_cmp_fontsets(XFontSet *fontset_info1, XFontSet *fontset_info2)
 	return False;
 }
 
-static void olgx_real_set_text_font(Graphics_info *info, Olgx_font_or_fs ufont_info, int flag)
-#else
-void olgx_set_text_font(Graphics_info  *info, XFontStruct *font_info, int flag)
-#endif
+/*
+ * olgx_set_text_font(info, font_info,flag)
+ * 
+ * Sets the text font associated with the given Graphics_info structure. Will
+ * create the text GC if necessary.
+ */
+
+static void olgx_real_set_text_font(Graphics_info *info, Olgx_font_and_fs ufont_info, int flag)
 {
-    XGCValues       values;
-    GC_rec         *existing_gcrec;
-    per_disp_res_ptr perdispl_res_ptr;
-
-    /*
-     * We are making a major assumption that in 2D ,TEXTGC and TEXTGC_REV are
-     * twins and any change should be accompanied by a similar change to the
-     * other.
-     */
-
-
-    /*
-     * Do a smart check whether the fonts are same by comparing the fields in
-     * min_bounds and max_bounds return without doing anything if it is the
-     * same
-     */
-
-#ifdef OW_I18N
-    if (Olgx_Flags(info) & OLGX_FONTSET) {
-        if (olgx_cmp_fontsets((XFontSet *)ufont_info.fontset, (XFontSet *)info->textfontset))
-	    return;
-
-	info->textfontset = ufont_info.fontset;
-    } else {
-	if (olgx_cmp_fonts(ufont_info.fontstruct, info->textfont))
-	    return;
-
-	info->textfont = ufont_info.fontstruct;
-    }
-#else /* OW_I18N */
-    if (olgx_cmp_fonts(font_info, info->textfont))
-	return;
-
-    info->textfont = font_info;
-#endif /* OW_I18N */
-
-    /*
-     * Return if the TextGc has not been created yet
-     */
-
-    if (!info->gc_rec[OLGX_TEXTGC])
-	return;
-    if (flag & OLGX_SPECIAL) {
-
-#ifdef OW_I18N
-	if (! (Olgx_Flags(info) & OLGX_FONTSET)) {
-	    /*
-	     * Don't worry if the GC 's are shared or not.. Change
-	     * them by brute force
-	     */
-
-	    XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC]->gc,
-		     info->textfont->fid);
-
-	    if (!info->three_d) {
-		/* Only 2d has TEXTGC_REV */
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
-		if (info->gc_rec[OLGX_TEXTGC_REV] && info->gc_rec[OLGX_TEXTGC_REV]->gc)
-#endif
-			XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC_REV]->gc,
-							info->textfont->fid);
-		}
-	}
-#else /* OW_I18N */
-	/*
-	 * Don't worry if the GC 's are shared or not.. Change them by brute
-	 * force
-	 */
-
-	XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC]->gc, font_info->fid);
-
-	if (!info->three_d) {
-		/* Only 2d has TEXTGC_REV */
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
-		if (info->gc_rec[OLGX_TEXTGC_REV] && info->gc_rec[OLGX_TEXTGC_REV]->gc)
-#endif
-			XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC_REV]->gc,
-										font_info->fid);
-	}
-#endif /* OW_I18N */
-
-    } else { /* not special */
+	XGCValues values;
+	GC_rec *existing_gcrec;
+	per_disp_res_ptr perdispl_res_ptr;
 
 	/*
-	 * If the GC's are shared,create a new GC with the new glyphfont and
-	 * attach the new GC's to the ginfo
+	 * We are making a major assumption that in 2D ,TEXTGC and TEXTGC_REV are
+	 * twins and any change should be accompanied by a similar change to the
+	 * other.
 	 */
 
-	perdispl_res_ptr = olgx_get_perdisplay_list(info->dpy, info->scrn);
 
-	if (info->gc_rec[OLGX_TEXTGC]->ref_count > 1) {
-	    /*
-	     * The GC is shared, so reduce the reference count and create a
-	     * GC
-	     */
+	/*
+	 * Do a smart check whether the fonts are same by comparing the fields in
+	 * min_bounds and max_bounds return without doing anything if it is the
+	 * same
+	 */
 
-	    info->gc_rec[OLGX_TEXTGC]->ref_count -= 1;
-	    values = info->gc_rec[OLGX_TEXTGC]->values;
-#ifdef OW_I18N
-	    if (Olgx_Flags(info) & OLGX_FONTSET) {
-		info->gc_rec[OLGX_TEXTGC]
-			= olgx_get_gcrec(perdispl_res_ptr, 
-				info->drawable[0], (int)info->depth,
-				info->gc_rec[OLGX_TEXTGC]->valuemask & ~GCFont,
-				&values);
-	    } else {
-		values.font = info->textfont->fid;
-		info->gc_rec[OLGX_TEXTGC]
-			= olgx_get_gcrec(perdispl_res_ptr,
-				info->drawable[0], (int)info->depth,
-				info->gc_rec[OLGX_TEXTGC]->valuemask,
-				&values);
-	    }
-#else
-	    values.font = font_info->fid;
-	    info->gc_rec[OLGX_TEXTGC] = olgx_get_gcrec(perdispl_res_ptr,
-                                                       info->drawable[0], 
-                                                       (int)info->depth,
-				       info->gc_rec[OLGX_TEXTGC]->valuemask,
-						       &values);
-#endif
+	if (Olgx_Flags(info) & OLGX_MULTIBYTE_MODE) {
+		XFontStruct **fss;
+		char **n;
 
-	} else {
+		if (olgx_cmp_fontsets(&ufont_info.fontset, &TextFont_Set(info)))
+			return;
 
-	    /*
-	     * The GC is not shared , Check if there is someother GC with the
-	     * new values If NO Change the values of this GC to the new one
-	     * Should take care of values also If YES Destroy this GC and
-	     * attach that GC to the ginfo
-	     */
-
-	    values = info->gc_rec[OLGX_TEXTGC]->values;
-#ifdef OW_I18N
-	    if (Olgx_Flags(info) & OLGX_FONTSET) {
-		existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
-			       info->gc_rec[OLGX_TEXTGC]->valuemask & ~GCFont,
-			       &values);
-	    } else {
-		values.font = info->textfont->fid;
-		existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
-			       info->gc_rec[OLGX_TEXTGC]->valuemask,
-			       &values);
-	    }
-#else /* OW_I18N */
-	    values.font = font_info->fid;
-	    existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
-				       info->gc_rec[OLGX_TEXTGC]->valuemask,
-						  &values);
-#endif /* OW_I18N */
-
-	    if (!existing_gcrec) {
-
-		/* Nothing similar exists in the Pool */
-
-#ifdef OW_I18N
-		if (! (Olgx_Flags(info) & OLGX_FONTSET)) {
-#endif
-		XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC]->gc,
-                         	info->textfont->fid);
-
-#ifdef OW_I18N
+		TextFont_Set(info) = ufont_info.fontset;
+		if (XFontsOfFontSet(ufont_info.fontset, &fss, &n) > 0) {
+			TextFont_Struct(info) = fss[0];
 		}
-#endif
+	}
+	else {
+		if (olgx_cmp_fonts(ufont_info.fontstruct, TextFont_Struct(info)))
+			return;
 
-	    } else {
+		TextFont_Struct(info) = ufont_info.fontstruct;
+	}
+
+	/*
+	 * Return if the TextGc has not been created yet
+	 */
+
+	if (!info->gc_rec[OLGX_TEXTGC])
+		return;
+	if (flag & OLGX_SPECIAL) {
+
+		if (!(Olgx_Flags(info) & OLGX_MULTIBYTE_MODE)) {
+			/*
+			 * Don't worry if the GC 's are shared or not.. Change
+			 * them by brute force
+			 */
+
+			XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC]->gc,
+					ufont_info.fontstruct->fid);
+
+			if (!info->three_d) {
+				/* Only 2d has TEXTGC_REV */
+
+				if (info->gc_rec[OLGX_TEXTGC_REV]
+						&& info->gc_rec[OLGX_TEXTGC_REV]->gc)
+
+					XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC_REV]->gc,
+							ufont_info.fontstruct->fid);
+			}
+		}
+	}
+	else {	/* not special */
 
 		/*
-		 * Something similar exists already inthe Pool So attach that
-		 * GC to the ginfo and destroy the one we are looking into
-		 * and increase the reference count of the added existing
-		 * gc_rec
+		 * If the GC's are shared,create a new GC with the new glyphfont and
+		 * attach the new GC's to the ginfo
 		 */
 
-		if (existing_gcrec != info->gc_rec[OLGX_TEXTGC]) {
+		perdispl_res_ptr = olgx_get_perdisplay_list(info->dpy, info->scrn);
 
-		    olgx_destroy_gcrec(perdispl_res_ptr, 
-                                       info->gc_rec[OLGX_TEXTGC]);
-		    existing_gcrec->ref_count += 1;
-		    info->gc_rec[OLGX_TEXTGC] = existing_gcrec;
+		if (info->gc_rec[OLGX_TEXTGC]->ref_count > 1) {
+			/*
+			 * The GC is shared, so reduce the reference count and create a
+			 * GC
+			 */
+
+			info->gc_rec[OLGX_TEXTGC]->ref_count -= 1;
+			values = info->gc_rec[OLGX_TEXTGC]->values;
+
+			if (Olgx_Flags(info) & OLGX_MULTIBYTE_MODE) {
+				info->gc_rec[OLGX_TEXTGC] = olgx_get_gcrec(perdispl_res_ptr,
+						info->drawable[0], (int)info->depth,
+						info->gc_rec[OLGX_TEXTGC]->valuemask & ~GCFont,
+						&values);
+			}
+			else {
+				values.font = ufont_info.fontstruct->fid;
+				info->gc_rec[OLGX_TEXTGC] = olgx_get_gcrec(perdispl_res_ptr,
+						info->drawable[0],
+						(int)info->depth,
+						info->gc_rec[OLGX_TEXTGC]->valuemask, &values);
+			}
 		}
-	    }
+		if (!info->three_d) {
 
-	}
-     if (!info->three_d) {
+			if (!info->gc_rec[OLGX_TEXTGC_REV]) {
+				return;
+			}
+			if (info->gc_rec[OLGX_TEXTGC_REV]->ref_count>1) { /* GC is shared */
+				info->gc_rec[OLGX_TEXTGC_REV]->ref_count -= 1;
+				values = info->gc_rec[OLGX_TEXTGC_REV]->values;
 
-         if (!info->gc_rec[OLGX_TEXTGC_REV]){
-            return;
-         }
-         if (info->gc_rec[OLGX_TEXTGC_REV]->ref_count > 1) { /* GC is shared */
+				if (Olgx_Flags(info) & OLGX_MULTIBYTE_MODE) {
+					info->gc_rec[OLGX_TEXTGC_REV]
+							= olgx_get_gcrec(perdispl_res_ptr,
+							info->drawable[0], (int)info->depth,
+							info->gc_rec[OLGX_TEXTGC_REV]->valuemask & ~GCFont,
+							&values);
+				}
+				else {
+					values.font = ufont_info.fontstruct->fid;
+					info->gc_rec[OLGX_TEXTGC_REV]
+							= olgx_get_gcrec(perdispl_res_ptr,
+							info->drawable[0], (int)info->depth,
+							info->gc_rec[OLGX_TEXTGC_REV]->valuemask, &values);
+				}
+			}
+			else {
 
-                info->gc_rec[OLGX_TEXTGC_REV]->ref_count -= 1;
-                values = info->gc_rec[OLGX_TEXTGC_REV]->values;
-#ifdef OW_I18N
-                if (Olgx_Flags(info) & OLGX_FONTSET) {
-                    info->gc_rec[OLGX_TEXTGC_REV]
-                        = olgx_get_gcrec(perdispl_res_ptr,
-                            info->drawable[0], (int)info->depth,
-                            info->gc_rec[OLGX_TEXTGC_REV]->valuemask & ~GCFont,
-                            &values);
-                } else {
-                    values.font = info->textfont->fid;
-                    info->gc_rec[OLGX_TEXTGC_REV]
-                        = olgx_get_gcrec(perdispl_res_ptr,
-                            info->drawable[0], (int)info->depth,
-                            info->gc_rec[OLGX_TEXTGC_REV]->valuemask,
-                            &values);
-                }
-#else /* OW_I18N */
-                values.font = font_info->fid;
-                info->gc_rec[OLGX_TEXTGC_REV] = olgx_get_gcrec(perdispl_res_ptr,
-                                   info->drawable[0],
-                                   (int)info->depth,
-                                   info->gc_rec[OLGX_TEXTGC_REV]->valuemask,
-                                   &values);
-#endif /* OW_I18N */
- 
-         } else {
+				/*
+				 * The GC is not shared. Check if there is someother GC with the
+				 * new values If NO Change the values of this GC to the new one
+				 * Should take care of values also If YES Destroy this GC and
+				 * attach that GC to the ginfo
+				 */
 
-	    /*
-	     * The GC is not shared , Check if there is someother GC with the
-	     * new values If NO Change the values of this GC to the new one
-	     * Should take care of values also If YES Destroy this GC and
-	     * attach that GC to the ginfo
-	     */
+				values = info->gc_rec[OLGX_TEXTGC_REV]->values;
 
-	    values = info->gc_rec[OLGX_TEXTGC_REV]->values;
-#ifdef OW_I18N
-	    if (Olgx_Flags(info) & OLGX_FONTSET) {
-		existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
-			       info->gc_rec[OLGX_TEXTGC_REV]->valuemask & ~GCFont,
-			       &values);
-	    } else {
-		values.font = info->textfont->fid;
-		existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
-			       info->gc_rec[OLGX_TEXTGC_REV]->valuemask,
-			       &values);
-	    }
-#else /* OW_I18N */
-	    values.font = font_info->fid;
-	    existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
-				       info->gc_rec[OLGX_TEXTGC_REV]->valuemask,
-						  &values);
-#endif /* OW_I18N */
+				if (Olgx_Flags(info) & OLGX_MULTIBYTE_MODE) {
+					existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
+							info->gc_rec[OLGX_TEXTGC_REV]->valuemask & ~GCFont,
+							&values);
+				}
+				else {
+					values.font = ufont_info.fontstruct->fid;
+					existing_gcrec = olgx_gcrec_available(perdispl_res_ptr,
+							info->gc_rec[OLGX_TEXTGC_REV]->valuemask, &values);
+				}
 
-	    if (!existing_gcrec) {
+				if (!existing_gcrec) {
 
-		/* Nothing similar exists in the Pool */
+					/* Nothing similar exists in the Pool */
+					if (!(Olgx_Flags(info) & OLGX_MULTIBYTE_MODE)) {
+						if (info->gc_rec[OLGX_TEXTGC_REV]
+							&& info->gc_rec[OLGX_TEXTGC_REV]->gc)
+						{
+							XSetFont(info->dpy,
+									info->gc_rec[OLGX_TEXTGC_REV]->gc,
+									ufont_info.fontstruct->fid);
+						}
+					}
+				}
+				else {
 
-#ifdef OW_I18N
-		if (! (Olgx_Flags(info) & OLGX_FONTSET)) {
-#endif
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
-			if (info->gc_rec[OLGX_TEXTGC_REV] &&
-				info->gc_rec[OLGX_TEXTGC_REV]->gc)
-#endif
-				XSetFont(info->dpy, info->gc_rec[OLGX_TEXTGC_REV]->gc,
-                         		info->textfont->fid);
+					/*
+					 * Something similar exists already inthe Pool So attach that
+					 * GC to the ginfo and destroy the one we are looking into
+					 * and increase the reference count of the added existing
+					 * gc_rec
+					 */
 
-#ifdef OW_I18N
+					if (existing_gcrec != info->gc_rec[OLGX_TEXTGC_REV]) {
+
+						olgx_destroy_gcrec(perdispl_res_ptr,
+								info->gc_rec[OLGX_TEXTGC_REV]);
+						existing_gcrec->ref_count += 1;
+						info->gc_rec[OLGX_TEXTGC_REV] = existing_gcrec;
+
+					}
+				}
+			}
 		}
-#endif
+	}
 
-	    } else {
 
-		/*
-		 * Something similar exists already inthe Pool So attach that
-		 * GC to the ginfo and destroy the one we are looking into
-		 * and increase the reference count of the added existing
-		 * gc_rec
-		 */
-
-		if (existing_gcrec != info->gc_rec[OLGX_TEXTGC_REV]) {
-
-		    olgx_destroy_gcrec(perdispl_res_ptr, 
-                                       info->gc_rec[OLGX_TEXTGC_REV]);
-		    existing_gcrec->ref_count += 1;
-		    info->gc_rec[OLGX_TEXTGC_REV] = existing_gcrec;
-
+	if (!(Olgx_Flags(info) & OLGX_MULTIBYTE_MODE)) {
+		info->gc_rec[OLGX_TEXTGC]->values.font = ufont_info.fontstruct->fid;
+		if (!info->three_d) {
+			if (info->gc_rec[OLGX_TEXTGC_REV]) {
+				info->gc_rec[OLGX_TEXTGC_REV]->values.font = ufont_info.fontstruct->fid;
+			}
 		}
-	    }
-
 	}
-      }
-    }
-
-
-#ifdef OW_I18N
-    if (! (Olgx_Flags(info) & OLGX_FONTSET)) {
-#endif
-    info->gc_rec[OLGX_TEXTGC]->values.font = info->textfont->fid;
-    if (!info->three_d) {
-#ifdef BEFORE_DRA_CHANGED_IT
-#else
-		if (info->gc_rec[OLGX_TEXTGC_REV])
-#endif
-			info->gc_rec[OLGX_TEXTGC_REV]->values.font = info->textfont->fid;
-	}
-#ifdef OW_I18N
-    }
-#endif
 }
 
 
-#ifdef OW_I18N
 void olgx_set_text_fontset(Graphics_info *info, XFontSet font_set, int flag)
 {
-    Olgx_font_or_fs ufont;
+    Olgx_font_and_fs ufont;
 
+	Olgx_Flags(info) |= OLGX_FONTSET;
     ufont.fontset = font_set;
     olgx_real_set_text_font(info, ufont, flag);
 }
@@ -930,12 +824,12 @@ void olgx_set_text_fontset(Graphics_info *info, XFontSet font_set, int flag)
 
 void olgx_set_text_font(Graphics_info *info, XFontStruct *font_info, int flag)
 {
-    Olgx_font_or_fs ufont;
+    Olgx_font_and_fs ufont;
 
+	Olgx_Flags(info) &= ~OLGX_FONTSET;
     ufont.fontstruct = font_info;
     olgx_real_set_text_font(info, ufont, flag);
 }
-#endif /* OW_I18N */
 
 
 /*
@@ -1633,203 +1527,191 @@ void olgx_total_gcs(Display *dpy, int screen)
 
 void olgx_initialise_gcrec(Graphics_info  *info, int index)
 {
+	XGCValues values;
+	unsigned long valuemask;
+	per_disp_res_ptr perdispl_res_ptr;
 
 
-    XGCValues       values;
-    unsigned long   valuemask;
-    per_disp_res_ptr perdispl_res_ptr;
+	/* Error Checking */
+	if (!info->glyphfont)
+		olgx_error
+				("Uninitialized ginfo.linking with an incompatible libolgx ?");
 
+	perdispl_res_ptr = olgx_get_perdisplay_list(info->dpy, info->scrn);
 
-    /* Error Checking */
-    if (!info->glyphfont)
-	olgx_error("Uninitialized ginfo.linking with an incompatible libolgx ?");
+	if (info->three_d) {
 
-    perdispl_res_ptr = olgx_get_perdisplay_list(info->dpy, info->scrn);
+		/* 3D Mono or Color */
 
-    if (info->three_d) {
+		if (info->three_d == OLGX_3D_COLOR)
+			values.background = info->pixvals[OLGX_BG1];
+		else
+			values.background = info->pixvals[OLGX_WHITE];
 
-	/* 3D Mono or Color */
-
-	if (info->three_d == OLGX_3D_COLOR)
-	    values.background = info->pixvals[OLGX_BG1];
+	}
 	else
-	    values.background = info->pixvals[OLGX_WHITE];
+		/* 2D */
+		values.background = info->pixvals[OLGX_WHITE];
 
-    } else
-	/* 2D */
-	values.background = info->pixvals[OLGX_WHITE];
-
-    values.graphics_exposures = False;
-    valuemask = (GCForeground | GCBackground | GCGraphicsExposures | 
-		 GCFont | GCStipple);
-    values.font = info->glyphfont->fid;
-    values.stipple = olgx_get_grey_stipple(perdispl_res_ptr);
-
-    switch (index) {
-
-      case OLGX_WHITE:
-
-	if (!info->three_d)
-	    values.background = info->pixvals[OLGX_BLACK];
-
-	values.foreground = info->pixvals[OLGX_WHITE];
-	info->gc_rec[OLGX_WHITE] = olgx_get_gcrec(perdispl_res_ptr, 
-									info->drawable[0],
-									(int)info->depth, valuemask, &values);
-
-	break;
-
-      case OLGX_BLACK:
-
-	/* get OLGX_BLACK GC */
-
-	values.foreground = info->pixvals[OLGX_BLACK];
-	info->gc_rec[OLGX_BLACK] = olgx_get_gcrec(perdispl_res_ptr,
-                                  info->drawable[0],
-								  (int)info->depth, valuemask, &values);
-
-	break;
-
-      case OLGX_BG1:
-      case OLGX_BG2:
-      case OLGX_BG3:
-
-	if (!info->three_d) {
-
-	    /* 2D initialise OLGX_TEXTGC_REV */
-
-	    values.foreground = info->pixvals[OLGX_WHITE];
-	    values.background = info->pixvals[OLGX_BLACK];
-#ifdef OW_I18N
-	    if (Olgx_Flags(info) & OLGX_FONTSET) {
-		info->gc_rec[OLGX_TEXTGC_REV]
-			= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-					 (int)info->depth, valuemask & ~GCFont,
-					 &values);
-	    } else {
-		values.font = info->textfont->fid;
-		info->gc_rec[OLGX_TEXTGC_REV]
-			= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-					 (int)info->depth, valuemask,
-					 &values);
-	    }
-#else /* OW_I18N */
-	    values.font = info->textfont->fid;
-	    info->gc_rec[OLGX_TEXTGC_REV] = olgx_get_gcrec(perdispl_res_ptr, 
-                                                           info->drawable[0],
-						          (int)info->depth, valuemask,
-							   &values);
-#endif /* OW_I18N */
-
-	} else {
-
-	    /* 3D - so initialise BG?  */
-
-	    /*
-	     * $if (info->three_d == OLGX_3D_MONO) { values.fill_style =
-	     * FillOpaqueStippled; valuemask = (GCForeground | GCBackground |
-	     * GCGraphicsExposures | GCFont | GCFillStyle | GCStipple); }$
-	     */
-
-	    values.foreground = info->pixvals[index];
-
-	    /*
-	     * $if (info->three_d == OLGX_3D_MONO) values.stipple =
-	     * info->stipple_pixmaps[index - 2];$
-	     */
-
-
-	    info->gc_rec[index] = olgx_get_gcrec(perdispl_res_ptr,
-                                     info->drawable[0],(int)info->depth,
-                                     valuemask, &values);
-	}
-	break;
-
-      case OLGX_TEXTGC:
-
-	/* get the OLGX_TEXTGC */
-
-	values.foreground = info->pixvals[OLGX_BLACK];
-	values.background = (info->three_d) ? info->pixvals[OLGX_BG1] :
-	    info->pixvals[OLGX_WHITE];
-#ifdef OW_I18N
-	if (Olgx_Flags(info) & OLGX_FONTSET) {
-	    info->gc_rec[OLGX_TEXTGC]
-		= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-				 (int)info->depth, valuemask & ~GCFont, &values);
-	} else {
-	    values.font = info->textfont->fid;
-	    info->gc_rec[OLGX_TEXTGC]
-		= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
-				 (int)info->depth, valuemask, &values);
-	}
-#else /* OW_I18N */
-	values.font = info->textfont->fid;
-	info->gc_rec[OLGX_TEXTGC] = olgx_get_gcrec(perdispl_res_ptr,
-                                                   info->drawable[0],
-                                                   (int)info->depth, valuemask,
-                                                   &values);
-#endif /* OW_I18N */
-
-	break;
-
-      case OLGX_GREY_OUT:
-
-	/* get the OLGX_GREY_OUT GC */
-
-	valuemask = (GCForeground|GCGraphicsExposures|GCStipple|GCFillStyle);
-	values.foreground = (info->three_d == OLGX_3D_COLOR) ? 
-                             info->pixvals[OLGX_BG1] : info->pixvals[OLGX_WHITE];
+	values.graphics_exposures = False;
+	valuemask = (GCForeground | GCBackground | GCGraphicsExposures |
+			GCFont | GCStipple);
+	values.font = info->glyphfont->fid;
 	values.stipple = olgx_get_grey_stipple(perdispl_res_ptr);
-	values.fill_style = FillStippled;
-	info->gc_rec[OLGX_GREY_OUT] = olgx_get_gcrec(perdispl_res_ptr,
-                                 info->drawable[0], (int)info->depth,
-								 valuemask, &values);
 
-	break;
+	switch (index) {
 
-      case OLGX_BUSYGC:
+		case OLGX_WHITE:
 
-	/* getthe OLGX_BUSYGC */
+			if (!info->three_d)
+				values.background = info->pixvals[OLGX_BLACK];
 
-	values.foreground = (info->three_d == OLGX_3D_COLOR) ?
-                             info->pixvals[OLGX_BG1] : info->pixvals[OLGX_WHITE];
+			values.foreground = info->pixvals[OLGX_WHITE];
+			info->gc_rec[OLGX_WHITE] = olgx_get_gcrec(perdispl_res_ptr,
+					info->drawable[0], (int)info->depth, valuemask, &values);
 
-	values.fill_style = FillOpaqueStippled;
-	values.stipple = olgx_get_busy_stipple(perdispl_res_ptr);
-	values.background = info->pixvals[OLGX_BLACK];
-	valuemask = (GCBackground|GCForeground|GCGraphicsExposures
-                     |GCFont|GCStipple | GCFillStyle);
-	info->gc_rec[OLGX_BUSYGC] = olgx_get_gcrec(perdispl_res_ptr,
-						   info->drawable[0],
-						   (int)info->depth, valuemask,
- 						   &values);
+			break;
 
-	break;
+		case OLGX_BLACK:
 
-      case OLGX_SCROLL_GREY_GC:
+			/* get OLGX_BLACK GC */
 
-	/* get the OLGX_SCROLL_GREY_GC */
+			values.foreground = info->pixvals[OLGX_BLACK];
+			info->gc_rec[OLGX_BLACK] = olgx_get_gcrec(perdispl_res_ptr,
+					info->drawable[0], (int)info->depth, valuemask, &values);
 
-	values.fill_style = FillOpaqueStippled;
-	values.stipple = olgx_get_grey_stipple(perdispl_res_ptr);
-	valuemask = (GCBackground | GCForeground | GCGraphicsExposures |
-                     GCStipple | GCFillStyle);
+			break;
 
-	if (info->three_d == OLGX_3D_COLOR) {
-	    values.foreground = info->pixvals[OLGX_BG3];
-	    values.background = info->pixvals[OLGX_BG1];
-	} else {
-	    values.foreground = info->pixvals[OLGX_BLACK];
-	    values.background = info->pixvals[OLGX_WHITE];
+		case OLGX_BG1:
+		case OLGX_BG2:
+		case OLGX_BG3:
+
+			if (!info->three_d) {
+
+				/* 2D initialise OLGX_TEXTGC_REV */
+
+				values.foreground = info->pixvals[OLGX_WHITE];
+				values.background = info->pixvals[OLGX_BLACK];
+
+				if ((Olgx_Flags(info) & OLGX_MULTIBYTE_MODE))
+				{
+					info->gc_rec[OLGX_TEXTGC_REV]
+							= olgx_get_gcrec(perdispl_res_ptr,
+							info->drawable[0], (int)info->depth,
+							valuemask & ~GCFont, &values);
+				}
+				else {
+					values.font = TextFont_Struct(info)->fid;
+					info->gc_rec[OLGX_TEXTGC_REV]
+							= olgx_get_gcrec(perdispl_res_ptr,
+							info->drawable[0], (int)info->depth, valuemask,
+							&values);
+				}
+			}
+			else {
+
+				/* 3D - so initialise BG?  */
+
+				/*
+				 * $if (info->three_d == OLGX_3D_MONO) { values.fill_style =
+				 * FillOpaqueStippled; valuemask = (GCForeground | GCBackground |
+				 * GCGraphicsExposures | GCFont | GCFillStyle | GCStipple); }$
+				 */
+
+				values.foreground = info->pixvals[index];
+
+				/*
+				 * $if (info->three_d == OLGX_3D_MONO) values.stipple =
+				 * info->stipple_pixmaps[index - 2];$
+				 */
+
+
+				info->gc_rec[index] = olgx_get_gcrec(perdispl_res_ptr,
+						info->drawable[0], (int)info->depth,
+						valuemask, &values);
+			}
+			break;
+
+		case OLGX_TEXTGC:
+
+			/* get the OLGX_TEXTGC */
+
+			values.foreground = info->pixvals[OLGX_BLACK];
+			values.background = (info->three_d) ? info->pixvals[OLGX_BG1] :
+					info->pixvals[OLGX_WHITE];
+
+			if (Olgx_Flags(info) & OLGX_MULTIBYTE_MODE)
+			{
+				info->gc_rec[OLGX_TEXTGC]
+						= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
+						(int)info->depth, valuemask & ~GCFont, &values);
+			}
+			else {
+				values.font = TextFont_Struct(info)->fid;
+				info->gc_rec[OLGX_TEXTGC]
+						= olgx_get_gcrec(perdispl_res_ptr, info->drawable[0],
+						(int)info->depth, valuemask, &values);
+			}
+			break;
+
+		case OLGX_GREY_OUT:
+
+			/* get the OLGX_GREY_OUT GC */
+
+			valuemask =
+					(GCForeground | GCGraphicsExposures | GCStipple |
+					GCFillStyle);
+			values.foreground =
+					(info->three_d ==
+					OLGX_3D_COLOR) ? info->pixvals[OLGX_BG1] : info->
+					pixvals[OLGX_WHITE];
+			values.stipple = olgx_get_grey_stipple(perdispl_res_ptr);
+			values.fill_style = FillStippled;
+			info->gc_rec[OLGX_GREY_OUT] = olgx_get_gcrec(perdispl_res_ptr,
+					info->drawable[0], (int)info->depth, valuemask, &values);
+
+			break;
+
+		case OLGX_BUSYGC:
+
+			/* getthe OLGX_BUSYGC */
+
+			values.foreground = (info->three_d == OLGX_3D_COLOR) ?
+					info->pixvals[OLGX_BG1] : info->pixvals[OLGX_WHITE];
+
+			values.fill_style = FillOpaqueStippled;
+			values.stipple = olgx_get_busy_stipple(perdispl_res_ptr);
+			values.background = info->pixvals[OLGX_BLACK];
+			valuemask = (GCBackground | GCForeground | GCGraphicsExposures
+					| GCFont | GCStipple | GCFillStyle);
+			info->gc_rec[OLGX_BUSYGC] = olgx_get_gcrec(perdispl_res_ptr,
+					info->drawable[0], (int)info->depth, valuemask, &values);
+
+			break;
+
+		case OLGX_SCROLL_GREY_GC:
+
+			/* get the OLGX_SCROLL_GREY_GC */
+
+			values.fill_style = FillOpaqueStippled;
+			values.stipple = olgx_get_grey_stipple(perdispl_res_ptr);
+			valuemask = (GCBackground | GCForeground | GCGraphicsExposures |
+					GCStipple | GCFillStyle);
+
+			if (info->three_d == OLGX_3D_COLOR) {
+				values.foreground = info->pixvals[OLGX_BG3];
+				values.background = info->pixvals[OLGX_BG1];
+			}
+			else {
+				values.foreground = info->pixvals[OLGX_BLACK];
+				values.background = info->pixvals[OLGX_WHITE];
+			}
+
+			info->gc_rec[OLGX_SCROLL_GREY_GC] = olgx_get_gcrec(perdispl_res_ptr,
+					info->drawable[0], (int)info->depth, valuemask, &values);
+
+			break;
 	}
-
-	info->gc_rec[OLGX_SCROLL_GREY_GC] = olgx_get_gcrec(perdispl_res_ptr,
-                         info->drawable[0], (int)info->depth,
-						 valuemask, &values);
-
-	break;
-    }
 
 }
 
