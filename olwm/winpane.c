@@ -1,5 +1,5 @@
 /* #ident	"@(#)winpane.c	26.22	93/06/28 SMI" */
-char winpane_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpane.c,v 2.3 2025/01/04 16:05:22 dra Exp $";
+char winpane_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winpane.c,v 2.5 2026/09/18 07:27:57 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -117,11 +117,7 @@ WinPane	*winInfo;
 /* 
  * eventPropertyNotify - handle client messages, in particular iconic requests
  */
-static int
-eventPropertyNotify(dpy, event, winInfo)
-Display	*dpy;
-XEvent	*event;
-WinPane	*winInfo;
+static int eventPropertyNotify(Display *dpy, XEvent *event, WinPane *winInfo)
 {
 	ClientDistributeProperty(winInfo->core.client,event);
 }
@@ -205,26 +201,21 @@ static int eventClientMessage(Display *dpy, XEvent *event, WinPane *winInfo)
 /*
  * eventExtension - handle extension events
  */
-static int eventExtension(dpy, event, winInfo)
-    Display	*dpy;
-    XEvent	*event;
-    WinPane	*winInfo;
+static int eventExtension(Display *dpy, XEvent *event, WinPane *winInfo)
 {
-#ifdef SHAPE
-    XShapeEvent *se;
-    Client *cli;
+	XShapeEvent *se;
+	Client *cli;
 
-    if (event->xany.type == ShapeEventBase) {
-	/* it's a ShapeNotify event */
-	se = (XShapeEvent *) event;
-	if (se->kind != ShapeBounding)
-	    return 0;
-	cli = winInfo->core.client;
-	cli->isShaped = se->shaped;
-	
-	FrameUpdateShape(cli, cli->framewin);
-    }
-#endif /* SHAPE */
+	if (event->xany.type == ShapeEventBase) {
+		/* it's a ShapeNotify event */
+		se = (XShapeEvent *) event;
+		if (se->kind != ShapeBounding)
+			return 0;
+		cli = winInfo->core.client;
+		cli->isShaped = se->shaped;
+
+		FrameUpdateShape(cli, cli->framewin);
+	}
 	return 0;
 }
 
