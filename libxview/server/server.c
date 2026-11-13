@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.74 2026/11/11 10:26:02 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.75 2026/11/12 22:00:52 dra Exp $";
 #endif
 #endif
 
@@ -1753,6 +1753,17 @@ Xv_private void server_set_seln_function_pending(Xv_Server server_public, int fl
 Xv_private int server_get_seln_function_pending(Xv_Server server_public)
 {
     return (SERVER_PRIVATE(server_public)->sel_function_pending);
+}
+
+Xv_private void server_set_current_quick_state(Xv_Server srv, Atom at)
+{
+    Server_info *server = SERVER_PRIVATE(srv);
+	server->cur_sel_state = at;
+}
+
+Xv_private Atom server_get_current_quick_state(Xv_Server srv)
+{
+    return (SERVER_PRIVATE(srv)->cur_sel_state);
 }
 
 #define RESCALE_WORKS 0
