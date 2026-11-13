@@ -1,4 +1,4 @@
-/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.21 2026/08/06 08:46:45 dra Exp $	*/
+/*	@(#)svr_impl.h 20.62 93/06/28 SMI   DRA: $Id: svr_impl.h,v 4.22 2026/11/12 22:00:52 dra Exp $	*/
 
 /*	
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -100,9 +100,10 @@ typedef struct {
     KeySym		 cut_keysym;
     KeySym		 paste_keysym;
     KeySym		 help_keysym;
-    Xv_opaque		 xtime;           /* Last time stamp */
+    Xv_opaque	 xtime;           /* Last time stamp */
     int			 sel_function_pending;
-    unsigned		 journalling;
+	Atom		cur_sel_state;
+    unsigned	 journalling;
     Atom		 journalling_atom;
     short		 in_fullscreen;
     Xv_opaque		 top_level_win;
@@ -204,6 +205,8 @@ Xv_private void server_update_aqt(Server_info *server, int count);
 
 Xv_private int server_get_seln_function_pending(Xv_Server server_public);
 Xv_private void server_set_seln_function_pending(Xv_Server server_public, int);
+Xv_private void server_set_current_quick_state(Xv_Server srv, Atom at);
+Xv_private Atom server_get_current_quick_state(Xv_Server srv);
 Xv_private int server_sem_map_index(KeySym ks);
 
 Xv_private void server_set_popup(Frame, Attr_attribute *);
