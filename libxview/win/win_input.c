@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.67 2026/11/03 17:29:17 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.68 2026/11/12 22:28:52 dra Exp $";
 #endif
 #endif
 
@@ -1782,9 +1782,15 @@ static int xevent_to_event(Display *display, XEvent *xevent, Event *event,
 			break;
 
 		case SelectionClear:
+			/* the server object will only accept it if it's later */
+			server_set_timestamp(srv, &event->ie_time,
+								xevent->xselectionclear.time);
 			event_set_id(event, SEL_CLEAR);
 			break;
 		case SelectionRequest:
+			/* the server object will only accept it if it's later */
+			server_set_timestamp(srv, &event->ie_time,
+								xevent->xselectionrequest.time);
 			event_set_id(event, SEL_REQUEST);
 			break;
 		case SelectionNotify:
@@ -3422,10 +3428,11 @@ Xv_private XID xv_get_softkey_xid(Xv_server server, Display *display)
 
 static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
 {
-	Atom key_type = xv_get(xv_server(info), SERVER_ATOM,
+	Atom keystate;
+	Xv_server srv = xv_server(info);
+	Atom key_type = xv_get(srv, SERVER_ATOM,
 					(event_action(event) == ACTION_CUT ? "MOVE" : "DUPLICATE"));
-	Atom property = xv_get(xv_server(info), SERVER_ATOM,
-											"_SUN_QUICK_SELECTION_KEY_STATE");
+	Atom property = xv_get(srv, SERVER_ATOM, "_SUN_QUICK_SELECTION_KEY_STATE");
 
 	switch (event_action(event)) {
 		case ACTION_PROPS:
@@ -3433,17 +3440,14 @@ static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
 		case ACTION_CUT:
 
 			/* Always store the data on "property" on screen 0 of the display */
-
 			XChangeProperty(xv_display(info), RootWindow(xv_display(info), 0),
 								property, XA_ATOM, 32, PropModeReplace,
 								(unsigned char *)&key_type, 1);
-	    	SERVERTRACE((765, "%s: is cut: %d\n", xv_app_name,
-								event_action(event) == ACTION_CUT));
-			break;
+			return;
+
 		case ACTION_SELECT:
 		case ACTION_ADJUST:
 		case ACTION_MENU:
-		case LOC_DRAG: /* dear people: again and again.... */
 		case LOC_WINENTER:
 		case LOC_WINEXIT:
 			{
@@ -3462,8 +3466,11 @@ static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
 				}
 				else {
 					if (data) {
+						keystate = *(Atom *)data;
+
+						server_set_current_quick_state(srv, keystate);
 						/* key_type == DUPLICATE in this case */
-						if (key_type == *(Atom *) data)
+						if (key_type == keystate)
 							event_set_quick_duplicate(event);
 						else {
 	    					SERVERTRACE((765, "%s: set quick_move\n",
@@ -3475,6 +3482,11 @@ static void win_handle_quick_selection(Xv_Drawable_info *info, Event *event)
 				}
 				break;
 			}
+		case LOC_DRAG: /* dear people: again and again.... */
+			keystate = server_get_current_quick_state(srv);
+			if (key_type == keystate) event_set_quick_duplicate(event);
+			else event_set_quick_move(event);
+			break;
 	}
 }
 
