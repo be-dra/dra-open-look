@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.58 2026/11/11 21:57:26 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.59 2026/11/12 16:25:23 dra Exp $";
 #endif
 #endif
 
@@ -24,7 +24,7 @@ static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.5
 static int (*OldErrorHandler)(Display *, XErrorEvent *);
 Xv_private_data XContext  reqCtx;
 
-static int SelLoseOwnership(Sel_owner_info *sel_owner, int from_sel_clear)
+static void SelLoseOwnership(Sel_owner_info *sel_owner, int from_sel_clear)
 {
 	struct timeval time;
 
@@ -34,7 +34,7 @@ static int SelLoseOwnership(Sel_owner_info *sel_owner, int from_sel_clear)
 	 */
 	if (sel_owner->status & SEL_BUSY) {
 		sel_owner->status |= SEL_LOSE;
-		return FALSE;
+		return;
 	}
 
 	/*
@@ -50,9 +50,6 @@ static int SelLoseOwnership(Sel_owner_info *sel_owner, int from_sel_clear)
 										sel_owner->time);
 	}
 
-	if (sel_owner->lose_proc != NULL)
-		(*sel_owner->lose_proc) (sel_owner->public_self);
-
 	/*
 	 * Set the time to zero so that when we become the selection owner
 	 * again we get the correct time.
@@ -65,7 +62,9 @@ static int SelLoseOwnership(Sel_owner_info *sel_owner, int from_sel_clear)
 	sel_owner->own = FALSE;
 
 	XDeleteContext(sel_owner->dpy, sel_owner->xid, selCtx);
-	return TRUE;
+
+	if (sel_owner->lose_proc != NULL)
+		(*sel_owner->lose_proc) (sel_owner->public_self);
 }
 
 static void RegisterSelClient(Sel_owner_info *owner, int flag)
@@ -588,6 +587,9 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	{
 		/* as an indication for the requestor */
 		ev->xselection.target = selection->req->rq_property;
+		if (sendEventReqPtr) {
+			*sendEventReqPtr = FALSE; 
+		}
 	}
 	else {
 		/*
@@ -598,24 +600,24 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 				selection->req->rq_property, selection->req->rq_type,
 				format, PropModeReplace, (unsigned char *)replyBuff,
 				(int)length);
-	}
 
-	/* In earlier versions this function didn't have the parameters
-	 * sendEventReqPtr and ev. The purpose was for targets like
-	 * INSERT_SELECTION we wanted to answer the INSERT_SELECTION request
-	 * (including the sending of the selection notify event) and then
-	 * be able to do the "real processing" from within the done procedure.
-	 * In this way we avoided problems like timeout from the INSERT_SELECTION
-	 * request.
-	 * Note that this is working only for non-MULTIPLE requests.
-	 *
-	 * Reference [jklewhfvbhkwegfv]
-	 */
-	if (sendEventReqPtr) {
-		ev->xselection.property = selection->req->rq_property;
-		*sendEventReqPtr = FALSE; 
-		XSendEvent(selection->dpy, ev->xselection.requestor, False,
-					(unsigned long)NULL, ev);
+		/* In earlier versions this function didn't have the parameters
+		 * sendEventReqPtr and ev. The purpose was for targets like
+		 * INSERT_SELECTION we wanted to answer the INSERT_SELECTION request
+		 * (including the sending of the selection notify event) and then
+		 * be able to do the "real processing" from within the done procedure.
+		 * In this way we avoided problems like timeout from the INSERT_SELECTION
+		 * request.
+		 * Note that this is working only for non-MULTIPLE requests.
+		 *
+		 * Reference [jklewhfvbhkwegfv]
+		 */
+		if (sendEventReqPtr) {
+			ev->xselection.property = selection->req->rq_property;
+			*sendEventReqPtr = FALSE; 
+			XSendEvent(selection->dpy, ev->xselection.requestor, False,
+						(unsigned long)NULL, ev);
+		}
 	}
 
 	if (selection->done_proc) {
@@ -1192,6 +1194,8 @@ static Xv_opaque sel_owner_set_avlist(Selection_owner sel_owner_public,
 				sel_owner->lose_proc = (selection_lose_proc_t)attrs[1];
 				break;
 			case SEL_OWN:
+				SERVERTRACE((755,"%s SEL_OWN %d -> %d\n",__FUNCTION__,
+							sel_owner->own, (int)attrs[1]));
 				if (sel_owner->own != (Bool) attrs[1]) {
 					if (!(Bool) attrs[1])
 						SelLoseOwnership(sel_owner, FALSE);
