@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.66 2026/11/11 21:57:30 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.68 2026/11/13 13:35:55 dra Exp $";
 #endif
 #endif
 
@@ -1541,6 +1541,9 @@ Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev)
 
 	if (reply == NULL) return;
 
+	SERVERTRACE((385, "%s: sel %s, tgt %s\n", __FUNCTION__, 
+				(char *)xv_get(reply->sri_srv, SERVER_ATOM_NAME, ev->selection),
+				(char *)xv_get(reply->sri_srv, SERVER_ATOM_NAME, ev->target)));
 	if (!CheckSelectionNotify(reply->sri_req_info, reply, ev, 0))
 		return;
 
@@ -1850,18 +1853,7 @@ int sel_post_req_no_answer(Selection_requestor sel)
 		xv_free(replyInfo);
 	}
 	else {
-		struct itimerval timeout;
-
 		xv_sel_set_reply(replyInfo);
-
-		timeout.it_interval.tv_usec = 99999;	/* linux-bug */
-		timeout.it_interval.tv_sec = 0;
-
-		timeout.it_value.tv_usec = 0;
-		timeout.it_value.tv_sec = replyInfo->sri_timeout;
-
-		notify_set_itimer_func((Notify_client) replyInfo,
-				xv_sel_handle_sel_timeout, ITIMER_REAL, &timeout, ITIMER_NULL);
 
 		/*
 		 * Send the SelectionRequest message to the selection owner.
