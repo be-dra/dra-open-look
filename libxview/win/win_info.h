@@ -1,4 +1,4 @@
-/*	@(#)win_info.h 20.17 93/06/28 SMI  DRA: $Id: win_info.h,v 4.8 2026/10/04 08:42:23 dra Exp $	*/
+/*	@(#)win_info.h 20.17 93/06/28 SMI  DRA: $Id: win_info.h,v 4.9 2026/11/13 23:31:06 dra Exp $	*/
 
 /****************************************************************************/
 /*	
@@ -72,6 +72,8 @@ XID win_get_kbd_focus(Xv_object window);
 Xv_private int win_translate_xy_internal(Display *display, XID src_id,
 					XID dst_id, int src_x, int src_y, int *dst_x, int *dst_y);
 Xv_private void win_translate_to_screen(Xv_object win, int src_x, int src_y,
+										int *dst_x, int *dst_y);
+Xv_private void win_translate_from_screen(Xv_object win, int src_x, int src_y,
 										int *dst_x, int *dst_y);
 Xv_private void win_set_outer_rect(Xv_object window, Rect *rect);
 Xv_private void win_x_getrect(Display *display, XID xid, Rect *rect);
