@@ -36,7 +36,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.21 2026/10/12 21:47:51 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.22 2026/11/13 23:38:20 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -1088,7 +1088,7 @@ static void finish_panel(Propframe_private *priv, one_panel_t p)
 		 * And we mark it with "XV_KEY_DATA, PANEL_DEFAULT_ITEM, TRUE"
 		 */
 
-		/* We don't have to ask the X server (using XTranslateCoordinates)
+		/* We don't have to ask the X server (using X TranslateCoordinates)
 		 * because we know the geometric relation between the FRAME_PROPS_PANEL
 		 * and the category panels: they are created WIN_BELOW, propspan
 		 * (see Ref kjwgevrgf). So, the coordinates of the pseudo_default
