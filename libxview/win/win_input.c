@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.68 2026/11/12 22:28:52 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.71 2026/11/13 23:54:06 dra Exp $";
 #endif
 #endif
 
@@ -2372,7 +2372,7 @@ static int process_clientmessage_events(Xv_object window,
 	static char *ol_trans_utf[128] = { NULL };
 	static char ol_trans_utfbuf[1024];
 	Xv_Drawable_info *info;
-	Xv_opaque server_public;
+	Xv_opaque server;
 	Server_atom_type atom_type;
 	Bool keyboard_key;
 	unsigned int key_value;
@@ -2383,9 +2383,8 @@ static int process_clientmessage_events(Xv_object window,
 	int sem_action;
 
 	DRAWABLE_INFO_MACRO(window, info);
-	server_public = xv_server(info);
-	atom_type = server_get_atom_type(server_public,
-											 clientmessage->message_type);
+	server = xv_server(info);
+	atom_type = server_get_atom_type(server, clientmessage->message_type);
 
 	switch (atom_type) {
 		case SERVER_WM_DISMISS_TYPE:
@@ -2439,11 +2438,7 @@ static int process_clientmessage_events(Xv_object window,
 				msg_x = (clientmessage->data.l[2] >> 16) & 0xffff;
 				msg_y = clientmessage->data.l[2] & 0xffff;
 
-				SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
-						xv_get(xv_root(info), XV_XID), xv_xid(info)));
-				(void)win_translate_xy_internal(xv_display(info),
-												xv_get(xv_root(info), XV_XID),
-												xv_xid(info), msg_x, msg_y,
+				win_translate_from_screen(window, msg_x, msg_y,
 												&actual_x, &actual_y);
 				event_set_x(event, actual_x);
 				event_set_y(event, actual_y);
@@ -2452,7 +2447,7 @@ static int process_clientmessage_events(Xv_object window,
 				window_set_client_message(window, clientmessage);
 
 				/* Set the time of the trigger event */
-				server_set_timestamp(server_public, &event->ie_time,
+				server_set_timestamp(server, &event->ie_time,
 								 (unsigned long)clientmessage->data.l[1]);
 
 				if (clientmessage->data.l[4] & DND_MOVE_FLAG)
@@ -2510,11 +2505,7 @@ static int process_clientmessage_events(Xv_object window,
 				}
 				event_set_flags(event, event_forwarded);
 
-				SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
-						xv_get(xv_root(info), XV_XID), xv_xid(info)));
-				(void)win_translate_xy_internal(xv_display(info),
-												xv_get(xv_root(info), XV_XID),
-												xv_xid(info), msg_x, msg_y,
+				win_translate_from_screen(window, msg_x, msg_y,
 												&actual_x, &actual_y);
 				event_set_x(event, actual_x);
 				event_set_y(event, actual_y);
@@ -2523,7 +2514,7 @@ static int process_clientmessage_events(Xv_object window,
 				window_set_client_message(window, clientmessage);
 
 				/* Set the time of the preview event */
-				server_set_timestamp(server_public, &event->ie_time,
+				server_set_timestamp(server, &event->ie_time,
 								 (unsigned long)clientmessage->data.l[1]);
 
 				switch (clientmessage->data.l[0]) {
@@ -2546,7 +2537,7 @@ static int process_clientmessage_events(Xv_object window,
 			break;
 
 		case SERVER_WM_PROTOCOLS_TYPE:
-			switch (server_get_atom_type(server_public,
+			switch (server_get_atom_type(server,
 										 (Atom)clientmessage->data.l[0])) {
 				case SERVER_WM_SAVE_YOURSELF_TYPE:
 
@@ -2595,12 +2586,12 @@ static int process_clientmessage_events(Xv_object window,
 					 *
 					 * No failed focus tranfers have been observed since then.
 					 */
-					server_set_timestamp(server_public, &event->ie_time,
+					server_set_timestamp(server, &event->ie_time,
 								 (unsigned long)clientmessage->data.l[1]);
 					event_set_action(event, ACTION_TAKE_FOCUS);
 					break;
 				case SERVER_WM_PIN_STATE_TYPE:
-					server_set_timestamp(server_public, &event->ie_time,
+					server_set_timestamp(server, &event->ie_time,
 								 (unsigned long)clientmessage->data.l[1]);
 					if (clientmessage->data.l[2]) {
 						event_set_action(event, ACTION_PININ);
@@ -2629,7 +2620,7 @@ static int process_clientmessage_events(Xv_object window,
 			 * "window" we have here is always a frame.
 			 */
 			if (clientmessage->message_type ==
-					xv_get(server_public, SERVER_ATOM, "XdndPosition")) {
+					xv_get(server, SERVER_ATOM, "XdndPosition")) {
 				int site_hit = FALSE;
 				int msg_x, msg_y;
 		    	Window_info *framepriv = WIN_PRIVATE(window);
@@ -2664,29 +2655,26 @@ static int process_clientmessage_events(Xv_object window,
 
 				SERVERTRACE((960, "%s: 0x%lx 0x%lx\n", __FUNCTION__, 
 						xv_get(xv_root(info), XV_XID), xv_xid(info)));
-				(void)win_translate_xy_internal(xv_display(info),
-									xv_get(xv_root(info), XV_XID),
-									xv_xid(info), msg_x, msg_y,
+				win_translate_from_screen(window, msg_x, msg_y,
 									&framepriv->drop_x, &framepriv->drop_y);
 
 				/* Now drop_x, drop_y are in frame-coords */
 
-				if (act == (Atom)xv_get(server_public, SERVER_ATOM,
-														"XdndActionMove"))
+				if (act == (Atom)xv_get(server, SERVER_ATOM, "XdndActionMove"))
 				{
 					framepriv->dropaction = XDND_ACTION_MOVE;
 				}
-				else if (act == (Atom)xv_get(server_public, SERVER_ATOM,
+				else if (act == (Atom)xv_get(server, SERVER_ATOM,
 														"XdndActionLink"))
 				{
 					framepriv->dropaction = XDND_ACTION_LINK;
 				}
-				else if (act == (Atom)xv_get(server_public, SERVER_ATOM,
+				else if (act == (Atom)xv_get(server, SERVER_ATOM,
 														"XdndActionAsk"))
 				{
 					framepriv->dropaction = XDND_ACTION_ASK;
 				}
-				else if (act == (Atom)xv_get(server_public, SERVER_ATOM,
+				else if (act == (Atom)xv_get(server, SERVER_ATOM,
 														"XdndActionPrivate"))
 				{
 					framepriv->dropaction = XDND_ACTION_PRIVATE;
@@ -2717,8 +2705,7 @@ static int process_clientmessage_events(Xv_object window,
 				cM.type = ClientMessage;
 				cM.display = clientmessage->display;
 				cM.format = 32;
-				cM.message_type = xv_get(server_public, SERVER_ATOM,
-															"XdndStatus");
+				cM.message_type = xv_get(server, SERVER_ATOM, "XdndStatus");
 				cM.window = clientmessage->data.l[0];
 				cM.data.l[0] = clientmessage->window;
 				/* do not bother to tell the source 
@@ -2739,8 +2726,7 @@ static int process_clientmessage_events(Xv_object window,
 				cM.data.l[2] = 0;     /* unused rect */
 				cM.data.l[3] = 0;     /* unused rect */
 				/* we do not (and can not) tell what the application will do */
-    			cM.data.l[4] = xv_get(server_public,
-										SERVER_ATOM, "XdndActionPrivate");
+    			cM.data.l[4] = xv_get(server, SERVER_ATOM, "XdndActionPrivate");
 
 				SERVERTRACE((TLXDND+2, "XdndStatus back to %lx\n", cM.window));
 				DndSendEvent(cM.display, (XEvent *)&cM, "XDnd");
@@ -2795,7 +2781,7 @@ static int process_clientmessage_events(Xv_object window,
 				}
 			}
 			else if (clientmessage->message_type ==
-					xv_get(server_public, SERVER_ATOM, "XdndEnter"))
+					xv_get(server, SERVER_ATOM, "XdndEnter"))
 			{
 		    	Window_info *framepriv = WIN_PRIVATE(window);
 				/* XdndEnter is pretty useless (for us) because it doesn't
@@ -2811,9 +2797,9 @@ static int process_clientmessage_events(Xv_object window,
 
 				SERVERTRACE((TLXDND, "dragger sends XdndEnter from %lx with %s, %s and %s\n",
 						clientmessage->data.l[0],
-						clientmessage->data.l[2] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[2]) : "none",
-						clientmessage->data.l[3] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[3]) : "none",
-						clientmessage->data.l[4] ? (char *)xv_get(server_public, SERVER_ATOM_NAME, clientmessage->data.l[4]) : "none"));
+						clientmessage->data.l[2] ? (char *)xv_get(server, SERVER_ATOM_NAME, clientmessage->data.l[2]) : "none",
+						clientmessage->data.l[3] ? (char *)xv_get(server, SERVER_ATOM_NAME, clientmessage->data.l[3]) : "none",
+						clientmessage->data.l[4] ? (char *)xv_get(server, SERVER_ATOM_NAME, clientmessage->data.l[4]) : "none"));
 
 				/* but we know the game must in any case start
 				 * from the beginning
@@ -2833,21 +2819,21 @@ static int process_clientmessage_events(Xv_object window,
 					 */
 					if (XGetWindowProperty(xv_display(info),
 						(Window)clientmessage->data.l[0],
-						xv_get(server_public, SERVER_ATOM, "XdndTypeList"),
+						xv_get(server, SERVER_ATOM, "XdndTypeList"),
 						0L, 9999L, False, AnyPropertyType,
 						&type, &format, &nitems, &bytes, &prop) == Success)
 					{
 						ato = (Atom *)prop;
 						for (i = 0; i < nitems; i++) {
 							SERVERTRACE((TLXDND, "list[%ld] = '%s'\n", i,
-								(char *)xv_get(server_public, SERVER_ATOM_NAME,
+								(char *)xv_get(server, SERVER_ATOM_NAME,
 													ato[i])));
 						}
 					}
 				}
 			}
 			else if (clientmessage->message_type ==
-					xv_get(server_public, SERVER_ATOM, "XdndLeave"))
+					xv_get(server, SERVER_ATOM, "XdndLeave"))
 			{
 		    	Window_info *framepriv = WIN_PRIVATE(window);
 				/* XdndLeave is pretty useless because it doesn't contain
@@ -2868,18 +2854,18 @@ static int process_clientmessage_events(Xv_object window,
 				framepriv->dropped_site = XV_NULL;
 			}
 			else if (clientmessage->message_type ==
-					xv_get(server_public, SERVER_ATOM, "XdndDrop"))
+					xv_get(server, SERVER_ATOM, "XdndDrop"))
 			{
 		    	Window_info *framepriv = WIN_PRIVATE(window);
 
 				SERVERTRACE((TLXDND, "XdndDrop from %lx to %lx\n",
 							clientmessage->data.l[0], clientmessage->window));
 				if (! framepriv->dropped_site) return TRUE;
-				xdnd_drop_received(window, server_public, info,
+				xdnd_drop_received(window, server, info,
 										clientmessage, event);
 			}
 			else if (clientmessage->message_type ==
-					xv_get(server_public, SERVER_ATOM, "XdndFinished"))
+					xv_get(server, SERVER_ATOM, "XdndFinished"))
 			{
     			XClientMessageEvent origxcl;
 				XSelectionRequestEvent *sreq =
@@ -2900,11 +2886,14 @@ static int process_clientmessage_events(Xv_object window,
 				sreq->type = SelectionRequest;
 				sreq->owner = origxcl.window;
 				sreq->requestor = origxcl.window;
-				sreq->selection = xv_get(server_public, SERVER_ATOM,
-												"XdndSelection");
+				sreq->selection = xv_get(server, SERVER_ATOM, "XdndSelection");
 				sreq->target = origxcl.message_type;
-				sreq->property = origxcl.message_type;
-				sreq->time = server_get_timestamp(server_public);
+				/* since around 2026-11-11 we habe the "no answer" 
+				 * convention - let's use it here:
+				 * orig: sreq->property = origxcl.message_type;
+				 */
+				sreq->property =  xv_get(server, SERVER_ATOM, "_DRA_NO_ANSWER");
+				sreq->time = server_get_timestamp(server);
 				event_set_id(event, SEL_REQUEST);
 			}
 			else
@@ -2915,7 +2904,7 @@ static int process_clientmessage_events(Xv_object window,
 			 */
 
 			if (clientmessage->message_type ==
-					xv_get(server_public, SERVER_ATOM, "_OL_TRANSLATED_KEY"))
+					xv_get(server, SERVER_ATOM, "_OL_TRANSLATED_KEY"))
 			{
 				int meta_modmask = 0;
 				int alt_modmask = 0;
@@ -2933,12 +2922,12 @@ static int process_clientmessage_events(Xv_object window,
 				keyboard_key = ((ksym & KEYBOARD_KYSM_MASK) == KEYBOARD_KYSM);
 				key_value = ksym;
 
-				key_map = (unsigned int *)xv_get(server_public, SERVER_XV_MAP);
+				key_map = (unsigned int *)xv_get(server, SERVER_XV_MAP);
 				for (i = 0; i < __SEM_INDEX_LAST; i++) {
-					key_sem_maps[i] = (u_char *) xv_get(server_public,
+					key_sem_maps[i] = (u_char *) xv_get(server,
 										SERVER_SEMANTIC_MAP, i);
 				}
-				ascii_sem_map = (u_char *)xv_get(server_public, SERVER_ASCII_MAP);
+				ascii_sem_map = (u_char *)xv_get(server, SERVER_ASCII_MAP);
 
 				if (keyboard_key)
 					key_value = ((key_map[(int)ksym & 0xFF] == ksym) ||
@@ -2979,8 +2968,8 @@ static int process_clientmessage_events(Xv_object window,
 				}
 				else event->ie_string = NULL;
 
-				alt_modmask = (int)xv_get(server_public, SERVER_ALT_MOD_MASK);
-				meta_modmask = (int)xv_get(server_public, SERVER_META_MOD_MASK);
+				alt_modmask = (int)xv_get(server, SERVER_ALT_MOD_MASK);
+				meta_modmask = (int)xv_get(server, SERVER_META_MOD_MASK);
 
 				/* Get the Semantic Action part of the XView Event initialised */
 
@@ -3044,7 +3033,7 @@ static int process_clientmessage_events(Xv_object window,
 			 * das kann wieder weg, wenn das Rescaling geht
 			 */
 			else if (clientmessage->message_type ==
-					xv_get(server_public, SERVER_ATOM, "_DRA_RESCALE"))
+					xv_get(server, SERVER_ATOM, "_DRA_RESCALE"))
 			{
 				Xv_window win = window;
 				Event ev;
