@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.61 2026/11/05 19:21:48 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.62 2026/11/13 23:40:01 dra Exp $ ";
 #endif
 #endif
 
@@ -505,7 +505,7 @@ static int local_preview(Xv_window eventObject, int subtype, XMotionEvent *ev,
 	event_set_action(&event, ACTION_DRAG_PREVIEW);
 
 	/* 
-	 * In older versions XTranslateCoordinates was used here.
+	 * In older versions X TranslateCoordinates was used here.
 	 */
 	win_translate_to_screen(eventObject, 0, 0, &xoff, &yoff);
 
