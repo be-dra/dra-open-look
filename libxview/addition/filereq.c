@@ -48,7 +48,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.28 2026/11/08 10:22:35 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.29 2026/11/13 13:25:40 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -132,7 +132,7 @@ static loadlist_t release_loaded(Filereq_private *priv, loadlist_t ll,
 				SEL_RANK, ll->loadsel_atom,
 				SEL_TYPE_NAME, "_SUN_SELECTION_END",
 				NULL);
-		sel_post_req(self);
+		sel_post_req_no_answer(self);
 
 		if (priv->selowner) {
 			if (ll==(loadlist_t)xv_get(priv->selowner,XV_KEY_DATA,fr_load_key))
@@ -486,6 +486,7 @@ static void save_loaded(Filereq_private *priv, char *locfile,
 	priv->status = FR_OK;
 	priv->inssel_cb = cb;
 	SERVERTRACE((311, "%s: requesting INSERT_SELECTION\n", __FUNCTION__));
+	/* I DO want an answer !!! */
 	sel_post_req(self);
 }
 
