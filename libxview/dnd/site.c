@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.7 2026/10/21 11:04:09 dra Exp $ ";
+static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.8 2026/11/13 23:37:47 dra Exp $ ";
 #endif
 #endif
 
@@ -27,7 +27,7 @@ static char     sccsid[] = "@(#)site.c 1.13 93/06/28 DRA: $Id: site.c,v 4.7 2026
  *
  * Looking into the dsdm code of olwm; you can see that olwm is prepared
  * for window types interests: on the _SUN_DRAGDROP_SITE_RECT request,
- * it will perform XGetGeometry and XTranslateCoordinates to
+ * it will perform GetGeometry and TranslateCoordinates to
  * present window typed drop sites as if they were rectangle typed.
  * On the client side, if you create a DND_WINDOW_SITE site, you do **not**
  * have to care for WIN_RESIZE etc. Basically, you can create the drop site
