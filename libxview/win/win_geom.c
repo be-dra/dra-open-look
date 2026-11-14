@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.5 2026/10/23 20:11:18 dra Exp $";
+static char     sccsid[] = "@(#)win_geom.c 20.35 93/06/28 DRA: $Id: win_geom.c,v 4.7 2026/11/14 00:04:24 dra Exp $";
 #endif
 #endif
 
@@ -116,8 +116,7 @@ Xv_private int win_get_retained(Xv_object window)
     }
 }
 
-Xv_private void win_translate_to_screen(Xv_window win, 
-					int src_x, int src_y, int *dst_x, int *dst_y)
+static void find_offset(Xv_window win, int *xoffp, int *yoffp)
 {
 	int xoff = 0, yoff = 0;
 	Rect r;
@@ -136,8 +135,30 @@ Xv_private void win_translate_to_screen(Xv_window win,
 		w = info->parent;
 	} while (info && w && xv_get(w, XV_IS_SUBTYPE_OF, WINDOW));
 
-	*dst_x = src_x +xoff;
-	*dst_y = src_y +yoff;
+	*xoffp = xoff;
+	*yoffp = yoff;
+}
+
+Xv_private void win_translate_to_screen(Xv_window win, 
+					int src_x, int src_y, int *dst_x, int *dst_y)
+{
+	int xoff, yoff;
+
+	find_offset(win, &xoff, &yoff);
+
+	*dst_x = src_x + xoff;
+	*dst_y = src_y + yoff;
+}
+
+Xv_private void win_translate_from_screen(Xv_window win, 
+					int src_x, int src_y, int *dst_x, int *dst_y)
+{
+	int xoff, yoff;
+
+	find_offset(win, &xoff, &yoff);
+
+	*dst_x = src_x - xoff;
+	*dst_y = src_y - yoff;
 }
 
 /* translate coordinates */
@@ -154,14 +175,17 @@ Xv_public int win_translate_xy(Xv_object src, Xv_object dst,
 			     xv_xid(dst_info), src_x, src_y, dst_x, dst_y));
 }
 
-Xv_private int win_translate_xy_internal(Display *display, XID src_id, XID dst_id, int src_x, int src_y, int *dst_x, int *dst_y)
+Xv_private int win_translate_xy_internal(Display *display, XID src_id,
+					XID dst_id, int src_x, int src_y, int *dst_x, int *dst_y)
 {
     XID             child;
 
 	SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", src_id,dst_id));
     if (XTranslateCoordinates(display, src_id, dst_id, src_x, src_y,
 			      dst_x, dst_y, &child))
-	return (XV_OK);
+	{
+		return (XV_OK);
+	}
     return (XV_ERROR);
 }
 
