@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.68 2026/11/13 13:35:55 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.69 2026/11/14 21:45:25 dra Exp $";
 #endif
 #endif
 
@@ -22,6 +22,9 @@ static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.
 #endif  /* SVR4 */
 
 #define ITIMER_NULL  ((struct itimerval *)0)
+
+/* no idea why  SEL_PROPERTY_DATA is in sel_pkg.h */
+#define SEL_SIMPLE_32    (1<<1)
 
 #ifndef NULL
 #define NULL 0
@@ -98,7 +101,7 @@ static int sel_req_init(Xv_Window parent, Selection_requestor sel_req_public,
     sel_req->typeIndex = 0;
     sel_req->typeTbl = xv_alloc( Sel_type_tbl );
     sel_req->typeTbl->type = XA_STRING;
-    sel_req->typeTbl->status = 0;
+    sel_req->typeTbl->tblstatus = 0;
     sel_req->typeTbl->type_name = "STRING";
 
     return XV_OK;
@@ -166,7 +169,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 		case SEL_TYPE:
 			sel_req->nbr_types = 1;
 			sel_req->typeTbl[0].type = (Atom) attrs[1];
-			sel_req->typeTbl[0].status = 0;
+			sel_req->typeTbl[0].tblstatus = 0;
 			type_set = TRUE;
 			break;
 		case SEL_TYPES:
@@ -180,7 +183,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 
 			for (i = 1; i <= sel_req->nbr_types; i++) {
 				sel_req->typeTbl[i - 1].type = (Atom) attrs[i];
-				sel_req->typeTbl[i - 1].status = 0;
+				sel_req->typeTbl[i - 1].tblstatus = 0;
 			}
 			types_set = TRUE;
 			break;
@@ -196,7 +199,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 
 			for (i = 1; i <= numApndTypes; i++) {
 				sel_req->typeTbl[numTypes - 1 + i].type = (Atom) attrs[i];
-				sel_req->typeTbl[numTypes - 1 + i].status = 0;
+				sel_req->typeTbl[numTypes - 1 + i].tblstatus = 0;
 			}
 			sel_req->nbr_types += numApndTypes;
 			apndTypeSet = TRUE;
@@ -214,7 +217,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 			for (i = 1; i <= numApndTypes; i++) {
 				sel_req->typeTbl[numTypes - 1 + i].type_name =
 						(char *)attrs[i];
-				sel_req->typeTbl[numTypes - 1 + i].status = 0;
+				sel_req->typeTbl[numTypes - 1 + i].tblstatus = 0;
 			}
 			sel_req->nbr_types += numApndTypes;
 			apndTypeNameSet = TRUE;
@@ -222,9 +225,23 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 		case SEL_TYPE_NAME:
 			sel_req->nbr_types = 1;
 			sel_req->typeTbl->type_name = (char *)attrs[1];
-			sel_req->typeTbl->status = 0;
+			sel_req->typeTbl->tblstatus = 0;
 			type_name_set = TRUE;
 			break;
+
+		case SEL_SIMPLE_TYPE:
+			sel_req->nbr_types = 1;
+			sel_req->typeTbl->type = (Atom) attrs[1];
+			sel_req->typeTbl->tblstatus = SEL_SIMPLE_32;
+			type_set = TRUE;
+			break;
+		case SEL_SIMPLE_TYPE_NAME:
+			sel_req->nbr_types = 1;
+			sel_req->typeTbl->type_name = (char *)attrs[1];
+			sel_req->typeTbl->tblstatus = SEL_SIMPLE_32;
+			type_name_set = TRUE;
+			break;
+
 		case SEL_TYPE_NAMES:
 			free_typeTbl(sel_req);
 			for (i = 1; attrs[i]; i++);
@@ -236,7 +253,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 
 			for (i = 1; i <= sel_req->nbr_types; i++) {
 				sel_req->typeTbl[i - 1].type_name = (char *)attrs[i];
-				sel_req->typeTbl[i - 1].status = 0;
+				sel_req->typeTbl[i - 1].tblstatus = 0;
 			}
 			type_names_set = TRUE;
 			break;
@@ -258,7 +275,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 			i = sel_req->typeIndex;
 			propdata[i] = (Xv_opaque) attrs[1];
 			propdata_set = TRUE;
-			sel_req->typeTbl[i].status |= SEL_PROPERTY_DATA;
+			sel_req->typeTbl[i].tblstatus |= SEL_PROPERTY_DATA;
 			break;
 		case SEL_PROP_LENGTH:
 			i = sel_req->typeIndex;
@@ -344,7 +361,7 @@ static Xv_opaque sel_req_set_avlist(Selection_requestor sel_req_public,
 	}
 
 	for (i = 0; i < sel_req->nbr_types; i++) {
-		if (sel_req->typeTbl[i].status & SEL_PROPERTY_DATA) {
+		if (sel_req->typeTbl[i].tblstatus & SEL_PROPERTY_DATA) {
 			propInfo = sel_req->typeTbl[i].propInfo;
 			if (propInfo->typeName == NULL)
 				propInfo->typeName =
@@ -363,7 +380,7 @@ static int selection_is_word(Selection_requestor self)
 	long length, *wdp;
 	int format, is_word;
 
-	xv_set(self, SEL_TYPE_NAME, "_OL_SELECTION_IS_WORD", NULL);
+	xv_set(self, SEL_SIMPLE_TYPE_NAME, "_OL_SELECTION_IS_WORD", NULL);
 	wdp = (long *)xv_get(self, SEL_DATA, &length, &format);
 	if (length == SEL_ERROR) is_word = FALSE;
 	else is_word = *wdp;
@@ -383,7 +400,7 @@ static void SetExtendedData(Sel_reply_info *reply, Atom property, int typeIndex)
 {
 	Sel_prop_info *exType;
 
-	if (reply->sri_req_info->typeTbl[typeIndex].status & SEL_PROPERTY_DATA) {
+	if (reply->sri_req_info->typeTbl[typeIndex].tblstatus & SEL_PROPERTY_DATA) {
 		exType = reply->sri_req_info->typeTbl[typeIndex].propInfo;
 
 		XChangeProperty(reply->sri_dpy, reply->sri_requestor, property,
@@ -398,7 +415,7 @@ static void SetExtendedData(Sel_reply_info *reply, Atom property, int typeIndex)
 */
 static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 					Sel_owner_info *selection, Time time, Sel_req_info *selReq,
-					int no_answer)
+					int no_answer, int clmsg_answer)
 {
 	int numTarget;
 	Sel_reply_info *replyInfo;
@@ -439,7 +456,14 @@ static Sel_reply_info *NewReplyInfo(Selection_requestor req, Window win,
 		XV_BCOPY((char *)&target, replyInfo->sri_target, numTarget * sizeof(Atom));
 	}
 
-	if (no_answer) {
+	if (clmsg_answer) {
+		/* want the answer as a client message */
+		replyInfo->sri_sel_notify_atom = xv_get(srv, SERVER_ATOM,
+									"_DRA_SELECTION_NOTIFY");
+		replyInfo->sri_property = replyInfo->sri_sel_notify_atom;
+	}
+	else if (no_answer) {
+		/* want no answer at all */
 		replyInfo->sri_property = replyInfo->sri_no_answer_atom;
 	}
 	else {
@@ -1165,26 +1189,74 @@ static int ProcessMultiple(Sel_req_info *selReq, Sel_reply_info *reply,
 static int xv_sel_check_selnotify(Display *display, XEvent *xevent,
 										XPointer args)
 {
-	Sel_reply_info reply;
-
-	XV_BCOPY((char *)args, (char *)&reply, sizeof(Sel_reply_info));
+	Sel_reply_info *reply = (Sel_reply_info *)args;
 
 	if ((xevent->type & 0177) == SelectionNotify) {
 		XSelectionEvent *ev = (XSelectionEvent *) xevent;
 
-		if ((ev->target == *reply.sri_target))
-			return (TRUE);
+		if (ev->requestor == reply->sri_requestor
+			&& ev->selection == reply->sri_selection
+			&& ev->target == *reply->sri_target)
+			return TRUE;
 		/*
 		 * else
 		 * fprintf(stderr, "Possible BUG case - xv_sel_check_selnotify \n");
 		 */
+	}
+	else if ((xevent->type & 0177) == ClientMessage) {
+		XClientMessageEvent *ev = (XClientMessageEvent *) xevent;
+
+		/* just an idea: quite a few selection requests will be
+		 * answered by "exactly one 32 bit data", for example
+		 * _OL_SELECTION_IS_WORD: fmt 32, XA_INTEGER, length 1
+		 * _SUN_SELN_IS_READONLY: fmt 32, XA_INTEGER, length 1
+		 * _SUN_ENUMERATION_COUNT: fmt 32, XA_INTEGER, length 1
+		 * TIMESTAMP: fmt 32, XA_INTEGER, length 1
+		 *
+		 * Now, the idea is to avoid the get property on the 
+		 * requestor's side, because we could 
+		 * instead of change property and send event "SelectionNotify"
+		 * now send a client message with type _DRA_SELECTION_NOTIFY
+		 * and data.l[0] = selection
+		 *     data.l[1] = target
+		 *     data.l[2] = property
+		 *     data.l[3] = type
+		 *     data.l[4] = value
+		 *
+		 * Here, we receive such messages and hand them somehow
+		 * to the selection requestor class...
+		 *
+		 * The BIG PROBLEM is: how do I tell the selection owner
+		 * that I expect such a client message reply?
+		 * Again (as in the 'no answer' case), it could only be
+		 * a special property atom like _DRA_SELECTION_NOTIFY.
+		 * however, this could not be used in a MULTIPLE case.
+		 * We would also need an new SELECTION_REQUESTOR attribute
+		 * to document from the beginning that this is a request
+		 * that expects a client message answer.
+		 *
+		 * If the selection owner doesn't understand our 
+		 * _DRA_SELECTION_NOTIFY convention, they will answer
+		 * with a SelectionNotify....
+		 *
+		 * But note that we come here only in the blocking case....
+		 */
+
+		/* is it worth the effort ?????  */
+
+		if (ev->message_type == reply->sri_sel_notify_atom) {
+			if (ev->window == reply->sri_requestor
+				&& ev->data.l[0] == reply->sri_selection
+				&& ev->data.l[1] == *reply->sri_target)
+				return TRUE;
+		}
 	}
 
 	/*
 	 * If we receive a SelectionRequest while waiting, handle selection request
 	 * to avoid a dead lock.
 	 */
-	if ((xevent->type & 0177) == SelectionRequest) {
+	else if ((xevent->type & 0177) == SelectionRequest) {
 		XSelectionRequestEvent *reqEvent = (XSelectionRequestEvent *) xevent;
 
 		/* I want to know exactly what is happening here: */
@@ -1195,14 +1267,14 @@ static int xv_sel_check_selnotify(Display *display, XEvent *xevent,
 											reqEvent->target));
 		fprintf(stderr, "... while waiting for %s:%s\n",
 				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME, 
-						xv_get(SEL_REQUESTOR_PUBLIC(reply.sri_req_info),SEL_RANK)),
+						xv_get(SEL_REQUESTOR_PUBLIC(reply->sri_req_info),SEL_RANK)),
 				(char *)xv_get(xv_default_server, SERVER_ATOM_NAME,
-												*reply.sri_target));
+												*reply->sri_target));
 
 		xv_sel_handle_selection_request(reqEvent);
 	}
 
-	return (FALSE);
+	return FALSE;
 }
 
 
@@ -1220,7 +1292,6 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	Atom selection;
 	Sel_owner_info *sel;
 	XEvent event;
-	XSelectionEvent *ev;
 
 	/* get the requestor's xid, event time, selection and the target */
 	requestor = SEL_REQUESTOR_PUBLIC(selReq);
@@ -1236,7 +1307,8 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	 */
 	sel = xv_sel_find_selection_data(dpy, selection, xid);
 
-	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq, FALSE);
+	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq, FALSE,
+					((selReq->typeTbl[0].tblstatus & SEL_SIMPLE_32) != 0));
 	xv_set(requestor, XV_KEY_DATA, selreq_reply_key, replyInfo, NULL);
 	*reply = replyInfo;
 
@@ -1266,34 +1338,63 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
 		return FALSE;
 	}
-	ev = (XSelectionEvent *)&event;
+	if (event.type == SelectionNotify) {
+		XSelectionEvent *ev = (XSelectionEvent *)&event;
 
-	if (!CheckSelectionNotify(selReq, replyInfo, ev, 1))
-	{
-		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
-		return FALSE;
-	}
-
-	if (ev->target == replyInfo->sri_multiple || replyInfo->sri_multiple_count)
-	{
-
-		/*
-		 * If we are processing a blocking request and the requestor
-		 * has requested for MULTIPLE targets with no reply_proc
-		 * registered, reject the data transfer.
-		 */
-		if (selReq->reply_proc == NULL) {
+		if (!CheckSelectionNotify(selReq, replyInfo, ev, 1))
+		{
 			xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
 			return FALSE;
 		}
 
-		if (ProcessMultiple(selReq, replyInfo, ev, 1))
-			return TRUE;
+		if (ev->target == replyInfo->sri_multiple || replyInfo->sri_multiple_count)
+		{
 
+			/*
+			 * If we are processing a blocking request and the requestor
+			 * has requested for MULTIPLE targets with no reply_proc
+			 * registered, reject the data transfer.
+			 */
+			if (selReq->reply_proc == NULL) {
+				xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
+				return FALSE;
+			}
+	
+			if (ProcessMultiple(selReq, replyInfo, ev, 1))
+				return TRUE;
+	
+		}
+	
+		return XvGetRequestedValue(selReq, ev, replyInfo, ev->property,
+				*replyInfo->sri_target, 1);
 	}
+	else {
+		/* ClientMessage - no GetProperty */
+		/* conventions:
+		 *     data.l[0] = selection
+		 *     data.l[1] = target
+		 *     data.l[2] = property
+		 *     data.l[3] = type
+		 *     data.l[4] = value
+		 */
+		XClientMessageEvent *ev = (XClientMessageEvent *)&event;
+		long *lp = xv_alloc(long);
 
-	return XvGetRequestedValue(selReq, ev, replyInfo, ev->property,
-			*replyInfo->sri_target, 1);
+		*lp = ev->data.l[4];
+		replyInfo->sri_propdata = (Xv_opaque)lp;
+		replyInfo->sri_length = 1;
+		replyInfo->sri_format = 32;
+
+		/*
+		 * Note: The user reply_proc should free "propValue".
+		 */
+		if (selReq->reply_proc) {
+			(*selReq->reply_proc)(SEL_REQUESTOR_PUBLIC(selReq), ev->data.l[1],
+						ev->data.l[3], (Xv_opaque)lp, 1L, 32);
+			/* but doesn't HAVE to free it in case of a blocking request... */
+		}
+	}
+	return TRUE;
 }
 
 static Xv_opaque SelBlockReq(Sel_req_info *selReq, unsigned long *length,
@@ -1495,7 +1596,7 @@ static void XvGetSeln(Display *dpy, XID xid, Sel_req_info *selReq, Time time)
 	 */
 	sel = xv_sel_find_selection_data(dpy, selection, xid);
 
-	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq, FALSE);
+	replyInfo = NewReplyInfo(requestor, xid, sel, time, selReq, FALSE, FALSE);
 	xv_set(requestor, XV_KEY_DATA, selreq_reply_key, replyInfo, NULL);
 
 	if (selReq->nbr_types > 1)	/* target is MULTIPLE */
@@ -1842,7 +1943,7 @@ int sel_post_req_no_answer(Selection_requestor sel)
 	 */
 	selown = xv_sel_find_selection_data(dpy, selection, xid);
 
-	replyInfo = NewReplyInfo(sel, xid, selown, XTime, selReq, TRUE);
+	replyInfo = NewReplyInfo(sel, xid, selown, XTime, selReq, TRUE, FALSE);
 	xv_set(sel, XV_KEY_DATA, selreq_reply_key, replyInfo, NULL);
 
 
