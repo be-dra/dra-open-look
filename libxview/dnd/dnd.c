@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.62 2026/11/13 23:40:01 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.63 2026/11/14 21:46:48 dra Exp $ ";
 #endif
 #endif
 
@@ -1754,6 +1754,9 @@ static int internal_send_drop(Drag_drop dnd_public)
 	lasttime = server_get_timestamp(srv);
 	server_set_timestamp(srv, &lasttimval, 0L);
 
+	/* set for all properties 'avail = TRUE' */
+    xv_sel_free_property(srv, dpy, 0L);
+
 	/* Assure that we have a selection to use. */
 	if (get_selection(dnd, dpy, &lasttimval) == DND_SELECTION)
 		return (DND_SELECTION);
@@ -2612,7 +2615,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 		srpriv->reply_proc = NULL;
 
 		xv_set(sel_req, XV_KEY_DATA, dnd_transient_key, False, NULL);
-		xv_set(sel_req, SEL_TYPE_NAME, "_SUN_DRAGDROP_DONE", NULL);
+		xv_set(sel_req, SEL_SIMPLE_TYPE_NAME, "_SUN_DRAGDROP_DONE", NULL);
 
 		data = (char *)xv_get(sel_req, SEL_DATA, &length, &format);
 
@@ -2624,7 +2627,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 			Display *dpy = XV_DISPLAY_FROM_WINDOW(win);
 			Xv_server srv = XV_SERVER_FROM_WINDOW(win);
 
-			/* das soll fuer ALLE properties 'avail = TRUE' setzen */
+			/* set for all properties 'avail = TRUE' */
     		xv_sel_free_property(srv, dpy, 0L);
 		}
 	}
