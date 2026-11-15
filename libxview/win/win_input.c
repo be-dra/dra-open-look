@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.71 2026/11/13 23:54:06 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.73 2026/11/14 19:08:59 dra Exp $";
 #endif
 #endif
 
@@ -2888,7 +2888,7 @@ static int process_clientmessage_events(Xv_object window,
 				sreq->requestor = origxcl.window;
 				sreq->selection = xv_get(server, SERVER_ATOM, "XdndSelection");
 				sreq->target = origxcl.message_type;
-				/* since around 2026-11-11 we habe the "no answer" 
+				/* since around 2026-11-11 we have the "no answer" 
 				 * convention - let's use it here:
 				 * orig: sreq->property = origxcl.message_type;
 				 */
@@ -3057,6 +3057,55 @@ static int process_clientmessage_events(Xv_object window,
 								NOTIFY_COPY_NULL, NOTIFY_RELEASE_NULL);
 				event_set_id(event, WIN_CLIENT_MESSAGE);
 				window_set_client_message(window, clientmessage);
+				return TRUE;
+			}
+			else if (clientmessage->message_type ==
+					xv_get(server, SERVER_ATOM, "_DRA_SELECTION_NOTIFY"))
+			{
+				/* just an idea: quite a few selection requests will be
+				 * answered by "exactly one 32 bit data", for example
+				 * _OL_SELECTION_IS_WORD: fmt 32, XA_INTEGER, length 1
+				 * _SUN_SELN_IS_READONLY: fmt 32, XA_INTEGER, length 1
+				 * _SUN_ENUMERATION_COUNT: fmt 32, XA_INTEGER, length 1
+				 * TIMESTAMP: fmt 32, XA_INTEGER, length 1
+				 *
+				 * Now, the idea is to avoid the get property on the 
+				 * requestor's side, because we could 
+				 * instead of change property and send event "SelectionNotify"
+				 * now send a client message with type _DRA_SELECTION_NOTIFY
+				 * and data.l[0] = selection
+				 *     data.l[1] = target
+				 *     data.l[2] = property
+				 *     data.l[3] = type
+				 *     data.l[4] = value
+				 *
+				 * Here, we receive such messages and hand them somehow
+				 * to the selection requestor class...
+				 *
+				 * The BIG PROBLEM is: how do I tell the selection owner
+				 * that I expect such a client message reply?
+				 * Again (as in the 'no answer' case), it could only be
+				 * a special property atom like _DRA_SELECTION_NOTIFY.
+				 * however, this could not be used in a MULTIPLE case.
+				 * We would also need an new SELECTION_REQUESTOR attribute
+				 * to document from the beginning that this is a request
+				 * that expects a client message answer.
+				 *
+				 * If the selection owner doesn't understand our 
+				 * _DRA_SELECTION_NOTIFY convention, they will answer
+				 * with a SelectionNotify....
+				 *
+				 * But note that we come here only in the nonblocking case....
+				 */
+
+				/* Currently (2026-11-14) it is only implemented in the
+				 * blocking request case....
+				 * Nothing to do here
+				 */
+
+				/* as far as I understand it, this means
+				 * 'no further dispatching of this event'
+				 */
 				return TRUE;
 			}
 			else {
