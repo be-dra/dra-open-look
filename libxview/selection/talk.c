@@ -8,7 +8,7 @@
 #include <xview_private/svr_impl.h>
 #include <xview_private/sel_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.58 2026/11/12 16:27:18 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.59 2026/11/14 21:43:58 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -535,7 +535,7 @@ static int register_with_server(Talk self, Talk_private *priv,
 	SERVERTRACE((200, "%s\n", __FUNCTION__));
 	xv_set(self,
 			SEL_RANK, priv->talksrv,
-			SEL_TYPE, priv->regist,
+			SEL_SIMPLE_TYPE, priv->regist,
 			NULL);
 	data = (Atom *)xv_get(self, SEL_DATA, &length, &format);
 	if (length == SEL_ERROR) {
