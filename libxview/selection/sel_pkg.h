@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.11 2026/11/11 10:27:16 dra Exp $";
+static char     sccsid[] = "@(#)sel_pkg.h 1.5 90/11/13 DRA: $Id: sel_pkg.h,v 4.12 2026/11/14 17:24:16 dra Exp $";
 #endif
 #endif
 
@@ -157,6 +157,8 @@ typedef enum {
 	SEL_APPEND_TYPE_NAMES	= SEL_ATTR_LIST(ATTR_NULL, ATTR_STRING,	  130),
 	SEL_AUTO_COLLECT_INCR	= SEL_ATTR(ATTR_BOOLEAN,		  66),
 	SEL_IS_WORD_SELECTION	= SEL_ATTR(ATTR_BOOLEAN,		  67), /* --G */
+	SEL_SIMPLE_TYPE      	= SEL_ATTR(ATTR_LONG,			  68), /* CS- */
+	SEL_SIMPLE_TYPE_NAME 	= SEL_ATTR(ATTR_STRING,			  69), /* CS- */
 
 	/* Selection_item object attributes */
 	SEL_COPY		= SEL_ATTR(ATTR_ENUM,			135),
