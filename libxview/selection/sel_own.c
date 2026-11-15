@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.59 2026/11/12 16:25:23 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.60 2026/11/14 21:45:05 dra Exp $";
 #endif
 #endif
 
@@ -494,6 +494,7 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	unsigned long length;
 	int format = 0;
 	unsigned long svr_max_req_size;
+	int change_property = TRUE;
 
 
 	selection->req->rq_property = property;
@@ -589,9 +590,42 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 		ev->xselection.target = selection->req->rq_property;
 		if (sendEventReqPtr) {
 			*sendEventReqPtr = FALSE; 
+			SERVERTRACE((888, "sendEventReq = FALSE\n"));
+		}
+		change_property = FALSE;
+	}
+	else if (selection->req->rq_property == xv_get(srv, SERVER_ATOM,
+							"_DRA_SELECTION_NOTIFY"))
+	{
+		/* the requestor believed that this is a request for a
+		 * "simple target", meaning that the result has length 0 or 1
+		 * and format 32. We check this:
+		 */
+		if (length <= 1L && format == 32) {
+			XClientMessageEvent cM;
+
+
+			cM.type = ClientMessage;
+			cM.format = 32;
+			cM.message_type = selection->req->rq_property;
+			cM.window = ev->xselection.requestor;
+			cM.data.l[0] = ev->xselection.selection;
+			cM.data.l[1] = ev->xselection.target;
+			cM.data.l[2] = ev->xselection.property;
+			cM.data.l[3] = selection->req->rq_type;
+			if (length == 1) cM.data.l[4] = *((long *)selection->req->rq_data);
+			else cM.data.l[4] = 0L;
+			XSendEvent(selection->dpy, ev->xselection.requestor, False, 0L,
+										(XEvent *)&cM);
+			change_property = FALSE;
+			if (sendEventReqPtr) {
+				*sendEventReqPtr = FALSE; 
+				SERVERTRACE((888, "sendEventReq = FALSE\n"));
+			}
 		}
 	}
-	else {
+
+	if (change_property) {
 		/*
 		 * Place the data resulting from the selection conversion into the
 		 * specified property on the requestor window.
@@ -615,6 +649,7 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 		if (sendEventReqPtr) {
 			ev->xselection.property = selection->req->rq_property;
 			*sendEventReqPtr = FALSE; 
+			SERVERTRACE((888, "sendEventReq = FALSE\n"));
 			XSendEvent(selection->dpy, ev->xselection.requestor, False,
 						(unsigned long)NULL, ev);
 		}
@@ -1037,7 +1072,7 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 	if (OldErrorHandler == NULL)
 		OldErrorHandler = XSetErrorHandler(SelOwnerErrorHandler);
 
-	if (OwnerHandleReply(owner, &replyEvent, &sendEventRequired))
+	if (OwnerHandleReply(owner, &replyEvent, &sendEventRequired)) {
 		if (replyEvent.property == None) {
 			/*
 			 * We have finished transferring INCR. DO not need to send
@@ -1047,12 +1082,15 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 			owner->req = NULL;
 			return;
 		}
+	}
+	SERVERTRACE((888, "sendEventReq = %d\n", sendEventRequired));
 
 	/*
 	 * Send the requestor window a SelectionNotify event specifying the
 	 * the end of transaction.
 	 */
 	if (sendEventRequired) {
+		SERVERTRACE((888, "sending event\n"));
 		XSendEvent(owner->dpy, replyEvent.requestor, False,
 					(unsigned long)NULL, (XEvent *) & replyEvent);
 	}
