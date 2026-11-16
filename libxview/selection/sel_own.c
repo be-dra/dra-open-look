@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.60 2026/11/14 21:45:05 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.61 2026/11/15 19:10:21 dra Exp $";
 #endif
 #endif
 
@@ -604,7 +604,14 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 		if (length <= 1L && format == 32) {
 			XClientMessageEvent cM;
 
-
+			/* now, we do not write the "result" into a property and
+			 * then send a SelectionNotify event -
+			 * instead, we pack everything into a client message
+			 * and then send this ClientMessage event.
+			 *
+			 * Note that we can do this ONLY when the requestor
+			 * explicitely asked for it using _DRA_SELECTION_NOTIFY !
+			 */
 			cM.type = ClientMessage;
 			cM.format = 32;
 			cM.message_type = selection->req->rq_property;
