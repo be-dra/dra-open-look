@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.63 2026/11/14 21:46:48 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.64 2026/11/15 13:37:32 dra Exp $ ";
 #endif
 #endif
 
@@ -2502,7 +2502,7 @@ static int SendACK(Selection_requestor sel_req, Event *ev)
 		int format;
 		long length;
 
-		xv_set(sel_req, SEL_TYPE_NAME, "_SUN_DRAGDROP_ACK", NULL);
+		xv_set(sel_req, SEL_SIMPLE_TYPE_NAME, "_SUN_DRAGDROP_ACK", NULL);
 		data = (char *)xv_get(sel_req, SEL_DATA, &length, &format);
     	if (data) XFree(data);
 		if (length == SEL_ERROR) {
