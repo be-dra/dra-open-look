@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.73 2026/11/14 19:08:59 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.74 2026/11/15 19:11:18 dra Exp $";
 #endif
 #endif
 
@@ -3098,10 +3098,7 @@ static int process_clientmessage_events(Xv_object window,
 				 * But note that we come here only in the nonblocking case....
 				 */
 
-				/* Currently (2026-11-14) it is only implemented in the
-				 * blocking request case....
-				 * Nothing to do here
-				 */
+				xv_sel_handle_selection_notify_client_message(clientmessage);
 
 				/* as far as I understand it, this means
 				 * 'no further dispatching of this event'
