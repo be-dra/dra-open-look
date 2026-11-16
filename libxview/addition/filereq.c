@@ -48,7 +48,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.29 2026/11/13 13:25:40 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.30 2026/11/15 13:33:42 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -850,7 +850,7 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 	priv->status =  FR_OK;
 	xv_set(sr,
 			SEL_TIME, &tim,
-			SEL_TYPE_NAME, "_SUN_ENUMERATION_COUNT",
+			SEL_SIMPLE_TYPE_NAME, "_SUN_ENUMERATION_COUNT",
 			NULL);
 	ldata = (long *)xv_get(sr, SEL_DATA, &length, &format);
 	if (length == SEL_ERROR) {
