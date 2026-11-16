@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.69 2026/11/14 21:45:25 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.70 2026/11/15 19:11:04 dra Exp $";
 #endif
 #endif
 
@@ -1698,10 +1698,74 @@ Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev)
 }
 
 
+Xv_private void xv_sel_handle_selection_notify_client_message(XClientMessageEvent *ev)
+{
+	Sel_reply_info *reply;
+	Sel_req_info *selReq;
+	XWindowAttributes winAttr;
+	XSelectionEvent fake;
 
+	reply = (Sel_reply_info *) xv_sel_get_reply((XEvent *)ev);
 
-static int
-CheckPropertyNotify(XPropertyEvent *ev, Sel_reply_info *reply)
+	if (reply == NULL) return;
+
+	SERVERTRACE((385, "%s: sel %s, tgt %s\n", __FUNCTION__, 
+			(char *)xv_get(reply->sri_srv, SERVER_ATOM_NAME, ev->data.l[0]),
+			(char *)xv_get(reply->sri_srv, SERVER_ATOM_NAME, ev->data.l[1])));
+
+	/* now we fill "fake" with everything that CheckSelectionNotify checks
+	 *     data.l[0] = selection
+	 *     data.l[1] = target
+	 *     data.l[2] = property
+	 *     data.l[3] = type
+	 *     data.l[4] = value
+	 */
+	fake.display = ev->display;
+	fake.send_event = ev->send_event;
+	fake.selection = ev->data.l[0];
+	fake.target =    ev->data.l[1];
+	fake.property =  ev->data.l[2];
+	fake.time      = reply->sri_time;
+	fake.requestor = ev->window;
+
+	if (!CheckSelectionNotify(reply->sri_req_info, reply, &fake, 0))
+		return;
+
+	selReq = reply->sri_req_info;
+
+	/* Is this condition EVER true???
+	 * The event's target is probably never INCR
+	 */
+	if (fake.target == reply->sri_incr) {
+		char buf[500];
+
+		sprintf(buf, "UNEXPECTED: %s-%d: target %ld == INCR ????", __FUNCTION__,
+							__LINE__, fake.target);
+		xv_error(XV_NULL,
+				ERROR_STRING, buf,
+				ERROR_PKG, SELECTION,
+				NULL);
+		reply->sri_during_incr = 1;
+
+		reply->sri_status =
+				xv_sel_add_prop_notify_mask(ev->display, reply->sri_requestor,
+				&winAttr);
+
+		if (ProcessNonBlkIncr(selReq, reply, &fake, *reply->sri_target))
+			return;
+	}
+
+	if (selReq->reply_proc) {
+		long *val = xv_alloc(long);
+
+		*val = ev->data.l[4];
+		(*selReq->reply_proc)(SEL_REQUESTOR_PUBLIC(selReq), fake.target,
+					ev->data.l[3], (Xv_opaque)val, 1L, 32);
+	}
+	xv_sel_end_request(reply);
+}
+
+static int CheckPropertyNotify(XPropertyEvent *ev, Sel_reply_info *reply)
 {
     int  i;
 
