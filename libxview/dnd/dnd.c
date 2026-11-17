@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.64 2026/11/15 13:37:32 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.65 2026/11/17 00:14:50 dra Exp $ ";
 #endif
 #endif
 
@@ -944,6 +944,8 @@ static int find_site(Dnd_info *dnd, XMotionEvent *e)
 {
 	int indx;
 
+	if (! dnd->siteRects) return DND_SUCCEEDED;
+
 	indx = determine_site_index(dnd, e->display, e->root, e->x_root, e->y_root);
 	if (indx >= 0) {
 		dnd->lastSiteIndex = indx;
@@ -1294,20 +1296,20 @@ static int ConstructSiteList(Display *dpy, Window dest_window, long *prop,
 			drop_site[i].rect = (DndRect *) xv_calloc(drop_site[i].nrects,
 					(unsigned)sizeof(DndRect));
 			for (j = 0; j < drop_site[i].nrects; j++) {
-				Window root;
+				Window root, xid;
 				int x, y;
 				unsigned int w, h;
 				unsigned int bw, depth;
 
-				if (!XGetGeometry(dpy, (Window) * data,
-								&root, &x, &y, &w, &h, &bw, &depth)) {
+				xid = (Window)*data++;
+				if (!XGetGeometry(dpy, xid, &root, &x, &y, &w,
+										&h, &bw, &depth)) {
 					/* XXX: Handle Bad Window */
-					(void)*data++;
 					/* XXX: Skip it for now */
 					drop_site[i].rect[j].x = 0;
 					drop_site[i].rect[j].y = 0;
-					drop_site[i].rect[j].w = 0;
-					drop_site[i].rect[j].h = 0;
+					drop_site[i].rect[j].w = 100;
+					drop_site[i].rect[j].h = 100;
 				}
 				else {
 					int dstX, dstY;
@@ -1317,8 +1319,8 @@ static int ConstructSiteList(Display *dpy, Window dest_window, long *prop,
 					 * window.
 					 */
 					SERVERTRACE((960, "XTranslateCoordinates: 0x%lx 0x%lx\n", *data, dest_window));
-					if (!XTranslateCoordinates(dpy, (Window) * data++,
-									dest_window, x, y, &dstX, &dstY, &child)) {
+					if (!XTranslateCoordinates(dpy, xid,
+									dest_window, 0, 0, &dstX, &dstY, &child)) {
 						/* Different Screens */
 						break;
 					}
@@ -1644,7 +1646,7 @@ static int Verification(XButtonEvent *ev, Dnd_info *dnd)
 		 * property, construct the rects and determine
 		 * if the drop happened within a drop region.
 		 */
-		ConstructSiteList(dpy, None, interest_prop, &drop_site, &nsites);
+		ConstructSiteList(dpy, child, interest_prop, &drop_site, &nsites);
 		XFree((char *)interest_prop);
 		if (!FindDropSite(dnd, drop_site, nsites, &dnd->dropSite)) {
 			if (drop_site) {
