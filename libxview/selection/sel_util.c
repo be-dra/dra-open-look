@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.48 2026/11/15 19:12:12 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.50 2026/11/16 22:16:07 dra Exp $";
 #endif
 #endif
 
@@ -206,7 +206,7 @@ Pkg_private Sel_atom_list *xv_sel_find_atom_list(Display *dpy, Window xid)
 Xv_private_data XContext  propCtx;
 
 /* Pkg_private */
-static Sel_prop_list * xv_sel_get_prop_list(Xv_server srv, Display *dpy)
+static Sel_prop_list *sel_get_prop_list(Xv_server srv, Display *dpy)
 {
 	Sel_prop_list *list;
 
@@ -237,7 +237,7 @@ Pkg_private Atom xv_sel_get_property(Xv_server srv, Display  *dpy)
 	char str[100];
 	int i = 0;
 
-	cPtr = xv_sel_get_prop_list(srv, dpy);
+	cPtr = sel_get_prop_list(srv, dpy);
 
 	do {
 		if (cPtr->avail) {
@@ -269,7 +269,7 @@ Pkg_private void xv_sel_free_property(Xv_server srv, Display *dpy, Atom prop)
 {
 	Sel_prop_list *plPtr;
 
-	plPtr = xv_sel_get_prop_list(srv, dpy);
+	plPtr = sel_get_prop_list(srv, dpy);
 
 	do {
 		if (prop == None) {
@@ -624,37 +624,6 @@ static Sel_req_list *xv_sel_add_new_req(Sel_req_list *reqTbl, Sel_reply_info *re
 			rPtr->done = FALSE;
 			return reqTbl;
 		}
-		else {
-			Sel_reply_info *oldreply = rPtr->reply;
-
-			/* nowadays we also have the function sel_post_req_no_answer
-			 * where we do **not** get (or expect) any reply. So, the function
-			 * xv_sel_end_request will never be called. In order to prevent
-			 * this list from growing and growing, we check whether we can
-			 * "reuse" this entry.
-			 *
-			 * Please note: if some "unknowing" selection owner 
-			 * (or the X server) answers to such a no_answer request, it 
-			 * will be cleaned up like every other normal nonblocking request.
-			 */
-			if (oldreply) {
-				if (oldreply->sri_no_answer_required) {
-					SERVERTRACE((777, "reuse           %p for %ld\n", oldreply, 
-								oldreply->sri_selection));
-					/* if we don't clean up here, it will never be cleaned up */
-					XFree(oldreply);
-					rPtr->reply = reply;
-					rPtr->done = FALSE;
-					return reqTbl;
-				}
-			}
-			else {
-				/* not done but rPtr->reply is NULL ?????? */
-				rPtr->reply = reply;
-				rPtr->done = FALSE;
-				return reqTbl;
-			}
-		}
 		if (rPtr->next == NULL)
 			break;
 		rPtr = rPtr->next;
@@ -704,11 +673,6 @@ Pkg_private void xv_sel_set_reply(Sel_reply_info  *reply)
 	}
 	else {
 		xv_sel_add_new_req(reqTbl, reply);
-	}
-
-	if (reply->sri_no_answer_required) {
-		SERVERTRACE((777, "enter no answer %p for %ld\n", reply, 
-								reply->sri_selection));
 	}
 }
 
