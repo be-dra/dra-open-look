@@ -1,4 +1,4 @@
-/* @(#) %M% V%I% %E% %U% $Id: screen.h,v 2.2 2025/01/11 20:13:01 dra Exp $ */
+/* @(#) %M% V%I% %E% %U% $Id: screen.h,v 2.3 2026/11/17 08:11:10 dra Exp $ */
 /* #ident	"@(#)screen.h	26.24	93/06/28 SMI" */
 
 /*
@@ -138,7 +138,7 @@ typedef struct _screeninfo {
  */
 #if defined(__STDC__)
 
-extern	void		InitScreens(Display *dpy);
+extern	void		InitScreens(Display *dpy, int writeRootProp);
 extern	void		DestroyScreens(Display *dpy);
 extern	ScreenInfo	*GetFirstScrInfo(void);
 extern	ScreenInfo	*GetScrInfoOfScreen(int screen);
