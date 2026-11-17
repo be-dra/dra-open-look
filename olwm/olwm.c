@@ -1,5 +1,5 @@
 /* #ident	"@(#)olwm.c	26.66	93/06/28 SMI" */
-char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.13 2026/08/25 06:26:10 dra Exp $";
+char olwm_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: olwm.c,v 2.14 2026/11/17 08:11:10 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -302,8 +302,22 @@ olwm: Warning: '%s' is invalid locale for the LC_CTYPE category,\n\
 	/* init region handling code */
 	InitRegions();
 
-	/* Init screen */
-	InitScreens(DefDpy);
+	{
+		char namebuf[100];
+		char *type;
+		XrmValue value;
+		int tmp;
+		int writeRootProp = True;
+
+		strcpy(namebuf, AppName);
+		strcat(namebuf, ".syncSignal");
+		if (XrmGetResource(OlwmDB, namebuf, namebuf, &type, &value)) {
+			tmp = atoi((char *)value.addr);
+			if (tmp > 0) writeRootProp = False;
+		}
+		/* Init screen */
+		InitScreens(DefDpy, writeRootProp);
+	}
 	GrabKeys(DefDpy, True);
 	GrabButtons(DefDpy, True);
 	ReparentScreens(DefDpy);
