@@ -1,5 +1,5 @@
 /* #ident	"@(#)screen.c	26.46	93/06/28 SMI" */
-char screen_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: screen.c,v 2.5 2026/08/08 05:04:45 dra Exp $";
+char screen_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: screen.c,v 2.6 2026/11/17 08:11:10 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -1972,7 +1972,7 @@ static void updateScreenGlyphFont(Display *dpy, ScreenInfo	*scrInfo)
  *	initScreenInfo	- creates the ScreenInfo for a particular screen
  */
 static void initScreenInfo(Display *dpy, int screenno, XVisualInfo	*visInfo,
-									int nvis)
+									int nvis, int writeRootProp)
 {
 	ScreenInfo	*scrInfo;
 	Client		*client;
@@ -1996,7 +1996,7 @@ static void initScreenInfo(Display *dpy, int screenno, XVisualInfo	*visInfo,
 	ScreenInfoList = ListCons(scrInfo,ScreenInfoList);
 	if ((client = ClientCreate(dpy,scrInfo->screen)) == NULL)
 		return;
-	scrInfo->rootwin = MakeRoot(dpy,client);
+	scrInfo->rootwin = MakeRoot(dpy,client, writeRootProp);
 
 	/*
  	 *	Initialize the rest of the ScreenInfo fields
@@ -2043,9 +2043,7 @@ static void initScreenInfo(Display *dpy, int screenno, XVisualInfo	*visInfo,
 /*
  * InitScreens - inits all managed screens
  */
-void
-InitScreens(dpy)
-	Display		*dpy;
+void InitScreens(Display *dpy, int writeRootProp)
 {
 	XVisualInfo	*visInfo;
 	int		scr,nvis;
@@ -2063,13 +2061,13 @@ InitScreens(dpy)
 	 */
 	if (GRV.SingleScreen) {
 		scr = DefaultScreen(dpy);
-		initScreenInfo(dpy,scr,visInfo,nvis);
+		initScreenInfo(dpy,scr,visInfo,nvis, writeRootProp);
 	/*
  	 *	Else manage all screens for this display
 	 */
 	} else {
 		for (scr=0; scr<ScreenCount(dpy); scr++) {
-			initScreenInfo(dpy,scr,visInfo,nvis);
+			initScreenInfo(dpy,scr,visInfo,nvis, writeRootProp);
 		}
 	}
 
