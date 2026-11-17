@@ -1,5 +1,5 @@
 /* #ident	"@(#)winroot.c	26.60	93/06/28 SMI" */
-char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.6 2026/09/18 07:27:41 dra Exp $";
+char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.7 2026/11/17 08:11:10 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -535,10 +535,7 @@ destroyRoot(dpy, winInfo)
  * writeProtocols - write the _SUN_WM_PROTOCOLS property on the root win,
  *		    which advertises the capabilities of the window manager.
  */
-static void
-writeProtocols(dpy,rootwin)
-	Display		*dpy;
-	Window		rootwin;
+static void writeProtocols(Display *dpy, Window rootwin)
 {
 	Atom data[10];
 	int	nitems = 0;
@@ -585,10 +582,7 @@ writeIconSize(dpy,rootwin)
 /*
  * MakeRoot  -- create the root window. Return a WinGeneric structure.
  */
-WinRoot *
-MakeRoot(dpy, cli)
-	Display	*dpy;
-	Client	*cli;
+WinRoot *MakeRoot(Display *dpy, Client *cli, int writeRootProp)
 {
 	XWindowAttributes attr;
 	WinRoot *w;
@@ -641,8 +635,10 @@ MakeRoot(dpy, cli)
 	w->currentAction = ACTION_NONE;
 
 	/* Write properties on the root window */
-	writeProtocols(dpy,win);
-	writeIconSize(dpy,win);
+	if (writeRootProp) {
+		writeProtocols(dpy,win);
+		writeIconSize(dpy,win);
+	}
 
 	/* register the window */
 	WIInstallInfo((WinGeneric *)w);
