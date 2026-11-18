@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.65 2026/11/17 00:14:50 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.66 2026/11/17 21:52:34 dra Exp $ ";
 #endif
 #endif
 
@@ -52,6 +52,7 @@ typedef enum {
 	FILE_NAME,
 	CALENDAR,
 	PIXMAP,
+	NOTIFY,
 	XdndAware,
 	XdndSelection,
 	XdndEnter,
@@ -1018,19 +1019,6 @@ static int SendOldDndEvent(Dnd_info *dnd, XButtonEvent *buttonEvent)
 }
 /* DND_HACK end */
 
-#ifdef WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE
-static Bool match_prop(Display *dpy, XEvent *event, XPointer cldt)
-{
-	DnDWaitEvent *wE = (DnDWaitEvent *)cldt;
-
-    if ((event->type == wE->eventType) &&
-                           (((XPropertyEvent*)event)->atom == (Atom)wE->window))
-        return(True);
-    else
-        return(False);
-}
-#endif /* WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE */
-
 typedef Bool (*DndEventWaiterFunc)(Display *, XEvent *, XPointer);
 
 static int wait_for_dnd_event(Display *dpy, Window window, int eventType,
@@ -1085,9 +1073,7 @@ static Bool match_dnd_event(Display *dpy, XEvent *event, XPointer cldt)
 	DnDWaitEvent *wE = (DnDWaitEvent *) cldt;
 	Atom target = 0;
 
-	if (event->type == SelectionNotify)
-		target = event->xselection.target;
-	else if (event->type == SelectionRequest)
+	if (event->type == SelectionRequest)
 		target = event->xselectionrequest.target;
 
 	if ((event->type == wE->eventType) &&
@@ -1101,7 +1087,6 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 {
 	Display *dpy = xv_display(info);
 	XEvent event;
-	XEvent selNotifyEvent;
 	Atom property;
 	int status = DND_SUCCEEDED;
 
@@ -1113,11 +1098,6 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 			!= DND_SUCCEEDED)
 		goto BailOut;
 
-#ifdef WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE
-	/* Select for PropertyNotify events on requestor's window */
-	XSelectInput(dpy, event.xselectionrequest.requestor, PropertyChangeMask);
-#endif /* WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE */
-
 	/* If the property field is None, the requestor is an obsolete
 	 * client.   Sec. 2.2 ICCCM
 	 */
@@ -1126,47 +1106,50 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 	else
 		property = event.xselectionrequest.property;
 
-	/* If the destination ACK'ed us, send it back a NULL reply. */
-	/* Should be prepared to handle bad alloc errors from the
-	 * server.  On the other hand, if the server has a memory problem
-	 * with such a timy request, we might as well go home...
+	/* we are also prepared for the new (2026-11-17) _DRA_SELECTION_NOTIFY
+	 * mechanism
 	 */
-	XChangeProperty(dpy, event.xselectionrequest.requestor,
-			property, event.xselectionrequest.target, 32,
-			PropModeReplace, (unsigned char *)NULL, 0);
+	if (property == dnd->atom[NOTIFY]) {
+		XEvent cM;
 
-	selNotifyEvent.xselection.type = SelectionNotify;
-	selNotifyEvent.xselection.display = dpy;
-	selNotifyEvent.xselection.requestor = event.xselectionrequest.requestor;
-	selNotifyEvent.xselection.selection = event.xselectionrequest.selection;
-	selNotifyEvent.xselection.target = event.xselectionrequest.target;
-	selNotifyEvent.xselection.property = property;
-	selNotifyEvent.xselection.time = event.xselectionrequest.time;
-
-	/* SUPPRESS 68 */
-	if (DndSendEvent(dpy, &selNotifyEvent, "SelNtfy") != DND_SUCCEEDED) {
-		status = DND_ERROR;
-		goto BailOut;
+		cM.xclient.type = ClientMessage;
+		cM.xclient.format = 32;
+		cM.xclient.message_type = property;
+		cM.xclient.window = event.xselectionrequest.requestor;
+		cM.xclient.data.l[0] = event.xselectionrequest.selection;
+		cM.xclient.data.l[1] = event.xselectionrequest.target;
+		cM.xclient.data.l[2] = property;
+		cM.xclient.data.l[3] = event.xselectionrequest.target;
+		cM.xclient.data.l[4] = 0L;
+		if (DndSendEvent(dpy, &cM, "SelNtfy2") != DND_SUCCEEDED) {
+			status = DND_ERROR;
+		}
 	}
+	else {
+		XEvent selNotEv;
 
-#ifdef WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE
-	/* how does a dnd transaction run:
-	 * 1. send trigger client message
-	 * 2. wait for the drop receiver to request _SUN_DRAGDROP_ACK
-	 * 3. answer the ACK selection request
-	 * This is basically the end of the whole dnd_send_drop function - now
-	 * the drop destination should begin with selection requests. Is there
-	 * any reason for a "4. wait for the requestor to delete the ACK answer" ?
-	 */
-	/* the second param is declared as Window, but match_prop
-	 * compares it with the atom of a PropertyNotify event....
-	 */
-	status = wait_for_dnd_event(dpy, property, PropertyNotify, None,
-						&dnd->timeout, &event, match_prop);
+		/* If the destination ACK'ed us, send it back a NULL reply. */
+		/* Should be prepared to handle bad alloc errors from the
+		 * server.  On the other hand, if the server has a memory problem
+		 * with such a timy request, we might as well go home...
+		 */
+		XChangeProperty(dpy, event.xselectionrequest.requestor,
+				property, event.xselectionrequest.target, 32,
+				PropModeReplace, (unsigned char *)NULL, 0);
 
-	/* This will kill any events someone else has selected for. */
-	XSelectInput(dpy, event.xproperty.window, NoEventMask);
-#endif /* WHY_SHOULD_WE_WAIT_FOR_PROPERTY_DELETE */
+		selNotEv.xselection.type = SelectionNotify;
+		selNotEv.xselection.display = dpy;
+		selNotEv.xselection.requestor = event.xselectionrequest.requestor;
+		selNotEv.xselection.selection = event.xselectionrequest.selection;
+		selNotEv.xselection.target = event.xselectionrequest.target;
+		selNotEv.xselection.property = property;
+		selNotEv.xselection.time = event.xselectionrequest.time;
+
+		/* SUPPRESS 68 */
+		if (DndSendEvent(dpy, &selNotEv, "SelNtfy") != DND_SUCCEEDED) {
+			status = DND_ERROR;
+		}
+	}
 
   BailOut:
 	return status;
@@ -2295,6 +2278,7 @@ static int dnd_init(Xv_Window parent, Xv_drag_drop dnd_public,
 	dnd->atom[STRING] = XA_STRING;
 	dnd->atom[FILE_NAME] = xv_get(server, SERVER_ATOM, "FILE_NAME");
 	dnd->atom[CALENDAR] = xv_get(server, SERVER_ATOM, "CALENDAR");
+	dnd->atom[NOTIFY] = xv_get(server, SERVER_ATOM, "_DRA_SELECTION_NOTIFY");
 	dnd->atom[PIXMAP] = XA_PIXMAP;
 #ifdef NO_XDND
 #else /* NO_XDND */
