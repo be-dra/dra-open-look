@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.61 2026/11/15 19:10:21 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.62 2026/11/17 22:00:29 dra Exp $";
 #endif
 #endif
 
@@ -503,7 +503,6 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 		ReplyTimestamp(selection, &replyType, &replyBuff, &length, &format);
 		selection->req->rq_type = replyType;
 		selection->req->rq_target = target;
-		selection->req->rq_property = property;
 		goto Done;
 	}
 
@@ -583,20 +582,16 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	parent = xv_get(selection->public_self, XV_OWNER);
 	srv = XV_SERVER_FROM_WINDOW(parent);
 
-	if (selection->req->rq_property == xv_get(srv, SERVER_ATOM,
-							"_DRA_NO_ANSWER"))
-	{
+	if (property == xv_get(srv, SERVER_ATOM, "_DRA_NO_ANSWER")) {
 		/* as an indication for the requestor */
-		ev->xselection.target = selection->req->rq_property;
+		ev->xselection.target = property;
 		if (sendEventReqPtr) {
 			*sendEventReqPtr = FALSE; 
-			SERVERTRACE((888, "sendEventReq = FALSE\n"));
+			SERVERTRACE((888, "_DRA_NO_ANSWER: sendEventReq = FALSE\n"));
 		}
 		change_property = FALSE;
 	}
-	else if (selection->req->rq_property == xv_get(srv, SERVER_ATOM,
-							"_DRA_SELECTION_NOTIFY"))
-	{
+	else if (property == xv_get(srv, SERVER_ATOM, "_DRA_SELECTION_NOTIFY")) {
 		/* the requestor believed that this is a request for a
 		 * "simple target", meaning that the result has length 0 or 1
 		 * and format 32. We check this:
@@ -614,7 +609,7 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 			 */
 			cM.type = ClientMessage;
 			cM.format = 32;
-			cM.message_type = selection->req->rq_property;
+			cM.message_type = property;
 			cM.window = ev->xselection.requestor;
 			cM.data.l[0] = ev->xselection.selection;
 			cM.data.l[1] = ev->xselection.target;
@@ -627,7 +622,7 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 			change_property = FALSE;
 			if (sendEventReqPtr) {
 				*sendEventReqPtr = FALSE; 
-				SERVERTRACE((888, "sendEventReq = FALSE\n"));
+				SERVERTRACE((888, "_DRA_SELECTION_NOTIFY: sendEventReq = FALSE\n"));
 			}
 		}
 	}
@@ -656,9 +651,9 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 		if (sendEventReqPtr) {
 			ev->xselection.property = selection->req->rq_property;
 			*sendEventReqPtr = FALSE; 
-			SERVERTRACE((888, "sendEventReq = FALSE\n"));
 			XSendEvent(selection->dpy, ev->xselection.requestor, False,
 						(unsigned long)NULL, ev);
+			SERVERTRACE((888, "after XSendEvent: sendEventReq = FALSE\n"));
 		}
 	}
 
@@ -1010,6 +1005,7 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 	XSelectionEvent replyEvent;
 	int sendEventRequired = TRUE;
 
+	SERVERTRACE((888, "sel req, prop = %ld\n", reqEvent->property));
 	owner = xv_sel_find_selection_data(reqEvent->display, reqEvent->selection,
 			reqEvent->owner);
 
