@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.25 2026/10/18 21:03:40 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.26 2026/11/17 14:19:03 dra Exp $ ";
 #endif
 #endif
 
@@ -1106,6 +1106,8 @@ static void notice_prepare_for_shadow(Notice_info *notice, notice_prep_t *p)
 	int three_d, shape_avail;
 	Cms cms = XV_NULL;
 	unsigned w, h;
+	Window fxid = None;
+	Window fsw;
 
 	p->root_window = xv_get(p->client_window, XV_ROOT);
 
@@ -1261,7 +1263,7 @@ static void notice_prepare_for_shadow(Notice_info *notice, notice_prep_t *p)
 		notice_draw_polygons(dpy, notice, TRUE, bm, gc, 1L, 1L, 1L,
 						&p->rect, p->quadrant, p->leftoff, p->topoff);
 
-		if (xv_get(scrn, SCREEN_OLWM_MANAGED)) {
+		if (xv_get(scrn, SCREEN_ENHANCED_OLWM)) {
 			XFillRectangle(dpy, bm, gc, p->rect.r_left, p->rect.r_top,
 					(unsigned)p->rect.r_width+1, (unsigned)p->rect.r_height+1);
 		}
@@ -1273,13 +1275,22 @@ static void notice_prepare_for_shadow(Notice_info *notice, notice_prep_t *p)
 	}
 
 	if (notice->sub_frame) {
+		typedef struct {
+			unsigned long flags;
+			unsigned long functions;
+			unsigned long decorations;
+			long          input_mode;
+			unsigned long status;
+		} MotifWmHints;
+		MotifWmHints mh;
 		char *wintyp;
 		Xv_server srv = XV_SERVER_FROM_WINDOW(p->root_window);
-		Window fsw = xv_get(notice->fullscreen_window, XV_XID);
-		Window fxid = xv_get(notice->sub_frame, XV_XID);
-		Atom nwt[5], wt = xv_get(srv, SERVER_ATOM, "_NET_WM_WINDOW_TYPE");
+		Atom mhat, nwt[5], wt = xv_get(srv, SERVER_ATOM, "_NET_WM_WINDOW_TYPE");
 		int numwts;
 		Window wins[2];
+
+		fsw = xv_get(notice->fullscreen_window, XV_XID);
+		fxid = xv_get(notice->sub_frame, XV_XID);
 		XChangeProperty(xv_display(p->info), fxid,
 				xv_get(srv, SERVER_ATOM, "_OL_NOTICE_EMANATION"),
 				XA_WINDOW, 32, PropModeReplace, (unsigned char *)&fsw, 1);
@@ -1323,6 +1334,12 @@ static void notice_prepare_for_shadow(Notice_info *notice, notice_prep_t *p)
 
 		XChangeProperty(dpy, fsw, wt,
 				XA_ATOM, 32, PropModeReplace, (unsigned char *)nwt, numwts);
+ 
+ 		mh.flags = (1L << 1);
+		mh.decorations = 0;
+		mhat = xv_get(srv, SERVER_ATOM, "_MOTIF_WM_HINTS");
+		XChangeProperty(dpy, fxid, mhat, mhat, 32, PropModeReplace,
+						(unsigned char *)&mh, 5);
 
 		wins[0] = (Window) xv_get(notice->client_window, XV_XID);
 		XChangeProperty(dpy, fsw, xv_get(srv, SERVER_WM_TRANSIENT_FOR),
@@ -1344,6 +1361,35 @@ static void notice_prepare_for_shadow(Notice_info *notice, notice_prep_t *p)
 		 * fullscreen_window appeared, but covered the notice, so that
 		 * I could push no buttons...
 		 */
+#ifdef NOTHING_WORKED_UNDER_OPENBOX
+		xv_set(notice->fullscreen_window,
+				WIN_CLIENT_DATA, p,
+				XV_X, p->left_placement,
+				XV_Y, p->top_placement,
+				XV_WIDTH, w,
+				XV_HEIGHT, h,
+				XV_SHOW, TRUE,
+				NULL);
+		if (fxid != None) {
+			Window stack[8];
+			Window rootchild;
+			Window root, parent, ch;
+			unsigned nch;
+
+			XRaiseWindow(dpy, fxid);
+			rootchild = fxid;
+			for (;;) {
+				XQueryTree(dpy, rootchild, &root, &parent, &ch, &nch);
+				if (ch) XFree(ch);
+				if (root == parent) break;
+				rootchild = parent;
+			}
+
+			stack[0] = rootchild;
+			stack[1] = fsw;
+			XRestackWindows(dpy, stack, 2);
+		}
+#endif /* NOTHING_WORKED_UNDER_OPENBOX */
 	}
 
 	/*
