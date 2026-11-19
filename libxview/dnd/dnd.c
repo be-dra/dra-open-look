@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.66 2026/11/17 21:52:34 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.67 2026/11/18 09:18:22 dra Exp $ ";
 #endif
 #endif
 
@@ -1118,8 +1118,8 @@ static int WaitForAck(Dnd_info *dnd, Xv_Drawable_info *info)
 		cM.xclient.window = event.xselectionrequest.requestor;
 		cM.xclient.data.l[0] = event.xselectionrequest.selection;
 		cM.xclient.data.l[1] = event.xselectionrequest.target;
-		cM.xclient.data.l[2] = property;
-		cM.xclient.data.l[3] = event.xselectionrequest.target;
+		cM.xclient.data.l[2] = event.xselectionrequest.target;
+		cM.xclient.data.l[3] = 0L;
 		cM.xclient.data.l[4] = 0L;
 		if (DndSendEvent(dpy, &cM, "SelNtfy2") != DND_SUCCEEDED) {
 			status = DND_ERROR;
