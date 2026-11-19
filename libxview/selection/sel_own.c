@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.62 2026/11/17 22:00:29 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.63 2026/11/18 09:18:49 dra Exp $";
 #endif
 #endif
 
@@ -613,10 +613,10 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 			cM.window = ev->xselection.requestor;
 			cM.data.l[0] = ev->xselection.selection;
 			cM.data.l[1] = ev->xselection.target;
-			cM.data.l[2] = ev->xselection.property;
-			cM.data.l[3] = selection->req->rq_type;
-			if (length == 1) cM.data.l[4] = *((long *)selection->req->rq_data);
-			else cM.data.l[4] = 0L;
+			cM.data.l[2] = selection->req->rq_type;
+			if (length == 1) cM.data.l[3] = *((long *)selection->req->rq_data);
+			else cM.data.l[3] = 0L;
+			cM.data.l[4] = 0L;
 			XSendEvent(selection->dpy, ev->xselection.requestor, False, 0L,
 										(XEvent *)&cM);
 			change_property = FALSE;
