@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.74 2026/11/15 19:11:18 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.75 2026/11/18 09:17:20 dra Exp $";
 #endif
 #endif
 
@@ -3075,9 +3075,9 @@ static int process_clientmessage_events(Xv_object window,
 				 * now send a client message with type _DRA_SELECTION_NOTIFY
 				 * and data.l[0] = selection
 				 *     data.l[1] = target
-				 *     data.l[2] = property
-				 *     data.l[3] = type
-				 *     data.l[4] = value
+				 *     data.l[2] = type
+				 *     data.l[3] = value
+				 *     data.l[4] = 0     unused
 				 *
 				 * Here, we receive such messages and hand them somehow
 				 * to the selection requestor class...
