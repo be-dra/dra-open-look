@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.74 2026/11/16 22:17:47 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.76 2026/11/18 09:38:30 dra Exp $";
 #endif
 #endif
 
@@ -1194,9 +1194,9 @@ static int xv_sel_check_selnotify(Display *display, XEvent *xevent,
 		 * now send a client message with type _DRA_SELECTION_NOTIFY
 		 * and data.l[0] = selection
 		 *     data.l[1] = target
-		 *     data.l[2] = property
-		 *     data.l[3] = type
-		 *     data.l[4] = value
+		 *     data.l[2] = type
+		 *     data.l[3] = value
+		 *     data.l[4] = 0    unused
 		 *
 		 * Here, we receive such messages and hand them somehow
 		 * to the selection requestor class...
@@ -1348,14 +1348,13 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 		/* conventions:
 		 *     data.l[0] = selection
 		 *     data.l[1] = target
-		 *     data.l[2] = property
-		 *     data.l[3] = type
-		 *     data.l[4] = value
+		 *     data.l[2] = type
+		 *     data.l[3] = value
 		 */
 		XClientMessageEvent *ev = (XClientMessageEvent *)&event;
 		long *lp = xv_alloc(long);
 
-		*lp = ev->data.l[4];
+		*lp = ev->data.l[3];
 		replyInfo->sri_propdata = (Xv_opaque)lp;
 		replyInfo->sri_length = 1;
 		replyInfo->sri_format = 32;
@@ -1365,7 +1364,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 		 */
 		if (selReq->reply_proc) {
 			(*selReq->reply_proc)(SEL_REQUESTOR_PUBLIC(selReq),
-						(Atom)ev->data.l[1], (Atom)ev->data.l[3],
+						(Atom)ev->data.l[1], (Atom)ev->data.l[2],
 						(Xv_opaque)lp, 1L, 32);
 			/* but doesn't HAVE to free it in case of a blocking request... */
 		}
@@ -1692,15 +1691,14 @@ Xv_private void xv_sel_handle_selection_notify_client_message(XClientMessageEven
 	/* now we fill "fake" with everything that CheckSelectionNotify checks
 	 *     data.l[0] = selection
 	 *     data.l[1] = target
-	 *     data.l[2] = property
-	 *     data.l[3] = type
-	 *     data.l[4] = value
+	 *     data.l[2] = type
+	 *     data.l[3] = value
 	 */
 	fake.display = ev->display;
 	fake.send_event = ev->send_event;
 	fake.selection = ev->data.l[0];
 	fake.target =    ev->data.l[1];
-	fake.property =  ev->data.l[2];
+	fake.property =  ev->message_type;
 	fake.time      = reply->sri_time;
 	fake.requestor = ev->window;
 
@@ -1734,9 +1732,9 @@ Xv_private void xv_sel_handle_selection_notify_client_message(XClientMessageEven
 	if (selReq->reply_proc) {
 		long *val = xv_alloc(long);
 
-		*val = ev->data.l[4];
+		*val = ev->data.l[3];
 		(*selReq->reply_proc)(SEL_REQUESTOR_PUBLIC(selReq), fake.target,
-					(Atom)ev->data.l[3], (Xv_opaque)val, 1L, 32);
+					(Atom)ev->data.l[2], (Xv_opaque)val, 1L, 32);
 	}
 	xv_sel_end_request(reply);
 }
