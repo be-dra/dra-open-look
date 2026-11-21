@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.50 2026/11/16 22:16:07 dra Exp $";
+static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 4.51 2026/11/20 11:53:24 dra Exp $";
 #endif
 #endif
 
@@ -20,16 +20,9 @@ static char     sccsid[] = "@(#)sel_util.c 1.29 93/06/28 DRA: $Id: sel_util.c,v 
 #include <stdlib.h>
 #endif  /* SVR4 */
 
-typedef struct sel_req_list {
-    int            done;
-    Sel_reply_info   *reply;
-    struct  sel_req_list   *next;
-} Sel_req_list;
-
 
 static void tvdiff(struct timeval *t1, struct timeval *t2, struct timeval *diff);
 static int SelFindReply(Sel_reply_info *r1, Sel_reply_info *r2);
-static Sel_req_list *SelMatchReqTbl( Sel_reply_info  *reply);
 
 Xv_private_data XContext  selCtx;
 
@@ -327,19 +320,6 @@ Pkg_private Atom xv_sel_str_to_atom(Display *dpy, char *str, XID xid)
     return ( (Atom) xv_get( server, SERVER_ATOM, str ));
 }
 
-Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel,
-						Sel_reply_info *replyInfo, Atom target, int sendEv)
-{
-    Selection_requestor sel_req;
-
-    if ( sel != NULL )
-        sel_req = SEL_REQUESTOR_PUBLIC( sel );
-
-    if ( (sel != NULL) && (sel->reply_proc != NULL) )
-        (*sel->reply_proc)( sel_req, target, (Atom)0, (Xv_opaque)&errCode,
-								(unsigned long)(SEL_ERROR), sendEv );
-}
-
 
 /*
  * xv_sel_block_for_event
@@ -368,7 +348,9 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
 		 */
 		while (XCheckIfEvent(display, xevent, predicate, arg)) {
 			if (! evtypeptr) return TRUE;
-			if (*evtypeptr == PropertyNotify) return TRUE;
+			if (*evtypeptr == PropertyNotify) {
+				return TRUE;
+			}
 
 			if (*evtypeptr == Expose) {
 				win_dispatch_expose(display, xevent);
@@ -444,9 +426,50 @@ Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
  */
 static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 {
+	static char *evnam[] = {
+		"0",
+		"1",
+		"KeyPress",
+		"KeyRelease",
+		"ButtonPress",
+		"ButtonRelease",
+		"MotionNotify",
+		"EnterNotify",
+		"LeaveNotify",
+		"FocusIn",
+		"FocusOut",
+		"KeymapNotify",
+		"Expose",
+		"GraphicsExpose",
+		"NoExpose",
+		"VisibilityNotify",
+		"CreateNotify",
+		"DestroyNotify",
+		"UnmapNotify",
+		"MapNotify",
+		"MapRequest",
+		"ReparentNotify",
+		"ConfigureNotify",
+		"ConfigureRequest",
+		"GravityNotify",
+		"ResizeRequest",
+		"CirculateNotify",
+		"CirculateRequest",
+		"PropertyNotify",
+		"SelectionClear",
+		"SelectionRequest",
+		"SelectionNotify",
+		"ColormapNotify",
+		"ClientMessage",
+		"MappingNotify",
+		"GenericEvent",
+		NULL
+	};
 	Sel_incr_context *ic = (Sel_incr_context *)args;
 
-	/* a little reainting during incr transfer */
+	SERVERTRACE((888, "%s: checking %d, %s, seq %d\n", __FUNCTION__,xevent->type,
+							evnam[xevent->type], xevent->xany.serial));
+	/* a little repainting during incr transfer */
 	if ((xevent->type & 0177) == Expose) {
 		if (0 == xevent->xexpose.count) ic->checkedEventType = Expose;
 		else ic->checkedEventType = 0;
@@ -471,7 +494,8 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 		XPropertyEvent *ev = (XPropertyEvent *) xevent;
 
 		if (ev->atom == ic->property) { /* the interesting property ! */
-			if (ev->state == ic->prop_state && ev->time > ic->time) {
+			if (ev->state == ic->prop_state && ev->time > ic->time
+				) {
 				ic->checkedEventType = PropertyNotify;
 				return TRUE;
 			}
@@ -489,6 +513,17 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 			ic->is_cancelled = TRUE;
 			return TRUE;
 		}
+
+		if (ev->atom == ic->wmhints || ev->atom == ic->olbusy) {
+			/* let's remove that from the input queue: */
+			ic->checkedEventType = 0;
+			return TRUE;
+		}
+
+		/* what unwanted PropertyNotify do we get here ? */
+		SERVERTRACE((888, "%s: unwanted prop %s, seq %d\n", __FUNCTION__,
+				(char *)xv_get(ic->server, SERVER_ATOM_NAME, ev->atom),
+				xevent->xany.serial));
 		return FALSE;
 	}
 
@@ -533,47 +568,8 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 		return TRUE;
 	}
 	{
-		static char *evnam[] = {
-			"0",
-			"1",
-			"KeyPress",
-			"KeyRelease",
-			"ButtonPress",
-			"ButtonRelease",
-			"MotionNotify",
-			"EnterNotify",
-			"LeaveNotify",
-			"FocusIn",
-			"FocusOut",
-			"KeymapNotify",
-			"Expose",
-			"GraphicsExpose",
-			"NoExpose",
-			"VisibilityNotify",
-			"CreateNotify",
-			"DestroyNotify",
-			"UnmapNotify",
-			"MapNotify",
-			"MapRequest",
-			"ReparentNotify",
-			"ConfigureNotify",
-			"ConfigureRequest",
-			"GravityNotify",
-			"ResizeRequest",
-			"CirculateNotify",
-			"CirculateRequest",
-			"PropertyNotify",
-			"SelectionClear",
-			"SelectionRequest",
-			"SelectionNotify",
-			"ColormapNotify",
-			"ClientMessage",
-			"MappingNotify",
-			"GenericEvent",
-			NULL
-		};
 
-		fprintf(stderr, "%s-%d: ev %d, %s\n", __FILE__,__LINE__,xevent->type,
+		fprintf(stderr, "%s-%d: unwanted ev %d, %s\n", __FILE__,__LINE__,xevent->type,
 							evnam[xevent->type]);
 	}
 	return FALSE;
@@ -582,7 +578,9 @@ static int check_incr_prop(Display *display, XEvent *xevent, char *args)
 Pkg_private int xv_sel_block_incr(Display *display, XEvent *xevent,
 				int seconds, Sel_incr_context *ctxt)
 {
-	int ret = xv_sel_block_for_event(display, xevent, seconds, check_incr_prop,
+	int ret;
+
+	ret = xv_sel_block_for_event(display, xevent, seconds, check_incr_prop,
 						ctxt, &ctxt->checkedEventType, &ctxt->stop_seen);
 
 	if (ret && ctxt->stop_seen) {
@@ -752,31 +750,8 @@ Pkg_private Sel_reply_info *xv_sel_get_reply(XEvent *event)
 }
 
 
-Pkg_private Notify_value xv_sel_handle_sel_timeout(Notify_client client,
-									int which)
-{
-	Sel_reply_info *reply = (Sel_reply_info *) client;
-	Sel_req_list *reqTbl;
 
-
-	notify_set_itimer_func(client, NOTIFY_TIMER_FUNC_NULL,
-			ITIMER_REAL, (struct itimerval *)0, (struct itimerval *)0);
-	reqTbl = (Sel_req_list *) SelMatchReqTbl(reply);
-
-	if (reqTbl != NULL) {
-
-		if (!reqTbl->done) {
-			xv_sel_handle_error(SEL_TIMEDOUT, reply->sri_req_info, reply,
-					*reply->sri_target, FALSE);
-			xv_sel_end_request(reply);
-		}
-	}
-
-	return NOTIFY_DONE;
-}
-
-
-static Sel_req_list *SelMatchReqTbl(Sel_reply_info  *reply)
+Pkg_private Sel_req_list *SelMatchReqTbl(Sel_reply_info  *reply)
 {
     Sel_req_list  *reqTbl, *rPtr;
 
