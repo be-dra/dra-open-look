@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.76 2026/11/18 09:38:30 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.77 2026/11/20 11:53:29 dra Exp $";
 #endif
 #endif
 
@@ -33,7 +33,6 @@ static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.
 extern char *xv_app_name;
 
 Pkg_private char *xv_sel_atom_to_str(Display *, Atom, Window);
-Pkg_private int xv_sel_add_prop_notify_mask(Display *,Atom,XWindowAttributes *);
 
 /* this function works as (temporary) reply_proc during an incremental
  * XA_STRING request
@@ -541,6 +540,42 @@ static void SelSaveData(char *buffer, Sel_reply_info *reply, int size)
         XV_BCOPY( (char *)buffer, (char *)reply->sri_propdata, (size_t)size );
 }
 
+static void sel_handle_error(int errCode, Sel_req_info *sel,
+						Sel_reply_info *replyInfo, Atom target, int sendEv)
+{
+    Selection_requestor sel_req;
+
+    if ( sel != NULL )
+        sel_req = SEL_REQUESTOR_PUBLIC( sel );
+
+    if ( (sel != NULL) && (sel->reply_proc != NULL) )
+        (*sel->reply_proc)( sel_req, target, (Atom)0, (Xv_opaque)&errCode,
+								(unsigned long)(SEL_ERROR), sendEv );
+}
+
+static Notify_value sel_handle_sel_timeout(Notify_client client,
+									int which)
+{
+	Sel_reply_info *reply = (Sel_reply_info *) client;
+	Sel_req_list *reqTbl;
+
+
+	notify_set_itimer_func(client, NOTIFY_TIMER_FUNC_NULL,
+			ITIMER_REAL, (struct itimerval *)0, (struct itimerval *)0);
+	reqTbl = (Sel_req_list *) SelMatchReqTbl(reply);
+
+	if (reqTbl != NULL) {
+
+		if (!reqTbl->done) {
+			sel_handle_error(SEL_TIMEDOUT, reply->sri_req_info, reply,
+					*reply->sri_target, FALSE);
+			xv_sel_end_request(reply);
+		}
+	}
+
+	return NOTIFY_DONE;
+}
+
 /*
  * This routine transfers the local process data in increments.
 */
@@ -597,7 +632,7 @@ static int HandleLocalIncr(Sel_req_info *selReq, char *replyBuf, Sel_reply_info 
 						&replyType, (Xv_opaque *) & replyBuf,
 						&reply->sri_length, &reply->sri_format))
 		{
-			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,TRUE);
+			sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,TRUE);
 			reply->sri_format = 0;
 			reply->sri_length = 0;
 			XFree((char *)(reply->sri_propdata));
@@ -644,7 +679,7 @@ static int HandleLocalIncr(Sel_req_info *selReq, char *replyBuf, Sel_reply_info 
 							&replyType, (Xv_opaque *) & replyBuf,
 							&reply->sri_length, &reply->sri_format))
 			{
-				xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+				sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 														target, TRUE);
 				reply->sri_format = 0;
 				reply->sri_length = 0;
@@ -717,7 +752,7 @@ static int TransferLocalData(Sel_req_info *selReq, Sel_reply_info *reply,
 					&reply->sri_format)) {
 
 		if (selReq->reply_proc != NULL)
-			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,TRUE);
+			sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,TRUE);
 
 		xv_sel_free_property(reply->sri_srv,reply->sri_dpy,reply->sri_property);
 		return FALSE;
@@ -790,7 +825,7 @@ static int LocalMultipleTrans(Sel_reply_info *reply, Sel_req_info *selReq,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION,
 				NULL);
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+		sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 				reply->sri_local_owner->atomList->multiple, TRUE);
 	}
 
@@ -839,12 +874,12 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 								XSelectionEvent *ev, int blocking )
 {
 	if (ev->time != replyInfo->sri_time) {
-		xv_sel_handle_error(SEL_BAD_TIME, selReq, replyInfo,
+		sel_handle_error(SEL_BAD_TIME, selReq, replyInfo,
 				*replyInfo->sri_target, ev->send_event);
 		return (FALSE);
 	}
 	if (ev->requestor != replyInfo->sri_requestor) {
-		xv_sel_handle_error(SEL_BAD_WIN_ID, selReq, replyInfo,
+		sel_handle_error(SEL_BAD_WIN_ID, selReq, replyInfo,
 				*replyInfo->sri_target, ev->send_event);
 		return (FALSE);
 	}
@@ -855,7 +890,7 @@ static int CheckSelectionNotify(Sel_req_info *selReq, Sel_reply_info *replyInfo,
 	 * server did not have sufficient space.
 	 */
 	if (ev->property == None) {
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo,
+		sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo,
 				*replyInfo->sri_target, ev->send_event);
 		if (!blocking && !replyInfo->sri_multiple_count)
 			xv_sel_end_request(replyInfo);
@@ -882,12 +917,7 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	unsigned char *propValue;
 	XEvent event;
 	XPropertyEvent *propEv;
-	XWindowAttributes winAttr;
 	Sel_incr_context ic;
-	int status;
-
-	status = xv_sel_add_prop_notify_mask(ev->display, reply->sri_requestor,
-											&winAttr);
 
 	/* if we have a non-NULL propdata, we don't need to repeat this
 	 * XGetWindowProperty: we have the result (and, by the way, it has
@@ -906,8 +936,11 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	(*selReq->reply_proc) (SEL_REQUESTOR_PUBLIC(selReq), target, type,
 			(Xv_opaque) propValue, length, format);
 
+	ic.server = reply->sri_srv;
 	ic.wmprot = xv_get(reply->sri_srv, SERVER_WM_PROTOCOLS);
 	ic.wmtf = xv_get(reply->sri_srv, SERVER_WM_TAKE_FOCUS);
+	ic.wmhints = xv_get(reply->sri_srv, SERVER_ATOM, "WM_HINTS");
+	ic.olbusy = xv_get(reply->sri_srv, SERVER_ATOM, "_OL_WIN_BUSY");
 	ic.cancel = xv_get(reply->sri_srv, SERVER_ATOM, "INCR");
 	ic.property = reply->sri_property;
 	ic.time = reply->sri_time;
@@ -919,24 +952,16 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 	ic.stop_seen = FALSE;
 	do {
 		if (! xv_sel_block_incr(ev->display, &event, reply->sri_timeout, &ic)) {
-			if (status)
-				XSelectInput(ev->display, reply->sri_requestor,
-						winAttr.your_event_mask);
-
 			SERVERTRACE((355, "%s: incr timeout\n", __FUNCTION__));
-			xv_sel_handle_error(SEL_TIMEDOUT, selReq, reply, target,
+			sel_handle_error(SEL_TIMEDOUT, selReq, reply, target,
 										ev->send_event);
 			return FALSE;
 		}
 
 		if (ic.is_cancelled) {
 			/* SEL_PROPERTY_DELETED seems to be never used */
-			xv_sel_handle_error(SEL_PROPERTY_DELETED, selReq, reply, target,
+			sel_handle_error(SEL_PROPERTY_DELETED, selReq, reply, target,
 									ev->send_event);
-			if (status)
-				XSelectInput(ev->display, reply->sri_requestor,
-						winAttr.your_event_mask);
-
 			return FALSE;
 		}
 
@@ -952,13 +977,8 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 					ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 					ERROR_PKG, SELECTION,
 					NULL);
-			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,
+			sel_handle_error(SEL_BAD_CONVERSION, selReq, reply, target,
 									ev->send_event);
-
-			if (status)
-				XSelectInput(ev->display, reply->sri_requestor,
-						winAttr.your_event_mask);
-
 			return FALSE;
 		}
 
@@ -984,13 +1004,7 @@ static int ProcessIncr(Sel_req_info *selReq, Sel_reply_info *reply, Atom target,
 				(Xv_opaque) propValue, length, format);
 	} while (length);
 
-	/*
-	 * If we have added PropertyChangeMask to the win, reset the mask to
-	 * it's original state.
-	 */
-	if (status)
-		XSelectInput(ev->display, reply->sri_requestor, winAttr.your_event_mask);
-
+	/* INCOMPLETE - is this necessary? */
 	XDeleteProperty(ev->display, reply->sri_requestor, reply->sri_property);
 	return TRUE;
 }
@@ -1013,6 +1027,8 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 {
 	get_prop_data_t pd;
 	unsigned long bytesafter;
+	Xv_window req_win;
+	long origMask;
 
 	/* I was thinking about the question whether I could use the
 	 * 'delete' flag in the XGetWindowProperty - then I wouldn't need
@@ -1028,7 +1044,24 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	 * into a get_prop_data_t structure and hand it over to ProcessIncr.
 	 * Then we have the information there and don't need a second
 	 * XGetWindowProperty - and therefore can use the delete flag here!
+	 *
+	 * Next problem: this get-and-delete makes the Xserver send a
+	 * PropertyNotify(delete) event to the selection owner who will call
+	 * change property which will produce a PropertyNotify(newvalue) event
+	 * - but maybe not (yet) for me!!!!
 	 */
+	req_win = xv_get(selReq->public_self, XV_OWNER);
+	origMask = (long)xv_get(req_win, WIN_X_EVENT_MASK);
+	if ((origMask & PropertyChangeMask) != 0) {
+		/* already interested in PropertyChange - nothing to do here
+		 * and nothing to cleanup later
+		 */
+		origMask = 0;
+	}
+	else {
+		/* just in case this becomes a INCR transfer */
+		xv_set(req_win, WIN_CONSUME_EVENTS, WIN_PROPERTY_NOTIFY, NULL, NULL);
+	}
 	if (XGetWindowProperty(ev->display, ev->requestor, property, 0L, 10000000L,
 					True, AnyPropertyType, &pd.type, &pd.format, &pd.length,
 					&bytesafter, &pd.propValue) != Success) {
@@ -1037,15 +1070,17 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 				ERROR_PKG, SELECTION,
 				NULL);
 
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
+		sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
 										ev->send_event);
+		if (origMask) xv_set(req_win,WIN_X_EVENT_MASK,origMask,NULL);
 		return FALSE;
 	}
 
 	if (pd.type == 0 && pd.format == 0) {
 		XFree(pd.propValue);
-        xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
+        sel_handle_error(SEL_BAD_CONVERSION, selReq, replyInfo, target,
 										ev->send_event);
+		if (origMask) xv_set(req_win,WIN_X_EVENT_MASK,origMask,NULL);
 		return FALSE;
 	}
 
@@ -1056,6 +1091,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 	 */
 	if (selReq->reply_proc == NULL && pd.type == replyInfo->sri_incr) {
 		XFree(pd.propValue);
+		if (origMask) xv_set(req_win,WIN_X_EVENT_MASK,origMask,NULL);
 		return FALSE;
 	}
 
@@ -1075,9 +1111,11 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		 }
 		 */
 
+		SERVERTRACE((888, "%s discovered INCR\n", __FUNCTION__));
 
 		internalProcessIncr(selReq, replyInfo, target, ev, &pd);
 
+		if (origMask) xv_set(req_win,WIN_X_EVENT_MASK,origMask,NULL);
 		/* Chances are that pd.propValue has been freed in ProcessIncr
 		 * from the reply_proc...
 
@@ -1085,6 +1123,7 @@ static int XvGetRequestedValue(Sel_req_info *selReq, XSelectionEvent *ev,
 		*/
 		return (SEL_INCREMENT);
 	}
+	if (origMask) xv_set(req_win,WIN_X_EVENT_MASK,origMask,NULL);
 	replyInfo->sri_propdata = (Xv_opaque) pd.propValue;
 	replyInfo->sri_length = pd.length;
 	replyInfo->sri_format = pd.format;
@@ -1133,7 +1172,7 @@ static int ProcessMultiple(Sel_req_info *selReq, Sel_reply_info *reply,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION,
 				NULL);
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+		sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 				reply->sri_local_owner->atomList->multiple, ev->send_event);
 		return FALSE;
 	}
@@ -1145,7 +1184,7 @@ static int ProcessMultiple(Sel_req_info *selReq, Sel_reply_info *reply,
 		 * The owner replace the property to None, if it failes to convert .
 		 */
 		if (pPtr->property == None)
-			xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+			sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 					pPtr->target, ev->send_event);
 		else
 			XvGetRequestedValue(selReq, ev, reply, pPtr->property,
@@ -1308,7 +1347,7 @@ static int GetSelection(Display *dpy, XID xid, Sel_req_info *selReq,
 	 */
 	if (!xv_sel_block_for_event(dpy, &event, replyInfo->sri_timeout,
 					xv_sel_check_selnotify, replyInfo, NULL, NULL)) {
-		xv_sel_handle_error(SEL_TIMEDOUT, selReq, replyInfo,
+		sel_handle_error(SEL_TIMEDOUT, selReq, replyInfo,
 				*replyInfo->sri_target, FALSE);
 		xv_sel_free_property(replyInfo->sri_srv, dpy, replyInfo->sri_property);
 		return FALSE;
@@ -1534,7 +1573,7 @@ static int ProcessNonBlkIncr(Sel_req_info *selReq, Sel_reply_info *reply,
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION,
 				NULL);
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+		sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 				*reply->sri_target, ev->send_event);
 		return FALSE;
 	}
@@ -1596,7 +1635,7 @@ static void XvGetSeln(Display *dpy, XID xid, Sel_req_info *selReq, Time time)
 		timeout.it_value.tv_sec = replyInfo->sri_timeout;
 
 		notify_set_itimer_func((Notify_client) replyInfo,
-				xv_sel_handle_sel_timeout, ITIMER_REAL, &timeout, ITIMER_NULL);
+				sel_handle_sel_timeout, ITIMER_REAL, &timeout, ITIMER_NULL);
 
 		/*
 		 * Send the SelectionRequest message to the selection owner.
@@ -1825,7 +1864,7 @@ static int ProcessReply(Sel_reply_info  *reply, XPropertyEvent  *ev)
 				ERROR_STRING, XV_MSG("XGetWindowProperty Failed"),
 				ERROR_PKG, SELECTION,
 				NULL);
-		xv_sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
+		sel_handle_error(SEL_BAD_CONVERSION, selReq, reply,
 									*reply->sri_target, TRUE);
 		return FALSE;
 	}
@@ -1857,9 +1896,8 @@ static int ProcessReply(Sel_reply_info  *reply, XPropertyEvent  *ev)
 	timeout.it_value.tv_usec = 0;
 	timeout.it_value.tv_sec = reply->sri_timeout;
 
-	(void)notify_set_itimer_func((Notify_client) reply,
-			xv_sel_handle_sel_timeout, ITIMER_REAL, &timeout,
-			(struct itimerval *)ITIMER_NULL);
+	notify_set_itimer_func((Notify_client) reply, sel_handle_sel_timeout,
+					ITIMER_REAL, &timeout, (struct itimerval *)ITIMER_NULL);
 
 	/*
 	 * If length is set to zero, we have completed an incr transfer.
