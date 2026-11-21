@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.40 2026/11/16 22:15:47 dra Exp $";
+static char     sccsid[] = "@(#)sel_impl.h 1.10 91/03/01 DRA: $Id: sel_impl.h,v 4.41 2026/11/20 11:50:48 dra Exp $";
 #endif
 #endif
 
@@ -78,14 +78,16 @@ typedef struct sel_req_info {
 
 typedef struct {
 	int checkedEventType;
-	Atom wmprot, wmtf;
 	Atom property;
+	Atom cancel;     /* in fact, the INCR atom */
 	Time time;
 	int prop_state;
 	Window requestor;
-	Atom cancel;     /* in fact, the INCR atom */
 	int stop_seen;
 	int is_cancelled;
+	Xv_server server;
+	/* to be dropped */
+	Atom wmprot, wmtf, wmhints, olbusy;
 } Sel_incr_context;
 
 /*
@@ -207,6 +209,12 @@ typedef struct {
 	Atom           sri_sel_notify_atom;
 } Sel_reply_info;
 
+typedef struct sel_req_list {
+    int            done;
+    Sel_reply_info   *reply;
+    struct  sel_req_list   *next;
+} Sel_req_list;
+
 
 typedef struct sel_client_info {
     Sel_owner_info          *client;
@@ -237,6 +245,7 @@ Xv_private void xv_sel_set_compat_data(Display *dpy, Atom selection, Window xid,
 Pkg_private Sel_owner_info  *xv_sel_find_selection_data(Display *,Atom,Window);
 Pkg_private Sel_owner_info * xv_sel_set_selection_data(Display *dpy, Atom selection, Sel_owner_info *sel_owner);
 Xv_private Time xv_sel_get_last_event_time(Xv_server, Display *, Window, int);
+Pkg_private Sel_req_list *SelMatchReqTbl(Sel_reply_info  *reply);
 
 typedef int (*x_predicate_func_t)(Display *, XEvent *, XPointer);
 Pkg_private int xv_sel_block_for_event(Display *display, XEvent *xevent,
@@ -247,8 +256,6 @@ Pkg_private int xv_sel_block_incr(Display *display, XEvent *xevent,
 Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *req);
 Pkg_private char * xv_sel_atom_to_str(Display *dpy, Atom atom, XID xid);
 Pkg_private Atom xv_sel_str_to_atom(Display *dpy, char *str, XID xid);
-Pkg_private void xv_sel_handle_error(int errCode, Sel_req_info *sel, Sel_reply_info *replyInfo, Atom target, int sendEv);
-Pkg_private Notify_value xv_sel_handle_sel_timeout(Notify_client client, int which);
 Pkg_private int xv_sel_end_request(Sel_reply_info *reply);
 Xv_private void xv_sel_handle_selection_clear(XSelectionClearEvent *clrEv);
 Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev);
