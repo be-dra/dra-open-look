@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.63 2026/11/18 09:18:49 dra Exp $";
+static char     sccsid[] = "@(#)sel_own.c 1.28 91/04/30 DRA $Id: sel_own.c,v 4.65 2026/11/20 12:50:58 dra Exp $";
 #endif
 #endif
 
@@ -582,12 +582,61 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 	parent = xv_get(selection->public_self, XV_OWNER);
 	srv = XV_SERVER_FROM_WINDOW(parent);
 
+#ifdef DESCRIPTION_OF_SELECTION_OPTIMIZATION
+	A "normal" elementary, non-MULTIPLE, non-INCR selection transfer requires
+	seven network pakets:
+
+               Requestor               X-Server             Owner
+	Packet 1.  XConvertSelection ------>            
+	Packet 2.                              ----> SelectionRequest
+	Packet 3.                                  <----       XChangeProperty
+	Packet 4.                                  <----       XSendEvent
+	Packet 5.  SelectionNotify <-------
+	Packet 6.  XGetWindowProperty ----->  
+	Packet 7.           reply     <-----
+
+	XConvertSelection has a few parameters: window, selection, target, property.
+	The only parameter that is under the full control of the requestor
+	is the property. XView usually uses atoms like XV_SELECTION0 etc for
+	the property. The idea is to have "special" names to use as the property
+	that indicate special demands to the selection owner.
+
+	1. _DRA_NO_ANSWER: there are targets where the requestor is not interested
+	   in data - and maybe NOT EVEN interested in the success or missuccess
+	   (an example is _SUN_SELECTION_END - what are you going to do if
+	   the selection owner does not understand that ?)
+
+	   Convention: if the property is set to _DRA_NO_ANSWER, absolutely
+	               no answer is requested - only Packets 1 and 2 will 
+				   be sent.
+
+	2. _DRA_SELECTION_NOTIFY: there are targets where the answer has 
+	   format 32 and length 0 or 1 (_OL_SELECTION_IS_WORD, _SUN_DRAGDROP_ACK,
+	   _SUN_SELN_IS_READONLY, _SUN_ENUMERATION_COUNT etc)
+
+	   Convention: if the property is set to _DRA_SELECTION_NOTIFY, the
+	               resulting data are not transferred via the property and a 
+	               SelectionNotify event, but via a ClientMessage as follows:
+
+				   window:        requestor
+				   message_type: _DRA_SELECTION_NOTIFY
+				   format:       32
+				   data.l[0] = selection
+				   data.l[1] = target
+				   data.l[2] = type
+				   data.l[3] = value
+				   data.l[4] = 0                 unused
+
+	   This will save three packets: one from XChangeProperty and
+	   two from XGetWindowProperty
+
+#endif /* DESCRIPTION_OF_SELECTION_OPTIMIZATION */
+
 	if (property == xv_get(srv, SERVER_ATOM, "_DRA_NO_ANSWER")) {
 		/* as an indication for the requestor */
 		ev->xselection.target = property;
 		if (sendEventReqPtr) {
 			*sendEventReqPtr = FALSE; 
-			SERVERTRACE((888, "_DRA_NO_ANSWER: sendEventReq = FALSE\n"));
 		}
 		change_property = FALSE;
 	}
@@ -622,7 +671,6 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 			change_property = FALSE;
 			if (sendEventReqPtr) {
 				*sendEventReqPtr = FALSE; 
-				SERVERTRACE((888, "_DRA_SELECTION_NOTIFY: sendEventReq = FALSE\n"));
 			}
 		}
 	}
@@ -653,7 +701,6 @@ static int DoConversion(Sel_owner_info *selection, Atom target, Atom property,
 			*sendEventReqPtr = FALSE; 
 			XSendEvent(selection->dpy, ev->xselection.requestor, False,
 						(unsigned long)NULL, ev);
-			SERVERTRACE((888, "after XSendEvent: sendEventReq = FALSE\n"));
 		}
 	}
 
@@ -891,8 +938,11 @@ Xv_private int xv_sel_handle_incr(Sel_owner_info *selection, Xv_server srv)
 		req->rq_offset = 0;
 	}
 
+	ic.server = srv;
 	ic.wmprot = xv_get(srv, SERVER_WM_PROTOCOLS);
 	ic.wmtf = xv_get(srv, SERVER_WM_TAKE_FOCUS);
+	ic.wmhints = xv_get(srv, SERVER_ATOM, "WM_HINTS");
+	ic.olbusy = xv_get(srv, SERVER_ATOM, "_OL_WIN_BUSY");
 	ic.cancel = xv_get(srv, SERVER_ATOM, "INCR");
 	ic.property = req->rq_property;
 	ic.time = req->rq_time;
@@ -1005,7 +1055,6 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 	XSelectionEvent replyEvent;
 	int sendEventRequired = TRUE;
 
-	SERVERTRACE((888, "sel req, prop = %ld\n", reqEvent->property));
 	owner = xv_sel_find_selection_data(reqEvent->display, reqEvent->selection,
 			reqEvent->owner);
 
@@ -1086,14 +1135,12 @@ Xv_private void xv_sel_handle_selection_request(XSelectionRequestEvent *reqEvent
 			return;
 		}
 	}
-	SERVERTRACE((888, "sendEventReq = %d\n", sendEventRequired));
 
 	/*
 	 * Send the requestor window a SelectionNotify event specifying the
 	 * the end of transaction.
 	 */
 	if (sendEventRequired) {
-		SERVERTRACE((888, "sending event\n"));
 		XSendEvent(owner->dpy, replyEvent.requestor, False,
 					(unsigned long)NULL, (XEvent *) & replyEvent);
 	}
