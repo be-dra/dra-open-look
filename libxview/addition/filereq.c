@@ -48,7 +48,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.30 2026/11/15 13:33:42 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.31 2026/11/20 12:00:54 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -495,7 +495,7 @@ static Filereq_status fetch_file_via_selection(Filereq_private *priv,
 {
 	File_requestor self = FRPUB(priv);
 	int format;
-	long indx = (long)j, length;
+	long length, indx = (long)j;
 
 	priv->status = FR_OK;
 	priv->fildesc = open(tgtfile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -590,7 +590,7 @@ static char *perform_dra_load(Filereq_private *priv, char *file, char *rem_name,
 
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
-			SEL_TYPE_NAME, "_DRA_LOAD",
+			SEL_SIMPLE_TYPE_NAME, "_DRA_LOAD",
 			NULL);
 	adata = (Atom *)xv_get(self, SEL_DATA, &length, &format);
 	if (length == SEL_ERROR) {
