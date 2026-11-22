@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.75 2026/11/18 09:17:20 dra Exp $";
+static char     sccsid[] = "@(#)win_input.c 20.208 93/06/28 DRA: $Id: win_input.c,v 4.77 2026/11/21 15:51:14 dra Exp $";
 #endif
 #endif
 
@@ -117,73 +117,73 @@ int             xv_in_loop;
 
 Xv_private void win_xmask_to_im(unsigned int xevent_mask, Inputmask *im)
 {
-    int i;
+	int i;
 
-    input_imnull(im);
+	input_imnull(im);
 
-    if (xevent_mask & ExposureMask)
-	win_setinputcodebit(im, WIN_REPAINT);
+	if (xevent_mask & ExposureMask)
+		win_setinputcodebit(im, WIN_REPAINT);
 
-    if (xevent_mask & PointerMotionMask)
-	win_setinputcodebit(im, LOC_MOVE);
+	if (xevent_mask & PointerMotionMask)
+		win_setinputcodebit(im, LOC_MOVE);
 
-    if (xevent_mask & EnterWindowMask)
-	win_setinputcodebit(im, LOC_WINENTER);
+	if (xevent_mask & EnterWindowMask)
+		win_setinputcodebit(im, LOC_WINENTER);
 
-    if (xevent_mask & LeaveWindowMask)
-	win_setinputcodebit(im, LOC_WINEXIT);
+	if (xevent_mask & LeaveWindowMask)
+		win_setinputcodebit(im, LOC_WINEXIT);
 
-    if (xevent_mask & ButtonMotionMask)
-	win_setinputcodebit(im, LOC_DRAG);
+	if (xevent_mask & ButtonMotionMask)
+		win_setinputcodebit(im, LOC_DRAG);
 
-    if (xevent_mask & KeymapStateMask)
-	win_setinputcodebit(im, KBD_MAP);
+	if (xevent_mask & KeymapStateMask)
+		win_setinputcodebit(im, KBD_MAP);
 
-    if (xevent_mask & VisibilityChangeMask)
-	win_setinputcodebit(im, WIN_VISIBILITY_NOTIFY);
+	if (xevent_mask & VisibilityChangeMask)
+		win_setinputcodebit(im, WIN_VISIBILITY_NOTIFY);
 
-    if (xevent_mask & StructureNotifyMask)
-	win_setinputcodebit(im, WIN_STRUCTURE_NOTIFY);
+	if (xevent_mask & StructureNotifyMask)
+		win_setinputcodebit(im, WIN_STRUCTURE_NOTIFY);
 
-    if (xevent_mask & SubstructureNotifyMask)
-	win_setinputcodebit(im, WIN_SUBSTRUCTURE_NOTIFY);
+	if (xevent_mask & SubstructureNotifyMask)
+		win_setinputcodebit(im, WIN_SUBSTRUCTURE_NOTIFY);
 
-    if (xevent_mask & ResizeRedirectMask)
-	win_setinputcodebit(im, WIN_RESIZE_REQUEST);
+	if (xevent_mask & ResizeRedirectMask)
+		win_setinputcodebit(im, WIN_RESIZE_REQUEST);
 
-    if (xevent_mask & PropertyChangeMask)
-	win_setinputcodebit(im, WIN_PROPERTY_NOTIFY);
+	if (xevent_mask & PropertyChangeMask)
+		win_setinputcodebit(im, WIN_PROPERTY_NOTIFY);
 
-    if (xevent_mask & ColormapChangeMask)
-	win_setinputcodebit(im, WIN_COLORMAP_NOTIFY);
+	if (xevent_mask & ColormapChangeMask)
+		win_setinputcodebit(im, WIN_COLORMAP_NOTIFY);
 
-    if (xevent_mask & SubstructureRedirectMask)
-	win_setinputcodebit(im, WIN_SUBSTRUCTURE_REDIRECT);
+	if (xevent_mask & SubstructureRedirectMask)
+		win_setinputcodebit(im, WIN_SUBSTRUCTURE_REDIRECT);
 
-    if (xevent_mask & KeyPressMask) {
-	im->im_flags |= IM_ASCII;
-	for (i = 1; i <= (KEY_LEFTLAST - KEY_LEFTFIRST); i++)
-	    win_setinputcodebit(im, KEY_LEFT(i));
+	if (xevent_mask & KeyPressMask) {
+		im->im_flags |= IM_ASCII;
+		for (i = 1; i <= (KEY_LEFTLAST - KEY_LEFTFIRST); i++)
+			win_setinputcodebit(im, KEY_LEFT(i));
 
-	for (i = 1; i <= (KEY_RIGHTLAST - KEY_RIGHTFIRST); i++)
-	    win_setinputcodebit(im, KEY_RIGHT(i));
+		for (i = 1; i <= (KEY_RIGHTLAST - KEY_RIGHTFIRST); i++)
+			win_setinputcodebit(im, KEY_RIGHT(i));
 
-	for (i = 1; i <= (KEY_TOPLAST - KEY_TOPFIRST); i++)
-	    win_setinputcodebit(im, KEY_TOP(i));
-    }
-    if (xevent_mask & KeyReleaseMask)
-	im->im_flags |= (IM_NEGASCII | IM_NEGEVENT | IM_NEGMETA);
+		for (i = 1; i <= (KEY_TOPLAST - KEY_TOPFIRST); i++)
+			win_setinputcodebit(im, KEY_TOP(i));
+	}
+	if (xevent_mask & KeyReleaseMask)
+		im->im_flags |= (IM_NEGASCII | IM_NEGEVENT | IM_NEGMETA);
 
-    if (xevent_mask & FocusChangeMask) {
-	win_setinputcodebit(im, KBD_USE);
-	win_setinputcodebit(im, KBD_DONE);
-    }
-    if ((xevent_mask & ButtonPressMask) || (xevent_mask & ButtonReleaseMask)) {
-	for (i = 1; i <= (BUT_LAST - BUT_FIRST); i++)
-	    win_setinputcodebit(im, BUT(i));
-	if (xevent_mask & ButtonReleaseMask)
-	    im->im_flags |= IM_NEGEVENT;
-    }
+	if (xevent_mask & FocusChangeMask) {
+		win_setinputcodebit(im, KBD_USE);
+		win_setinputcodebit(im, KBD_DONE);
+	}
+	if ((xevent_mask & ButtonPressMask) || (xevent_mask & ButtonReleaseMask)) {
+		for (i = 1; i <= (BUT_LAST - BUT_FIRST); i++)
+			win_setinputcodebit(im, BUT(i));
+		if (xevent_mask & ButtonReleaseMask)
+			im->im_flags |= IM_NEGEVENT;
+	}
 }
 
 
@@ -192,121 +192,128 @@ Xv_private void win_xmask_to_im(unsigned int xevent_mask, Inputmask *im)
  */
 Xv_private unsigned int win_im_to_xmask(Xv_object window, Inputmask *im)
 {
-    register unsigned int xevent_mask = 0;
-    int    i;
+	register unsigned int xevent_mask = 0;
+	int i;
 
-    /*
-     * BUG The events that cannot be generated in X are: LOC_STILL,
-     * LOC_RGN{EXIT,ENTER}, WIN_STOP, LOC_TRAJECTORY, KBD_REQUEST
-     */
-    if (win_getinputcodebit(im, LOC_MOVE))
-	xevent_mask |= PointerMotionMask;
-    if (win_getinputcodebit(im, LOC_WINENTER))
-	xevent_mask |= EnterWindowMask;
-    if (win_getinputcodebit(im, LOC_WINEXIT))
-	xevent_mask |= LeaveWindowMask;
-    if (win_getinputcodebit(im, KBD_MAP))
-	xevent_mask |= KeymapStateMask;
-    if (win_getinputcodebit(im, WIN_VISIBILITY_NOTIFY))
-	xevent_mask |= VisibilityChangeMask;
-    if ((win_getinputcodebit(im, WIN_CIRCULATE_NOTIFY)) ||
-	(win_getinputcodebit(im, WIN_DESTROY_NOTIFY)) ||
-	(win_getinputcodebit(im, WIN_GRAVITY_NOTIFY)) ||
-	(win_getinputcodebit(im, WIN_MAP_NOTIFY)) ||
-	(win_getinputcodebit(im, WIN_REPARENT_NOTIFY)) ||
-    /*
-     * (win_getinputcodebit(im, WIN_RESIZE)) ||
-     */
-	(win_getinputcodebit(im, WIN_UNMAP_NOTIFY)))
-	xevent_mask |= StructureNotifyMask;
+	/*
+	 * BUG The events that cannot be generated in X are: LOC_STILL,
+	 * LOC_RGN{EXIT,ENTER}, WIN_STOP, LOC_TRAJECTORY, KBD_REQUEST
+	 */
+	if (win_getinputcodebit(im, LOC_MOVE))
+		xevent_mask |= PointerMotionMask;
+	if (win_getinputcodebit(im, LOC_WINENTER))
+		xevent_mask |= EnterWindowMask;
+	if (win_getinputcodebit(im, LOC_WINEXIT))
+		xevent_mask |= LeaveWindowMask;
+	if (win_getinputcodebit(im, KBD_MAP))
+		xevent_mask |= KeymapStateMask;
+	if (win_getinputcodebit(im, WIN_VISIBILITY_NOTIFY))
+		xevent_mask |= VisibilityChangeMask;
+	if ((win_getinputcodebit(im, WIN_CIRCULATE_NOTIFY)) ||
+			(win_getinputcodebit(im, WIN_DESTROY_NOTIFY)) ||
+			(win_getinputcodebit(im, WIN_GRAVITY_NOTIFY)) ||
+			(win_getinputcodebit(im, WIN_MAP_NOTIFY)) ||
+			(win_getinputcodebit(im, WIN_REPARENT_NOTIFY)) ||
+			/*
+			 * (win_getinputcodebit(im, WIN_RESIZE)) ||
+			 */
+			(win_getinputcodebit(im, WIN_UNMAP_NOTIFY)))
+		xevent_mask |= StructureNotifyMask;
 
-    if (win_getinputcodebit(im, WIN_SUBSTRUCTURE_NOTIFY))
-	xevent_mask |= SubstructureNotifyMask;
+	if (win_getinputcodebit(im, WIN_SUBSTRUCTURE_NOTIFY))
+		xevent_mask |= SubstructureNotifyMask;
 
-    if (win_getinputcodebit(im, WIN_RESIZE_REQUEST))
-	xevent_mask |= ResizeRedirectMask;
+	if (win_getinputcodebit(im, WIN_RESIZE_REQUEST))
+		xevent_mask |= ResizeRedirectMask;
 
-    if (win_getinputcodebit(im, WIN_PROPERTY_NOTIFY))
-	xevent_mask |= PropertyChangeMask;
+	if (win_getinputcodebit(im, WIN_PROPERTY_NOTIFY))
+		xevent_mask |= PropertyChangeMask;
 
-    if (win_getinputcodebit(im, WIN_COLORMAP_NOTIFY))
-	xevent_mask |= ColormapChangeMask;
+	if (win_getinputcodebit(im, WIN_COLORMAP_NOTIFY))
+		xevent_mask |= ColormapChangeMask;
 
-    if ((win_getinputcodebit(im, WIN_CIRCULATE_REQUEST)) ||
-	(win_getinputcodebit(im, WIN_CONFIGURE_REQUEST)) ||
-	(win_getinputcodebit(im, WIN_MAP_REQUEST)))
-	xevent_mask |= SubstructureRedirectMask;
+	if ((win_getinputcodebit(im, WIN_CIRCULATE_REQUEST)) ||
+			(win_getinputcodebit(im, WIN_CONFIGURE_REQUEST)) ||
+			(win_getinputcodebit(im, WIN_MAP_REQUEST)))
+		xevent_mask |= SubstructureRedirectMask;
 
-    if (win_getinputcodebit(im, LOC_DRAG)) {
-	xevent_mask |= ButtonMotionMask;
-    }
-    /* BUT(1-3) are MS_{LEFT, MIDDLE, RIGHT} */
-    for (i = 1; i <= (BUT_LAST - BUT_FIRST); i++) {
-	if (win_getinputcodebit(im, BUT(i))) {
-	    xevent_mask |= ButtonPressMask;
-	    break;
+	if (win_getinputcodebit(im, LOC_DRAG)) {
+		xevent_mask |= ButtonMotionMask;
 	}
-    }
-
-    /* Set ButtonReleaseMask if some button consumed and IM_NEGEVENT */
-    if (xevent_mask & ButtonPressMask && im->im_flags & IM_NEGEVENT)
-	xevent_mask |= ButtonReleaseMask;
-
-    if (win_getinputcodebit(im, WIN_REPAINT)) {
-	xevent_mask |= ExposureMask;
-    }
-    /* Enable focus change events if consuming KBD_USE/KBD_DONE */
-    if (win_getinputcodebit(im, KBD_USE) ||
-	win_getinputcodebit(im, KBD_DONE)) {
-	xevent_mask |= FocusChangeMask;
-    }
-    /*
-     * if top level window AND it does not have no decor flag set then turn
-     * on StructureNotify  and PropertyChangeMask
-     */
-    if ((window) && (Bool) xv_get(window, WIN_TOP_LEVEL) &&
-	!(Bool) xv_get(window, WIN_TOP_LEVEL_NO_DECOR)) {
-	xevent_mask |= StructureNotifyMask | PropertyChangeMask;
-    }
-    /*
-     * NOTE:  If interested in any keyboard events, must set ButtonPressMask
-     * and FocusChangeMask for Click to Type.
-     * 
-     * BUG ALERT: If you are interested in any keyboard events, you will see
-     * button press, KBD_USE, and KBD_DONE events whether you want them or
-     * not.
-     */
-    if ((im->im_flags & IM_NEGASCII) ||
-	(im->im_flags & IM_NEGMETA))
-	xevent_mask |= KeyReleaseMask | ButtonPressMask | FocusChangeMask;
-
-    /*
-     * NOTE:  Anything below this point only deal with KeyPressMask.
-     */
-    if (im->im_flags & IM_ASCII) {
-	xevent_mask |= KeyPressMask | FocusChangeMask;
-	goto Return;
-    }
-    for (i = 1; i <= KEY_LEFTLAST - KEY_LEFTFIRST; i++)
-	if (win_getinputcodebit(im, KEY_LEFT(i))) {
-	    xevent_mask |= KeyPressMask | FocusChangeMask;
-	    goto Return;
+	/* BUT(1-3) are MS_{LEFT, MIDDLE, RIGHT} */
+	for (i = 1; i <= (BUT_LAST - BUT_FIRST); i++) {
+		if (win_getinputcodebit(im, BUT(i))) {
+			xevent_mask |= ButtonPressMask;
+			break;
+		}
 	}
-    for (i = 1; i <= KEY_RIGHTLAST - KEY_RIGHTFIRST; i++)
-	if (win_getinputcodebit(im, KEY_RIGHT(i))) {
-	    xevent_mask |= KeyPressMask | FocusChangeMask;
-	    goto Return;
+
+	/* Set ButtonReleaseMask if some button consumed and IM_NEGEVENT */
+	if (xevent_mask & ButtonPressMask && im->im_flags & IM_NEGEVENT)
+		xevent_mask |= ButtonReleaseMask;
+
+	if (win_getinputcodebit(im, WIN_REPAINT)) {
+		xevent_mask |= ExposureMask;
 	}
-    for (i = 1; i <= KEY_TOPLAST - KEY_TOPFIRST; i++)
-	if (win_getinputcodebit(im, KEY_TOP(i))) {
-	    xevent_mask |= KeyPressMask | FocusChangeMask;
-	    goto Return;
+	/* Enable focus change events if consuming KBD_USE/KBD_DONE */
+	if (win_getinputcodebit(im, KBD_USE) || win_getinputcodebit(im, KBD_DONE)) {
+		xevent_mask |= FocusChangeMask;
 	}
-Return:
-    /* Set KeyReleaseMask if consuming keyboard events and IM_NEGEVENT */
-    if (im->im_flags & IM_NEGEVENT && xevent_mask & KeyPressMask)
-	xevent_mask |= KeyReleaseMask;
-    return (xevent_mask);
+	/*
+	 * if top level window AND it does not have no decor flag set then turn
+	 * on StructureNotify  and PropertyChangeMask
+	 */
+	if ((window) && (Bool) xv_get(window, WIN_TOP_LEVEL) &&
+			!(Bool) xv_get(window, WIN_TOP_LEVEL_NO_DECOR)) {
+#ifdef BEFORE_2026_11_21
+		xevent_mask |= StructureNotifyMask | PropertyChangeMask;
+#else /* BEFORE_2026_11_21 */
+		/* we try without that: FRAME  has WIN_MAP_NOTIFY anyway */
+		/* without that, we had a very bad resize behaviour and a
+		 * very bad MENU positioning !  ????
+		 * So, it looks like we need StructureNotifyMask here.
+		 */
+		xevent_mask |= StructureNotifyMask;
+#endif /* BEFORE_2026_11_21 */
+	}
+	/*
+	 * NOTE:  If interested in any keyboard events, must set ButtonPressMask
+	 * and FocusChangeMask for Click to Type.
+	 * 
+	 * BUG ALERT: If you are interested in any keyboard events, you will see
+	 * button press, KBD_USE, and KBD_DONE events whether you want them or
+	 * not.
+	 */
+	if ((im->im_flags & IM_NEGASCII) || (im->im_flags & IM_NEGMETA))
+		xevent_mask |= KeyReleaseMask | ButtonPressMask | FocusChangeMask;
+
+	/*
+	 * NOTE:  Anything below this point only deal with KeyPressMask.
+	 */
+	if (im->im_flags & IM_ASCII) {
+		xevent_mask |= KeyPressMask | FocusChangeMask;
+		goto Return;
+	}
+	for (i = 1; i <= KEY_LEFTLAST - KEY_LEFTFIRST; i++)
+		if (win_getinputcodebit(im, KEY_LEFT(i))) {
+			xevent_mask |= KeyPressMask | FocusChangeMask;
+			goto Return;
+		}
+	for (i = 1; i <= KEY_RIGHTLAST - KEY_RIGHTFIRST; i++)
+		if (win_getinputcodebit(im, KEY_RIGHT(i))) {
+			xevent_mask |= KeyPressMask | FocusChangeMask;
+			goto Return;
+		}
+	for (i = 1; i <= KEY_TOPLAST - KEY_TOPFIRST; i++)
+		if (win_getinputcodebit(im, KEY_TOP(i))) {
+			xevent_mask |= KeyPressMask | FocusChangeMask;
+			goto Return;
+		}
+  Return:
+	/* Set KeyReleaseMask if consuming keyboard events and IM_NEGEVENT */
+	if (im->im_flags & IM_NEGEVENT && xevent_mask & KeyPressMask)
+		xevent_mask |= KeyReleaseMask;
+	return (xevent_mask);
 }
 
 /*
