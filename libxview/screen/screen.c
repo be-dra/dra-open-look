@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.28 2026/10/19 14:18:56 dra Exp $ ";
+static char     sccsid[] = "@(#)screen.c 20.51 93/06/28 DRA: RCS $Id: screen.c,v 4.29 2026/11/21 13:33:32 dra Exp $ ";
 #endif
 #endif
 
@@ -602,7 +602,9 @@ static void screen_update_sun_wm_protocols(Xv_object window, int is_delete)
 	}
 	else {
 #ifdef WHAT_ABOUT_OTHER_PROPERTIES
-		/* idiotic: we might be interested in OTHER property changes */
+		/* idiotic: we might be interested in OTHER property changes
+		 * especially XA_RESOURCE_MANAGER !
+		 */
 		XWindowAttributes xwa;
 
 		XGetWindowAttributes(dpy, RootWindow(dpy, screen->number), &xwa);
@@ -667,6 +669,11 @@ static Xv_opaque screen_get_attr(Xv_Screen screen_public, int *status,
 		case SCREEN_ENHANCED_OLWM:
 			value = xv_get(screen_public, SCREEN_CHECK_SUN_WM_PROTOCOL,
 												"_DRA_ENHANCED_OLWM");
+			break;
+
+		case SCREEN_CAN_SEND_PIN:
+			value = xv_get(screen_public, SCREEN_CHECK_SUN_WM_PROTOCOL,
+												"_OL_PIN_STATE");
 			break;
 
 		case SCREEN_MAX_ICON_SIZE:
