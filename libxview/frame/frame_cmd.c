@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.12 2026/10/23 07:03:45 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.14 2026/11/21 15:58:25 dra Exp $ ";
 #endif
 #endif
 
@@ -259,7 +259,6 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 	Xv_opaque srv;
 	int result = XV_OK;
 	int set_win_attr;
-	Atom pinstate;
 
 	DRAWABLE_INFO_MACRO(frame_public, info);
 	srv = xv_server(info);
@@ -487,10 +486,26 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 				frame->win_attr.win_type = (Atom)xv_get(frame_public,
 															FRAME_WINTYPE);
 				set_win_attr = TRUE;
-				pinstate = xv_get(srv, SERVER_WM_PIN_STATE);
-				win_change_property(frame_public,
-						(Attr_attribute)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
-						(unsigned char *)&pinstate, 1, TRUE);
+				if (xv_get(xv_screen(info), SCREEN_CAN_SEND_PIN)) {
+					Atom pinstate;
+
+					/* our olwm can send pin changes as client messages -
+					 * that's what we want:
+					 */
+					pinstate = xv_get(srv, SERVER_WM_PIN_STATE);
+					win_change_property(frame_public,
+							(Attr_attribute)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
+							(unsigned char *)&pinstate, 1, TRUE);
+					xv_set(frame_public,
+							WIN_IGNORE_EVENT, WIN_PROPERTY_NOTIFY,
+							NULL);
+				}
+				else {
+					/* we want PropertyNotify events */
+					xv_set(frame_public,
+							WIN_CONSUME_EVENTS, WIN_PROPERTY_NOTIFY, NULL,
+							NULL);
+				}
 				break;
 
 		default:
