@@ -1,5 +1,5 @@
 /* #ident	"@(#)winroot.c	26.60	93/06/28 SMI" */
-char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.7 2026/11/17 08:11:10 dra Exp $";
+char winroot_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: winroot.c,v 2.8 2026/11/21 13:24:12 dra Exp $";
 
 /*
  *      (c) Copyright 1989 Sun Microsystems, Inc.
@@ -548,6 +548,9 @@ static void writeProtocols(Display *dpy, Window rootwin)
 
 	/* I AM THE GOOD ONE */
 	data[nitems++] = AtomEnhancedOlwm;
+
+	/* I can send a client message when the pin changes */
+	data[nitems++] = AtomPinState;
 
 	XChangeProperty(dpy, rootwin, AtomSunWMProtocols, XA_ATOM, 32,
 			PropModeReplace, (unsigned char *)data, nitems);
