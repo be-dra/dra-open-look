@@ -1,4 +1,4 @@
- /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.11 2026/10/19 14:02:48 dra Exp $     */
+ /*      @(#)screen.h 20.37 93/06/28 SMI DRA: RCS: $Id: screen.h,v 4.12 2026/11/21 13:33:14 dra Exp $     */
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -63,6 +63,7 @@ typedef enum {
 	SCREEN_OLWM_MANAGED          = SCREEN_ATTR(ATTR_BOOLEAN, 25), /* G-- */
 	SCREEN_ENHANCED_OLWM         = SCREEN_ATTR(ATTR_BOOLEAN, 26), /* G-- */
 	SCREEN_CHECK_SUN_WM_PROTOCOL = SCREEN_ATTR(ATTR_STRING,	27), /* G-- */
+	SCREEN_CAN_SEND_PIN          = SCREEN_ATTR(ATTR_BOOLEAN, 28), /* G-- */
 	SCREEN_BUSY_CURSOR 		     = SCREEN_ATTR(ATTR_OPAQUE, 17),
 	SCREEN_BASIC_CURSOR 		 = SCREEN_ATTR(ATTR_OPAQUE, 18),
 	SCREEN_UI_STYLE 		     = SCREEN_ATTR(ATTR_ENUM, 16),
