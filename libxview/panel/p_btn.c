@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)p_btn.c 20.110 93/06/28 DRA: $Id: p_btn.c,v 4.11 2026/10/07 21:01:00 dra Exp $";
+static char     sccsid[] = "@(#)p_btn.c 20.110 93/06/28 DRA: $Id: p_btn.c,v 4.12 2026/11/22 16:19:01 dra Exp $";
 #endif
 #endif
 
@@ -75,7 +75,6 @@ typedef struct button_info {
 Xv_private void menu_save_pin_window_rect(Frame);
 Xv_private void menu_item_set_parent(Menu_item, Menu);
 
-static void take_down_cmd_frame(Panel panel_public);
 static void button_menu_busy_proc(Menu menu);
 static void button_menu_done_proc(Menu menu, Xv_opaque result);
 static void panel_paint_button_image(Item_info *ip, Panel_image *image, int inactive_button, Xv_opaque menu, int height);
@@ -570,97 +569,115 @@ static void button_menu_busy_proc(Menu	    menu)
     panel_paint_button_image(ip, &ip->label, inactive(ip), ip->menu, 0);
 }
 
+static void take_down_cmd_frame(Panel panel_public)
+{
+	Frame frame;
+
+	/*
+	 * If this is a command frame, and the pin is out, then take down the
+	 * window.  Note: The frame code checks to see if the pin is out.
+	 */
+	frame = xv_get(panel_public, WIN_FRAME);
+	if (xv_get(frame, XV_IS_SUBTYPE_OF, FRAME_CMD)) {
+		menu_save_pin_window_rect(frame);
+		xv_set(frame, XV_SHOW, FALSE, NULL);
+	}
+}
+
 
 static void button_menu_done_proc(Menu            menu, Xv_opaque result)
 {
-    void            (*orig_done_proc) (Menu, Xv_opaque);	/* original menu-done
-						 * procedure */
-    Panel_item	    item = xv_get(menu, XV_KEY_DATA, item_key);
-    Item_info	   *ip = ITEM_PRIVATE(item);
-    Panel_info     *panel = ip->panel;
-    Panel           panel_public = PANEL_PUBLIC(panel);
+	void (*orig_done_proc)(Menu, Xv_opaque);	/* original menu-done
+												 * procedure */
+	Panel_item item = xv_get(menu, XV_KEY_DATA, item_key);
+	Item_info *ip = ITEM_PRIVATE(item);
+	Panel_info *panel = ip->panel;
+	Panel panel_public = PANEL_PUBLIC(panel);
 
-    /* Restore menu button to normal state */
-    ip->flags &= ~(INVOKED | BUSY);
-    if (!hidden(ip))
-        panel_paint_button_image(ip, &ip->label, inactive(ip), ip->menu, 0);
+	/* Restore menu button to normal state */
+	ip->flags &= ~(INVOKED | BUSY);
+	if (!hidden(ip))
+		panel_paint_button_image(ip, &ip->label, inactive(ip), ip->menu, 0);
 
-    if (xv_get(menu, MENU_NOTIFY_STATUS) == XV_OK)
-	take_down_cmd_frame(panel_public);
+	if (xv_get(menu, MENU_NOTIFY_STATUS) == XV_OK)
+		take_down_cmd_frame(panel_public);
 
-    panel->current = NULL;
+	panel->current = NULL;
 
-    /* Restore menu color and original menu busy and done procs. */
-    orig_done_proc = (void (*) (Menu, Xv_opaque)) xv_get(menu, XV_KEY_DATA, done_key);
-    xv_set(menu,
-				MENU_BUSY_PROC, xv_get(menu, XV_KEY_DATA, busy_key),
-				MENU_DONE_PROC, orig_done_proc,
-				MENU_COLOR, xv_get(menu, XV_KEY_DATA, color_key),
-				NULL);
+	/* Restore menu color and original menu busy and done procs. */
+	orig_done_proc =
+			(void (*)(Menu, Xv_opaque))xv_get(menu, XV_KEY_DATA, done_key);
+	xv_set(menu, MENU_BUSY_PROC, xv_get(menu, XV_KEY_DATA, busy_key),
+			MENU_DONE_PROC, orig_done_proc, MENU_COLOR, xv_get(menu,
+					XV_KEY_DATA, color_key), NULL);
 
-    /* Invoke original menu done proc (if any) */
-    if (orig_done_proc) (orig_done_proc) (menu, result);
+	/* Invoke original menu done proc (if any) */
+	if (orig_done_proc)
+		(orig_done_proc) (menu, result);
 
-    ip->panel->status.current_item_active = FALSE;
+	ip->panel->status.current_item_active = FALSE;
 }
 
 
 Pkg_private void panel_btn_accepted(Item_info *ip, Event *event)
 {
-    Menu            default_menu, submenu, topmenu;
-    Menu_item       default_menu_item;
-    int             menu_depth = 0;
-    void            (*pin_proc) (Menu, int, int);	/* pin procedure for default menu */
-    int             pin_is_default;	/* boolean */
-    int             notify_status;	/* XV_OK or XV_ERROR */
+	Menu default_menu, submenu, topmenu;
+	Menu_item default_menu_item;
+	int menu_depth = 0;
+	void (*pin_proc)(Menu, int, int);	/* pin procedure for default menu */
+	int pin_is_default;	/* boolean */
+	int notify_status;	/* XV_OK or XV_ERROR */
 
-    /* notify the client */
-    ip->notify_status = XV_OK;
-    panel_item_destroy_flag = 0;
-    if (ip->flags & IS_MENU_ITEM)
-        panel_item_destroy_flag = 1;
-    (*ip->notify) (ITEM_PUBLIC(ip), event);
-    if (panel_item_destroy_flag == 2)
-	return; 
-    panel_item_destroy_flag = 0;
+	/* notify the client */
+	ip->notify_status = XV_OK;
+	panel_item_destroy_flag = 0;
+	if (ip->flags & IS_MENU_ITEM)
+		panel_item_destroy_flag = 1;
+	(*ip->notify) (ITEM_PUBLIC(ip), event);
+	if (panel_item_destroy_flag == 2)
+		return;
+	panel_item_destroy_flag = 0;
 
-    if ((ip->menu) && (submenu = topmenu = generate_menu(ip->menu))) {
-	/* Select the default entry */
-	menu_select_default(submenu);
-	do {
-	    menu_depth++;
-	    default_menu = submenu;
-	    default_menu_item = (Menu_item) xv_get(default_menu,
-						   MENU_DEFAULT_ITEM);
-	} while (default_menu_item &&
-		 (submenu = (Menu) xv_get(default_menu_item, MENU_PULLRIGHT)));
-	if (default_menu_item) {
-	    pin_is_default = xv_get(default_menu, MENU_PIN) &&
-		xv_get(default_menu_item, MENU_TITLE);
-	    if (pin_is_default) {
-		if (xv_get(default_menu_item, MENU_INACTIVE))
-		    notify_status = XV_ERROR;
-		else {
-		    pin_proc = (void (*) (Menu, int, int)) xv_get(default_menu,
-						    MENU_PIN_PROC);
-		    pin_proc(default_menu, event_x(event), event_y(event));
-		    notify_status = XV_OK;
+	if ((ip->menu) && (submenu = topmenu = generate_menu(ip->menu))) {
+		/* Select the default entry */
+		menu_select_default(submenu);
+		do {
+			menu_depth++;
+			default_menu = submenu;
+			default_menu_item = (Menu_item) xv_get(default_menu,
+					MENU_DEFAULT_ITEM);
+		} while (default_menu_item &&
+				(submenu = (Menu) xv_get(default_menu_item, MENU_PULLRIGHT)));
+		if (default_menu_item) {
+			pin_is_default = xv_get(default_menu, MENU_PIN) &&
+					xv_get(default_menu_item, MENU_TITLE);
+			if (pin_is_default) {
+				if (xv_get(default_menu_item, MENU_INACTIVE))
+					notify_status = XV_ERROR;
+				else {
+					pin_proc = (void (*)(Menu, int, int))xv_get(default_menu,
+							MENU_PIN_PROC);
+					pin_proc(default_menu, event_x(event), event_y(event));
+					notify_status = XV_OK;
+				}
+			}
+			else {
+				/*
+				 * Invoke the appropriate notify procedure(s) for the menu
+				 * selection.
+				 */
+				menu_return_default(topmenu, menu_depth, event);
+				notify_status = (int)xv_get(topmenu, MENU_NOTIFY_STATUS);
+			}
 		}
-	    } else {
-		/*
-		 * Invoke the appropriate notify procedure(s) for the menu
-		 * selection.
-		 */
-		menu_return_default(topmenu, menu_depth, event);
-		notify_status = (int) xv_get(topmenu, MENU_NOTIFY_STATUS);
-	    }
-	} else
-	    notify_status = XV_ERROR;
-    } else
-	notify_status = ip->notify_status;
+		else
+			notify_status = XV_ERROR;
+	}
+	else
+		notify_status = ip->notify_status;
 
-    if (notify_status == XV_OK)
-	take_down_cmd_frame(PANEL_PUBLIC(ip->panel));
+	if (notify_status == XV_OK)
+		take_down_cmd_frame(PANEL_PUBLIC(ip->panel));
 }
 
 
@@ -729,21 +746,6 @@ static void panel_paint_button_image(Item_info *ip, Panel_image *image, int inac
 	PANEL_END_EACH_PAINT_WINDOW
 }
 
-
-static void take_down_cmd_frame(Panel panel_public)
-{
-    Frame           frame;
-
-    /*
-     * If this is a command frame, and the pin is out, then take down the
-     * window.  Note: The frame code checks to see if the pin is out.
-     */
-    frame = xv_get(panel_public, WIN_FRAME);
-    if (xv_get(frame, XV_IS_SUBTYPE_OF, FRAME_CMD)) {
-	menu_save_pin_window_rect(frame);
-	xv_set(frame, XV_SHOW, FALSE, NULL);
-    }
-}
 
 const Xv_pkg          xv_panel_button_pkg = {
     "Button Item", ATTR_PKG_PANEL,
