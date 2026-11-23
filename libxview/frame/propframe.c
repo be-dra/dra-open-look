@@ -36,7 +36,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.22 2026/11/13 23:38:20 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.23 2026/11/22 19:59:56 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -1171,6 +1171,21 @@ static void call_switch(Propframe_private *priv)
 	}
 }
 
+static void set_multiline_texts_visible(Panel pan, int vis)
+{
+	Panel_item it;
+
+	PANEL_EACH_ITEM(pan, it)
+		if (xv_get(it, XV_IS_SUBTYPE_OF, PANEL_MULTILINE_TEXT)) {
+			/* we do this mainly because after switch away from a category
+			 * with multiline texts the drop site of this TEXTSW still
+			 * shows "drag feedback"
+			 */
+			xv_set(it, XV_SHOW, vis, NULL);
+		}
+	PANEL_END_EACH
+}
+
 static int set_new_current_panel(Propframe_private *priv, one_panel_t p)
 {
 	Frame self = PROPFRAMEPUB(priv);
@@ -1190,6 +1205,7 @@ static int set_new_current_panel(Propframe_private *priv, one_panel_t p)
 	if (p == oldp) return FALSE;
 
 	xv_set(oldp->panel, XV_SHOW, FALSE, NULL);
+	set_multiline_texts_visible(oldp->panel, FALSE);
 
 	delta = (xv_get(proppan, WIN_BORDER) ? (2 * BORDER_WIDTH) : 0);
 	wid = p->cat_width + delta;
@@ -1209,6 +1225,7 @@ static int set_new_current_panel(Propframe_private *priv, one_panel_t p)
 		xv_set(proppan, PANEL_DEFAULT_ITEM, p->pseudo_default, NULL);
 
 	xv_set(p->panel, XV_SHOW, TRUE, NULL);
+	set_multiline_texts_visible(p->panel, TRUE);
 	xv_set(XV_SERVER_FROM_WINDOW(self), SERVER_SYNC_AND_PROCESS_EVENTS, NULL);
 
 	/* many PANEL_MULTILINE_TEXTs do not repaint poperly when
