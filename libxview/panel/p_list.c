@@ -1,4 +1,4 @@
-char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.29 2026/10/09 11:55:23 dra Exp $";
+char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.30 2026/11/22 20:01:35 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -939,7 +939,10 @@ static void accept_change(Panel_item text_item, Row_info *edit_row)
 			PANEL_LIST_EXTENSION_DATA);
 	panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
 			ITEM_FROM_PANEL_LIST(dp));
-	xv_set(text_item, XV_SHOW, FALSE, NULL);
+	xv_set(text_item,
+			PANEL_INACTIVE, TRUE, /* drop_site !!! */
+			XV_SHOW, FALSE,
+			NULL);
 	xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
 	dp->text_item_row = NULL;	/* no row being edited */
 
@@ -1054,6 +1057,7 @@ static Xv_opaque change_proc(Menu menu, Menu_item menu_item)
 				PANEL_NOTIFY_PROC, change_done,
 				PANEL_VALUE_I18N, edit_row->STRING,
 				PANEL_TEXT_SELECT_LINE,
+				PANEL_INACTIVE, FALSE, /* drop_site !!! */
 				XV_SHOW, TRUE,
 				NULL);
 		dp->text_item_row = edit_row;
@@ -1833,6 +1837,7 @@ static int panel_list_init(Xv_Window parent, Panel_item panel_list_public,
 					XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA, dp,
 					XV_HELP_DATA, "xview:plist_textfield",
 					PANEL_ALLOW_FILE_DROP, FALSE,
+					PANEL_INACTIVE, TRUE, /* drop_site !!! */
 					XV_SHOW, FALSE,
 					NULL);
 
@@ -1971,7 +1976,10 @@ static void panel_list_delete_row(Panel_list_info *dp, Row_info *node, int repai
 static void accept_insert(Panel_list_info *dp, Row_info *row)
 {
     PANEL_PRIVATE(dp->parent_panel)->kbd_focus_item = NULL;
-    xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
+    xv_set(dp->text_item,
+				PANEL_INACTIVE, TRUE, /* drop_site !!! */
+				XV_SHOW, FALSE,
+				NULL);
     xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
     dp->text_item_row = NULL;   /* no row being edited */
     if (row->f.free_string) free(row->string);
@@ -2003,7 +2011,10 @@ static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item)
 	{
 	    panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
 		panel_list_ip);
-	    xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
+	    xv_set(dp->text_item,
+					PANEL_INACTIVE, TRUE, /* drop_site !!! */
+					XV_SHOW, FALSE,
+					NULL);
 	    xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
 	    panel_list_delete_row(dp, row, REPAINT_LIST);
 	} else {
@@ -2038,7 +2049,10 @@ static Xv_opaque enter_read_mode(Menu menu, Menu_item menu_item)
 		/* Text was not validated */
 		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
 		    panel_list_ip);
-		xv_set(dp->text_item, XV_SHOW, FALSE, NULL);
+		xv_set(dp->text_item,
+					PANEL_INACTIVE, TRUE, /* drop_site !!! */
+					XV_SHOW, FALSE,
+					NULL);
 		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
 		if (!row->STRING || STRLEN(row->STRING) == 0)
 		{
@@ -2116,7 +2130,8 @@ static Xv_opaque enter_edit_mode(Menu menu, Menu_item menu_item)	/* not used */
 			PANEL_ITEM_COLOR, panel_list_ip->color_index,
 			PANEL_ITEM_X, dp->list_box.r_left + dp->string_x,
 			PANEL_VALUE_DISPLAY_LENGTH, display_length,
-			XV_KEY_DATA, PANEL_NOTIFY_PROC, panel_list_ip->notify, NULL);
+			XV_KEY_DATA, PANEL_NOTIFY_PROC, panel_list_ip->notify,
+			NULL);
 	dp->text_item_row = NULL;	/* no row being edited */
 
 	/* Repaint boxes around selected rows */
@@ -2326,7 +2341,10 @@ static Panel_setting insert_done(Panel_item text_item, Event *event)
 	if (STRLEN((CHAR *) xv_get(text_item, PANEL_VALUE_I18N)) == 0) {
 		panel_set_kbd_focus(PANEL_PRIVATE(dp->parent_panel),
 				ITEM_FROM_PANEL_LIST(dp));
-		xv_set(text_item, XV_SHOW, FALSE, NULL);
+		xv_set(text_item,
+					PANEL_INACTIVE, TRUE, /* drop_site !!! */
+					XV_SHOW, FALSE,
+					NULL);
 		xv_set(dp->list_sb, SCROLLBAR_INACTIVE, FALSE, NULL);
 		dp->text_item_row = NULL;	/* no row being edited */
 		panel_list_delete_row(dp, insert_row, REPAINT_LIST);
@@ -2385,10 +2403,13 @@ static Panel_setting insert_done(Panel_item text_item, Event *event)
 	font = (insert_row->font) ? insert_row->font : dp->font;
 	xv_set(dp->text_item,
 			PANEL_ITEM_Y, item_y
-			+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
-			- 1,
+							+ ((int)(dp->row_height - panel_fonthome(font)) / 2)
+							- 1,
 			PANEL_NOTIFY_PROC, insert_done,
-			PANEL_VALUE_I18N, NULL_STRING, XV_SHOW, TRUE, NULL);
+			PANEL_VALUE_I18N, NULL_STRING,
+			PANEL_INACTIVE, FALSE, /* drop_site !!! */
+			XV_SHOW, TRUE,
+			NULL);
 	dp->text_item_row = insert_row;
 
 	/* Warp the pointer to the bottom right corner of the text item */
@@ -2462,6 +2483,7 @@ static Xv_opaque insert_proc(Menu menu, Menu_item menu_item)
 					- 1,
 			PANEL_NOTIFY_PROC, insert_done,
 			PANEL_VALUE_I18N, NULL_STRING,
+			PANEL_INACTIVE, FALSE, /* drop_site !!! */
 			XV_SHOW, TRUE,
 			NULL);
 	dp->text_item_row = insert_row;
