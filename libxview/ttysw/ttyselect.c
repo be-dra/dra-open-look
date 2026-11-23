@@ -1,5 +1,5 @@
 #ifndef lint
-char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.46 2026/11/11 21:54:32 dra Exp $";
+char     ttyselect_c_sccsid[] = "@(#)ttyselect.c 20.46 93/06/28 DRA $Id: ttyselect.c,v 4.47 2026/11/22 21:38:15 dra Exp $";
 #endif
 
 /*
@@ -62,6 +62,10 @@ Pkg_private void ttysel_destroy(Ttysw_private priv)
 
 	if (priv->selbuffer) xv_free(priv->selbuffer);
 	for (i = 0; i < NBR_TTY_SELECTIONS; i++) {
+		/* we are giving up any selections and don't want to be
+		 * called back....
+		 */
+    	xv_set(priv->sel_owner[i], SEL_LOSE_PROC, NULL, NULL);
     	xv_destroy(priv->sel_owner[i]);
 	}
 }
