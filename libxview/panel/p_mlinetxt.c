@@ -1,4 +1,4 @@
-char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.12 2026/10/09 11:55:31 dra Exp $";
+char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.13 2026/11/22 20:00:41 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -590,7 +590,7 @@ static void mltxt_restore(Panel_item item_public, Panel_setting u)
 	Panel panel = PANEL_PUBLIC(ip->panel);
     Mltxt_info *dp = MLTXT_PRIVATE(item_public);
 
-	xv_set(dp->textsw, XV_SHOW, FALSE, NULL);
+	xv_set(dp->textsw, XV_SHOW, TRUE, NULL);
 
 	if (! xv_get(panel, PANEL_CARET_ITEM)) {
 		xv_set(panel, PANEL_CARET_ITEM, item_public, NULL);
