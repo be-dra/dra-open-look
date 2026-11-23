@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.70 2026/11/11 21:55:40 dra Exp $";
+char p_txt_c_sccsid[] = "@(#)p_txt.c 20.217 93/06/28 DRA: $Id: p_txt.c,v 4.74 2026/11/22 20:56:19 dra Exp $";
 #endif
 #endif
 
@@ -612,8 +612,10 @@ static Xv_opaque text_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	Item_info *ip = ITEM_PRIVATE(item_public);
 	char *new_value = NULL;
 
+	short update_drop_site = FALSE;
 	short select_line = FALSE;
 	short value_rect_changed = FALSE;
+	int new_inactive = -1;
 	Panel_info *panel = ip->panel;
 	int pc_home_y;
 	Xv_opaque result;
@@ -628,12 +630,27 @@ static Xv_opaque text_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	}
 
 	if (*avlist == XV_END_CREATE) {
+		short inact, ro;
+
 		create_menu(item_public);
 		if ((dp->flags & PTXT_ALLOW_FILE_DROP) != 0) {
 			xv_set(dp->drop_site,
 					DROP_SITE_EVENT_MASK,
 						DND_ENTERLEAVE | DND_ACCEPT_STRING | DND_ACCEPT_FILE,
 					NULL);
+		}
+
+		inact = inactive(ip);
+		ro = ((dp->flags & PTXT_READ_ONLY) != 0);
+
+		if (! (inact || ro)) {
+			xv_set(dp->drop_site,
+					DROP_SITE_DELETE_REGION, NULL,
+					DROP_SITE_REGION, &ip->value_rect,
+					NULL);
+		}
+		else {
+			xv_set(dp->drop_site, DROP_SITE_DELETE_REGION, NULL, NULL);
 		}
 
 		return XV_OK;
@@ -650,95 +667,96 @@ static Xv_opaque text_set_avlist(Panel_item item_public, Attr_avlist avlist)
 	if (result != XV_OK)
 		return result;
 
-	for (; *avlist; avlist = attr_next(avlist)) {
-		switch (avlist[0]) {
+	for (; *avlist; avlist = attr_next(avlist)) switch (avlist[0]) {
 
-			case PANEL_VALUE:
-				new_value = (char *)avlist[1];
-				break;
+		case PANEL_VALUE:
+			new_value = (char *)avlist[1];
+			break;
 
-			case PANEL_VALUE_FONT:
-				x_font_info = (XFontStruct *) xv_get(ip->value_font, FONT_INFO);
-				pc_home_y = -x_font_info->ascent;
+		case PANEL_VALUE_FONT:
+			x_font_info = (XFontStruct *) xv_get(ip->value_font, FONT_INFO);
+			pc_home_y = -x_font_info->ascent;
 
-				if (pc_home_y < dp->font_home)
-					dp->font_home = pc_home_y;
-				dp->font_home = -dp->font_home;
-				if (!display_width_set)
-					dp->display_width = panel_col_to_x(ip->value_font,
-							dp->display_length);
-				value_rect_changed = TRUE;
-				break;
-
-			case PANEL_VALUE_UNDERLINED:
-				if ((int)avlist[1]) {
-					dp->flags |= UNDERLINED;
-				}
-				else {
-					dp->flags &= ~UNDERLINED;
-				}
-				break;
-				/* laf end */
-
-			case PANEL_NOTIFY_LEVEL:
-				dp->notify_level = (Panel_setting) avlist[1];
-				break;
-
-			case PANEL_NOTIFY_STRING:
-				if (dp->terminators)
-					free(dp->terminators);
-				dp->terminators = (char *)panel_strsave((char *)avlist[1]);
-				break;
-
-			case PANEL_VALUE_STORED_LENGTH:
-				dp->stored_length = (int)avlist[1];
-				dp->undo_buffer = (char *)realloc(dp->undo_buffer,
-						(size_t) (dp->stored_length + 1));
-				dp->value = (char *)realloc(dp->value,
-						(size_t) (dp->stored_length + 1));
-				if (dp->display_length >= dp->stored_length) {
-					no_buttons = TRUE;
-					value_rect_changed = TRUE;
-				}
-				else
-					no_buttons = FALSE;
-				break;
-
-			case PANEL_VALUE_DISPLAY_LENGTH:
-				dp->display_length = (int)avlist[1];
+			if (pc_home_y < dp->font_home)
+				dp->font_home = pc_home_y;
+			dp->font_home = -dp->font_home;
+			if (!display_width_set)
 				dp->display_width = panel_col_to_x(ip->value_font,
 						dp->display_length);
+			value_rect_changed = TRUE;
+			break;
 
-				if (dp->display_length >= dp->stored_length)
-					no_buttons = TRUE;
-				else
-					no_buttons = FALSE;
-				display_width_set = TRUE;
+		case PANEL_VALUE_UNDERLINED:
+			if ((int)avlist[1]) {
+				dp->flags |= UNDERLINED;
+			}
+			else {
+				dp->flags &= ~UNDERLINED;
+			}
+			break;
+			/* laf end */
+
+		case PANEL_NOTIFY_LEVEL:
+			dp->notify_level = (Panel_setting) avlist[1];
+			break;
+
+		case PANEL_NOTIFY_STRING:
+			if (dp->terminators)
+				free(dp->terminators);
+			dp->terminators = (char *)panel_strsave((char *)avlist[1]);
+			break;
+
+		case PANEL_VALUE_STORED_LENGTH:
+			dp->stored_length = (int)avlist[1];
+			dp->undo_buffer = (char *)realloc(dp->undo_buffer,
+					(size_t) (dp->stored_length + 1));
+			dp->value = (char *)realloc(dp->value,
+					(size_t) (dp->stored_length + 1));
+			if (dp->display_length >= dp->stored_length) {
+				no_buttons = TRUE;
 				value_rect_changed = TRUE;
-				break;
+			}
+			else
+				no_buttons = FALSE;
+			break;
 
-			case PANEL_VALUE_DISPLAY_WIDTH:
-				dp->display_width = (int)avlist[1];
-				dp->display_length =
-						panel_x_to_col(ip->value_font, dp->display_width);
-				dp->display_width =
-						panel_col_to_x(ip->value_font, dp->display_length);
+		case PANEL_VALUE_DISPLAY_LENGTH:
+			dp->display_length = (int)avlist[1];
+			dp->display_width = panel_col_to_x(ip->value_font,
+					dp->display_length);
 
-				if (dp->display_length >= dp->stored_length)
-					no_buttons = TRUE;
-				else
-					no_buttons = FALSE;
-				display_width_set = TRUE;
-				value_rect_changed = TRUE;
-				break;
+			if (dp->display_length >= dp->stored_length)
+				no_buttons = TRUE;
+			else
+				no_buttons = FALSE;
+			display_width_set = TRUE;
+			value_rect_changed = TRUE;
+			break;
 
-			case PANEL_MASK_CHAR:
-				dp->mask = (char)avlist[1];
-				break;
+		case PANEL_VALUE_DISPLAY_WIDTH:
+			dp->display_width = (int)avlist[1];
+			dp->display_length =
+					panel_x_to_col(ip->value_font, dp->display_width);
+			dp->display_width =
+					panel_col_to_x(ip->value_font, dp->display_length);
 
-			case PANEL_INACTIVE:
-				if ((int)avlist[1]
-						&& panel->sel_holder[PANEL_SEL_PRIMARY] == ip) {
+			if (dp->display_length >= dp->stored_length)
+				no_buttons = TRUE;
+			else
+				no_buttons = FALSE;
+			display_width_set = TRUE;
+			value_rect_changed = TRUE;
+			break;
+
+		case PANEL_MASK_CHAR:
+			dp->mask = (char)avlist[1];
+			break;
+
+		case PANEL_INACTIVE:
+			update_drop_site = TRUE;
+			new_inactive = (int)avlist[1];
+			if ((int)avlist[1]) {
+				if (panel->sel_holder[PANEL_SEL_PRIMARY] == ip) {
 					/* Inactivating a text item:
 					 * Lose the primary selection if the item owns it.
 					 */
@@ -746,69 +764,60 @@ static Xv_opaque text_set_avlist(Panel_item item_public, Attr_avlist avlist)
 							SEL_OWN, FALSE,
 							NULL);
 				}
-				break;
+			}
+			break;
 
-			case PANEL_ALLOW_FILE_DROP:
-				if ((int)avlist[1]) {
-					dp->flags |= PTXT_ALLOW_FILE_DROP;
-				}
-				else {
-					dp->flags &= ~PTXT_ALLOW_FILE_DROP;
-				}
-				ATTR_CONSUME(*avlist);
-				break;
-				
-			case PANEL_READ_ONLY:
-				if ((int)avlist[1]) {
-					dp->flags |= PTXT_READ_ONLY;
-					ip->flags &= ~WANTS_KEY;
-					if (panel->kbd_focus_item == ip) {
-						/*
-						 * Text item had caret: move caret to next text item, if
-						 * any
-						 */
-						paint_caret(panel->kbd_focus_item, FALSE);
-						panel->kbd_focus_item =
-								panel_next_kbd_focus(panel, TRUE);
-						if (panel->kbd_focus_item) {
-							if (panel->kbd_focus_item->item_type ==
-									PANEL_TEXT_ITEM) {
-								paint_caret(panel->kbd_focus_item, TRUE);
-							}
-							else {
-								panel_accept_kbd_focus(panel);
-							}
+		case PANEL_ALLOW_FILE_DROP:
+			if ((int)avlist[1]) {
+				dp->flags |= PTXT_ALLOW_FILE_DROP;
+			}
+			else {
+				dp->flags &= ~PTXT_ALLOW_FILE_DROP;
+			}
+			ATTR_CONSUME(*avlist);
+			break;
+			
+		case PANEL_READ_ONLY:
+			update_drop_site = TRUE;
+			if ((int)avlist[1]) {
+				dp->flags |= PTXT_READ_ONLY;
+				ip->flags &= ~WANTS_KEY;
+				if (panel->kbd_focus_item == ip) {
+					/*
+					 * Text item had caret: move caret to next text item, if
+					 * any
+					 */
+					paint_caret(panel->kbd_focus_item, FALSE);
+					panel->kbd_focus_item =
+							panel_next_kbd_focus(panel, TRUE);
+					if (panel->kbd_focus_item) {
+						if (panel->kbd_focus_item->item_type ==
+								PANEL_TEXT_ITEM) {
+							paint_caret(panel->kbd_focus_item, TRUE);
 						}
-						/* Remove primary selection from item, if any */
-						if (panel->sel_holder[PANEL_SEL_PRIMARY] == ip)
-							xv_set(panel->sel_owner[PANEL_SEL_PRIMARY],
-									SEL_OWN, FALSE,
-									NULL);
+						else {
+							panel_accept_kbd_focus(panel);
+						}
 					}
-
-					/* Don't let item take drops while read-only! */
-					xv_set(dp->drop_site,
-								DROP_SITE_DELETE_REGION, &ip->value_rect,
+					/* Remove primary selection from item, if any */
+					if (panel->sel_holder[PANEL_SEL_PRIMARY] == ip)
+						xv_set(panel->sel_owner[PANEL_SEL_PRIMARY],
+								SEL_OWN, FALSE,
 								NULL);
 				}
-				else {
-					dp->flags &= ~PTXT_READ_ONLY;
-					ip->flags |= WANTS_KEY;
+			}
+			else {
+				dp->flags &= ~PTXT_READ_ONLY;
+				ip->flags |= WANTS_KEY;
+			}
+			break;
 
-					/* want to take drops again */
-					xv_set(dp->drop_site,
-							DROP_SITE_REGION, &ip->value_rect,
-							NULL);
-				}
-				break;
+		case PANEL_TEXT_SELECT_LINE:
+			select_line = TRUE;
+			break;
 
-			case PANEL_TEXT_SELECT_LINE:
-				select_line = TRUE;
-				break;
-
-			default:
-				break;
-		}
+		default:
+			break;
 	}
 
 	if (new_value) {
@@ -839,12 +848,7 @@ static Xv_opaque text_set_avlist(Panel_item item_public, Attr_avlist avlist)
 		chrht = xv_get(ip->value_font, FONT_DEFAULT_CHAR_HEIGHT);
 		ip->value_rect.r_height = MAX(chrht + BOX_Y, dp->scroll_btn_height);
 		ip->rect = panel_enclosing_rect(&ip->label_rect, &ip->value_rect);
-		if ((dp->flags & PTXT_READ_ONLY) == 0) {
-			xv_set(dp->drop_site,
-					DROP_SITE_DELETE_REGION, NULL,
-					DROP_SITE_REGION, &ip->value_rect,
-					NULL);
-		}
+		update_drop_site = TRUE;
 	}
 
 	if (select_line && strlen(dp->value)) {
@@ -869,10 +873,32 @@ static Xv_opaque text_set_avlist(Panel_item item_public, Attr_avlist avlist)
 						PANEL_SEL_PRIMARY);
 			panel->sel_holder[PANEL_SEL_PRIMARY] = ip;
 			text_seln_highlight(panel, ip, PANEL_SEL_PRIMARY);
-			text_set_sel_data(panel->sel_item[PANEL_SEL_PRIMARY], dp, PANEL_SEL_PRIMARY);
+			text_set_sel_data(panel->sel_item[PANEL_SEL_PRIMARY], dp,
+												PANEL_SEL_PRIMARY);
 		}
 		update_caret_offset(ip, 0, 0);
 		panel_set_kbd_focus(panel, ip);
+	}
+	if (update_drop_site) {
+		short inact_result, ro_result;
+
+		if (new_inactive == -1) {
+			inact_result = inactive(ip);
+		}
+		else {
+			inact_result = new_inactive;
+		}
+		ro_result = ((dp->flags & PTXT_READ_ONLY) != 0);
+
+		if (! (inact_result || ro_result)) {
+			xv_set(dp->drop_site,
+					DROP_SITE_DELETE_REGION, NULL,
+					DROP_SITE_REGION, &ip->value_rect,
+					NULL);
+		}
+		else {
+			xv_set(dp->drop_site, DROP_SITE_DELETE_REGION, NULL, NULL);
+		}
 	}
 
 	return XV_OK;
@@ -1168,12 +1194,14 @@ static void text_handle_event(Panel_item item_public, Event *event)
 					if (own_primary_seln) {
 						panel->sel_holder[PANEL_SEL_PRIMARY] = ip;
 						if (dp->dnd_sel_last > dp->last_char) {
+int cnt = 4;
 							/* Scroll right so that the last character inserted
 							 * is visible.
 							 */
 							do {
 								update_value_offset(ip, 0, 1, 1);
 								update_caret_offset(ip, -1, 0);
+if (--cnt <= 0) abort();
 							} while (dp->dnd_sel_last > dp->last_char);
 							paint_value(ip, PV_HIGHLIGHT);
 						}
@@ -1187,7 +1215,8 @@ static void text_handle_event(Panel_item item_public, Event *event)
 						SERVERTRACE((444, "scc[%d] = %d\n", PANEL_SEL_PRIMARY,
 									dp->select_click_cnt[PANEL_SEL_PRIMARY]));
 						text_seln_highlight(panel, ip, PANEL_SEL_PRIMARY);
-						text_set_sel_data(panel->sel_item[PANEL_SEL_PRIMARY], dp, PANEL_SEL_PRIMARY);
+						text_set_sel_data(panel->sel_item[PANEL_SEL_PRIMARY],
+												dp, PANEL_SEL_PRIMARY);
 					}
 				}
 			}
@@ -2374,8 +2403,12 @@ static void text_layout(Panel_item item_public, Rect *deltas)
 {
     Text_info	   *dp = TEXT_PRIVATE(item_public);
     Item_info      *ip = ITEM_PRIVATE(item_public);
+	short inact, ro;
 
-	if ((dp->flags & PTXT_READ_ONLY) == 0) {
+	inact = inactive(ip);
+	ro = ((dp->flags & PTXT_READ_ONLY) != 0);
+
+	if (! (inact || ro)) {
     	xv_set(dp->drop_site,
 						DROP_SITE_DELETE_REGION, NULL,
 						DROP_SITE_REGION, &ip->value_rect,
@@ -3976,7 +4009,7 @@ static void update_value(Item_info *ip, int action,
 				dp->dnd_sel_first = insert_pos;
 			}
 			dp->flags &= ~SELECTION_REQUEST_FAILED;	/* assume we succeed */
-			sel_string = (CHAR *)0;
+			sel_string = (char *)0;
 
 			/* First try to convert the Selection Type "FILE_NAME" */
 			if (dp->flags & PTXT_ALLOW_FILE_DROP) {
@@ -3986,11 +4019,11 @@ static void update_value(Item_info *ip, int action,
 						xv_set(panel->sel_req,
 									SEL_TYPE_NAME, "text/uri-list",
 									NULL);
-						sel_string = (CHAR *)xv_get(panel->sel_req, SEL_DATA,
+						sel_string = (char *)xv_get(panel->sel_req, SEL_DATA,
 												&sel_length, &sel_format);
 						if (sel_length == SEL_ERROR) {
 							xv_set(panel->sel_req, SEL_TYPE_NAME, "FILE_NAME", NULL);
-							sel_string = 0;
+							sel_string = NULL;
 						}
 						else {
 							char *p, *sss = sel_string;
@@ -4016,91 +4049,88 @@ static void update_value(Item_info *ip, int action,
 								fprintf(stderr, "text/uri-list delivers '%s'\n",
 										sel_string);
 								xv_free(sel_string);
-								sel_string = 0;
+								sel_string = NULL;
 							}
 						}
 					}
 					else {
-						xv_set(panel->sel_req, SEL_TYPE_NAME, "FILE_NAME", NULL);
+						xv_set(panel->sel_req, SEL_TYPE_NAME,"FILE_NAME", NULL);
 					}
 				}
 				else {
 					xv_set(panel->sel_req, SEL_TYPE_NAME, "FILE_NAME", NULL);
 				}
+				if (! sel_string)
+					sel_string = (char *) xv_get(panel->sel_req, SEL_DATA,
+											&sel_length, &sel_format);
+
+				/* bit 1 => straight text; bit 2 => file name */
+				*retstatus |= (sel_length == SEL_ERROR ? DRAG_MOVE_TEXT :
+														DRAG_MOVE_FILENAME);
+			}
+			else {
+				*retstatus |= DRAG_MOVE_TEXT;
+				sel_length = SEL_ERROR;
 			}
 
 			/*  Data came in as compound text and sel_length is
 			 *  a byte count
 			 */
 
-			if (! sel_string)
-				sel_string = (char *) xv_get(panel->sel_req, SEL_DATA,
-					&sel_length, &sel_format);
+			if (sel_length == SEL_ERROR) {
+				/* Data type is ASCII string */
+				xv_set(panel->sel_req, SEL_TYPE, XA_STRING, NULL);
+				/* Get the contents of the appropriate selection.
+				 * Note: the returned string is not NULL-terminated.
+				 * 'sel_length' will indicate the string's length.
+				 */
 
-			/* bit 1 => straight text; bit 2 => file name */
-			*retstatus |= (sel_length == SEL_ERROR ? DRAG_MOVE_TEXT :
-					DRAG_MOVE_FILENAME);
-
-			{
-				if (sel_length == SEL_ERROR) {
-					/* Data type is ASCII string */
-					xv_set(panel->sel_req, SEL_TYPE, XA_STRING, NULL);
-					/* Get the contents of the appropriate selection.
-					 * Note: the returned string is not NULL-terminated.
-					 * 'sel_length' will indicate the string's length.
-					 */
-
-					sel_string = (char *)xv_get(panel->sel_req, SEL_DATA,
-							&sel_length, &sel_format);
-
-					{
+				sel_string = (char *)xv_get(panel->sel_req, SEL_DATA,
+						&sel_length, &sel_format);
 
 #ifdef NO_XDND
 #else /* NO_XDND */
-		/* firefox only offers this for CLIPBOARD, but not for XdndSelection
-						if (sel_length == SEL_ERROR) {
-							xv_set(panel->sel_req, SEL_TYPE_NAME,
-										"text/plain;charset=ISO-8859-1",
-										NULL);
-							sel_string =
-									(char *)xv_get(panel->sel_req, SEL_DATA,
-									&sel_length, &sel_format);
-						}
-		*/
-						if (sel_length == SEL_ERROR) {
-							xv_set(panel->sel_req, SEL_TYPE_NAME, "text/plain",
-									NULL);
-							sel_string =
-									(char *)xv_get(panel->sel_req, SEL_DATA,
-									&sel_length, &sel_format);
-						}
+/* firefox only offers this for CLIPBOARD, but not for XdndSelection
+				if (sel_length == SEL_ERROR) {
+					xv_set(panel->sel_req, SEL_TYPE_NAME,
+								"text/plain;charset=ISO-8859-1",
+								NULL);
+					sel_string =
+							(char *)xv_get(panel->sel_req, SEL_DATA,
+							&sel_length, &sel_format);
+				}
+*/
+				if (sel_length == SEL_ERROR) {
+					xv_set(panel->sel_req, SEL_TYPE_NAME, "text/plain",
+							NULL);
+					sel_string =
+							(char *)xv_get(panel->sel_req, SEL_DATA,
+							&sel_length, &sel_format);
+				}
 #endif /* NO_XDND */
 
-						if (sel_length == SEL_ERROR)
-							/* Check that the data arrived okay */
-						{
-							dp->flags |= SELECTION_REQUEST_FAILED;
-							if (rank != PANEL_SEL_PRIMARY) {
-								text_alarm(ip);
-							}
-							else {
-								Frame frame = xv_get(PANEL_PUBLIC(panel),
-																WIN_FRAME);
-								Xv_Notice notice = xv_create(frame, NOTICE,
-										NOTICE_MESSAGE_STRINGS,
-											XV_MSG("Drag and Drop failed:"),
-											XV_MSG("Unable to get contents of selection"),
-											NULL,
-										NOTICE_BUSY_FRAMES, frame, NULL,
-										XV_SHOW, TRUE,
-										NULL);
-
-								xv_destroy(notice);
-							}
-							return;
-						}
-
+				if (sel_length == SEL_ERROR)
+					/* Check that the data arrived okay */
+				{
+					dp->flags |= SELECTION_REQUEST_FAILED;
+					if (rank != PANEL_SEL_PRIMARY) {
+						text_alarm(ip);
 					}
+					else {
+						Frame frame = xv_get(PANEL_PUBLIC(panel),
+														WIN_FRAME);
+						Xv_Notice notice = xv_create(frame, NOTICE,
+								NOTICE_MESSAGE_STRINGS,
+									XV_MSG("Drag and Drop failed:"),
+									XV_MSG("Unable to get contents of selection"),
+									NULL,
+								NOTICE_BUSY_FRAMES, frame, NULL,
+								XV_SHOW, TRUE,
+								NULL);
+
+						xv_destroy(notice);
+					}
+					return;
 				}
 			}
 
@@ -4603,7 +4633,6 @@ static void update_value_offset(Item_info *ip, int val_change, int val_shift,
 	x_font_info = (XFontStruct *) xv_get(ip->value_font, FONT_INFO);
 
 	if (size.x <= max_caret) {
-		size = xv_pf_textwidth(full_len, ip->value_font, dp->value);
 		dp->first_char = 0;
 		dp->last_char = full_len - 1;
 		dp->value_offset = size.x;
