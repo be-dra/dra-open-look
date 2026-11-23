@@ -1,5 +1,5 @@
 #ifndef lint
-char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.19 2026/10/18 09:10:22 dra Exp $";
+char     txt_attr_c_sccsid[] = "@(#)txt_attr.c 20.127 93/04/28 DRA: $Id: txt_attr.c,v 4.20 2026/11/22 19:58:31 dra Exp $";
 #endif
 
 /*
@@ -776,6 +776,30 @@ Pkg_private Textsw_status textsw_set_internal(Textsw_private priv, Textsw_view_p
 					}
 					break;
 				}
+
+			case XV_SHOW:
+				{
+					Textsw_view v;
+
+					/* basically a problem of PANEL_MULTILINE_TEXT
+					 * in multi category property windows...
+					 */
+					OPENWIN_EACH_VIEW(self, v)
+						Textsw_view_private vp = VIEW_PRIVATE(v);
+						if (attrs[1]) {
+							xv_set(vp->drop_site,
+										DROP_SITE_DELETE_REGION, NULL,
+										DROP_SITE_REGION, v,
+										NULL);
+						}
+						else {
+							xv_set(vp->drop_site,
+										DROP_SITE_DELETE_REGION, NULL,
+										NULL);
+						}
+					OPENWIN_END_EACH
+				}
+				break;
 
 			case TEXTSW_COALESCE_WITH:	/* Get only */
 			case TEXTSW_BLINK_CARET:
