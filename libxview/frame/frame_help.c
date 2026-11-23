@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.9 2026/10/03 18:24:12 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_help.c 1.27 93/06/28 DRA: $Id: frame_help.c,v 4.10 2026/11/21 15:51:58 dra Exp $ ";
 #endif
 #endif
 
@@ -84,14 +84,12 @@ static int frame_help_init(Xv_Window owner, Frame frame_public,
 	return XV_OK;
 }
 
-static Xv_opaque frame_help_set_avlist(Frame frame_public,
+static Xv_opaque frame_help_set_avlist(Frame fp,
 							Attr_attribute avlist[])
 {
 	Attr_avlist attrs;
-	Frame_help_info *frame = FRAME_HELP_PRIVATE(frame_public);
+	Frame_help_info *frame = FRAME_HELP_PRIVATE(fp);
 	int result = XV_OK;
-	Atom pinstate;
-	Xv_opaque srv = XV_SERVER_FROM_WINDOW(frame_public);
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch (attrs[0]) {
@@ -127,11 +125,28 @@ static Xv_opaque frame_help_set_avlist(Frame frame_public,
 				}
 
 			case XV_END_CREATE:
-				wmgr_set_win_attr(frame_public, &(frame->win_attr));
-				pinstate = xv_get(srv, SERVER_WM_PIN_STATE);
-				win_change_property(frame_public,
-						(Attr_attribute)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
-						(unsigned char *)&pinstate, 1, TRUE);
+				wmgr_set_win_attr(fp, &(frame->win_attr));
+				if (xv_get(XV_SCREEN_FROM_WINDOW(fp), SCREEN_CAN_SEND_PIN)) {
+					Xv_opaque srv = XV_SERVER_FROM_WINDOW(fp);
+					Atom pinstate;
+
+					/* our olwm can send pin changes as client messages -
+					 * that's what we want:
+					 */
+					pinstate = xv_get(srv, SERVER_WM_PIN_STATE);
+					win_change_property(fp,
+							(Attr_attribute)SERVER_WM_PROTOCOLS, XA_ATOM, 32,
+							(unsigned char *)&pinstate, 1, TRUE);
+					xv_set(fp,
+							WIN_IGNORE_EVENT, WIN_PROPERTY_NOTIFY,
+							NULL);
+				}
+				else {
+					/* we want PropertyNotify events */
+					xv_set(fp,
+							WIN_CONSUME_EVENTS, WIN_PROPERTY_NOTIFY, NULL,
+							NULL);
+				}
 				break;
 
 			default:
