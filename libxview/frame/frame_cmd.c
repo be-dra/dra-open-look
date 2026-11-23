@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.14 2026/11/21 15:58:25 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.15 2026/11/22 16:18:31 dra Exp $ ";
 #endif
 #endif
 
@@ -292,14 +292,11 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
 			status_set(frame, default_pin_state, (int)attrs[1]);
 			status_set(frame, default_pin_state_valid, (int)TRUE);
-			if (!xv_get(frame_public, XV_SHOW))
+			if (!xv_get(frame_public, XV_SHOW)) {
 				set_win_attr |=
 						update_default_pin_state(frame, srv);
-			break;
-
-		case FRAME_CMD_PANEL_BORDERED:
-			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
-			frame->panel_bordered = (int)attrs[1];
+				status_set(frame, pushpin_in, (int)attrs[1]);
+			}
 			break;
 
 		case FRAME_CMD_PIN_STATE:
@@ -313,6 +310,11 @@ static Xv_opaque frame_cmd_set_avlist(Frame frame_public,
 
 			status_set(frame, pushpin_in, (int)attrs[1]);
 			set_win_attr = TRUE;
+			break;
+
+		case FRAME_CMD_PANEL_BORDERED:
+			attrs[0] = (Frame_attribute) ATTR_NOP(attrs[0]);
+			frame->panel_bordered = (int)attrs[1];
 			break;
 
 		case FRAME_SCALE_STATE:
