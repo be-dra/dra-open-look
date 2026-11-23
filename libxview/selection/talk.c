@@ -8,7 +8,7 @@
 #include <xview_private/svr_impl.h>
 #include <xview_private/sel_impl.h>
 
-char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.59 2026/11/14 21:43:58 dra Exp $";
+char talk_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: talk.c,v 1.60 2026/11/22 16:17:13 dra Exp $";
 
 typedef struct _pattern {
 	struct _pattern *next;
@@ -634,16 +634,6 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 	if (! talk_key) talk_key = xv_unique_key();
 	priv->silent = TRUE;
 
-	if (xv_get(srv, TALK_KEY)) {
-		xv_error(slf,
-			ERROR_PKG, TALK,
-			ERROR_STRING, "Already a TALK instance in this process",
-			ERROR_SEVERITY, ERROR_RECOVERABLE,
-			NULL);
-		return XV_ERROR;
-	}
-	xv_set(srv, TALK_KEY, slf, NULL);
-
 	priv->talksrv = xv_get(srv, SERVER_ATOM, "_DRA_TALK_SERVER");
 	priv->trigg = xv_get(srv, SERVER_ATOM, "_DRA_TALK_TRIGGER");
 	priv->regist = xv_get(srv, SERVER_ATOM, "_DRA_TALK_REGISTER");
@@ -656,6 +646,17 @@ static int talk_init(Xv_window owner, Xv_opaque slf, Attr_avlist avlist, int *u)
 			priv->notify_proc = (talk_notify_proc_t)A1;
 			ADONE;
 		default: break;
+	}
+	if (priv->notify_proc) {
+		if (xv_get(srv, TALK_KEY)) {
+			xv_error(slf,
+				ERROR_PKG, TALK,
+				ERROR_STRING, "Already anotified TALK instance in this process",
+				ERROR_SEVERITY, ERROR_RECOVERABLE,
+				NULL);
+			return XV_ERROR;
+		}
+		xv_set(srv, TALK_KEY, slf, NULL);
 	}
 	return XV_OK;
 }
