@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.67 2026/11/18 09:18:22 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.68 2026/11/23 23:13:59 dra Exp $ ";
 #endif
 #endif
 
@@ -2575,47 +2575,17 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 	 */
 
 	if (xv_get(sel_req, XV_KEY_DATA, dnd_transient_key)) {
-		int format;
-		long length;
-		selection_reply_proc_t reply_proc;
-
-		/* the intention here is obviously to have 
-		 * 
-		 * temporarily NO reply proc !!
-		 *
-		 * however, subclasses of Selection_requestor might intercept
-		 * the setting of SEL_REPLY_PROC and do funny things....
-		 *
-		 * Therefore, we do not use xv_get (and later xv_set) to 
-		 * manipulate the reply procedure - instead, we directly access
-		 * the selection requestor's private part...
-		 */
-		Sel_req_info *srpriv = SEL_REQUESTOR_PRIVATE(sel_req);
-
-		/* and, in addition to all that - could it be we produced a little
-		 * memory leak here??
-		 */
-		char *data;
-
-		reply_proc = srpriv->reply_proc;
-		srpriv->reply_proc = NULL;
+		Xv_window win = xv_get(sel_req, XV_OWNER);
+		Display *dpy = XV_DISPLAY_FROM_WINDOW(win);
+		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
 
 		xv_set(sel_req, XV_KEY_DATA, dnd_transient_key, False, NULL);
-		xv_set(sel_req, SEL_SIMPLE_TYPE_NAME, "_SUN_DRAGDROP_DONE", NULL);
+		xv_set(sel_req, SEL_TYPE_NAME, "_SUN_DRAGDROP_DONE", NULL);
 
-		data = (char *)xv_get(sel_req, SEL_DATA, &length, &format);
+		sel_post_req_no_answer(sel_req);
 
-    	if (data) XFree(data);
-		srpriv->reply_proc = reply_proc;
-
-		{
-			Xv_window win = xv_get(sel_req, XV_OWNER);
-			Display *dpy = XV_DISPLAY_FROM_WINDOW(win);
-			Xv_server srv = XV_SERVER_FROM_WINDOW(win);
-
-			/* set for all properties 'avail = TRUE' */
-    		xv_sel_free_property(srv, dpy, 0L);
-		}
+		/* set for all properties 'avail = TRUE' */
+    	xv_sel_free_property(srv, dpy, 0L);
 	}
 
 #ifdef NO_XDND
