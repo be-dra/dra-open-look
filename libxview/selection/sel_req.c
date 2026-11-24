@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef SCCS
-static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.77 2026/11/20 11:53:29 dra Exp $";
+static char     sccsid[] = "@(#)sel_req.c 1.17 90/12/14 DRA: $Id: sel_req.c,v 4.78 2026/11/23 10:02:07 dra Exp $";
 #endif
 #endif
 
@@ -1645,6 +1645,7 @@ static void XvGetSeln(Display *dpy, XID xid, Sel_req_info *selReq, Time time)
 	}
 }
 
+static XContext noAnswerCtx = (XContext)0;
 
 Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev)
 {
@@ -1654,7 +1655,22 @@ Xv_private void xv_sel_handle_selection_notify(XSelectionEvent *ev)
 
 	reply = (Sel_reply_info *) xv_sel_get_reply((XEvent *)ev);
 
-	if (reply == NULL) return;
+	if (reply == NULL) {
+		Xv_server srv;
+
+		/* could this be a "not understood _DRA_NO_ANSWER" answer? */
+
+		if (noAnswerCtx == 0) return;
+		if (XFindContext(ev->display, (Window)ev->property, noAnswerCtx,
+							(caddr_t *)&srv)) {
+			return;
+		}
+		if (ev->property == xv_get(srv, SERVER_ATOM, "_DRA_NO_ANSWER")) {
+			/* let us clean up */
+			XDeleteProperty(ev->display, ev->requestor, ev->property);
+		}
+		return;
+	}
 
 	SERVERTRACE((385, "%s: sel %s, tgt %s\n", __FUNCTION__, 
 				(char *)xv_get(reply->sri_srv, SERVER_ATOM_NAME, ev->selection),
@@ -2032,11 +2048,15 @@ int sel_post_req_no_answer(Selection_requestor sel)
 		xv_free(replyInfo);
 	}
 	else {
+		Atom no_answer = xv_get(srv, SERVER_ATOM, "_DRA_NO_ANSWER");
 		/*
 		 * Send the SelectionRequest message to the selection owner.
 		 */
 		XConvertSelection(dpy, selection, *replyInfo->sri_target,
-				xv_get(srv, SERVER_ATOM, "_DRA_NO_ANSWER"), xid, XTime);
+								no_answer, xid, XTime);
+		if (! noAnswerCtx) noAnswerCtx = XUniqueContext();
+
+    	XSaveContext(dpy, (Window)no_answer, noAnswerCtx, (caddr_t)srv);
 
 		xv_free(replyInfo->sri_target);
 		xv_free(replyInfo);
