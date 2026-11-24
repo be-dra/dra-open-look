@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.13 2026/11/01 09:49:01 dra Exp $";
+static char     sccsid[] = "@(#)window.c 20.156 93/06/28 DRA: $Id: window.c,v 4.14 2026/11/23 10:53:14 dra Exp $";
 #endif
 #endif
 
@@ -98,6 +98,7 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	win = xv_alloc(Window_info);
 	rect_construct(&win->cache_rect, EMPTY_VALUE, EMPTY_VALUE,
 			EMPTY_VALUE, EMPTY_VALUE);
+	win->xmask = ExposureMask;
 
 	for (attrs = avlist; *attrs; attrs = attr_next(attrs)) {
 		switch ((int)attrs[0]) {
@@ -227,6 +228,11 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 						attr_is_cu((int)attrs[2]);
 				break;
 
+			case WIN_CONSUME_X_EVENT_MASK:
+				win->xmask |= (unsigned int)attrs[1];
+				ATTR_CONSUME(*attrs);
+				break;
+
 			default:
 				break;
 		}
@@ -280,7 +286,6 @@ static int window_init(Xv_Window parent_public, Xv_Window win_public, Attr_avlis
 	win->scale = (int)WIN_SCALE_MEDIUM;
 	win->map = TRUE;
 	win->layout_proc = window_layout;
-	win->xmask = ExposureMask;
 	win->collapse_exposures = TRUE;
 	win->collapse_motion_events = FALSE;
 	win->background_pixmap = (Pixmap) NULL;
