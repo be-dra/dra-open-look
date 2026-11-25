@@ -48,7 +48,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.31 2026/11/20 12:00:54 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.32 2026/11/24 21:30:30 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -497,13 +497,16 @@ static Filereq_status fetch_file_via_selection(Filereq_private *priv,
 	int format;
 	long length, indx = (long)j;
 
+	SERVERTRACE((888, "%s: %s\n", __FUNCTION__,tgtfile));
 	priv->status = FR_OK;
 	priv->fildesc = open(tgtfile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (priv->fildesc < 0) {
+		SERVERTRACE((888, "%s: %s\n", __FUNCTION__,strerror(errno)));
 		priv->status = FR_OPEN_FAILED;
 		return priv->status;
 	}
 
+	SERVERTRACE((888, "%s\n", __FUNCTION__));
 	xv_set(self,
 			SEL_TIME, &priv->last_time,
 			SEL_TYPE_NAMES,
@@ -527,6 +530,7 @@ static Filereq_status fetch_file_via_selection(Filereq_private *priv,
 	if (priv->status != FR_OK) {
 		unlink(tgtfile);
 	}
+	SERVERTRACE((888, "%s: status =%d\n", __FUNCTION__, priv->status));
 	return priv->status;
 }
 
@@ -892,6 +896,7 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 		}
 	}
 
+	SERVERTRACE((888, "%s: target_dir=%s\n", __FUNCTION__, target_dir));
 	for (j = i = 0; i < priv->count; i++) {
 		long index = (long)i;
 		memset(mr, 0, sizeof(mr_t));
@@ -918,30 +923,45 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 		}
 		cdata = mr->fn;
 
+		SERVERTRACE((888, "%s: %d\n", __FUNCTION__, i));
 		if (priv->check_access && owner_is_remote) {
 			struct stat sb;
 			char *locnam;
 
+			SERVERTRACE((888, "%s: %s\n", __FUNCTION__, cdata));
 			if (stat(cdata, &sb)) {
 				/* stat failed: no such file on local disk */
 
+				SERVERTRACE((888, "%s: no such file\n", __FUNCTION__, cdata));
 				if (priv->use_load) {
+					SERVERTRACE((888, "%s: preform load\n", __FUNCTION__));
 					locnam = perform_dra_load(priv, cdata, rem_name, j);
 					if (locnam) priv->files[j++] = locnam;
 				}
 				else if (target_dir) {
-					char *bas, localname[MAXPATHLEN];
+					char *bas, localname[MAXPATHLEN-1];
 
 					/* we want to load the file through selections and
 					 * write it into the target_dir
 					 */
 					bas = strrchr(cdata, '/');
 					if (bas) ++bas;
-					bas = cdata;
+					else bas = cdata;
 
 					sprintf(localname, "%s/%s", target_dir, bas);
+					SERVERTRACE((888, "%s: fetch_via_selection %s\n", __FUNCTION__, localname));
 					if (fetch_file_via_selection(priv, localname, j) == FR_OK) {
-						priv->files[j++] = xv_strsave(localname);
+						char two_slashes[MAXPATHLEN];
+						/* the problem here (we are probably in something like
+						 * a file manager):
+						 * usually we get here REMOTE FILE NAMES, but now
+						 * we have **fetched** the file's contents into our
+						 * local name - so, we do not want to copy it
+						 * in some sort of transfer_proc
+						 */
+		 				/* Ref (jberfjewhvrf) */
+						sprintf(two_slashes, "/%s", localname);
+						priv->files[j++] = xv_strsave(two_slashes);
 					}
 					else {
 						priv->files[j++] = cdata;
@@ -968,19 +988,23 @@ https://www.historisches-lexikon-bayerns.de/images/0/02/Nuernberg_St_Lorenz_West
 						if (locnam) priv->files[j++] = locnam;
 					}
 					else if (target_dir) {
-						char *bas, localname[MAXPATHLEN];
+						char *bas, localname[MAXPATHLEN-1];
 
 						/* we want to load the file through selections and
 						 * write it into the target_dir
 						 */
 						bas = strrchr(cdata, '/');
 						if (bas) ++bas;
-						bas = cdata;
+						else bas = cdata;
 
 						sprintf(localname, "%s/%s", target_dir, bas);
 						if (fetch_file_via_selection(priv, localname, j)==FR_OK)
 						{
-							priv->files[j++] = xv_strsave(localname);
+							char two_slashes[MAXPATHLEN];
+
+		 					/* Ref (jberfjewhvrf) */
+							sprintf(two_slashes, "/%s", localname);
+							priv->files[j++] = xv_strsave(two_slashes);
 						}
 						else {
 							priv->files[j++] = cdata;
