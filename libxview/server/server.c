@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.79 2026/11/22 16:15:44 dra Exp $";
+static char     sccsid[] = "@(#)server.c 20.157 93/04/28 DRA: $Id: server.c,v 4.80 2026/11/24 22:50:39 dra Exp $";
 #endif
 #endif
 
@@ -4606,6 +4606,8 @@ static void server_register_secondary_base(Xv_server srv, Frame sec)
 Xv_private void server_update_aqt(Server_info *server, int count)
 {
 	xvwp_t *inst = server->xvwp;
+	Xv_opaque fdb, sdb;
+	char buf[100];
 
 	if (! inst) {
 		fprintf(stderr, "%s: %s-%d: cannot save perform_query_tree_count %d\n",
@@ -4627,6 +4629,13 @@ Xv_private void server_update_aqt(Server_info *server, int count)
 		"%s: %s-%d: should enter perform_query_tree_count %d into the resource file\n",
 						xv_instance_app_name, __FILE__, __LINE__, count);
 	
+	/* how could I write that setting ? */
+	fdb = Permprop_res_create_file_db(inst->appfiles[PRC_U]);
+	sprintf(buf, "*performQueryTreeCount: %d\n", count);
+	sdb = Permprop_res_create_string_db(buf);
+	fdb = Permprop_res_merge_dbs(sdb, fdb);
+	Permprop_res_store_db(fdb, inst->appfiles[PRC_U]);
+	Permprop_res_destroy_db(fdb);
 }
 
 /*
