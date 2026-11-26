@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.14 2026/10/29 15:15:21 dra Exp $ ";
+static char     sccsid[] = "@(#)frame.h 20.77 93/06/28 DRA: $Id: frame.h,v 4.15 2026/11/25 21:28:16 dra Exp $ ";
 #endif
 #endif
 
@@ -376,7 +376,7 @@ extern Attr_attribute xv_get_rwid_key(void);
 extern void xv_activate_resizing(void);
 
 /* set this on panel items that are to be resized horizontally */
-#define FRAME_ITEM_RESIZE_WIDTH         XV_KEY_DATA,xv_get_rwid_key(),TRUE
+#define FRAME_ITEM_RESIZE_WIDTH      XV_KEY_DATA,xv_get_rwid_key(),(long)TRUE
 
 EXTERN_FUNCTION (int frame_props_cbkey, (void));
 EXTERN_FUNCTION (int frame_props_cbidkey, (void));
