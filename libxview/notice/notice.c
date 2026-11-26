@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.26 2026/11/17 14:19:03 dra Exp $ ";
+static char     sccsid[] = "@(#)notice.c 20.110 93/06/28  DRA: RCS $Id: notice.c,v 4.27 2026/11/25 23:19:26 dra Exp $ ";
 #endif
 #endif
 
@@ -632,7 +632,6 @@ static void notice_draw_borders(Xv_window	window, int x, int y,
                         OLGX_NORMAL, 0);
             */
 
-/* fprintf(stderr, "%s-%d: %lx w=%d\n", __FILE__, __LINE__, w, width); */
             XDrawRectangle(display, w, gc, x+i, y+i,
 							(unsigned )((width - 2*i) - 1),
 							(unsigned )((height - 2*i) - 1));
@@ -739,12 +738,11 @@ static void notice_draw_borders(Xv_window	window, int x, int y,
 
 		/* the DrawSeqments fiddling is ugly */
 		val.foreground = fg;
-		val.line_width = 3;
+		val.line_width = 1;   /* instead of 3 */
 		XChangeGC(display, gc, GCForeground | GCLineWidth, &val);
 		XDrawRectangle(display, w, gc, paneX, paneY, pw-1, ph-1);
 		val.line_width = 1;
 		XChangeGC(display, gc, GCLineWidth, &val);
-/* 		XDrawLine(display, w, gc, 0, -50, 100, 100); */
 	}
 }
 
@@ -3092,7 +3090,7 @@ static void notice_position_items(Notice_info *notice, Bool do_msg, Bool do_butt
 						NULL);
 			}
 			else {
-				curMsg->panel_item = xv_create(notice->panel, PANEL_MESSAGE,
+				curMsg->panel_item = xv_create(panel, PANEL_MESSAGE,
 						PANEL_LABEL_STRING, curMsg->string,
 						XV_HELP_DATA, "xview:notice",
 						NULL);
@@ -3140,7 +3138,7 @@ static void notice_position_items(Notice_info *notice, Bool do_msg, Bool do_butt
 						NULL);
 			}
 			else {
-				curButton->panel_item = xv_create(notice->panel, PANEL_BUTTON,
+				curButton->panel_item = xv_create(panel, PANEL_BUTTON,
 						PANEL_LABEL_STRING, curButton->string,
 						PANEL_NOTIFY_PROC, notice_button_panel_proc,
 						XV_KEY_DATA, notice_context_key, notice,
@@ -3149,7 +3147,7 @@ static void notice_position_items(Notice_info *notice, Bool do_msg, Bool do_butt
 			}
 
 			if (curButton->is_yes) {
-				xv_set(notice->panel,
+				xv_set(panel,
 						PANEL_DEFAULT_ITEM, curButton->panel_item,
 						NULL);
 			}
@@ -3262,6 +3260,8 @@ static void notice_position_items(Notice_info *notice, Bool do_msg, Bool do_butt
 	 */
 	free((char *)msg_rect_list);
 	free((char *)button_rect_list);
+
+	xv_set(notice->sub_frame, WIN_CONSUME_EVENT, WIN_REPAINT, NULL);
 }
 
 /*
