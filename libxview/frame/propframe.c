@@ -36,7 +36,7 @@
 #define _OTHER_TEXTSW_FUNCTIONS 1
 #include <xview/textsw.h>
 
-char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.23 2026/11/22 19:59:56 dra Exp $";
+char propframe_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: propframe.c,v 4.24 2026/11/25 21:14:44 dra Exp $";
 
 #define A0 *attrs
 #define A1 attrs[1]
@@ -1939,7 +1939,7 @@ static Xv_opaque propframe_set(Frame_props self, Attr_avlist avlist)
 				xv_set(priv->cat_choice,
 						PANEL_CHOICE_STRING, priv->choice_cnt, A1,
 						PANEL_VALUE, 0,
-						XV_KEY_DATA, PANEL_VALUE, 0,
+						XV_KEY_DATA, PANEL_VALUE, 0L,
 						NULL);
 				priv->choice_cnt++;
 
@@ -2072,7 +2072,7 @@ static Xv_opaque propframe_set(Frame_props self, Attr_avlist avlist)
 						if (i == val) {
 							set_new_current_panel(priv, p);
 							xv_set(priv->cat_choice,
-									XV_KEY_DATA, PANEL_VALUE, val,
+									XV_KEY_DATA, PANEL_VALUE, (long)val,
 									NULL);
 						}
 						else {
