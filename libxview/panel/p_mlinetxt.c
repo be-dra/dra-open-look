@@ -1,4 +1,4 @@
-char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.13 2026/11/22 20:00:41 dra Exp $";
+char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.14 2026/11/25 21:12:58 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -173,7 +173,7 @@ static int panel_mltxt_init(Panel panel_public, Panel_item item_public, Attr_avl
 			WIN_CMS, xv_get(panel_public, WIN_CMS),
 			WIN_COLUMNS, dp->columns,
 			WIN_ROWS, dp->rows_displayed,
-			XV_KEY_DATA, FRAME_ORPHAN_WINDOW, TRUE,
+			XV_KEY_DATA, FRAME_ORPHAN_WINDOW, (long)TRUE,
 			NULL);
 
 	dp->view = xv_get(dp->textsw, OPENWIN_NTH_VIEW, 0);
