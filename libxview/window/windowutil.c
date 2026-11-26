@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.29 2026/10/22 17:31:09 dra Exp $";
+static char     sccsid[] = "@(#)windowutil.c 20.102 93/06/28 DRA: $Id: windowutil.c,v 4.30 2026/11/25 21:21:04 dra Exp $";
 #endif
 #endif
 /*
@@ -1312,8 +1312,8 @@ Xv_private int window_set_tree_flag(Xv_window topLevel, Xv_cursor pointer,
 
 				SERVERTRACE((700, "XV_CHILDREN returns %d\n", count));
 				if (count >= win->aqt_allocated) {
-					fprintf(stderr, "%s-%d: aqt_allocated too small, need %d\n",
-									__FILE__, __LINE__, count + 10);
+					SERVERTRACE((700, "aqt_allocated too small, need %d\n",
+									count + 10));
 					server_update_aqt(srv, count + 10);
 				}
 			}
