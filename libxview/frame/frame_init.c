@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.26 2026/10/29 18:20:30 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_init.c 1.46 93/06/28 DRA: $Id: frame_init.c,v 4.27 2026/11/25 21:14:35 dra Exp $ ";
 #endif
 #endif
 
@@ -355,12 +355,10 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 	(void)win_getsize(frame_public, &frame->rectcache);
 
 	if (!is_subframe) {
-		int frame_count;
+		long frame_count;
 
-		frame_count = (int)xv_get(xv_server(info), XV_KEY_DATA, FRAME_COUNT);
-		xv_set(xv_server(info),
-				XV_KEY_DATA, FRAME_COUNT, ++frame_count,
-				NULL);
+		frame_count = xv_get(xv_server(info), XV_KEY_DATA, FRAME_COUNT);
+		xv_set(xv_server(info), XV_KEY_DATA, FRAME_COUNT, ++frame_count, NULL);
 	}
 
 	/* Initialise default foreground and background */
@@ -395,7 +393,7 @@ static int frame_init(Xv_Window owner, Frame frame_public, Attr_avlist avlist,
 			XV_SHOW, (long)FALSE,
 			XV_WIDTH, (long)FRAME_FOCUS_UP_WIDTH,
 			XV_HEIGHT, (long)FRAME_FOCUS_UP_HEIGHT,
-			XV_KEY_DATA, FRAME_FOCUS_DIRECTION, FRAME_FOCUS_UP,
+			XV_KEY_DATA, FRAME_FOCUS_DIRECTION, (long)FRAME_FOCUS_UP,
 			XV_KEY_DATA, FRAME_FOCUS_UP_IMAGE,
 						xv_create(xv_screen(info), SERVER_IMAGE,
 								XV_WIDTH, 16L,
@@ -470,7 +468,7 @@ static Xv_window frame_create_footer(Frame_class_info *frame)
 					NULL,
 				WIN_INHERIT_COLORS, (long)TRUE,
 				XV_HEIGHT, (long)frame_footer_height(scale),
-				XV_KEY_DATA, FRAME_FOOTER_WINDOW, TRUE,
+				XV_KEY_DATA, FRAME_FOOTER_WINDOW, (long)TRUE,
 				XV_HELP_DATA, hlpbuf,
 				XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help,
 				NULL);
@@ -894,7 +892,7 @@ static Xv_opaque frame_set_avlist(Frame frame_public,
 		case FRAME_FOCUS_DIRECTION:
 			if (frame->focus_window) {
 				xv_set(frame->focus_window,
-						XV_KEY_DATA, FRAME_FOCUS_DIRECTION, attrs[1],
+						XV_KEY_DATA, FRAME_FOCUS_DIRECTION, (long)attrs[1],
 						XV_WIDTH, attrs[1] == FRAME_FOCUS_UP ?
 						FRAME_FOCUS_UP_WIDTH : FRAME_FOCUS_RIGHT_WIDTH,
 						XV_HEIGHT, attrs[1] == FRAME_FOCUS_UP ?
@@ -2581,7 +2579,7 @@ static int frame_confirm_destroy(Frame_class_info *frame)
 		frame_notice_key = xv_unique_key();
 	}
 
-	frame_notice = xv_get((Frame) window, XV_KEY_DATA, frame_notice_key, NULL);
+	frame_notice = xv_get((Frame) window, XV_KEY_DATA, frame_notice_key);
 
 	if (!frame_notice) {
 		frame_notice = xv_create((Frame) window, NOTICE,
@@ -2596,8 +2594,7 @@ static int frame_confirm_destroy(Frame_class_info *frame)
 				XV_SHOW, TRUE,
 				NULL);
 
-		xv_set((Frame) window,
-				XV_KEY_DATA, frame_notice_key, frame_notice, NULL);
+		xv_set(window, XV_KEY_DATA, frame_notice_key, frame_notice, NULL);
 	}
 	else {
 		xv_set(frame_notice,
