@@ -1,4 +1,4 @@
-char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.30 2026/11/22 20:01:35 dra Exp $";
+char p_list_sccsid[] = "@(#)p_list.c 1.142 93/06/28 DRA: $Id: p_list.c,v 4.31 2026/11/25 21:13:23 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -2261,12 +2261,19 @@ static void panel_list_create_displayarea(Panel_list_info *dp)
 
 	/* Create the Scrolling List Scrollbar
 	 */
-	dp->list_sb = xv_create(ip->panel->paint_window->pw, SCROLLBAR, XV_INSTANCE_NAME, instname, WIN_INHERIT_COLORS, TRUE,	/* inherit both the visual and CMS */
-			XV_HEIGHT, dp->list_box.r_height, XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA, ip, SCROLLBAR_NOTIFY_CLIENT, ip->panel->paint_window->pw, SCROLLBAR_VIEW_LENGTH, dp->rows_displayed,	/* in rows */
+	dp->list_sb = xv_create(ip->panel->paint_window->pw, SCROLLBAR,
+			XV_INSTANCE_NAME, instname,
+			WIN_INHERIT_COLORS, TRUE,	/* inherit both the visual and CMS */
+			XV_HEIGHT, dp->list_box.r_height,
+			XV_KEY_DATA, PANEL_LIST_EXTENSION_DATA, ip,
+			SCROLLBAR_NOTIFY_CLIENT, ip->panel->paint_window->pw,
+			SCROLLBAR_VIEW_LENGTH, dp->rows_displayed,	/* in rows */
 			SCROLLBAR_OBJECT_LENGTH, dp->nrows,	/* in rows */
 			SCROLLBAR_PIXELS_PER_UNIT, dp->row_height,
 			SCROLLBAR_INACTIVE, inactive(ip),
-			XV_SHOW, !hidden(ip), XV_KEY_DATA, FRAME_ORPHAN_WINDOW, TRUE, NULL);
+			XV_SHOW, !hidden(ip),
+			XV_KEY_DATA, FRAME_ORPHAN_WINDOW, (long)TRUE,
+			NULL);
 	if (ip->color_index >= 0)
 		xv_set(dp->list_sb, WIN_FOREGROUND_COLOR, ip->color_index, NULL);
 	dp->sb_rect = *(Rect *) xv_get(dp->list_sb, XV_RECT);
@@ -3391,13 +3398,13 @@ static Xv_opaque panel_list_set_avlist(Panel_item panel_list_public, Attr_avlist
 									MENU_ITEM,
 										MENU_STRING, XV_MSG("Before"),
 										MENU_ACTION, insert_proc,
-										XV_KEY_DATA,PANEL_INSERT,INSERT_BEFORE,
+										XV_KEY_DATA,PANEL_INSERT, (long)INSERT_BEFORE,
 										XV_HELP_DATA,"xview:plist_insert_before",
 										NULL,
 									MENU_ITEM,
 										MENU_STRING, XV_MSG("After"),
 										MENU_ACTION, insert_proc,
-										XV_KEY_DATA, PANEL_INSERT, INSERT_AFTER,
+										XV_KEY_DATA, PANEL_INSERT,  (long)INSERT_AFTER,
 										XV_HELP_DATA,"xview:plist_insert_after",
 										NULL,
 									NULL),
@@ -3591,9 +3598,11 @@ static Xv_opaque panel_list_get_attr(Panel_item panel_list_public,
 		case XV_CHILDREN:
 			{
 				Window *w = va_arg(valist, Window *);
-				int retval;
+				int retval, len = va_arg(valist, int);
 
-				*w++ = xv_get(dp->list_sb, XV_XID);
+				if (len > 0) {
+					*w++ = xv_get(dp->list_sb, XV_XID);
+				}
 				retval = 1;
 				return (Xv_opaque)retval;
 			}
