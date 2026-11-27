@@ -1,5 +1,5 @@
 #ifndef lint
-char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.35 2026/10/04 12:09:07 dra Exp $";
+char help_c_sccsid[] = "@(#)help.c 1.77 93/06/28 RCS: $Id: help.c,v 4.36 2026/11/26 17:08:06 dra Exp $";
 #endif
 
 /*
@@ -667,7 +667,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 					TEXTSW_LOWER_CONTEXT, -1, /* disable automatic scrolling */
 					TEXTSW_DISABLE_LOAD, TRUE,
 					TEXTSW_READ_ONLY, TRUE,
-					XV_KEY_DATA, geom_key, GEOM_TEXT,
+					XV_KEY_DATA, geom_key, (long)GEOM_TEXT,
 					NULL);
 			view = xv_get(help_info->textwin, OPENWIN_NTH_VIEW, 0);
 			xv_set(view, XV_HELP_DATA, "xview:helpWindow", NULL);
@@ -727,7 +727,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 					XV_Y, 0,
 					WIN_COLUMNS, HELPTEXTCOLS,
 					WIN_ROWS, HELPTEXTLINES,
-					XV_KEY_DATA, geom_key, GEOM_TEXT,
+					XV_KEY_DATA, geom_key, (long)GEOM_TEXT,
 					XV_HELP_DATA, "xview:helpWindowRT",
 					NULL);
 			help_info->text_sb = xv_create(help_info->textwin, SCROLLBAR, NULL);
@@ -738,7 +738,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 				XV_WIDTH, HELP_OUTER_WIDTH,
 				XV_HEIGHT, xv_get(help_info->textwin, XV_HEIGHT),
 				XV_HELP_DATA, "xview:helpWindow",
-				XV_KEY_DATA, geom_key, GEOM_LEFTPAN,
+				XV_KEY_DATA, geom_key, (long)GEOM_LEFTPAN,
 				NULL);
 		help_info->mglass_msg = xv_create(mglass_panel, PANEL_MESSAGE,
 				XV_HELP_DATA, "xview:helpMagnifyingGlass",
@@ -755,7 +755,7 @@ Xv_private int xv_help_render(Xv_Window client_window, caddr_t client_data,
 				WIN_BELOW, help_info->textwin,
 				XV_WIDTH, HELP_OUTER_WIDTH + textwidth,
 				XV_HELP_DATA, "xview:helpWindow",
-				XV_KEY_DATA, geom_key, GEOM_BOTPAN,
+				XV_KEY_DATA, geom_key, (long)GEOM_BOTPAN,
 				NULL);
 		help_info->more_help_button = xv_create(more_help_panel, PANEL_BUTTON,
 					PANEL_ITEM_LAYOUT_ROLE, PANEL_ROLE_CENTER,
