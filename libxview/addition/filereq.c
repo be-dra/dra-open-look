@@ -48,7 +48,7 @@
 #include <xview_private/svr_impl.h>
 
 #ifndef lint
-char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.32 2026/11/24 21:30:30 dra Exp $";
+char filereq_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: filereq.c,v 4.33 2026/11/26 16:49:57 dra Exp $";
 #endif
 
 /* Xv_private : */
@@ -137,7 +137,7 @@ static loadlist_t release_loaded(Filereq_private *priv, loadlist_t ll,
 		if (priv->selowner) {
 			if (ll==(loadlist_t)xv_get(priv->selowner,XV_KEY_DATA,fr_load_key))
 			{
-				xv_set(priv->selowner, XV_KEY_DATA, fr_load_key, 0, NULL);
+				xv_set(priv->selowner, XV_KEY_DATA, fr_load_key, NULL, NULL);
 			}
 		}
 
