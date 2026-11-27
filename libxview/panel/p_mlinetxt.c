@@ -1,4 +1,4 @@
-char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.14 2026/11/25 21:12:58 dra Exp $";
+char p_mlinetxt_sccsid[] = "@(#)p_mlinetxt.c 1.32 93/06/28 DRA: $Id: p_mlinetxt.c,v 4.15 2026/11/26 20:16:39 dra Exp $";
 
 /*
  *	(c) Copyright 1990 Sun Microsystems, Inc. Sun design patents 
@@ -593,7 +593,17 @@ static void mltxt_restore(Panel_item item_public, Panel_setting u)
 	xv_set(dp->textsw, XV_SHOW, TRUE, NULL);
 
 	if (! xv_get(panel, PANEL_CARET_ITEM)) {
-		xv_set(panel, PANEL_CARET_ITEM, item_public, NULL);
+		/* very careful here: panel checks a few things before making
+		 * me the caret item - and complains via xv_error ...
+		 * This is exactly what panel_set_avlist does:
+		 */
+		if (inactive(ip) || hidden(ip) ||
+				(!wants_key(ip) && !ip->child_kbd_focus_item)) {
+			/* don't try ... */
+		}
+		else {
+			xv_set(panel, PANEL_CARET_ITEM, item_public, NULL);
+		}
 	}
 }
 
