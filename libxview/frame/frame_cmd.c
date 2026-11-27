@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.15 2026/11/22 16:18:31 dra Exp $ ";
+static char     sccsid[] = "@(#)frame_cmd.c 1.48 93/06/28 DRA: $Id: frame_cmd.c,v 4.16 2026/11/26 17:04:19 dra Exp $ ";
 #endif
 #endif
 
@@ -800,8 +800,8 @@ Pkg_private void set_frame_resizing(Frame frame, int resize_width,
 			y = (int)xv_get(item, XV_Y);
 			if (y >= scrollbot) {
 				xv_set(item,
-						XV_KEY_DATA, below_key, TRUE,
-						XV_KEY_DATA, fl_key, panheight - y,
+						XV_KEY_DATA, below_key, (long)TRUE,
+						XV_KEY_DATA, fl_key, (long)(panheight - y),
 						NULL);
 
 				if (y < miny) {
