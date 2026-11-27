@@ -19,7 +19,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview_private/svr_impl.h>
 
-char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.66 2026/11/06 12:55:51 dra Exp $";
+char dircanv_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: dircanv.c,v 1.67 2026/11/26 16:48:01 dra Exp $";
 
 typedef struct _dir_priv *protodirpriv;
 
@@ -1438,7 +1438,7 @@ static int dir_handle_events(Dir_private *priv, Scrollwin_event_struct *es)
 
 				xv_set(focuswin, XV_SHOW, FALSE, NULL);
 				if (! dirpw_key) dirpw_key = xv_unique_key();
-				xv_set(es->pw, XV_KEY_DATA, dirpw_key, 0, NULL);
+				xv_set(es->pw, XV_KEY_DATA, dirpw_key, NULL, NULL);
 			}
 			break;
 
@@ -3012,21 +3012,21 @@ static Menu_item create_hide(Dir_private *priv, char *lab, char *help, menu_cb_t
 					NULL,
 				MENU_ITEM,
 					MENU_STRING, XV_MSG("Hide Unwritable"),
-					XV_KEY_DATA, dir_key, S_IWOTH,
+					XV_KEY_DATA, dir_key, (long)S_IWOTH,
 					MENU_NOTIFY_PROC, note_hiding,
 					XV_HELP_DATA, make_help(hlpfile, "hide_unwritable"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 					NULL,
 				MENU_ITEM,
 					MENU_STRING, XV_MSG("Hide Unreadable"),
-					XV_KEY_DATA, dir_key, S_IROTH,
+					XV_KEY_DATA, dir_key, (long)S_IROTH,
 					MENU_NOTIFY_PROC, note_hiding,
 					XV_HELP_DATA, make_help(hlpfile, "hide_unreadable"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
 					NULL,
 				MENU_ITEM,
 					MENU_STRING, XV_MSG("Hide Unexecutable"),
-					XV_KEY_DATA, dir_key, S_IXOTH,
+					XV_KEY_DATA, dir_key, (long)S_IXOTH,
 					MENU_NOTIFY_PROC, note_hiding,
 					XV_HELP_DATA, make_help(hlpfile, "hide_unexecutable"),
 					XV_KEY_DATA_REMOVE_PROC, XV_HELP, free_help_data,
