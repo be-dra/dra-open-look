@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.68 2026/11/23 23:13:59 dra Exp $ ";
+static char     sccsid[] = "@(#)dnd.c 1.30 93/06/28 DRA: $Id: dnd.c,v 4.69 2026/11/26 16:58:41 dra Exp $ ";
 #endif
 #endif
 
@@ -1163,7 +1163,7 @@ static int SendTrigger(Dnd_info *dnd, Xv_Drawable_info *info,
 		Xv_Server server = XV_SERVER_FROM_WINDOW(dnd->parent);
 		Attr_attribute dndKey = xv_get(server, SERVER_DND_ACK_KEY);
 
-		xv_set(server, XV_KEY_DATA, dndKey, False, NULL);
+		xv_set(server, XV_KEY_DATA, dndKey, (long)False, NULL);
 
 		if ((value=SendDndEvent(dnd,Dnd_Trigger_Local,0,buttonEvent))
 				== DND_SUCCEEDED) {
@@ -2480,7 +2480,7 @@ static int SendACK(Selection_requestor sel_req, Event *ev)
 	if (dnd_is_local(ev)) {	/* flag set to True in local case */
 		Attr_attribute dndKey = xv_get(server, SERVER_DND_ACK_KEY);
 
-		xv_set(server, XV_KEY_DATA, dndKey, True, NULL);
+		xv_set(server, XV_KEY_DATA, dndKey, (long)True, NULL);
 		return DND_SUCCEEDED;
 	}
 	else {	/* Remote case */
@@ -2525,12 +2525,12 @@ Xv_public Xv_opaque dnd_decode_drop(Selection_requestor sel_req, Event *event)
 #else /* NO_XDND */
 	xv_set(sel_req,
 			XV_KEY_DATA, dnd_is_xdnd_key,
-			((event_flags(event) & DND_IS_XDND) != 0), NULL);
+			(long)((event_flags(event) & DND_IS_XDND) != 0), NULL);
 #endif /* NO_XDND */
 
 	/* Remind ourself to send _SUN_DRAGDROP_DONE in dnd_done() */
 	if (DND_IS_TRANSIENT(event))
-		xv_set(sel_req, XV_KEY_DATA, dnd_transient_key, True, NULL);
+		xv_set(sel_req, XV_KEY_DATA, dnd_transient_key, (long)True, NULL);
 
 	/* Set the rank of the selection to the rank being used in
 	 * the drag and drop transaction.
@@ -2579,7 +2579,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 		Display *dpy = XV_DISPLAY_FROM_WINDOW(win);
 		Xv_server srv = XV_SERVER_FROM_WINDOW(win);
 
-		xv_set(sel_req, XV_KEY_DATA, dnd_transient_key, False, NULL);
+		xv_set(sel_req, XV_KEY_DATA, dnd_transient_key, (long)False, NULL);
 		xv_set(sel_req, SEL_TYPE_NAME, "_SUN_DRAGDROP_DONE", NULL);
 
 		sel_post_req_no_answer(sel_req);
@@ -2624,7 +2624,7 @@ Xv_public void dnd_done(Selection_requestor sel_req)
 			}
 		}
 	}
-	xv_set(sel_req, XV_KEY_DATA, dnd_is_xdnd_key, FALSE, NULL);
+	xv_set(sel_req, XV_KEY_DATA, dnd_is_xdnd_key, (long)FALSE, NULL);
 #endif /* NO_XDND */
 }
 const Xv_pkg xv_dnd_pkg = {
