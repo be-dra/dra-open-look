@@ -1,4 +1,4 @@
-char p_set_sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.12 2026/07/19 21:58:20 dra Exp $";
+char p_set_sccsid[] = "@(#)p_set.c 20.94 93/06/28 DRA: $Id: p_set.c,v 4.13 2026/11/26 20:14:50 dra Exp $";
 
 /*
  *	(c) Copyright 1989 Sun Microsystems, Inc. Sun design patents 
@@ -58,7 +58,8 @@ Pkg_private Xv_opaque panel_set_avlist(Panel panel_public, Attr_avlist avlist)
 			if (!attrs[1]) {
 				xv_error(XV_NULL,
 						ERROR_BAD_VALUE, attrs[1], PANEL_CARET_ITEM,
-						ERROR_PKG, PANEL, NULL);
+						ERROR_PKG, PANEL,
+						NULL);
 				return XV_ERROR;	/* NULL ptr */
 			}
 			ip = ITEM_PRIVATE(attrs[1]);
@@ -66,7 +67,8 @@ Pkg_private Xv_opaque panel_set_avlist(Panel panel_public, Attr_avlist avlist)
 					(!wants_key(ip) && !ip->child_kbd_focus_item)) {
 				xv_error(XV_NULL,
 						ERROR_BAD_VALUE, attrs[1], PANEL_CARET_ITEM,
-						ERROR_PKG, PANEL, NULL);
+						ERROR_PKG, PANEL,
+						NULL);
 				return XV_ERROR;	/* item cannot take input focus */
 			}
 			if (ip->child_kbd_focus_item)
