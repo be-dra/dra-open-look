@@ -27,7 +27,7 @@
 #include <xview_private/i18n_impl.h>
 #include <xview/shortcut.h>
 
-char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.16 2026/08/26 20:34:58 dra Exp $";
+char shortcut_c_sccsid[] = "@(#) %M% V%I% %E% %U% $Id: shortcut.c,v 4.17 2026/11/26 14:11:02 dra Exp $";
 
 typedef struct {
 	char *code;
@@ -752,8 +752,8 @@ static int shortcuts_init(Perm_prop_frame owner, Shortcuts slf,
 			PROPLIST_ENTRY_STRING_OFFSET, (long)FDOFF(listlabel),
 			PERMLIST_ITEM_RESOURCE_NAME, "shortcutdesc",
 			PERMLIST_RESOURCE_CATEGORY, (long)PRC_D,
-			PERMLIST_ADD_RESOURCE, "character", DAP_string, FDOFF(character), 0,
-			PERMLIST_ADD_RESOURCE, "modifiers", DAP_int, FDOFF(mods), 0,
+			PERMLIST_ADD_RESOURCE,"character",DAP_string,FDOFF(character),NULL,
+			PERMLIST_ADD_RESOURCE, "modifiers", DAP_int, FDOFF(mods), 0L,
 			PERMLIST_ADD_RESOURCE, "code", DAP_string, FDOFF(func.code), "",
 			NULL);
 
