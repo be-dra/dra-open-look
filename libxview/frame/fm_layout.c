@@ -1,6 +1,6 @@
 #ifndef lint
 #ifdef sccs
-static char     sccsid[] = "@(#)fm_layout.c 20.51 93/06/28 DRA: $Id: fm_layout.c,v 4.2 2026/07/18 19:31:40 dra Exp $ ";
+static char     sccsid[] = "@(#)fm_layout.c 20.51 93/06/28 DRA: $Id: fm_layout.c,v 4.3 2026/11/26 17:02:46 dra Exp $ ";
 #endif
 #endif
 
@@ -126,7 +126,7 @@ Pkg_private int frame_layout(Xv_Window frame_public, Xv_Window child, Window_lay
 						frame->first_subwindow = child;
 
 					/* this is the last child in the list */
-					xv_set(child, XV_KEY_DATA, FRAME_NEXT_CHILD, 0, NULL);
+					xv_set(child, XV_KEY_DATA, FRAME_NEXT_CHILD, NULL, NULL);
 					xv_set(child, XV_KEY_DATA, FRAME_PREVIOUS_CHILD, last_child,
 							NULL);
 				}
