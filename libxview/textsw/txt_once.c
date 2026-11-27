@@ -1,5 +1,5 @@
 #ifndef lint
-char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.27 2026/10/31 19:26:37 dra Exp $";
+char	txt_once_c_sccsid[] = "@(#)txt_once.c 20.131 93/06/28 DRA: $Id: txt_once.c,v 4.28 2026/11/26 19:24:44 dra Exp $";
 #endif
 
 /*
@@ -699,7 +699,7 @@ static void textsw_destroy_popup(int key_data_name, Textsw textsw, Frame parent_
 	if (popup_frame &&
 		(textsw == xv_get(popup_frame,XV_KEY_DATA,TEXTSW_CURRENT_POPUP_KEY)))
 	{
-		xv_set(parent_frame, XV_KEY_DATA, key_data_name, 0, NULL);
+		xv_set(parent_frame, XV_KEY_DATA, key_data_name, 0L, NULL);
 		xv_destroy(popup_frame);
 	}
 }
